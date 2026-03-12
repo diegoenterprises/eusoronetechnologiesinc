@@ -31,31 +31,6 @@ function quarterDeadline(quarter: number, year: number): string {
   return deadlines[quarter] || `${year}-04-30`;
 }
 
-/**
- * Deterministic pseudo-random number generator (mulberry32).
- * Use instead of Math.random() for fallback/seed data so results are
- * reproducible for the same inputs (companyId, date, state, etc.).
- */
-function seededRandom(seed: number): () => number {
-  let s = seed | 0;
-  return () => {
-    s = (s + 0x6d2b79f5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/** Simple string-to-seed hash so we can seed from companyId+state+quarter etc. */
-function hashSeed(...parts: (string | number)[]): number {
-  let h = 0;
-  const str = parts.join("|");
-  for (let i = 0; i < str.length; i++) {
-    h = ((h << 5) - h + str.charCodeAt(i)) | 0;
-  }
-  return h;
-}
-
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
   "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
@@ -327,16 +302,12 @@ export const fuelManagementRouter = router({
 
       if (gallonsNeeded > currentGallons) {
         // TODO: Query hzFuelPrices for real-time state diesel prices along route
-        // For now, use deterministic seed based on origin/dest so prices are stable per route
-        const stopRng = seededRandom(hashSeed(
-          input.originLat, input.originLng, input.destLat, input.destLng
-        ));
+        const avgDieselPrice = 3.70;
         const numStops = Math.ceil((gallonsNeeded - currentGallons) / (input.tankCapacity * 0.7));
         for (let i = 0; i < numStops; i++) {
           const fraction = (i + 1) / (numStops + 1);
           const lat = input.originLat + (input.destLat - input.originLat) * fraction;
           const lng = input.originLng + (input.destLng - input.originLng) * fraction;
-          const price = 3.50 + stopRng() * 0.40;
           const fillGallons = Math.min(input.tankCapacity * 0.85, gallonsNeeded / numStops);
 
           stops.push({
@@ -344,10 +315,10 @@ export const fuelManagementRouter = router({
             stationName: ["Pilot Travel Center", "Love's Travel Stop", "Flying J", "TA Travel Center"][i % 4],
             brand: ["Pilot", "Loves", "FlyingJ", "TA"][i % 4],
             lat, lng,
-            price: Math.round(price * 1000) / 1000,
+            price: avgDieselPrice,
             gallonsToFill: Math.round(fillGallons),
-            cost: Math.round(fillGallons * price * 100) / 100,
-            detourMiles: Math.round(stopRng() * 3 * 10) / 10,
+            cost: Math.round(fillGallons * avgDieselPrice * 100) / 100,
+            detourMiles: 0,
             mileMarker: Math.round(totalDistanceMiles * fraction),
           });
         }
@@ -700,23 +671,7 @@ export const fuelManagementRouter = router({
         }
       }
 
-      // Fallback: deterministic seeded data if no DB results
-      if (jurisdictions.length === 0) {
-        const rng = seededRandom(hashSeed(companyId, input.quarter, input.year, "ifta"));
-        jurisdictions = US_STATES.slice(0, 15).map(state => {
-          const miles = Math.round(rng() * 5000 + 500);
-          const gallons = Math.round(miles / (5.5 + rng() * 2));
-          const taxRate = IFTA_TAX_RATES[state] || 0.25;
-          const taxPaid = Math.round(gallons * taxRate * 0.8 * 100) / 100;
-          const taxOwed = Math.round(gallons * taxRate * 100) / 100;
-          const netDue = Math.round((taxOwed - taxPaid) * 100) / 100;
-
-          return {
-            state, miles, gallons, taxRate, taxPaid, taxOwed, netDue,
-            surcharge: state === "IN" || state === "KY" || state === "VA" ? Math.round(miles * 0.01 * 100) / 100 : 0,
-          };
-        });
-      }
+      // No fallback mock data — return empty if no DB results
 
       const totalMiles = jurisdictions.reduce((s, j) => s + j.miles, 0);
       const totalGallons = jurisdictions.reduce((s, j) => s + j.gallons, 0);
@@ -825,25 +780,7 @@ export const fuelManagementRouter = router({
         }
       }
 
-      // Fallback: deterministic seeded data if no DB results
-      if (jurisdictions.length === 0) {
-        const rng = seededRandom(hashSeed(companyId, input.quarter, input.year, "iftaTax"));
-        jurisdictions = US_STATES.slice(0, 12).map(state => {
-          const miles = Math.round(rng() * 4000 + 200);
-          const allocatedGallons = Math.round(miles / fleetMpg);
-          const purchasedGallons = Math.round(allocatedGallons * (0.7 + rng() * 0.5));
-          const taxRate = IFTA_TAX_RATES[state] || 0.25;
-          const taxOnAllocated = Math.round(allocatedGallons * taxRate * 100) / 100;
-          const creditForPurchased = Math.round(purchasedGallons * taxRate * 100) / 100;
-
-          return {
-            state, miles, allocatedGallons, purchasedGallons,
-            netGallons: allocatedGallons - purchasedGallons,
-            taxRate, taxOnAllocated, creditForPurchased,
-            netTax: Math.round((taxOnAllocated - creditForPurchased) * 100) / 100,
-          };
-        });
-      }
+      // No fallback mock data — return empty if no DB results
 
       const totalNetTax = jurisdictions.reduce((s, j) => s + j.netTax, 0);
 
@@ -974,10 +911,9 @@ export const fuelManagementRouter = router({
       const history: Array<{ week: string; doePrice: number; surchargePerMile: number }> = [];
       const now = new Date();
       // TODO: Replace with real DOE price history from hzFuelPrices table once populated
-      const rng = seededRandom(hashSeed("fscHistory", now.getFullYear()));
       for (let i = 51; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 7 * 86400000);
-        const price = DOE_BASELINE_PRICE + (Math.sin(i / 8) * 0.25) + (rng() * 0.10 - 0.05);
+        const price = DOE_BASELINE_PRICE + (Math.sin(i / 8) * 0.25);
         const diff = price - DOE_BASELINE_PRICE;
         history.push({
           week: d.toISOString().slice(0, 10),
@@ -1228,12 +1164,11 @@ export const fuelManagementRouter = router({
       const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       const budgetPerMonth = 15000; // example monthly budget
 
-      // Deterministic fallback: seeded by companyId + year so values are stable
+      // Start with zero actuals — DB override below if data exists
       const companyId = ctx.user?.companyId || 0;
-      const budgetRng = seededRandom(hashSeed(companyId, "budget", new Date().getFullYear()));
       let monthlyData = months.map((month, idx) => {
         const isFuture = idx >= new Date().getMonth();
-        const actual = isFuture ? 0 : Math.round(budgetPerMonth * (0.85 + budgetRng() * 0.3));
+        const actual = 0;
         const variance = actual - budgetPerMonth;
         const variancePct = budgetPerMonth > 0 ? Math.round((variance / budgetPerMonth) * 10000) / 100 : 0;
 

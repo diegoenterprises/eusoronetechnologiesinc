@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   User, FileText, Shield, CreditCard, 
   Upload, CheckCircle, AlertCircle, Mail, Phone,
-  MapPin, Calendar, Truck, Award, Lock, ShieldCheck, Landmark
+  MapPin, Calendar, Truck, Award, Lock, ShieldCheck, Landmark, Globe
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -35,7 +35,8 @@ interface DriverFormData {
   dateOfBirth: string;
   ssn: string;
   
-  // Step 2: Address
+  // Step 2: Address & Country
+  operatingCountry: string;
   streetAddress: string;
   city: string;
   state: string;
@@ -95,6 +96,7 @@ const initialFormData: DriverFormData = {
   phone: "",
   dateOfBirth: "",
   ssn: "",
+  operatingCountry: "US",
   streetAddress: "",
   city: "",
   state: "",
@@ -183,6 +185,7 @@ export default function RegisterDriver() {
       password: formData.password,
       dateOfBirth: formData.dateOfBirth,
       ssn: formData.ssn || undefined,
+      operatingCountry: formData.operatingCountry || "US",
       streetAddress: formData.streetAddress,
       city: formData.city,
       state: formData.state,
@@ -322,11 +325,41 @@ export default function RegisterDriver() {
     },
     {
       id: "address",
-      title: "Address",
-      description: "Your current residential address",
+      title: "Address & Country",
+      description: "Your location and primary operating country",
       icon: <MapPin className="w-5 h-5" />,
       component: (
         <div className="space-y-6">
+          {/* Primary Operating Country */}
+          <div className="space-y-2">
+            <Label className="text-slate-300">
+              Primary Operating Country <span className="text-red-400">*</span>
+            </Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                { code: "US", label: "United States", subtitle: "FMCSA / DOT regulations", flag: "🇺🇸" },
+                { code: "CA", label: "Canada", subtitle: "TDG / Transport Canada", flag: "🇨🇦" },
+                { code: "MX", label: "Mexico", subtitle: "SCT / NOM regulations", flag: "🇲🇽" },
+              ].map((c) => (
+                <div
+                  key={c.code}
+                  onClick={() => updateFormData({ operatingCountry: c.code })}
+                  className={`p-4 rounded-lg border cursor-pointer transition-all flex items-center gap-3 ${
+                    formData.operatingCountry === c.code
+                      ? "bg-blue-500/20 border-blue-500"
+                      : "bg-slate-700/30 border-slate-600 hover:border-slate-500"
+                  }`}
+                >
+                  <span className="text-2xl">{c.flag}</span>
+                  <div>
+                    <p className="text-sm font-medium text-white">{c.label}</p>
+                    <p className="text-xs text-slate-400">{c.subtitle}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label className="text-slate-300">
               Street Address <span className="text-red-400">*</span>

@@ -57,17 +57,8 @@ const tirePositionSchema = z.enum([
 ]);
 
 // ---------------------------------------------------------------------------
-// Helpers — deterministic seed from IDs (kept for fallback/TODO procedures)
+// Helpers
 // ---------------------------------------------------------------------------
-
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed * 9301 + 49297) * 49297;
-  return x - Math.floor(x);
-}
-
-function seededId(prefix: string, seed: number): string {
-  return `${prefix}_${Math.abs(Math.floor(seed * 100000))}`;
-}
 
 // Map breakdown report status to work-order-style status
 function mapBreakdownToWoStatus(s: string): "open" | "in_progress" | "awaiting_parts" | "completed" | "cancelled" {
@@ -288,10 +279,9 @@ export const fleetMaintenanceRouter = router({
       .orderBy(sql`SUM(${zeunMaintenanceLogs.cost}) DESC`)
       .limit(6);
 
-    // Derive some stats deterministically when data is sparse
-    const seed = companyId * 31;
-    const expiringWarranties = Math.floor(seededRandom(seed + 10) * 4) + 1; // TODO: warranty table
-    const avgRepairTurnaround = Math.round(seededRandom(seed + 11) * 36 + 12); // TODO: compute from WO open->close
+    // TODO: wire to warranty table and compute from WO open->close times
+    const expiringWarranties = 0;
+    const avgRepairTurnaround = 0;
     const complianceScore = overduePMs === 0 && recallAlerts === 0 ? 100
       : Math.max(60, 100 - overduePMs * 3 - recallAlerts * 5);
 
@@ -806,19 +796,15 @@ export const fleetMaintenanceRouter = router({
         { component: "Starter Motor", provider: "Delco Remy", durationMonths: 24, mileageLimit: 200000 },
       ];
 
-      const seed = companyId * 29;
-      const warranties = fleetVehicles.flatMap((v, vi) => {
+      const warranties = fleetVehicles.flatMap((v) => {
         return components.map((c, ci) => {
-          const s = seed + v.id * 37 + ci * 11;
           const yearOffset = v.year ? now.getFullYear() - v.year : 3;
           const purchaseDate = new Date(now.getTime() - yearOffset * 365 * 86400000 + ci * 30 * 86400000);
           const expiryDate = new Date(purchaseDate.getTime() + c.durationMonths * 30 * 86400000);
           const daysRemaining = Math.round((expiryDate.getTime() - now.getTime()) / 86400000);
-          const currentMiles = Math.round(seededRandom(s + 1) * c.mileageLimit * 0.7);
-          const milesRemaining = c.mileageLimit - currentMiles;
 
           return {
-            id: seededId("wrty", s),
+            id: `wrty_${v.id}_${ci}`,
             vehicleId: v.id,
             vehicleUnit: v.licensePlate || `VH-${v.id}`,
             component: c.component,
@@ -827,12 +813,12 @@ export const fleetMaintenanceRouter = router({
             expiryDate: expiryDate.toISOString(),
             daysRemaining: Math.max(0, daysRemaining),
             mileageLimit: c.mileageLimit,
-            currentMiles,
-            milesRemaining: Math.max(0, milesRemaining),
-            status: daysRemaining <= 0 || milesRemaining <= 0 ? "expired" as const
-              : daysRemaining <= 90 || milesRemaining <= 25000 ? "expiring_soon" as const
+            currentMiles: 0,
+            milesRemaining: c.mileageLimit,
+            status: daysRemaining <= 0 ? "expired" as const
+              : daysRemaining <= 90 ? "expiring_soon" as const
               : "active" as const,
-            claimsCount: Math.floor(seededRandom(s + 2) * 2),
+            claimsCount: 0,
           };
         });
       });
@@ -909,45 +895,38 @@ export const fleetMaintenanceRouter = router({
         mileage: vehicles.mileage,
       }).from(vehicles).where(and(...conditions)).limit(50);
 
-      const seed = companyId * 43;
+      // TODO: Replace with real tire_inventory table
       const tires: Array<{
         id: string; vehicleId: number; vehicleUnit: string; position: string;
         brand: string; model: string; size: string; dotCode: string;
-        installedDate: string; installedMileage: number; currentMileage: number;
+        installedDate: string | null; installedMileage: number; currentMileage: number;
         treadDepth32nds: number; treadDepthStatus: "good" | "monitor" | "replace_soon" | "critical";
         pressure: number; pressureStatus: "ok" | "low" | "high";
-        nextRotationMiles: number; nextRotationDate: string; costPerMile: number;
+        nextRotationMiles: number; nextRotationDate: string | null; costPerMile: number;
       }> = [];
 
       for (const vehicle of fleetVehicles) {
-        const currentMiles = vehicle.mileage ?? 100000;
+        const currentMiles = vehicle.mileage ?? 0;
         for (let pi = 0; pi < Math.min(positions.length, 6); pi++) {
-          const s = seed + vehicle.id * 71 + pi * 13;
-          const treadDepth = Math.round(seededRandom(s) * 24 + 2);
-          const pressure = Math.round(seededRandom(s + 1) * 20 + 95);
-          const installedMiles = Math.max(0, currentMiles - Math.round(seededRandom(s + 2) * 60000));
-          const milesOnTire = currentMiles - installedMiles;
-          const brands = ["Michelin", "Goodyear", "Bridgestone", "Continental", "Yokohama"];
-
           tires.push({
-            id: seededId("tire", s),
+            id: `tire_${vehicle.id}_${pi}`,
             vehicleId: vehicle.id,
             vehicleUnit: vehicle.licensePlate || `VH-${vehicle.id}`,
             position: positions[pi],
-            brand: brands[Math.floor(seededRandom(s + 4) * brands.length)],
-            model: pi < 2 ? "X Line Energy Z" : "Fuelmax D",
+            brand: "Unknown",
+            model: pi < 2 ? "Steer" : "Drive",
             size: pi < 2 ? "11R22.5" : "295/75R22.5",
-            dotCode: `DOT${Math.round(seededRandom(s + 5) * 9999).toString().padStart(4, "0")}`,
-            installedDate: new Date(now.getTime() - Math.round(seededRandom(s + 6) * 365 * 86400000)).toISOString(),
-            installedMileage: installedMiles,
+            dotCode: "",
+            installedDate: null,
+            installedMileage: 0,
             currentMileage: currentMiles,
-            treadDepth32nds: treadDepth,
-            treadDepthStatus: treadDepth <= 4 ? "critical" : treadDepth <= 6 ? "replace_soon" : treadDepth <= 10 ? "monitor" : "good",
-            pressure,
-            pressureStatus: pressure < 100 ? "low" : pressure > 115 ? "high" : "ok",
-            nextRotationMiles: currentMiles + 20000 - (milesOnTire % 20000),
-            nextRotationDate: new Date(now.getTime() + Math.round((20000 - (milesOnTire % 20000)) / 500) * 86400000).toISOString(),
-            costPerMile: Math.round((pi < 2 ? 520 : 485) / Math.max(milesOnTire, 1) * 10000) / 10000,
+            treadDepth32nds: 0,
+            treadDepthStatus: "good",
+            pressure: 0,
+            pressureStatus: "ok",
+            nextRotationMiles: currentMiles + 20000,
+            nextRotationDate: null,
+            costPerMile: 0,
           });
         }
       }
@@ -1036,10 +1015,7 @@ export const fleetMaintenanceRouter = router({
         const yearAcquired = v.year || 2020;
         const acquisitionDate = v.createdAt || new Date(yearAcquired, 0, 1);
         const ageYears = (now.getTime() - acquisitionDate.getTime()) / (365.25 * 86400000);
-        const seed = v.id * 23;
-        const acquisitionCost = isTruck
-          ? Math.round(seededRandom(seed) * 50000 + 120000)
-          : Math.round(seededRandom(seed) * 20000 + 35000);
+        const acquisitionCost = isTruck ? 145000 : 45000;
         const depreciationRate = isTruck ? 0.12 : 0.10;
         const currentValue = Math.round(acquisitionCost * Math.pow(1 - depreciationRate, ageYears));
         const currentMiles = v.mileage ?? 0;
@@ -1110,11 +1086,8 @@ export const fleetMaintenanceRouter = router({
 
       const now = new Date();
       const yearAcquired = v.year || 2020;
-      const seed = input.vehicleId * 83;
       const isTruck = ["tractor", "box_truck", "escort_truck", "pilot_car"].includes(v.vehicleType);
-      const acquisitionCost = isTruck
-        ? Math.round(seededRandom(seed) * 50000 + 120000)
-        : Math.round(seededRandom(seed) * 20000 + 35000);
+      const acquisitionCost = isTruck ? 145000 : 45000;
       const depRate = isTruck ? 0.12 : 0.10;
       const ageYears = now.getFullYear() - yearAcquired + (now.getMonth() / 12);
 
@@ -1130,7 +1103,7 @@ export const fleetMaintenanceRouter = router({
         vehicleUnit: v.licensePlate || `VH-${v.id}`,
         acquisitionCost,
         currentBookValue: Math.round(acquisitionCost * Math.pow(1 - depRate, ageYears)),
-        estimatedFairMarketValue: Math.round(acquisitionCost * Math.pow(1 - depRate, ageYears) * (0.9 + seededRandom(seed + 2) * 0.3)),
+        estimatedFairMarketValue: Math.round(acquisitionCost * Math.pow(1 - depRate, ageYears) * 0.95),
         totalDepreciation: Math.round(acquisitionCost * (1 - Math.pow(1 - depRate, ageYears))),
         depreciationMethod: "declining_balance" as const,
         annualDepreciationRate: depRate,
@@ -1174,29 +1147,21 @@ export const fleetMaintenanceRouter = router({
         ? new Date(lastAnnual.getTime() + 365 * 86400000)
         : new Date(Date.now() + 90 * 86400000));
 
-      // Generate checklist with deterministic pass/fail per vehicle
-      const seed = input.vehicleId * 97;
-      const checklist = DOT_CHECKLIST_ITEMS.map((item, i) => {
-        const s = seed + i * 7;
-        const r = seededRandom(s);
-        const status = r > 0.85 ? "fail" as const : r > 0.7 ? "needs_attention" as const : "pass" as const;
-        const lastChecked = new Date(Date.now() - Math.round(seededRandom(s + 1) * 30 * 86400000));
+      // No real inspection checklist data — mark all as needs_attention
+      const checklist = DOT_CHECKLIST_ITEMS.map((item, i) => ({
+        id: i + 1,
+        category: item.category,
+        item: item.item,
+        critical: item.critical,
+        status: "needs_attention" as const,
+        lastCheckedDate: null as string | null,
+        notes: "No inspection data recorded yet",
+      }));
 
-        return {
-          id: i + 1,
-          category: item.category,
-          item: item.item,
-          critical: item.critical,
-          status,
-          lastCheckedDate: lastChecked.toISOString(),
-          notes: status === "fail" ? "Requires immediate attention before inspection" : status === "needs_attention" ? "Monitor closely — borderline pass" : "",
-        };
-      });
-
-      const passCount = checklist.filter(c => c.status === "pass").length;
-      const failCount = checklist.filter(c => c.status === "fail").length;
-      const attentionCount = checklist.filter(c => c.status === "needs_attention").length;
-      const criticalFails = checklist.filter(c => c.status === "fail" && c.critical).length;
+      const passCount = checklist.filter(c => (c.status as string) === "pass").length;
+      const failCount = checklist.filter(c => (c.status as string) === "fail").length;
+      const attentionCount = checklist.filter(c => (c.status as string) === "needs_attention").length;
+      const criticalFails = checklist.filter(c => (c.status as string) === "fail" && c.critical).length;
       const readinessScore = Math.round((passCount / checklist.length) * 100);
       const prediction = criticalFails > 0 ? "fail" as const : readinessScore >= 90 ? "pass" as const : "at_risk" as const;
 
@@ -1222,9 +1187,9 @@ export const fleetMaintenanceRouter = router({
           return {
             category: cat,
             total: items.length,
-            pass: items.filter(i => i.status === "pass").length,
-            fail: items.filter(i => i.status === "fail").length,
-            needsAttention: items.filter(i => i.status === "needs_attention").length,
+            pass: items.filter(i => (i.status as string) === "pass").length,
+            fail: items.filter(i => (i.status as string) === "fail").length,
+            needsAttention: items.filter(i => (i.status as string) === "needs_attention").length,
           };
         }),
       };
@@ -1265,8 +1230,6 @@ export const fleetMaintenanceRouter = router({
 
       const inspList = rows.map((r) => {
         const violations = r.defectsFound ?? 0;
-        // Generate deterministic violation details
-        const seed = r.id * 19;
         return {
           id: `insp_${r.id}`,
           vehicleId: r.vehicleId,
@@ -1276,7 +1239,7 @@ export const fleetMaintenanceRouter = router({
           result: violations === 0 ? "pass" as const : violations <= 2 ? "pass_with_defects" as const : "fail" as const,
           violationCount: violations,
           violations: Array.from({ length: violations }, (_, vi) => ({
-            code: `${393 + Math.floor(seededRandom(seed + vi * 3) * 10)}.${Math.floor(seededRandom(seed + vi * 3 + 1) * 99)}`,
+            code: `393.${vi + 1}`,
             description: ["Brake out of adjustment", "Tire tread depth below minimum", "Inoperative tail light", "Expired fire extinguisher"][vi % 4],
             severity: vi === 0 ? "critical" : "major",
             oos: r.oosViolation ?? false,
@@ -1354,17 +1317,12 @@ export const fleetMaintenanceRouter = router({
         const totalGallons = Math.round(Number(fuel?.totalGallons ?? 0));
         const totalFuelCost = Math.round(Number(fuel?.totalCost ?? 0));
         const avgFuelCost = Number(fuel?.avgPrice ?? 3.8);
-        const seed = v.id * 31 + companyId;
-
-        // If no fuel data, use seeded estimates
-        const effectiveGallons = totalGallons > 0 ? totalGallons : Math.round(seededRandom(seed + 1) * 2000 + 500);
         const mpg = totalGallons > 0 && v.mileage
           ? Math.round((v.mileage / Math.max(totalGallons, 1)) * 100) / 100
-          : Math.round((5.5 + seededRandom(seed) * 2.5) * 100) / 100;
+          : 0;
         const benchmark = 6.5;
-        const totalMiles = Math.round(effectiveGallons * mpg);
+        const totalMiles = totalGallons > 0 ? Math.round(totalGallons * mpg) : 0;
         const costPerMile = mpg > 0 ? Math.round(avgFuelCost / mpg * 100) / 100 : 0;
-        const idlePercent = Math.round(seededRandom(seed + 3) * 25 + 5); // TODO: from telemetry
 
         return {
           vehicleId: v.id,
@@ -1372,19 +1330,16 @@ export const fleetMaintenanceRouter = router({
           avgMpg: mpg,
           benchmarkMpg: benchmark,
           mpgVariance: Math.round((mpg - benchmark) * 100) / 100,
-          mpgVariancePct: Math.round((mpg - benchmark) / benchmark * 100),
+          mpgVariancePct: benchmark > 0 ? Math.round((mpg - benchmark) / benchmark * 100) : 0,
           totalMiles,
-          totalGallons: effectiveGallons,
-          totalFuelCost: totalFuelCost > 0 ? totalFuelCost : Math.round(effectiveGallons * avgFuelCost),
+          totalGallons,
+          totalFuelCost,
           avgCostPerGallon: Math.round(avgFuelCost * 100) / 100,
           costPerMile,
-          idlePercent,
-          idleFuelWaste: Math.round(effectiveGallons * (idlePercent / 100) * 0.8),
-          trend: seededRandom(seed + 4) > 0.5 ? "improving" as const : "declining" as const,
-          weeklyMpg: Array.from({ length: 12 }, (_, w) => ({
-            week: `W${w + 1}`,
-            mpg: Math.round((mpg + (seededRandom(seed + w * 5) - 0.5) * 1.5) * 100) / 100,
-          })),
+          idlePercent: 0, // TODO: from telemetry
+          idleFuelWaste: 0,
+          trend: "improving" as const, // TODO: compute from historical data
+          weeklyMpg: [], // TODO: compute from weekly fuel transaction aggregates
         };
       });
 
@@ -1668,7 +1623,6 @@ export const fleetMaintenanceRouter = router({
         const severity: "critical" | "high" | "medium" = r.isOverdue || daysUntil <= 0 ? "critical"
           : daysUntil <= 7 ? "high"
           : "medium";
-        const seed = r.id * 23;
         const estimatedCost = Math.round((Number(r.estimatedCostMin ?? 0) + Number(r.estimatedCostMax ?? 500)) / 2);
 
         return {
@@ -1677,7 +1631,7 @@ export const fleetMaintenanceRouter = router({
           vehicleUnit: r.vehicleLicensePlate || `VH-${r.vehicleId}`,
           component: r.serviceType,
           severity,
-          confidenceScore: Math.round(seededRandom(seed) * 30 + 70),
+          confidenceScore: 80,
           predictedFailureDate: r.nextDueDate?.toISOString() ?? new Date(now.getTime() + 30 * 86400000).toISOString(),
           daysUntilFailure: Math.max(0, daysUntil),
           estimatedRepairCost: estimatedCost,
@@ -1744,18 +1698,17 @@ export const fleetMaintenanceRouter = router({
       const maintMap = new Map(maintHours.map(m => [m.vehicleId, Number(m.totalHours)]));
 
       const vehicleData = fleetVehicles.map((v) => {
-        const seed = companyId * 149 + v.id * 29;
         const totalHours = input.periodDays * 24;
         const maintenanceHours = Math.round(maintMap.get(v.id) ?? 0);
         const isInMaintenance = v.status === "maintenance" || v.status === "out_of_service";
 
-        // Use seeded estimates for driving/idle hours (TODO: from GPS/ELD data)
-        const drivingHours = isInMaintenance ? 0 : Math.round(seededRandom(seed) * input.periodDays * 10 + input.periodDays * 2);
-        const idleHours = isInMaintenance ? 0 : Math.round(seededRandom(seed + 1) * input.periodDays * 3);
-        const downHours = Math.max(0, totalHours - drivingHours - idleHours - maintenanceHours);
-        const utilizationRate = Math.round(drivingHours / totalHours * 100);
-        const milesRun = Math.round(drivingHours * (45 + seededRandom(seed + 3) * 15));
-        const revenue = Math.round(milesRun * (1.8 + seededRandom(seed + 4) * 0.6));
+        // TODO: derive driving/idle hours from GPS/ELD data
+        const drivingHours = 0;
+        const idleHours = 0;
+        const downHours = isInMaintenance ? totalHours : Math.max(0, totalHours - maintenanceHours);
+        const utilizationRate = 0;
+        const milesRun = 0;
+        const revenue = 0;
 
         return {
           vehicleId: v.id,
@@ -1873,42 +1826,8 @@ export const fleetMaintenanceRouter = router({
           }
         }
 
-        // Add compliance items from deterministic seed (registration, insurance, IFTA, etc.)
-        // TODO: create compliance_events table
-        const seed = companyId * 157 + v.id * 41;
-        const complianceTypes = [
-          { type: "registration", label: "Vehicle Registration Renewal", renewalDays: 365, cost: 200 },
-          { type: "ifta_filing", label: "IFTA Quarterly Filing", renewalDays: 90, cost: 50 },
-          { type: "2290_filing", label: "Form 2290 Heavy Vehicle Use Tax", renewalDays: 365, cost: 100 },
-        ];
-
-        for (let ei = 0; ei < complianceTypes.length; ei++) {
-          const evt = complianceTypes[ei];
-          const s = seed + ei * 13;
-          const lastCompleted = new Date(now.getTime() - Math.round(seededRandom(s) * evt.renewalDays * 1.1 * 86400000));
-          const dueDate = new Date(lastCompleted.getTime() + evt.renewalDays * 86400000);
-          const daysUntilDue = Math.round((dueDate.getTime() - now.getTime()) / 86400000);
-
-          if (daysUntilDue > input.daysAhead) continue;
-
-          let status: "overdue" | "due_soon" | "upcoming" | "compliant" = "compliant";
-          if (daysUntilDue <= 0) status = "overdue";
-          else if (daysUntilDue <= 14) status = "due_soon";
-          else if (daysUntilDue <= 30) status = "upcoming";
-
-          events.push({
-            id: seededId("comp", s),
-            vehicleId: v.id,
-            vehicleUnit: unit,
-            type: evt.type,
-            label: evt.label,
-            dueDate: dueDate.toISOString(),
-            daysUntilDue: Math.max(0, daysUntilDue),
-            status,
-            lastCompleted: lastCompleted.toISOString(),
-            estimatedCost: evt.cost,
-          });
-        }
+        // TODO: create compliance_events table for registration, IFTA, 2290 tracking
+        // No real compliance event data yet — only show DOT inspection and maintenance dates
       }
 
       events.sort((a, b) => a.daysUntilDue - b.daysUntilDue);
@@ -1949,18 +1868,15 @@ export const fleetMaintenanceRouter = router({
         .where(eq(zeunMaintenanceSchedules.vehicleId, input.vehicleId));
 
       const components = ["engine", "transmission", "brakes", "suspension", "electrical"];
-      const seed = input.vehicleId * 97;
 
-      const predictions = components.map((component, ci) => {
-        const s = seed + ci * 19;
-        // Try to find a matching schedule
+      const predictions = components.map((component) => {
         const sched = schedules.find(sc =>
           sc.serviceType.toLowerCase().includes(component) ||
           (component === "brakes" && sc.serviceType.toLowerCase().includes("brake"))
         );
 
         let riskLevel = "low";
-        let milesUntil = Math.round(seededRandom(s + 1) * 50000 + 1000);
+        let milesUntil = 0;
         let predictedFailureDate: string;
 
         if (sched) {
@@ -1971,21 +1887,20 @@ export const fleetMaintenanceRouter = router({
             milesUntil = Math.max(0, sched.nextDueOdometer - currentMileage);
             riskLevel = milesUntil <= 1000 ? "critical" : milesUntil <= 5000 ? "high" : milesUntil <= 15000 ? "medium" : "low";
           }
-          predictedFailureDate = sched.nextDueDate?.toISOString() ?? new Date(Date.now() + Math.round(milesUntil / 500) * 86400000).toISOString();
+          predictedFailureDate = sched.nextDueDate?.toISOString() ?? new Date(Date.now() + 90 * 86400000).toISOString();
         } else {
-          const r = seededRandom(s);
-          riskLevel = r > 0.7 ? "critical" : r > 0.5 ? "high" : r > 0.3 ? "medium" : "low";
-          predictedFailureDate = new Date(Date.now() + Math.round(milesUntil / 500) * 86400000).toISOString();
+          riskLevel = "low";
+          predictedFailureDate = new Date(Date.now() + 90 * 86400000).toISOString();
         }
 
         return {
           component,
           riskLevel,
-          confidenceScore: Math.round(seededRandom(s + 3) * 30 + 70),
+          confidenceScore: sched ? 80 : 0,
           predictedFailureMileage: currentMileage + milesUntil,
           predictedFailureDate,
-          lastServiceMileage: sched?.lastServiceOdometer ?? (currentMileage - Math.round(seededRandom(s + 4) * 30000)),
-          lastServiceDate: sched?.lastServiceDate?.toISOString() ?? new Date(Date.now() - Math.round(seededRandom(s + 5) * 180 * 86400000)).toISOString(),
+          lastServiceMileage: sched?.lastServiceOdometer ?? 0,
+          lastServiceDate: sched?.lastServiceDate?.toISOString() ?? null,
         };
       });
 
@@ -2029,14 +1944,12 @@ export const fleetMaintenanceRouter = router({
       }
 
       const components = ["engine", "transmission", "brakes", "suspension", "electrical"];
-      const seed = companyId * 73;
 
       const results = fleetVehicles.map((v) => {
         const currentMileage = v.mileage ?? 100000;
         const schedules = schedByVehicle.get(v.id) || [];
 
-        const predictions = components.map((component, ci) => {
-          const s = seed + v.id * 53 + ci * 11;
+        const predictions = components.map((component) => {
           const sched = schedules.find(sc =>
             sc.serviceType.toLowerCase().includes(component) ||
             (component === "brakes" && sc.serviceType.toLowerCase().includes("brake"))
@@ -2052,19 +1965,18 @@ export const fleetMaintenanceRouter = router({
             milesUntil = Math.max(0, sched.nextDueOdometer - currentMileage);
             riskLevel = milesUntil <= 1000 ? "critical" : milesUntil <= 5000 ? "high" : milesUntil <= 15000 ? "medium" : "low";
           } else {
-            const r = seededRandom(s);
-            riskLevel = r > 0.75 ? "critical" : r > 0.55 ? "high" : r > 0.3 ? "medium" : "low";
-            milesUntil = Math.round(seededRandom(s + 1) * 50000 + 1000);
+            riskLevel = "low";
+            milesUntil = 0;
           }
 
           return {
             component,
             riskLevel,
-            confidenceScore: Math.round(seededRandom(s + 2) * 30 + 70),
+            confidenceScore: sched ? 80 : 0,
             predictedFailureMileage: currentMileage + milesUntil,
-            predictedFailureDate: sched?.nextDueDate?.toISOString() ?? new Date(Date.now() + Math.round(milesUntil / 500) * 86400000).toISOString(),
-            lastServiceMileage: sched?.lastServiceOdometer ?? (currentMileage - Math.round(seededRandom(s + 3) * 30000)),
-            lastServiceDate: sched?.lastServiceDate?.toISOString() ?? new Date(Date.now() - Math.round(seededRandom(s + 4) * 180 * 86400000)).toISOString(),
+            predictedFailureDate: sched?.nextDueDate?.toISOString() ?? new Date(Date.now() + 90 * 86400000).toISOString(),
+            lastServiceMileage: sched?.lastServiceOdometer ?? 0,
+            lastServiceDate: sched?.lastServiceDate?.toISOString() ?? null,
           };
         });
 
@@ -2120,15 +2032,12 @@ export const fleetMaintenanceRouter = router({
         medium: Math.min(medium, totalVehicles),
         low: Math.max(0, totalVehicles - critical - high - medium),
       },
-      componentAnalysis: ["engine", "transmission", "brakes", "suspension", "electrical"].map((comp, i) => {
-        const seed = companyId * 89 + i * 7;
-        return {
-          component: comp,
-          avgRiskScore: Math.round(seededRandom(seed) * 50 + 20),
-          criticalCount: Math.floor(seededRandom(seed + 1) * 2),
-          highCount: Math.floor(seededRandom(seed + 2) * 3),
-        };
-      }),
+      componentAnalysis: ["engine", "transmission", "brakes", "suspension", "electrical"].map((comp) => ({
+        component: comp,
+        avgRiskScore: 0,
+        criticalCount: 0,
+        highCount: 0,
+      })),
       lastUpdated: new Date().toISOString(),
     };
   }),
@@ -2181,7 +2090,6 @@ export const fleetMaintenanceRouter = router({
             ? Math.max(0, r.nextDueOdometer - r.vehicleMileage)
             : 0;
           const severity: "critical" | "high" = r.isOverdue || r.priority === "CRITICAL" ? "critical" : "high";
-          const seed = r.id * 11;
 
           return {
             id: `maint_alert_${r.id}`,
@@ -2192,7 +2100,7 @@ export const fleetMaintenanceRouter = router({
             milesRemaining,
             daysRemaining,
             predictedFailureDate: r.nextDueDate?.toISOString() ?? new Date(Date.now() + daysRemaining * 86400000).toISOString(),
-            confidenceScore: Math.round(seededRandom(seed + 2) * 30 + 70),
+            confidenceScore: 80,
             message: daysRemaining <= 0
               ? `${r.serviceType} OVERDUE on ${r.vehicleLicensePlate || `VH-${r.vehicleId}`}`
               : `${r.serviceType} needs service in ${daysRemaining}d / ${milesRemaining.toLocaleString()} mi on ${r.vehicleLicensePlate || `VH-${r.vehicleId}`}`,

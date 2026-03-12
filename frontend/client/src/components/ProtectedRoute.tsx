@@ -22,11 +22,13 @@ export default function ProtectedRoute({ children, allowedRoles = ALL_ROLES }: P
   useEffect(() => {
     if (loading) return;
     if (!isAuthenticated || !user) {
+      console.error("[ProtectedRoute] REDIRECT → /login | isAuthenticated:", isAuthenticated, "user:", user);
       navigate("/login");
       return;
     }
     const userRole = (user.role as UserRole) || "USER";
     if (!allowedRoles.includes(userRole) && userRole !== "SUPER_ADMIN") {
+      console.error("[ProtectedRoute] REDIRECT → / | role:", userRole, "allowedRoles:", allowedRoles, "path:", window.location.pathname);
       navigate("/");
     }
   }, [loading, isAuthenticated, user, allowedRoles, navigate]);

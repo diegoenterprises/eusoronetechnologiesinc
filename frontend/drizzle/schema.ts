@@ -78,6 +78,9 @@ export const users = mysqlTable(
     closedReason: text("closedReason"),
     deactivatedAt: timestamp("deactivatedAt"),
     deactivatedBy: int("deactivatedBy"),
+    country: mysqlEnum("country", ["US", "CA", "MX"]),
+    countrySetAt: timestamp("countrySetAt"),
+    provinceId: int("provinceId"),
   },
   (table) => ({
     emailIdx: unique("email_unique").on(table.email),
@@ -8468,4 +8471,412 @@ export const productProfiles = mysqlTable(
 
 export type ProductProfile = typeof productProfiles.$inferSelect;
 export type InsertProductProfile = typeof productProfiles.$inferInsert;
+
+// ============================================================================
+// TRAINING LMS — Countries, Provinces, Courses, Modules, Lessons, Quizzes
+// ============================================================================
+
+export const countries = mysqlTable(
+  "countries",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 2 }).notNull().unique(),
+    name: varchar("name", { length: 100 }).notNull(),
+    label: varchar("label", { length: 100 }).notNull(),
+    regulatoryBody: varchar("regulatoryBody", { length: 255 }),
+    regulatoryFramework: varchar("regulatoryFramework", { length: 255 }),
+    isActive: boolean("isActive").default(true),
+    metadata: json("metadata").$type<{
+      currencyCode?: string;
+      languageCodes?: string[];
+      hazmatRegulator?: string;
+      driverLicenseFormat?: string;
+    }>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    codeIdx: uniqueIndex("countries_code_idx").on(table.code),
+    activeIdx: index("countries_active_idx").on(table.isActive),
+  })
+);
+
+export type Country = typeof countries.$inferSelect;
+export type InsertCountry = typeof countries.$inferInsert;
+
+export const provinces = mysqlTable(
+  "provinces",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    countryId: int("countryId").notNull(),
+    code: varchar("code", { length: 5 }).notNull(),
+    name: varchar("name", { length: 100 }).notNull(),
+    abbreviation: varchar("abbreviation", { length: 10 }),
+    regionType: mysqlEnum("regionType", ["state", "province", "territory", "federal_entity"]),
+    hazmatSpecificRules: text("hazmatSpecificRules"),
+    specialRegulations: json("specialRegulations").$type<string[]>(),
+    isActive: boolean("isActive").default(true),
+    metadata: json("metadata").$type<{
+      maximumAxleWeight?: number;
+      hazmatPermitRequired?: boolean;
+      escortRequirements?: string;
+      winterDrivingRules?: string;
+    }>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    countryIdx: index("provinces_country_idx").on(table.countryId),
+    countryCodeIdx: unique("provinces_country_code_idx").on(table.countryId, table.code),
+    activeIdx: index("provinces_active_idx").on(table.isActive),
+  })
+);
+
+export type Province = typeof provinces.$inferSelect;
+export type InsertProvince = typeof provinces.$inferInsert;
+
+export const trainingCourses = mysqlTable(
+  "training_courses",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    slug: varchar("slug", { length: 255 }).notNull().unique(),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    longDescription: text("longDescription"),
+    category: mysqlEnum("category", ["compliance", "safety", "hazmat", "equipment", "wellness", "regulatory", "specialized"]),
+    countryScope: json("countryScope").$type<string[]>().notNull(),
+    provinceScope: json("provinceScope").$type<string[] | null>(),
+    difficultyLevel: mysqlEnum("difficultyLevel", ["beginner", "intermediate", "advanced"]),
+    estimatedDurationMinutes: int("estimatedDurationMinutes").notNull(),
+    moduleCount: int("moduleCount").notNull(),
+    isMandatory: boolean("isMandatory").default(false),
+    mandatoryForRoles: json("mandatoryForRoles").$type<string[]>(),
+    renewalIntervalMonths: int("renewalIntervalMonths"),
+    regulatoryReference: varchar("regulatoryReference", { length: 500 }),
+    hazmatSpecific: boolean("hazmatSpecific").default(false),
+    crossBorder: boolean("crossBorder").default(false),
+    status: mysqlEnum("status", ["active", "draft", "archived"]).default("draft"),
+    passingScore: int("passingScore").default(80),
+    thumbnailUrl: text("thumbnailUrl"),
+    tags: json("tags").$type<string[]>(),
+    keywords: json("keywords").$type<string[]>(),
+    enrollmentCount: int("enrollmentCount").default(0),
+    averageRating: decimal("averageRating", { precision: 3, scale: 2 }),
+    completionRate: decimal("completionRate", { precision: 5, scale: 2 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    publishedAt: timestamp("publishedAt"),
+    archivedAt: timestamp("archivedAt"),
+  },
+  (table) => ({
+    slugIdx: uniqueIndex("tc_slug_idx").on(table.slug),
+    categoryIdx: index("tc_category_idx").on(table.category),
+    statusIdx: index("tc_status_idx").on(table.status),
+    mandatoryIdx: index("tc_mandatory_idx").on(table.isMandatory),
+    hazmatIdx: index("tc_hazmat_idx").on(table.hazmatSpecific),
+  })
+);
+
+export type TrainingCourse = typeof trainingCourses.$inferSelect;
+export type InsertTrainingCourse = typeof trainingCourses.$inferInsert;
+
+export const lmsModules = mysqlTable(
+  "lms_modules",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    courseId: int("courseId").notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    orderIndex: int("orderIndex").notNull(),
+    contentType: mysqlEnum("contentType", ["video", "text", "interactive", "quiz", "case_study"]),
+    estimatedDurationMinutes: int("estimatedDurationMinutes"),
+    contentData: json("contentData").$type<{
+      richText?: string;
+      videoUrl?: string;
+      keyPoints?: string[];
+      cfrReferences?: string[];
+    }>(),
+    status: mysqlEnum("status", ["draft", "active", "archived"]).default("active"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    courseIdx: index("lmsm_course_idx").on(table.courseId),
+    courseOrderIdx: index("lmsm_course_order_idx").on(table.courseId, table.orderIndex),
+    statusIdx: index("lmsm_status_idx").on(table.status),
+  })
+);
+
+export type LmsModule = typeof lmsModules.$inferSelect;
+export type InsertLmsModule = typeof lmsModules.$inferInsert;
+
+export const trainingLessons = mysqlTable(
+  "training_lessons",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    moduleId: int("moduleId").notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    contentHtml: text("contentHtml"),
+    orderIndex: int("orderIndex").notNull(),
+    lessonType: mysqlEnum("lessonType", ["reading", "video", "interactive", "case_study"]),
+    estimatedDurationMinutes: int("estimatedDurationMinutes"),
+    keyRegulations: json("keyRegulations").$type<Array<{
+      code: string;
+      title: string;
+      jurisdiction: string;
+      summary: string;
+    }>>(),
+    provinceSpecific: json("provinceSpecific").$type<Record<string, {
+      additionalContent?: string;
+      provinceSpecificRules?: string;
+      examples?: string[];
+      warnings?: string[];
+    }>>(),
+    learningAids: json("learningAids").$type<{
+      didYouKnow?: string[];
+      keyTakeaways?: string[];
+      practiceQuestions?: string[];
+      imageUrls?: string[];
+    }>(),
+    status: mysqlEnum("status", ["draft", "active", "archived"]).default("active"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    moduleIdx: index("tl_module_idx").on(table.moduleId),
+    moduleOrderIdx: index("tl_module_order_idx").on(table.moduleId, table.orderIndex),
+    typeIdx: index("tl_type_idx").on(table.lessonType),
+  })
+);
+
+export type TrainingLesson = typeof trainingLessons.$inferSelect;
+export type InsertTrainingLesson = typeof trainingLessons.$inferInsert;
+
+export const trainingQuizzes = mysqlTable(
+  "training_quizzes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    moduleId: int("moduleId").notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    passingScore: int("passingScore").default(80),
+    timeLimitMinutes: int("timeLimitMinutes"),
+    questionCount: int("questionCount"),
+    randomizeQuestions: boolean("randomizeQuestions").default(true),
+    showAnswersImmediately: boolean("showAnswersImmediately").default(false),
+    allowRetakes: boolean("allowRetakes").default(true),
+    maxRetakes: int("maxRetakes"),
+    status: mysqlEnum("status", ["draft", "active", "archived"]).default("active"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    moduleIdx: index("tqz_module_idx").on(table.moduleId),
+    statusIdx: index("tqz_status_idx").on(table.status),
+  })
+);
+
+export type TrainingQuiz = typeof trainingQuizzes.$inferSelect;
+export type InsertTrainingQuiz = typeof trainingQuizzes.$inferInsert;
+
+export const trainingQuizQuestions = mysqlTable(
+  "training_quiz_questions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    quizId: int("quizId").notNull(),
+    questionText: text("questionText").notNull(),
+    questionType: mysqlEnum("questionType", ["multiple_choice", "true_false", "scenario"]),
+    options: json("options").$type<Array<{ id: string; text: string; isCorrect: boolean }>>(),
+    correctAnswer: varchar("correctAnswer", { length: 255 }),
+    explanation: text("explanation"),
+    difficulty: mysqlEnum("difficulty", ["easy", "medium", "hard"]),
+    regulationReference: varchar("regulationReference", { length: 255 }),
+    provinceSpecific: json("provinceSpecific").$type<string[] | null>(),
+    orderIndex: int("orderIndex"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    quizIdx: index("tqq_quiz_idx").on(table.quizId),
+    typeIdx: index("tqq_type_idx").on(table.questionType),
+  })
+);
+
+export type TrainingQuizQuestion = typeof trainingQuizQuestions.$inferSelect;
+export type InsertTrainingQuizQuestion = typeof trainingQuizQuestions.$inferInsert;
+
+export const userCourseEnrollments = mysqlTable(
+  "user_course_enrollments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    courseId: int("courseId").notNull(),
+    enrolledAt: timestamp("enrolledAt").defaultNow().notNull(),
+    startedAt: timestamp("startedAt"),
+    completedAt: timestamp("completedAt"),
+    status: mysqlEnum("status", ["enrolled", "in_progress", "completed", "failed", "expired"]).default("enrolled"),
+    currentModuleId: int("currentModuleId"),
+    currentLessonId: int("currentLessonId"),
+    progressPercentage: int("progressPercentage").default(0),
+    totalTimeSpentMinutes: int("totalTimeSpentMinutes").default(0),
+    certificateId: int("certificateId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("uce_user_idx").on(table.userId),
+    courseIdx: index("uce_course_idx").on(table.courseId),
+    statusIdx: index("uce_status_idx").on(table.status),
+    userCourseIdx: unique("uce_user_course_idx").on(table.userId, table.courseId),
+  })
+);
+
+export type UserCourseEnrollment = typeof userCourseEnrollments.$inferSelect;
+export type InsertUserCourseEnrollment = typeof userCourseEnrollments.$inferInsert;
+
+export const userModuleProgress = mysqlTable(
+  "user_module_progress",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    enrollmentId: int("enrollmentId").notNull(),
+    moduleId: int("moduleId").notNull(),
+    startedAt: timestamp("startedAt"),
+    completedAt: timestamp("completedAt"),
+    status: mysqlEnum("status", ["not_started", "in_progress", "completed"]).default("not_started"),
+    quizScore: int("quizScore"),
+    quizAttempts: int("quizAttempts").default(0),
+    lastQuizAttemptAt: timestamp("lastQuizAttemptAt"),
+    timeSpentMinutes: int("timeSpentMinutes").default(0),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    enrollmentIdx: index("ump_enrollment_idx").on(table.enrollmentId),
+    moduleIdx: index("ump_module_idx").on(table.moduleId),
+    statusIdx: index("ump_status_idx").on(table.status),
+  })
+);
+
+export type UserModuleProgressRow = typeof userModuleProgress.$inferSelect;
+export type InsertUserModuleProgress = typeof userModuleProgress.$inferInsert;
+
+export const userLessonProgress = mysqlTable(
+  "user_lesson_progress",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    enrollmentId: int("enrollmentId").notNull(),
+    lessonId: int("lessonId").notNull(),
+    startedAt: timestamp("startedAt"),
+    completedAt: timestamp("completedAt"),
+    status: mysqlEnum("status", ["not_started", "in_progress", "completed"]).default("not_started"),
+    timeSpentMinutes: int("timeSpentMinutes").default(0),
+    lessonData: json("lessonData").$type<{
+      scrollPosition?: number;
+      videoWatchTime?: number;
+      interactionEvents?: string[];
+    }>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    enrollmentIdx: index("ulp_enrollment_idx").on(table.enrollmentId),
+    lessonIdx: index("ulp_lesson_idx").on(table.lessonId),
+    statusIdx: index("ulp_status_idx").on(table.status),
+  })
+);
+
+export type UserLessonProgressRow = typeof userLessonProgress.$inferSelect;
+export type InsertUserLessonProgress = typeof userLessonProgress.$inferInsert;
+
+export const userCertificates = mysqlTable(
+  "user_certificates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    courseId: int("courseId").notNull(),
+    enrollmentId: int("enrollmentId"),
+    certificateNumber: varchar("certificateNumber", { length: 255 }).notNull().unique(),
+    issuedAt: timestamp("issuedAt").defaultNow().notNull(),
+    expiresAt: timestamp("expiresAt"),
+    verificationCode: varchar("verificationCode", { length: 100 }).unique(),
+    verificationUrl: text("verificationUrl"),
+    status: mysqlEnum("status", ["active", "expired", "revoked"]).default("active"),
+    pdfUrl: text("pdfUrl"),
+    renewalReminderSent: boolean("renewalReminderSent").default(false),
+    renewalReminderSentAt: timestamp("renewalReminderSentAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("ucert_user_idx").on(table.userId),
+    courseIdx: index("ucert_course_idx").on(table.courseId),
+    statusIdx: index("ucert_status_idx").on(table.status),
+    certNumIdx: uniqueIndex("ucert_certnum_idx").on(table.certificateNumber),
+    expiryIdx: index("ucert_expiry_idx").on(table.expiresAt),
+  })
+);
+
+export type UserCertificate = typeof userCertificates.$inferSelect;
+export type InsertUserCertificate = typeof userCertificates.$inferInsert;
+
+// ============================================================================
+// TRAINING LMS — Relations
+// ============================================================================
+
+export const countriesRelations = relations(countries, ({ many }) => ({
+  provinces: many(provinces),
+}));
+
+export const provincesRelations = relations(provinces, ({ one }) => ({
+  country: one(countries, { fields: [provinces.countryId], references: [countries.id] }),
+}));
+
+export const trainingCoursesRelations = relations(trainingCourses, ({ many }) => ({
+  modules: many(lmsModules),
+  enrollments: many(userCourseEnrollments),
+  certificates: many(userCertificates),
+}));
+
+export const lmsModulesRelations = relations(lmsModules, ({ one, many }) => ({
+  course: one(trainingCourses, { fields: [lmsModules.courseId], references: [trainingCourses.id] }),
+  lessons: many(trainingLessons),
+  quizzes: many(trainingQuizzes),
+  userProgress: many(userModuleProgress),
+}));
+
+export const trainingLessonsRelations = relations(trainingLessons, ({ one, many }) => ({
+  module: one(lmsModules, { fields: [trainingLessons.moduleId], references: [lmsModules.id] }),
+  userProgress: many(userLessonProgress),
+}));
+
+export const trainingQuizzesRelations = relations(trainingQuizzes, ({ one, many }) => ({
+  module: one(lmsModules, { fields: [trainingQuizzes.moduleId], references: [lmsModules.id] }),
+  questions: many(trainingQuizQuestions),
+}));
+
+export const trainingQuizQuestionsRelations = relations(trainingQuizQuestions, ({ one }) => ({
+  quiz: one(trainingQuizzes, { fields: [trainingQuizQuestions.quizId], references: [trainingQuizzes.id] }),
+}));
+
+export const userCourseEnrollmentsRelations = relations(userCourseEnrollments, ({ one, many }) => ({
+  user: one(users, { fields: [userCourseEnrollments.userId], references: [users.id] }),
+  course: one(trainingCourses, { fields: [userCourseEnrollments.courseId], references: [trainingCourses.id] }),
+  moduleProgress: many(userModuleProgress),
+  lessonProgress: many(userLessonProgress),
+}));
+
+export const userModuleProgressRelations = relations(userModuleProgress, ({ one }) => ({
+  enrollment: one(userCourseEnrollments, { fields: [userModuleProgress.enrollmentId], references: [userCourseEnrollments.id] }),
+  module: one(lmsModules, { fields: [userModuleProgress.moduleId], references: [lmsModules.id] }),
+}));
+
+export const userLessonProgressRelations = relations(userLessonProgress, ({ one }) => ({
+  enrollment: one(userCourseEnrollments, { fields: [userLessonProgress.enrollmentId], references: [userCourseEnrollments.id] }),
+  lesson: one(trainingLessons, { fields: [userLessonProgress.lessonId], references: [trainingLessons.id] }),
+}));
+
+export const userCertificatesRelations = relations(userCertificates, ({ one }) => ({
+  user: one(users, { fields: [userCertificates.userId], references: [users.id] }),
+  course: one(trainingCourses, { fields: [userCertificates.courseId], references: [trainingCourses.id] }),
+  enrollment: one(userCourseEnrollments, { fields: [userCertificates.enrollmentId], references: [userCourseEnrollments.id] }),
+}));
 

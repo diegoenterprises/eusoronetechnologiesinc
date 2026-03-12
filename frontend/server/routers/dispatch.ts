@@ -936,9 +936,9 @@ export const dispatchRouter = router({
         const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
         if (row) userId = row.id;
       }
-      const [loadStats] = await db.select({ total: sql<number>`count(*)`, inTransit: sql<number>`SUM(CASE WHEN ${loads.status} = 'in_transit' THEN 1 ELSE 0 END)`, unassigned: sql<number>`SUM(CASE WHEN ${loads.driverId} IS NULL AND ${loads.status} IN ('posted','bidding','assigned') THEN 1 ELSE 0 END)` }).from(loads).where(userId > 0 ? eq(loads.shipperId, userId) : undefined);
+      const [loadStats] = await db.select({ total: sql<number>`count(*)`, inTransit: sql<number>`SUM(CASE WHEN ${loads.status} = 'in_transit' THEN 1 ELSE 0 END)`, unassigned: sql<number>`SUM(CASE WHEN ${loads.driverId} IS NULL AND ${loads.status} IN ('posted','bidding','assigned') THEN 1 ELSE 0 END)`, issues: sql<number>`SUM(CASE WHEN ${loads.status} IN ('temp_excursion','reefer_breakdown','contamination_reject','seal_breach','weight_violation') THEN 1 ELSE 0 END)` }).from(loads).where(userId > 0 ? eq(loads.shipperId, userId) : undefined);
       const [driverStats] = await db.select({ total: sql<number>`count(*)`, available: sql<number>`SUM(CASE WHEN ${drivers.status} = 'available' THEN 1 ELSE 0 END)` }).from(drivers).where(companyId > 0 ? eq(drivers.companyId, companyId) : undefined);
-      return { activeLoads: loadStats?.total || 0, unassigned: loadStats?.unassigned || 0, unassignedLoads: loadStats?.unassigned || 0, inTransit: loadStats?.inTransit || 0, issues: 0, totalDrivers: driverStats?.total || 0, availableDrivers: driverStats?.available || 0 };
+      return { activeLoads: loadStats?.total || 0, unassigned: loadStats?.unassigned || 0, unassignedLoads: loadStats?.unassigned || 0, inTransit: loadStats?.inTransit || 0, issues: loadStats?.issues || 0, totalDrivers: driverStats?.total || 0, availableDrivers: driverStats?.available || 0 };
     } catch (e) { return { activeLoads: 0, unassigned: 0, unassignedLoads: 0, inTransit: 0, issues: 0, totalDrivers: 0, availableDrivers: 0 }; }
   }),
   getAlerts: protectedProcedure.query(async () => {

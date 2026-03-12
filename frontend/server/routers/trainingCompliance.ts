@@ -14,14 +14,6 @@ import { emitNotification } from "../_core/websocket";
 
 // ── Helpers ──
 
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return s / 2147483647;
-  };
-}
-
 function daysUntil(dateStr: string): number {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
@@ -108,7 +100,6 @@ export const trainingComplianceRouter = router({
     .input(z.object({ period: z.enum(["week", "month", "quarter", "year"]).optional() }).optional())
     .query(async ({ ctx }) => {
       const { userId, companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || userId || 42);
 
       // Attempt real DB data
       let totalDrivers = 0;
@@ -138,32 +129,24 @@ export const trainingComplianceRouter = router({
         logger.warn("[TrainingCompliance] DB fallback for dashboard:", e);
       }
 
-      if (totalDrivers === 0) totalDrivers = Math.floor(rng() * 80) + 20;
-
-      const overallScore = Math.floor(rng() * 20) + 75;
       return {
-        overallComplianceScore: overallScore,
-        riskLevel: riskLevel(100 - overallScore),
+        overallComplianceScore: 0,
+        riskLevel: "low" as const,
         totalDrivers,
-        certExpiringSoon: certExpiringSoon || Math.floor(rng() * 8) + 2,
-        hosViolations: hosViolations || Math.floor(rng() * 5),
-        inspectionCount: inspectionCount || Math.floor(rng() * 30) + 10,
-        openDeficiencies: Math.floor(rng() * 6),
-        auditReadiness: Math.floor(rng() * 15) + 80,
+        certExpiringSoon,
+        hosViolations,
+        inspectionCount,
+        openDeficiencies: 0,
+        auditReadiness: 0,
         areas: [
-          { name: "DQ Files", score: Math.floor(rng() * 15) + 82, status: "good" as const },
-          { name: "HOS Compliance", score: Math.floor(rng() * 20) + 75, status: "warning" as const },
-          { name: "Drug & Alcohol", score: Math.floor(rng() * 10) + 88, status: "good" as const },
-          { name: "Vehicle Maintenance", score: Math.floor(rng() * 18) + 78, status: "warning" as const },
-          { name: "Insurance", score: Math.floor(rng() * 8) + 90, status: "good" as const },
-          { name: "Permits & Filings", score: Math.floor(rng() * 12) + 84, status: "good" as const },
+          { name: "DQ Files", score: 0, status: "good" as const },
+          { name: "HOS Compliance", score: 0, status: "good" as const },
+          { name: "Drug & Alcohol", score: 0, status: "good" as const },
+          { name: "Vehicle Maintenance", score: 0, status: "good" as const },
+          { name: "Insurance", score: 0, status: "good" as const },
+          { name: "Permits & Filings", score: 0, status: "good" as const },
         ],
-        recentAlerts: [
-          { id: "alrt-1", type: "certification", severity: "high" as const, message: "3 CDL medical cards expiring within 30 days", date: new Date(Date.now() - 86400000).toISOString() },
-          { id: "alrt-2", type: "hos", severity: "medium" as const, message: "2 drivers approaching 60-hour limit", date: new Date(Date.now() - 172800000).toISOString() },
-          { id: "alrt-3", type: "drug_test", severity: "low" as const, message: "Random drug test pool selection due next week", date: new Date(Date.now() - 259200000).toISOString() },
-          { id: "alrt-4", type: "permit", severity: "medium" as const, message: "TX oversize permit renewal due in 15 days", date: new Date(Date.now() - 345600000).toISOString() },
-        ],
+        recentAlerts: [],
       };
     }),
 
@@ -202,7 +185,6 @@ export const trainingComplianceRouter = router({
       const course = TRAINING_CATALOG.find(c => c.id === input.courseId);
       if (!course) return null;
 
-      const rng = seededRandom(input.courseId.charCodeAt(0) * 100);
       const modules = Array.from({ length: course.modules }, (_, i) => ({
         id: `${course.id}-M${i + 1}`,
         title: `Module ${i + 1}: ${["Introduction", "Core Concepts", "Regulations", "Best Practices", "Case Studies", "Assessment", "Advanced Topics", "Certification Prep"][i] || `Section ${i + 1}`}`,
@@ -221,9 +203,9 @@ export const trainingComplianceRouter = router({
           certificateIssued: true,
           validityMonths: course.category === "hazmat" ? 36 : 24,
         },
-        enrolledCount: Math.floor(rng() * 200) + 50,
-        averageRating: +(3.5 + rng() * 1.5).toFixed(1),
-        lastUpdated: new Date(Date.now() - Math.floor(rng() * 90 * 86400000)).toISOString(),
+        enrolledCount: 0,
+        averageRating: 0,
+        lastUpdated: new Date().toISOString(),
       };
     }),
 
@@ -293,7 +275,6 @@ export const trainingComplianceRouter = router({
     .query(async ({ ctx, input }) => {
       const { userId, companyId } = await resolveUserContext(ctx.user);
       const targetId = input?.driverId || userId;
-      const rng = seededRandom(targetId);
 
       let dbRecords: any[] = [];
       try {
@@ -307,8 +288,8 @@ export const trainingComplianceRouter = router({
         }
       } catch {}
 
-      const completedCount = dbRecords.filter(r => r.status === "completed").length || Math.floor(rng() * 8) + 3;
-      const inProgressCount = dbRecords.filter(r => r.status === "in_progress").length || Math.floor(rng() * 3) + 1;
+      const completedCount = dbRecords.filter(r => r.status === "completed").length;
+      const inProgressCount = dbRecords.filter(r => r.status === "in_progress").length;
       const totalRequired = TRAINING_CATALOG.filter(c => c.required).length;
 
       return {
@@ -316,17 +297,9 @@ export const trainingComplianceRouter = router({
         completedCourses: completedCount,
         inProgressCourses: inProgressCount,
         totalRequiredCourses: totalRequired,
-        completionPercentage: Math.min(100, Math.floor((completedCount / totalRequired) * 100)),
-        certifications: [
-          { type: "CDL", status: "valid" as const, expiresAt: new Date(Date.now() + 365 * 86400000).toISOString() },
-          { type: "Hazmat Endorsement", status: rng() > 0.3 ? "valid" as const : "expiring_soon" as const, expiresAt: new Date(Date.now() + Math.floor(rng() * 180) * 86400000).toISOString() },
-          { type: "Medical Card", status: rng() > 0.5 ? "valid" as const : "expiring_soon" as const, expiresAt: new Date(Date.now() + Math.floor(rng() * 120) * 86400000).toISOString() },
-          { type: "TWIC Card", status: "valid" as const, expiresAt: new Date(Date.now() + Math.floor(rng() * 500 + 200) * 86400000).toISOString() },
-        ],
-        recentActivity: [
-          { courseId: "HOS-001", courseName: "Hours of Service Compliance", action: "completed", date: new Date(Date.now() - 5 * 86400000).toISOString(), score: 92 },
-          { courseId: "PRE-001", courseName: "Pre-Trip Inspection Mastery", action: "in_progress", date: new Date(Date.now() - 2 * 86400000).toISOString(), score: null },
-        ],
+        completionPercentage: totalRequired > 0 ? Math.min(100, Math.floor((completedCount / totalRequired) * 100)) : 0,
+        certifications: [],
+        recentActivity: [],
       };
     }),
 
@@ -337,7 +310,6 @@ export const trainingComplianceRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 99);
 
       let dbCerts: any[] = [];
       try {
@@ -350,10 +322,7 @@ export const trainingComplianceRouter = router({
         }
       } catch {}
 
-      const certTypes = ["CDL Class A", "CDL Medical Card", "Hazmat Endorsement", "TWIC Card", "Tanker Endorsement", "Doubles/Triples"];
-      const driverNames = ["John Martinez", "Sarah Johnson", "Mike Chen", "Lisa Williams", "David Brown", "Amy Rodriguez", "James Wilson", "Karen Davis"];
-
-      const certifications = dbCerts.length > 0 ? dbCerts.map(c => ({
+      const certifications = dbCerts.map(c => ({
         id: c.id,
         driverName: c.driverName || "Driver",
         type: c.type || "CDL",
@@ -361,22 +330,7 @@ export const trainingComplianceRouter = router({
         issueDate: c.createdAt?.toISOString() || new Date().toISOString(),
         expiryDate: c.expiryDate?.toISOString() || new Date(Date.now() + 180 * 86400000).toISOString(),
         daysUntilExpiry: c.expiryDate ? daysUntil(c.expiryDate.toISOString()) : 180,
-      })) : driverNames.flatMap((name, di) => {
-        const numCerts = Math.floor(rng() * 3) + 2;
-        return Array.from({ length: numCerts }, (_, ci) => {
-          const daysLeft = Math.floor(rng() * 400) - 30;
-          const status = daysLeft < 0 ? "expired" as const : daysLeft < 30 ? "expiring_soon" as const : "valid" as const;
-          return {
-            id: di * 10 + ci,
-            driverName: name,
-            type: certTypes[Math.floor(rng() * certTypes.length)],
-            status,
-            issueDate: new Date(Date.now() - (730 - daysLeft) * 86400000).toISOString(),
-            expiryDate: new Date(Date.now() + daysLeft * 86400000).toISOString(),
-            daysUntilExpiry: daysLeft,
-          };
-        });
-      });
+      }));
 
       const filtered = input?.filter && input.filter !== "all"
         ? certifications.filter(c => {
@@ -512,44 +466,18 @@ export const trainingComplianceRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 77);
 
-      const states = ["TX", "CA", "FL", "NY", "IL", "PA", "OH", "GA", "NC", "MI"];
-      const types = ["oversize", "overweight", "trip", "fuel"] as const;
-
-      const permits = states.flatMap((state, si) =>
-        types.filter(() => rng() > 0.4).map((type, ti) => {
-          const daysLeft = Math.floor(rng() * 300) - 20;
-          const status = daysLeft < 0 ? "expired" as const : rng() > 0.8 ? "pending" as const : "active" as const;
-          return {
-            id: `PRM-${state}-${type}-${si}${ti}`,
-            state,
-            type,
-            status,
-            permitNumber: `${state}-${type.substring(0, 2).toUpperCase()}-${Math.floor(rng() * 90000) + 10000}`,
-            issueDate: new Date(Date.now() - (365 - daysLeft) * 86400000).toISOString(),
-            expiryDate: new Date(Date.now() + daysLeft * 86400000).toISOString(),
-            cost: (STATE_PERMIT_COSTS[state] || DEFAULT_PERMIT_COST)[type] || 50,
-            daysUntilExpiry: daysLeft,
-          };
-        })
-      );
-
-      let filtered = permits;
-      if (input?.state) filtered = filtered.filter(p => p.state === input.state);
-      if (input?.type && input.type !== "all") filtered = filtered.filter(p => p.type === input.type);
-      if (input?.status && input.status !== "all") filtered = filtered.filter(p => p.status === input.status);
-
+      // No permit data in DB yet
       return {
-        permits: filtered,
+        permits: [],
         summary: {
-          total: permits.length,
-          active: permits.filter(p => p.status === "active").length,
-          pending: permits.filter(p => p.status === "pending").length,
-          expired: permits.filter(p => p.status === "expired").length,
-          totalCost: permits.reduce((s, p) => s + p.cost, 0),
+          total: 0,
+          active: 0,
+          pending: 0,
+          expired: 0,
+          totalCost: 0,
         },
-        states: Array.from(new Set(permits.map(p => p.state))),
+        states: [],
       };
     }),
 
@@ -602,32 +530,17 @@ export const trainingComplianceRouter = router({
     .input(z.object({ status: z.enum(["all", "active", "expiring", "expired"]).optional() }).optional())
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 55);
 
-      const policies = [
-        { id: "INS-001", type: "Auto Liability", provider: "Progressive Commercial", policyNumber: `PCL-${Math.floor(rng() * 9000000) + 1000000}`, coverage: 1000000, premium: 12500 + Math.floor(rng() * 5000), deductible: 2500, status: "active" as const, expiryDate: new Date(Date.now() + 180 * 86400000).toISOString(), vehicles: Math.floor(rng() * 20) + 5 },
-        { id: "INS-002", type: "General Liability", provider: "Zurich Insurance", policyNumber: `ZGL-${Math.floor(rng() * 9000000) + 1000000}`, coverage: 2000000, premium: 8500 + Math.floor(rng() * 3000), deductible: 5000, status: "active" as const, expiryDate: new Date(Date.now() + 240 * 86400000).toISOString(), vehicles: null },
-        { id: "INS-003", type: "Cargo Insurance", provider: "Sentry Insurance", policyNumber: `SCI-${Math.floor(rng() * 9000000) + 1000000}`, coverage: 250000, premium: 4200 + Math.floor(rng() * 2000), deductible: 1000, status: "active" as const, expiryDate: new Date(Date.now() + 120 * 86400000).toISOString(), vehicles: null },
-        { id: "INS-004", type: "Workers Compensation", provider: "Hartford Insurance", policyNumber: `HWC-${Math.floor(rng() * 9000000) + 1000000}`, coverage: 500000, premium: 15000 + Math.floor(rng() * 8000), deductible: 0, status: "active" as const, expiryDate: new Date(Date.now() + 300 * 86400000).toISOString(), vehicles: null },
-        { id: "INS-005", type: "Physical Damage", provider: "Progressive Commercial", policyNumber: `PPD-${Math.floor(rng() * 9000000) + 1000000}`, coverage: 150000, premium: 6800 + Math.floor(rng() * 3000), deductible: 2000, status: rng() > 0.7 ? "expiring" as const : "active" as const, expiryDate: new Date(Date.now() + Math.floor(rng() * 60 + 10) * 86400000).toISOString(), vehicles: Math.floor(rng() * 15) + 3 },
-        { id: "INS-006", type: "Umbrella/Excess", provider: "Great West Casualty", policyNumber: `GWU-${Math.floor(rng() * 9000000) + 1000000}`, coverage: 5000000, premium: 9500 + Math.floor(rng() * 4000), deductible: 10000, status: "active" as const, expiryDate: new Date(Date.now() + 200 * 86400000).toISOString(), vehicles: null },
-      ];
-
-      const claims = [
-        { id: "CLM-001", policyType: "Auto Liability", date: new Date(Date.now() - 45 * 86400000).toISOString(), amount: 15000, status: "open" as const, description: "Rear-end collision on I-35" },
-        { id: "CLM-002", policyType: "Cargo Insurance", date: new Date(Date.now() - 120 * 86400000).toISOString(), amount: 8500, status: "settled" as const, description: "Cargo damage during unloading" },
-        { id: "CLM-003", policyType: "Workers Compensation", date: new Date(Date.now() - 200 * 86400000).toISOString(), amount: 22000, status: "settled" as const, description: "Driver injury during pre-trip inspection" },
-      ];
-
+      // No insurance data in DB yet
       return {
-        policies,
-        claims,
+        policies: [],
+        claims: [],
         summary: {
-          totalPolicies: policies.length,
-          totalPremium: policies.reduce((s, p) => s + p.premium, 0),
-          totalCoverage: policies.reduce((s, p) => s + p.coverage, 0),
-          activeClaims: claims.filter(c => c.status === "open").length,
-          totalClaimsAmount: claims.reduce((s, c) => s + c.amount, 0),
+          totalPolicies: 0,
+          totalPremium: 0,
+          totalCoverage: 0,
+          activeClaims: 0,
+          totalClaimsAmount: 0,
         },
       };
     }),
@@ -667,7 +580,6 @@ export const trainingComplianceRouter = router({
     .input(z.object({ year: z.number().optional() }).optional())
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 66);
 
       let dbTests: any[] = [];
       try {
@@ -680,47 +592,42 @@ export const trainingComplianceRouter = router({
         }
       } catch {}
 
-      const totalDrivers = Math.floor(rng() * 60) + 20;
-      const poolSize = Math.floor(totalDrivers * 0.5);
-      const randomTestsRequired = Math.ceil(poolSize * 0.5); // 50% rate for drugs
-      const randomTestsCompleted = Math.floor(randomTestsRequired * (0.6 + rng() * 0.4));
-
       return {
         randomPool: {
-          totalInPool: poolSize,
+          totalInPool: 0,
           testingRate: 50,
-          testsRequired: randomTestsRequired,
-          testsCompleted: randomTestsCompleted,
-          testsRemaining: randomTestsRequired - randomTestsCompleted,
-          complianceRate: Math.floor((randomTestsCompleted / randomTestsRequired) * 100),
-          nextSelectionDate: new Date(Date.now() + Math.floor(rng() * 30) * 86400000).toISOString(),
+          testsRequired: 0,
+          testsCompleted: dbTests.length,
+          testsRemaining: 0,
+          complianceRate: 0,
+          nextSelectionDate: null,
         },
         preEmployment: {
-          pending: Math.floor(rng() * 4),
-          completed: Math.floor(rng() * 15) + 5,
-          totalThisYear: Math.floor(rng() * 20) + 8,
+          pending: 0,
+          completed: 0,
+          totalThisYear: 0,
         },
         postAccident: {
-          pending: Math.floor(rng() * 2),
-          completed: Math.floor(rng() * 5),
-          totalThisYear: Math.floor(rng() * 6) + 1,
+          pending: 0,
+          completed: 0,
+          totalThisYear: 0,
         },
         reasonableSuspicion: {
           pending: 0,
-          completed: Math.floor(rng() * 3),
-          totalThisYear: Math.floor(rng() * 3),
+          completed: 0,
+          totalThisYear: 0,
         },
         returnToDuty: {
-          active: Math.floor(rng() * 2),
-          completed: Math.floor(rng() * 3),
+          active: 0,
+          completed: 0,
         },
         clearinghouseStatus: {
-          registered: true,
-          lastQuery: new Date(Date.now() - Math.floor(rng() * 30) * 86400000).toISOString(),
-          annualQueriesDue: Math.floor(rng() * 5),
-          positiveResults: Math.floor(rng() * 2),
+          registered: false,
+          lastQuery: null,
+          annualQueriesDue: 0,
+          positiveResults: 0,
         },
-        overallCompliance: Math.floor(rng() * 10) + 88,
+        overallCompliance: 0,
       };
     }),
 
@@ -765,27 +672,15 @@ export const trainingComplianceRouter = router({
     }).optional())
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 44);
 
-      const results = Array.from({ length: 20 }, (_, i) => ({
-        id: `RES-${1000 + i}`,
-        driverName: ["John Martinez", "Sarah Johnson", "Mike Chen", "Lisa Williams", "David Brown"][Math.floor(rng() * 5)],
-        driverId: Math.floor(rng() * 100) + 1,
-        testType: (["random", "pre_employment", "post_accident", "reasonable_suspicion"] as const)[Math.floor(rng() * 4)],
-        testDate: new Date(Date.now() - Math.floor(rng() * 365) * 86400000).toISOString(),
-        result: rng() > 0.05 ? "negative" as const : "positive" as const,
-        substance: rng() > 0.95 ? "THC" : null,
-        verifiedBy: "MRO Dr. Smith",
-        collectionSite: "LabCorp - Station #" + Math.floor(rng() * 50 + 1),
-      }));
-
+      // No test results in DB yet
       return {
-        results,
+        results: [],
         summary: {
-          totalTests: results.length,
-          negative: results.filter(r => r.result === "negative").length,
-          positive: results.filter(r => r.result === "positive").length,
-          complianceRate: Math.floor((results.filter(r => r.result === "negative").length / results.length) * 100),
+          totalTests: 0,
+          negative: 0,
+          positive: 0,
+          complianceRate: 0,
         },
       };
     }),
@@ -794,21 +689,15 @@ export const trainingComplianceRouter = router({
   getSafetyPrograms: protectedProcedure
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 33);
 
+      // No safety program data in DB yet
       return {
-        programs: [
-          { id: "SP-001", name: "Smith System Safe Driving", status: "active" as const, startDate: "2024-01-15", participants: Math.floor(rng() * 40) + 20, completionRate: Math.floor(rng() * 20) + 78, description: "Comprehensive defensive driving program using the 5 Keys methodology" },
-          { id: "SP-002", name: "Fatigue Management Program", status: "active" as const, startDate: "2024-03-01", participants: Math.floor(rng() * 30) + 15, completionRate: Math.floor(rng() * 25) + 70, description: "Driver wellness and fatigue prevention initiative with sleep tracking" },
-          { id: "SP-003", name: "Pre-Trip Excellence Initiative", status: "active" as const, startDate: "2024-06-01", participants: Math.floor(rng() * 50) + 25, completionRate: Math.floor(rng() * 15) + 82, description: "Standardized pre-trip inspection program with digital checklists" },
-          { id: "SP-004", name: "Distracted Driving Awareness", status: "active" as const, startDate: "2024-02-15", participants: Math.floor(rng() * 35) + 18, completionRate: Math.floor(rng() * 18) + 80, description: "Campaign to eliminate phone use and other distractions while driving" },
-          { id: "SP-005", name: "Cargo Securement Certification", status: "planned" as const, startDate: "2025-01-01", participants: 0, completionRate: 0, description: "Advanced cargo securement training and certification program" },
-        ],
+        programs: [],
         metrics: {
-          activeProgramCount: 4,
-          totalParticipants: Math.floor(rng() * 100) + 80,
-          avgCompletionRate: Math.floor(rng() * 12) + 78,
-          accidentReduction: Math.floor(rng() * 15) + 10,
+          activeProgramCount: 0,
+          totalParticipants: 0,
+          avgCompletionRate: 0,
+          accidentReduction: 0,
         },
       };
     }),
@@ -818,34 +707,27 @@ export const trainingComplianceRouter = router({
     .input(z.object({ driverId: z.number().optional() }).optional())
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 22);
 
-      const basics = CSA_BASICS.map(b => {
-        const score = Math.floor(rng() * 70);
-        const trend = rng() > 0.5 ? "improving" as const : rng() > 0.3 ? "stable" as const : "worsening" as const;
-        return {
-          ...b,
-          score,
-          percentile: score,
-          alert: score >= b.threshold,
-          trend,
-          inspections: Math.floor(rng() * 20) + 5,
-          violations: Math.floor(rng() * 8),
-        };
-      });
-
-      const issScore = Math.floor(rng() * 60) + 20;
+      const basics = CSA_BASICS.map(b => ({
+        ...b,
+        score: 0,
+        percentile: 0,
+        alert: false,
+        trend: "stable" as const,
+        inspections: 0,
+        violations: 0,
+      }));
 
       return {
         csaBasics: basics,
-        overallSafetyRating: basics.filter(b => b.alert).length === 0 ? "Satisfactory" : basics.filter(b => b.alert).length <= 2 ? "Conditional" : "Unsatisfactory",
-        issScore,
-        issLevel: issScore > 75 ? "High" as const : issScore > 50 ? "Medium" as const : "Low" as const,
-        inspectionSelection: issScore > 75 ? "Likely" : "Moderate",
-        totalInspections: Math.floor(rng() * 50) + 20,
-        cleanInspections: Math.floor(rng() * 30) + 10,
-        totalViolations: basics.reduce((s, b) => s + b.violations, 0),
-        outOfServiceRate: +(rng() * 8 + 2).toFixed(1),
+        overallSafetyRating: "Satisfactory",
+        issScore: 0,
+        issLevel: "Low" as const,
+        inspectionSelection: "Moderate",
+        totalInspections: 0,
+        cleanInspections: 0,
+        totalViolations: 0,
+        outOfServiceRate: 0,
         nationalAvgOOSRate: 5.5,
       };
     }),
@@ -854,40 +736,21 @@ export const trainingComplianceRouter = router({
   getCsaAnalysis: protectedProcedure
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 11);
 
-      const basics = CSA_BASICS.map(b => {
-        const score = Math.floor(rng() * 70);
-        const violations = Array.from({ length: Math.floor(rng() * 5) + 1 }, (_, i) => ({
-          id: `VIO-${b.id}-${i}`,
-          description: `${b.name} violation #${i + 1}`,
-          date: new Date(Date.now() - Math.floor(rng() * 365) * 86400000).toISOString(),
-          severity: Math.floor(rng() * 10) + 1,
-          timeWeight: +(3 - rng() * 2).toFixed(2),
-          points: Math.floor(rng() * 8) + 1,
-          dataQsEligible: rng() > 0.6,
-        }));
-
-        return {
-          basicId: b.id,
-          name: b.name,
-          score,
-          threshold: b.threshold,
-          alert: score >= b.threshold,
-          violations,
-          dataQsRecommendations: violations.filter(v => v.dataQsEligible).map(v => ({
-            violationId: v.id,
-            reason: "Potential DataQs challenge — review inspection report for accuracy",
-            estimatedPointReduction: v.points,
-            priority: v.points > 5 ? "high" as const : "medium" as const,
-          })),
-        };
-      });
+      const basics = CSA_BASICS.map(b => ({
+        basicId: b.id,
+        name: b.name,
+        score: 0,
+        threshold: b.threshold,
+        alert: false,
+        violations: [],
+        dataQsRecommendations: [],
+      }));
 
       return {
         basics,
-        totalDataQsOpportunities: basics.reduce((s, b) => s + b.dataQsRecommendations.length, 0),
-        estimatedScoreImprovement: Math.floor(rng() * 15) + 5,
+        totalDataQsOpportunities: 0,
+        estimatedScoreImprovement: 0,
         lastUpdated: new Date().toISOString(),
       };
     }),
@@ -919,70 +782,69 @@ export const trainingComplianceRouter = router({
   getAuditPreparation: protectedProcedure
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 88);
 
       const categories = [
         {
           name: "Driver Qualification Files",
           items: [
-            { id: "AUD-DQ-01", item: "Employment applications (3 years)", status: rng() > 0.2 ? "complete" as const : "incomplete" as const, priority: "high" as const },
-            { id: "AUD-DQ-02", item: "Motor vehicle records (annual)", status: rng() > 0.3 ? "complete" as const : "incomplete" as const, priority: "high" as const },
-            { id: "AUD-DQ-03", item: "Road test certificates", status: rng() > 0.15 ? "complete" as const : "incomplete" as const, priority: "high" as const },
-            { id: "AUD-DQ-04", item: "Medical examiner certificates", status: rng() > 0.25 ? "complete" as const : "incomplete" as const, priority: "critical" as const },
-            { id: "AUD-DQ-05", item: "Previous employer inquiries", status: rng() > 0.4 ? "complete" as const : "incomplete" as const, priority: "high" as const },
-            { id: "AUD-DQ-06", item: "Annual review of driving record", status: rng() > 0.3 ? "complete" as const : "incomplete" as const, priority: "medium" as const },
+            { id: "AUD-DQ-01", item: "Employment applications (3 years)", status: "incomplete" as const, priority: "high" as const },
+            { id: "AUD-DQ-02", item: "Motor vehicle records (annual)", status: "incomplete" as const, priority: "high" as const },
+            { id: "AUD-DQ-03", item: "Road test certificates", status: "incomplete" as const, priority: "high" as const },
+            { id: "AUD-DQ-04", item: "Medical examiner certificates", status: "incomplete" as const, priority: "critical" as const },
+            { id: "AUD-DQ-05", item: "Previous employer inquiries", status: "incomplete" as const, priority: "high" as const },
+            { id: "AUD-DQ-06", item: "Annual review of driving record", status: "incomplete" as const, priority: "medium" as const },
           ],
         },
         {
           name: "Hours of Service",
           items: [
-            { id: "AUD-HOS-01", item: "ELD records (6 months)", status: rng() > 0.1 ? "complete" as const : "incomplete" as const, priority: "critical" as const },
-            { id: "AUD-HOS-02", item: "Supporting documents", status: rng() > 0.3 ? "complete" as const : "incomplete" as const, priority: "high" as const },
-            { id: "AUD-HOS-03", item: "ELD malfunction procedures", status: rng() > 0.2 ? "complete" as const : "incomplete" as const, priority: "medium" as const },
-            { id: "AUD-HOS-04", item: "Driver violation acknowledgments", status: rng() > 0.35 ? "complete" as const : "incomplete" as const, priority: "high" as const },
+            { id: "AUD-HOS-01", item: "ELD records (6 months)", status: "incomplete" as const, priority: "critical" as const },
+            { id: "AUD-HOS-02", item: "Supporting documents", status: "incomplete" as const, priority: "high" as const },
+            { id: "AUD-HOS-03", item: "ELD malfunction procedures", status: "incomplete" as const, priority: "medium" as const },
+            { id: "AUD-HOS-04", item: "Driver violation acknowledgments", status: "incomplete" as const, priority: "high" as const },
           ],
         },
         {
           name: "Drug & Alcohol Program",
           items: [
-            { id: "AUD-DA-01", item: "Company D&A policy", status: rng() > 0.1 ? "complete" as const : "incomplete" as const, priority: "critical" as const },
-            { id: "AUD-DA-02", item: "Random testing records", status: rng() > 0.2 ? "complete" as const : "incomplete" as const, priority: "critical" as const },
-            { id: "AUD-DA-03", item: "Pre-employment test results", status: rng() > 0.15 ? "complete" as const : "incomplete" as const, priority: "high" as const },
-            { id: "AUD-DA-04", item: "Clearinghouse queries", status: rng() > 0.25 ? "complete" as const : "incomplete" as const, priority: "high" as const },
-            { id: "AUD-DA-05", item: "Supervisor training records", status: rng() > 0.3 ? "complete" as const : "incomplete" as const, priority: "medium" as const },
+            { id: "AUD-DA-01", item: "Company D&A policy", status: "incomplete" as const, priority: "critical" as const },
+            { id: "AUD-DA-02", item: "Random testing records", status: "incomplete" as const, priority: "critical" as const },
+            { id: "AUD-DA-03", item: "Pre-employment test results", status: "incomplete" as const, priority: "high" as const },
+            { id: "AUD-DA-04", item: "Clearinghouse queries", status: "incomplete" as const, priority: "high" as const },
+            { id: "AUD-DA-05", item: "Supervisor training records", status: "incomplete" as const, priority: "medium" as const },
           ],
         },
         {
           name: "Vehicle Maintenance",
           items: [
-            { id: "AUD-VM-01", item: "Systematic inspection program", status: rng() > 0.2 ? "complete" as const : "incomplete" as const, priority: "high" as const },
-            { id: "AUD-VM-02", item: "DVIR records", status: rng() > 0.15 ? "complete" as const : "incomplete" as const, priority: "high" as const },
-            { id: "AUD-VM-03", item: "Annual inspection certificates", status: rng() > 0.2 ? "complete" as const : "incomplete" as const, priority: "critical" as const },
-            { id: "AUD-VM-04", item: "Brake inspector qualifications", status: rng() > 0.3 ? "complete" as const : "incomplete" as const, priority: "medium" as const },
+            { id: "AUD-VM-01", item: "Systematic inspection program", status: "incomplete" as const, priority: "high" as const },
+            { id: "AUD-VM-02", item: "DVIR records", status: "incomplete" as const, priority: "high" as const },
+            { id: "AUD-VM-03", item: "Annual inspection certificates", status: "incomplete" as const, priority: "critical" as const },
+            { id: "AUD-VM-04", item: "Brake inspector qualifications", status: "incomplete" as const, priority: "medium" as const },
           ],
         },
         {
           name: "Insurance & Authority",
           items: [
-            { id: "AUD-IA-01", item: "Operating authority (MC/DOT)", status: "complete" as const, priority: "critical" as const },
-            { id: "AUD-IA-02", item: "Insurance filings (BMC-91/BMC-34)", status: rng() > 0.1 ? "complete" as const : "incomplete" as const, priority: "critical" as const },
-            { id: "AUD-IA-03", item: "BOC-3 process agent", status: rng() > 0.15 ? "complete" as const : "incomplete" as const, priority: "high" as const },
-            { id: "AUD-IA-04", item: "UCR registration", status: rng() > 0.2 ? "complete" as const : "incomplete" as const, priority: "high" as const },
+            { id: "AUD-IA-01", item: "Operating authority (MC/DOT)", status: "incomplete" as const, priority: "critical" as const },
+            { id: "AUD-IA-02", item: "Insurance filings (BMC-91/BMC-34)", status: "incomplete" as const, priority: "critical" as const },
+            { id: "AUD-IA-03", item: "BOC-3 process agent", status: "incomplete" as const, priority: "high" as const },
+            { id: "AUD-IA-04", item: "UCR registration", status: "incomplete" as const, priority: "high" as const },
           ],
         },
       ];
 
       const allItems = categories.flatMap(c => c.items);
-      const complete = allItems.filter(i => i.status === "complete").length;
+      const complete = allItems.filter(i => (i.status as string) === "complete").length;
 
       return {
         categories,
-        overallReadiness: Math.floor((complete / allItems.length) * 100),
+        overallReadiness: 0,
         totalItems: allItems.length,
         completeItems: complete,
         incompleteItems: allItems.length - complete,
         criticalIncomplete: allItems.filter(i => i.status === "incomplete" && i.priority === "critical").length,
-        lastAuditDate: new Date(Date.now() - Math.floor(rng() * 365 * 2) * 86400000).toISOString(),
+        lastAuditDate: null,
         nextScheduledAudit: null,
       };
     }),
@@ -991,34 +853,32 @@ export const trainingComplianceRouter = router({
   getDriverQualificationFile: protectedProcedure
     .input(z.object({ driverId: z.number() }))
     .query(async ({ input }) => {
-      const rng = seededRandom(input.driverId);
-
       const documents = [
-        { id: "DQ-01", name: "Employment Application", required: true, status: rng() > 0.15 ? "on_file" as const : "missing" as const, expiryDate: null, notes: null },
-        { id: "DQ-02", name: "Motor Vehicle Record (MVR)", required: true, status: rng() > 0.2 ? "on_file" as const : "expired" as const, expiryDate: new Date(Date.now() + Math.floor(rng() * 200 - 30) * 86400000).toISOString(), notes: "Annual update required" },
-        { id: "DQ-03", name: "Road Test Certificate", required: true, status: rng() > 0.1 ? "on_file" as const : "missing" as const, expiryDate: null, notes: null },
-        { id: "DQ-04", name: "CDL Copy", required: true, status: "on_file" as const, expiryDate: new Date(Date.now() + Math.floor(rng() * 500 + 100) * 86400000).toISOString(), notes: null },
-        { id: "DQ-05", name: "Medical Examiner Certificate", required: true, status: rng() > 0.25 ? "on_file" as const : "expiring_soon" as const, expiryDate: new Date(Date.now() + Math.floor(rng() * 120) * 86400000).toISOString(), notes: "Max 2-year validity" },
-        { id: "DQ-06", name: "Previous Employer Safety Record", required: true, status: rng() > 0.3 ? "on_file" as const : "pending" as const, expiryDate: null, notes: "Must obtain within 30 days of hire" },
-        { id: "DQ-07", name: "Pre-Employment Drug Test", required: true, status: rng() > 0.1 ? "on_file" as const : "missing" as const, expiryDate: null, notes: null },
-        { id: "DQ-08", name: "Annual Review of Driving Record", required: true, status: rng() > 0.3 ? "on_file" as const : "overdue" as const, expiryDate: new Date(Date.now() + Math.floor(rng() * 180 - 30) * 86400000).toISOString(), notes: "Supervisor must sign" },
-        { id: "DQ-09", name: "Clearinghouse Query Consent", required: true, status: rng() > 0.15 ? "on_file" as const : "missing" as const, expiryDate: null, notes: "Required for annual queries" },
-        { id: "DQ-10", name: "Hazmat Endorsement", required: false, status: rng() > 0.5 ? "on_file" as const : "not_applicable" as const, expiryDate: rng() > 0.5 ? new Date(Date.now() + Math.floor(rng() * 400) * 86400000).toISOString() : null, notes: null },
-        { id: "DQ-11", name: "TWIC Card", required: false, status: rng() > 0.5 ? "on_file" as const : "not_applicable" as const, expiryDate: rng() > 0.5 ? new Date(Date.now() + Math.floor(rng() * 600) * 86400000).toISOString() : null, notes: null },
-        { id: "DQ-12", name: "Driver Receipt of D&A Policy", required: true, status: rng() > 0.2 ? "on_file" as const : "missing" as const, expiryDate: null, notes: null },
+        { id: "DQ-01", name: "Employment Application", required: true, status: "missing" as const, expiryDate: null, notes: null },
+        { id: "DQ-02", name: "Motor Vehicle Record (MVR)", required: true, status: "missing" as const, expiryDate: null, notes: "Annual update required" },
+        { id: "DQ-03", name: "Road Test Certificate", required: true, status: "missing" as const, expiryDate: null, notes: null },
+        { id: "DQ-04", name: "CDL Copy", required: true, status: "missing" as const, expiryDate: null, notes: null },
+        { id: "DQ-05", name: "Medical Examiner Certificate", required: true, status: "missing" as const, expiryDate: null, notes: "Max 2-year validity" },
+        { id: "DQ-06", name: "Previous Employer Safety Record", required: true, status: "missing" as const, expiryDate: null, notes: "Must obtain within 30 days of hire" },
+        { id: "DQ-07", name: "Pre-Employment Drug Test", required: true, status: "missing" as const, expiryDate: null, notes: null },
+        { id: "DQ-08", name: "Annual Review of Driving Record", required: true, status: "missing" as const, expiryDate: null, notes: "Supervisor must sign" },
+        { id: "DQ-09", name: "Clearinghouse Query Consent", required: true, status: "missing" as const, expiryDate: null, notes: "Required for annual queries" },
+        { id: "DQ-10", name: "Hazmat Endorsement", required: false, status: "not_applicable" as const, expiryDate: null, notes: null },
+        { id: "DQ-11", name: "TWIC Card", required: false, status: "not_applicable" as const, expiryDate: null, notes: null },
+        { id: "DQ-12", name: "Driver Receipt of D&A Policy", required: true, status: "missing" as const, expiryDate: null, notes: null },
       ];
 
       const requiredDocs = documents.filter(d => d.required);
-      const completeRequired = requiredDocs.filter(d => d.status === "on_file").length;
+      const completeRequired = requiredDocs.filter(d => (d.status as string) === "on_file").length;
 
       return {
         driverId: input.driverId,
         documents,
-        completeness: Math.floor((completeRequired / requiredDocs.length) * 100),
+        completeness: requiredDocs.length > 0 ? Math.floor((completeRequired / requiredDocs.length) * 100) : 0,
         totalDocuments: documents.length,
-        completeDocuments: documents.filter(d => d.status === "on_file").length,
-        missingDocuments: documents.filter(d => d.status === "missing" || d.status === "pending").length,
-        expiringDocuments: documents.filter(d => d.status === "expiring_soon" || d.status === "expired" || d.status === "overdue").length,
+        completeDocuments: documents.filter(d => (d.status as string) === "on_file").length,
+        missingDocuments: documents.filter(d => (d.status as string) === "missing" || (d.status as string) === "pending").length,
+        expiringDocuments: documents.filter(d => (d.status as string) === "expiring_soon" || (d.status as string) === "expired" || (d.status as string) === "overdue").length,
         isCompliant: completeRequired === requiredDocs.length,
       };
     }),
@@ -1028,35 +888,28 @@ export const trainingComplianceRouter = router({
     .input(z.object({ period: z.enum(["week", "month", "quarter"]).optional() }).optional())
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 99);
 
-      const totalDrivers = Math.floor(rng() * 50) + 20;
-      const violations = Math.floor(rng() * 8);
-
+      // No HOS data in DB yet
       return {
         summary: {
-          totalDrivers,
-          compliantDrivers: totalDrivers - violations,
-          violationCount: violations,
-          complianceRate: Math.floor(((totalDrivers - violations) / totalDrivers) * 100),
+          totalDrivers: 0,
+          compliantDrivers: 0,
+          violationCount: 0,
+          complianceRate: 0,
         },
         violationTypes: [
-          { type: "11-hour driving limit", count: Math.floor(rng() * 3), severity: "high" as const },
-          { type: "14-hour on-duty limit", count: Math.floor(rng() * 2), severity: "high" as const },
-          { type: "30-minute break", count: Math.floor(rng() * 4), severity: "medium" as const },
-          { type: "60/70-hour limit", count: Math.floor(rng() * 2), severity: "critical" as const },
-          { type: "Form & manner", count: Math.floor(rng() * 3), severity: "low" as const },
+          { type: "11-hour driving limit", count: 0, severity: "high" as const },
+          { type: "14-hour on-duty limit", count: 0, severity: "high" as const },
+          { type: "30-minute break", count: 0, severity: "medium" as const },
+          { type: "60/70-hour limit", count: 0, severity: "critical" as const },
+          { type: "Form & manner", count: 0, severity: "low" as const },
         ],
-        trends: Array.from({ length: 12 }, (_, i) => ({
-          month: new Date(Date.now() - (11 - i) * 30 * 86400000).toISOString().substring(0, 7),
-          violations: Math.floor(rng() * 6),
-          complianceRate: Math.floor(rng() * 10) + 88,
-        })),
+        trends: [],
         eldStatus: {
-          totalDevices: totalDrivers,
-          operational: totalDrivers - Math.floor(rng() * 3),
-          malfunctioning: Math.floor(rng() * 3),
-          unassigned: Math.floor(rng() * 2),
+          totalDevices: 0,
+          operational: 0,
+          malfunctioning: 0,
+          unassigned: 0,
         },
       };
     }),
@@ -1069,36 +922,29 @@ export const trainingComplianceRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 111);
       const year = input?.year || new Date().getFullYear();
 
-      const jurisdictions = ["TX", "CA", "FL", "OK", "AR", "LA", "NM", "AZ", "IL", "MO", "TN", "GA"];
+      // No IFTA data in DB yet
       const quarterData = Array.from({ length: 4 }, (_, q) => ({
         quarter: q + 1,
         year,
-        filingStatus: q < 2 ? "filed" as const : q === 2 ? "due" as const : "upcoming" as const,
+        filingStatus: "upcoming" as const,
         dueDate: `${year}-${String((q + 1) * 3 + 1).padStart(2, "0")}-01`,
-        totalMiles: Math.floor(rng() * 50000) + 20000,
-        totalGallons: Math.floor(rng() * 8000) + 3000,
-        netTaxDue: +(rng() * 3000 - 500).toFixed(2),
-        jurisdictions: jurisdictions.slice(0, Math.floor(rng() * 8) + 4).map(j => ({
-          state: j,
-          miles: Math.floor(rng() * 8000) + 500,
-          gallons: Math.floor(rng() * 1200) + 100,
-          taxRate: +(rng() * 0.15 + 0.2).toFixed(4),
-          taxDue: +(rng() * 500 - 100).toFixed(2),
-        })),
+        totalMiles: 0,
+        totalGallons: 0,
+        netTaxDue: 0,
+        jurisdictions: [],
       }));
 
       return {
         year,
         quarters: quarterData,
         summary: {
-          totalMiles: quarterData.reduce((s, q) => s + q.totalMiles, 0),
-          totalGallons: quarterData.reduce((s, q) => s + q.totalGallons, 0),
-          totalTaxDue: +quarterData.reduce((s, q) => s + q.netTaxDue, 0).toFixed(2),
-          filedQuarters: quarterData.filter(q => q.filingStatus === "filed").length,
-          mpg: +(quarterData.reduce((s, q) => s + q.totalMiles, 0) / Math.max(1, quarterData.reduce((s, q) => s + q.totalGallons, 0))).toFixed(2),
+          totalMiles: 0,
+          totalGallons: 0,
+          totalTaxDue: 0,
+          filedQuarters: 0,
+          mpg: 0,
         },
       };
     }),
@@ -1107,22 +953,18 @@ export const trainingComplianceRouter = router({
   getUcrFiling: protectedProcedure
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 222);
       const year = new Date().getFullYear();
 
-      const fleetSize = Math.floor(rng() * 40) + 5;
-      const bracket = fleetSize <= 2 ? "0-2" : fleetSize <= 5 ? "3-5" : fleetSize <= 20 ? "6-20" : fleetSize <= 100 ? "21-100" : "101+";
-      const fee = fleetSize <= 2 ? 69 : fleetSize <= 5 ? 206 : fleetSize <= 20 ? 344 : fleetSize <= 100 ? 1304 : 6032;
-
+      // No UCR filing data in DB yet
       return {
         year,
-        status: rng() > 0.3 ? "filed" as const : "pending" as const,
+        status: "pending" as const,
         filingDeadline: `${year}-01-01`,
-        fleetSize,
-        bracket,
-        fee,
-        receiptNumber: rng() > 0.3 ? `UCR-${year}-${Math.floor(rng() * 900000) + 100000}` : null,
-        filedDate: rng() > 0.3 ? new Date(Date.now() - Math.floor(rng() * 60) * 86400000).toISOString() : null,
+        fleetSize: 0,
+        bracket: "0-2",
+        fee: 69,
+        receiptNumber: null,
+        filedDate: null,
         renewalDue: `${year + 1}-01-01`,
       };
     }),
@@ -1131,18 +973,18 @@ export const trainingComplianceRouter = router({
   getBocFiling: protectedProcedure
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 333);
 
+      // No BOC-3 filing data in DB yet
       return {
-        status: rng() > 0.2 ? "active" as const : "needs_update" as const,
+        status: "needs_update" as const,
         processAgent: {
-          name: "National Permit Service LLC",
-          address: "123 Compliance Blvd, Washington, DC 20001",
-          phone: "(800) 555-0199",
+          name: "",
+          address: "",
+          phone: "",
         },
-        filedDate: new Date(Date.now() - Math.floor(rng() * 730) * 86400000).toISOString(),
-        states: ["All 50 States + DC"],
-        lastVerified: new Date(Date.now() - Math.floor(rng() * 90) * 86400000).toISOString(),
+        filedDate: null,
+        states: [],
+        lastVerified: null,
         notes: "BOC-3 must remain active as long as operating authority is active",
       };
     }),
@@ -1151,25 +993,21 @@ export const trainingComplianceRouter = router({
   getMcsCleaning: protectedProcedure
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
-      const rng = seededRandom(companyId || 444);
 
-      const lastFiled = new Date(Date.now() - Math.floor(rng() * 730) * 86400000);
-      const nextDue = new Date(lastFiled.getTime() + 730 * 86400000);
-      const daysUntilDue = Math.ceil((nextDue.getTime() - Date.now()) / 86400000);
-
+      // No MCS-150 filing data in DB yet
       return {
-        status: daysUntilDue > 90 ? "current" as const : daysUntilDue > 0 ? "due_soon" as const : "overdue" as const,
-        lastFiledDate: lastFiled.toISOString(),
-        nextDueDate: nextDue.toISOString(),
-        daysUntilDue,
-        dotNumber: `DOT-${Math.floor(rng() * 9000000) + 1000000}`,
+        status: "overdue" as const,
+        lastFiledDate: null,
+        nextDueDate: null,
+        daysUntilDue: 0,
+        dotNumber: "",
         filingMethod: "online" as const,
         currentData: {
-          operatingStatus: "Active",
+          operatingStatus: "Unknown",
           entityType: "Carrier",
-          fleetSize: Math.floor(rng() * 40) + 5,
-          driversCount: Math.floor(rng() * 50) + 10,
-          mileage: Math.floor(rng() * 500000) + 100000,
+          fleetSize: 0,
+          driversCount: 0,
+          mileage: 0,
         },
         notes: "MCS-150 must be updated every 24 months based on USDOT number. Failure to update may result in deactivation of USDOT number.",
       };

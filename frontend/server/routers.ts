@@ -167,6 +167,7 @@ import { carrierScorecardRouter } from "./routers/carrierScorecard";
 import { truckPostingRouter } from "./routers/truckPosting";
 import { documentCenterRouter } from "./routers/documentCenter";
 import { trailerRegulatoryRouter } from "./routers/trailerRegulatory";
+import { trainingLMSRouter } from "./routers/trainingLMS";
 import { interstateRouter } from "./routers/interstate";
 import { marketIntelligenceRouter } from "./routers/marketIntelligence";
 import { mlRouter } from "./routers/ml";
@@ -1365,6 +1366,8 @@ export const appRouter = router({
 
   // Trailer Regulatory — Product lists, cargo securement, FSMA, oversize/overweight, food-grade
   trailerRegulatory: trailerRegulatoryRouter,
+  // Training LMS — courses, modules, lessons, quizzes, enrollments, certificates
+  trainingLMS: trainingLMSRouter,
 
   // Interstate Compliance Engine + SOS Emergency System
   interstate: interstateRouter,

@@ -413,16 +413,34 @@ export const dashboardRouter = router({
    */
   getSystemHealth: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    
+
+    // Real DB latency check
+    let dbLatencyMs: number | null = null;
+    let dbStatus: 'healthy' | 'degraded' | 'down' = 'down';
+    if (db) {
+      const t0 = Date.now();
+      try { await db.execute(sql`SELECT 1`); dbStatus = 'healthy'; } catch { dbStatus = 'degraded'; }
+      dbLatencyMs = Date.now() - t0;
+    }
+
+    // Real active user count (logged in within last 24h)
+    let activeUsers: number | null = null;
+    if (db) {
+      try {
+        const [row] = await db.execute(sql`SELECT COUNT(*) as cnt FROM users WHERE lastLoginAt >= DATE_SUB(NOW(), INTERVAL 1 DAY)`);
+        activeUsers = (row as any)?.cnt ?? null;
+      } catch { /* lastLoginAt column may not exist */ }
+    }
+
     return {
-      database: db ? 'healthy' : 'degraded',
+      database: dbStatus,
       api: 'healthy',
-      websocket: 'healthy',
-      cache: 'healthy',
-      uptime: 99.9,
-      responseTime: 45,
-      activeUsers: 1247,
-      requestsPerMinute: 3420,
+      websocket: null as string | null,
+      cache: null as string | null,
+      uptime: null as number | null,
+      responseTime: dbLatencyMs,
+      activeUsers,
+      requestsPerMinute: null as number | null,
     };
   }),
 
@@ -544,7 +562,8 @@ export const dashboardRouter = router({
       const [enRoute] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, companyId), eq(loads.status, 'in_transit')));
       const [loading] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, companyId), eq(loads.status, 'loading')));
       const [availDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(and(eq(drivers.companyId, companyId), sql`${drivers.status} IN ('active','available')`));
-      return { activeLoads: active?.count || 0, unassigned: unassigned?.count || 0, enRoute: enRoute?.count || 0, loading: loading?.count || 0, inTransit: enRoute?.count || 0, issues: 0, driversAvailable: availDrivers?.count || 0, loadsRequiringAction: [] };
+      const [issueLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, companyId), sql`${loads.status} IN ('temp_excursion','reefer_breakdown','contamination_reject','seal_breach','weight_violation')`));
+      return { activeLoads: active?.count || 0, unassigned: unassigned?.count || 0, enRoute: enRoute?.count || 0, loading: loading?.count || 0, inTransit: enRoute?.count || 0, issues: issueLoads?.count || 0, driversAvailable: availDrivers?.count || 0, loadsRequiringAction: [] };
     } catch (e) { logger.error("[dashboard] Failed to load dispatch data:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 
@@ -593,7 +612,8 @@ export const dashboardRouter = router({
       const [pending] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(eq(bids.status, 'pending'));
       const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const [weekVol] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(gte(loads.createdAt, sevenDaysAgo));
-      return { activeLoads: activeL?.count || 0, pendingMatches: pending?.count || 0, weeklyVolume: weekVol?.count || 0, commissionEarned: Math.round((weekVol?.rev || 0) * 0.15), marginAverage: 15, shipperLoads: 0, catalystCapacity: [] };
+      const marginAvg: number | null = null; // Requires carrierRate column — not yet in schema
+      return { activeLoads: activeL?.count || 0, pendingMatches: pending?.count || 0, weeklyVolume: weekVol?.count || 0, commissionEarned: Math.round((weekVol?.rev || 0) * 0.15), marginAverage: marginAvg, shipperLoads: 0, catalystCapacity: [] };
     } catch (e) { logger.error("[dashboard] Failed to load broker dashboard:", e); throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Unable to load dashboard data. Please try again.' }); }
   }),
 

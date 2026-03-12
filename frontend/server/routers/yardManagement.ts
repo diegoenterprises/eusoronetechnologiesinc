@@ -51,14 +51,6 @@ function hoursFromNow(h: number): string {
   return new Date(Date.now() + h * 3600_000).toISOString();
 }
 
-/**
- * Deterministic pseudo-random using a simple seed hash.
- * Replaces Math.random() for reproducible fallback data.
- */
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
 
 /** Map vehicle status to yard-friendly status */
 function mapVehicleStatusToYard(status: string): string {
@@ -359,32 +351,7 @@ export const yardManagementRouter = router({
       const cols = 12;
       const companyId = ctx.user!.companyId || 0;
 
-      // Get real trailer count for occupancy ratio
-      let occupancyRatio = 0.65; // default
-      if (db) {
-        try {
-          const [totalRow] = await db
-            .select({ total: sql<number>`count(*)` })
-            .from(vehicles)
-            .where(and(eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)));
-          const [inUseRow] = await db
-            .select({ inUse: sql<number>`count(*)` })
-            .from(vehicles)
-            .where(and(
-              eq(vehicles.companyId, companyId),
-              eq(vehicles.isActive, true),
-              eq(vehicles.status, "in_use"),
-            ));
-          const total = Number(totalRow?.total || 1);
-          const inUse = Number(inUseRow?.inUse || 0);
-          occupancyRatio = total > 0 ? inUse / total : 0.65;
-        } catch (err) {
-          logger.error("[YardMgmt] getYardMap vehicle query error:", err);
-        }
-      }
-
-      // Deterministic grid generation based on locationId seed
-      const locSeed = input.locationId.split("").reduce((s, c) => s + c.charCodeAt(0), 0);
+      // TODO: Replace with real yard_spots table data
 
       const spots: Array<{
         id: string; row: number; col: number; label: string;
@@ -393,21 +360,19 @@ export const yardManagementRouter = router({
         type: "parking" | "dock" | "staging" | "repair";
       }> = [];
 
+      // TODO: Replace with real yard_spots table data
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          const idx = r * cols + c;
           const isDock = r === 0 && c < 8;
           const isRepair = r === 9 && c >= 10;
           const isStaging = r >= 8 && c < 4;
-          const seed = locSeed + idx * 7;
-          const occupied = seededRandom(seed) < occupancyRatio;
           spots.push({
             id: `${input.locationId}-${r}-${c}`,
             row: r, col: c,
             label: isDock ? `D${c + 1}` : isRepair ? "RPR" : isStaging ? "STG" : `${String.fromCharCode(65 + r)}${c + 1}`,
-            status: isRepair && seededRandom(seed + 1) > 0.5 ? "maintenance" : occupied ? "occupied" : seededRandom(seed + 2) > 0.8 ? "reserved" : "empty",
-            trailerId: occupied ? `TRL-${1000 + idx}` : null,
-            trailerNumber: occupied ? `TR-${4000 + idx}` : null,
+            status: "empty" as const,
+            trailerId: null,
+            trailerNumber: null,
             type: isDock ? "dock" : isRepair ? "repair" : isStaging ? "staging" : "parking",
           });
         }

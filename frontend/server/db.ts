@@ -2426,6 +2426,7 @@ export async function getUserByOpenId(openId: string) {
     lastSignedIn: users.lastSignedIn, deletedAt: users.deletedAt,
     status: users.status, closedAt: users.closedAt, closedReason: users.closedReason,
     deactivatedAt: users.deactivatedAt, deactivatedBy: users.deactivatedBy,
+    country: users.country, countrySetAt: users.countrySetAt, provinceId: users.provinceId,
   };
 
   // Try openId lookup — may fail if column doesn't exist in actual DB

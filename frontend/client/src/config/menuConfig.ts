@@ -44,6 +44,61 @@ export type UserRole =
   | 'ADMIN'
   | 'SUPER_ADMIN';
 
+// ═══════════════════════════════════════════════════════════════
+// SHARED FOOTER ITEMS — appended to every role's menu automatically
+// Removes 72 duplicate entries (12 roles × 6 items)
+// ═══════════════════════════════════════════════════════════════
+export const SHARED_FOOTER_ITEMS: MenuItem[] = [
+  {
+    icon: "MessageSquare",
+    label: "Messages",
+    path: "/messages",
+    badge: 0,
+    description: "Communication & team channels",
+    children: [
+      { icon: "Inbox", label: "Inbox", path: "/messages", badge: 0, description: "Direct messages & conversations" },
+      { icon: "Radio", label: "Company Channels", path: "/company-channels", badge: 0, description: "Team communication channels" },
+      { icon: "MessageSquare", label: "Communication Hub", path: "/communication-hub", badge: 0, description: "Unified messaging, notifications & broadcast communications" },
+    ],
+  },
+  {
+    icon: "Wallet",
+    label: "EusoWallet",
+    path: "/wallet",
+    badge: 0,
+    category: "Financial",
+    description: "Wallet, payments, rates, invoices & escrow",
+    children: [
+      { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, payments & escrow" },
+      { icon: "DollarSign", label: "Settlements", path: "/settlements", badge: 0, description: "Settlement statements & payment status" },
+      { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
+      { icon: "Receipt", label: "Accessorials", path: "/accessorials", badge: 0, description: "Detention, lumper, TONU fees" },
+      { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
+      { icon: "Clock", label: "Demurrage Charges", path: "/demurrage-charges", badge: 0, description: "Automated demurrage & detention charge generation, review & approval" },
+      { icon: "Sparkles", label: "Smart Pricing", path: "/contextual-pricing", badge: 0, description: "AI-enriched dynamic pricing with real-time market signals" },
+      { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
+      { icon: "Landmark", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "EusoWallet™ advanced financial management & reporting" },
+      { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
+      { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
+    ],
+  },
+  {
+    icon: "Settings",
+    label: "Settings",
+    path: "/settings",
+    badge: 0,
+    description: "Profile, preferences & security"
+  },
+  { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
+  { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
+  { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & documentation" },
+];
+
+// Paths that belong to shared footer items (used for deduplication)
+const SHARED_FOOTER_PATHS = new Set(
+  SHARED_FOOTER_ITEMS.flatMap(item => [item.path, ...(item.children?.map(c => c.path) || [])])
+);
+
 // Menu configuration for all 12 user roles
 export const menuConfigs: Record<string, MenuItem[]> = {
   // ═══════════════════════════════════════════════════════════════
@@ -264,6 +319,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
         { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
+        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
         { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "EusoTicket™ centralized document storage, versioning & digital signatures" },
@@ -557,6 +613,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
         { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
+        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
       ],
     },
     {
@@ -658,7 +715,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Monitor", label: "Command Center", path: "/dispatch", badge: 0, description: "Drivers, Kanban board & activity feed" },
         { icon: "CalendarDays", label: "Dispatch Planner", path: "/dispatch/planner", badge: 0, description: "Drag-and-drop load assignment to driver timelines" },
         { icon: "Droplet", label: "Allocation Tracker", path: "/dispatch/allocations", badge: 0, description: "Daily barrel allocation tracking & contract fulfillment" },
-        { icon: "AlertTriangle", label: "Exceptions", path: "/dispatch/exceptions", badge: 0, description: "Active exceptions, delays, stale loads & compliance issues" },
+        { icon: "AlertOctagon", label: "Exceptions", path: "/dispatch/exceptions", badge: 0, description: "Active exceptions, delays, stale loads & compliance issues" },
       ],
     },
     {
@@ -714,6 +771,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs, compliance docs & certifications" },
         { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
         { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
+        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
         { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "EusoTicket™ centralized document storage, versioning & digital signatures" },
@@ -886,6 +944,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Convoy ELD tracking, driver HOS & road condition alerts" },
         { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
         { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
+        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
       ],
     },
     // ─── PLATFORM FOOTER ───
@@ -1180,6 +1239,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "CalendarDays", label: "Compliance Calendar", path: "/compliance/calendar", badge: 0, description: "Expiration tracking & renewal deadlines" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
         { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
+        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
         { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
@@ -1306,6 +1366,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
         { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
+        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
         { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
         { icon: "Brain", label: "Anomaly Monitor", path: "/anomaly-monitor", badge: 0, description: "AI-powered anomaly detection across all operations" },
@@ -1521,6 +1582,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
         { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
+        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
         { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
       ],
     },
@@ -1606,7 +1668,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
   // SUPER_ADMIN: Platform-wide oversight
   // ═══════════════════════════════════════════════════════════════
   SUPER_ADMIN: [
-    { icon: "LayoutDashboard", label: "Command Center", path: "/super-admin", badge: 0, description: "Platform-wide oversight dashboard" },
+    { icon: "Monitor", label: "Command Center", path: "/super-admin", badge: 0, description: "Platform-wide oversight dashboard" },
     {
       icon: "Users",
       label: "Users & Companies",
@@ -1743,6 +1805,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
         { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
+        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
         { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
       ],
     },
@@ -1823,9 +1886,32 @@ export const menuConfigs: Record<string, MenuItem[]> = {
  * @returns Array of menu items for the given role
  */
 export function getMenuForRole(role?: string | UserRole): MenuItem[] {
-  if (!role) return menuConfigs.default;
-  const normalizedRole = String(role).toUpperCase() as UserRole;
-  return menuConfigs[normalizedRole] || menuConfigs.default;
+  const raw = !role ? menuConfigs.default : (menuConfigs[String(role).toUpperCase() as UserRole] || menuConfigs.default);
+
+  // Deduplicate: remove top-level items whose label matches a shared footer item,
+  // then append the canonical shared footer items at the end.
+  const SHARED_LABELS = new Set(SHARED_FOOTER_ITEMS.map(i => i.label));
+  const SHARED_CHILD_PATHS = new Set(["/hazmat/incident-report", "/support"]);
+
+  const roleItems: MenuItem[] = [];
+  for (const item of raw) {
+    // Skip items that match a shared footer label (Messages, EusoWallet, Settings, News, Report Incident, Support)
+    if (SHARED_LABELS.has(item.label)) continue;
+
+    // For "More" menus: strip out shared children (Report Incident, Support) but keep role-specific ones
+    if (item.label === "More" && item.children) {
+      const keptChildren = item.children.filter(c => !SHARED_CHILD_PATHS.has(c.path));
+      if (keptChildren.length > 0) {
+        roleItems.push({ ...item, children: keptChildren });
+      }
+      // If no children left, skip the entire "More" menu
+      continue;
+    }
+
+    roleItems.push(item);
+  }
+
+  return [...roleItems, ...SHARED_FOOTER_ITEMS];
 }
 
 /**

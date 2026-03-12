@@ -34,6 +34,7 @@ import {
   Plus,
   AlertCircle,
   AlertTriangle,
+  AlertOctagon,
   BarChart3,
   Brain,
   CheckCircle,
@@ -134,7 +135,7 @@ import {
   Warehouse,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
@@ -255,6 +256,7 @@ const iconMap: Record<string, React.ReactNode> = {
   UserCog: <UserCog size={20} />,
   Users2: <Users2 size={20} />,
   Warehouse: <Warehouse size={20} />,
+  AlertOctagon: <AlertOctagon size={20} />,
 };
 
 // --- Notification Bell Component ---
@@ -615,6 +617,7 @@ export default function DashboardLayout({
 
   // Close sidebar on mobile when navigating
   const handleMobileNavigate = (path: string) => {
+    console.log("[DashboardLayout] navigating to:", path, "from:", location);
     if (window.innerWidth < 768) setSidebarOpen(false);
     navigate(path);
   };
@@ -784,20 +787,19 @@ export default function DashboardLayout({
                     <div className="ml-6 pl-3 border-l border-gray-700/40 space-y-0.5 mt-0.5">
                       {item.children!.map((child) => {
                         const childActive = child.path === location;
-                        const childLocked = !isApproved && item.requiresApproval;
+                        const childLocked = !isApproved && child.requiresApproval;
                         return (
-                          <motion.button
+                          <Link
                             key={child.path}
-                            onClick={() => handleMobileNavigate(child.path)}
-                            whileHover={{ x: childLocked ? 0 : 3 }}
-                            whileTap={{ scale: childLocked ? 1 : 0.97 }}
-                            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] transition-colors ${
-                              childLocked ? "text-gray-600 cursor-default" : childActive ? "text-white font-medium" : "text-gray-500 hover:text-gray-300"
+                            href={child.path}
+                            onClick={() => { if (window.innerWidth < 768) setSidebarOpen(false); }}
+                            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] transition-colors no-underline ${
+                              childLocked ? "text-gray-600 cursor-default pointer-events-none" : childActive ? "text-white font-medium" : "text-gray-500 hover:text-gray-300"
                             }`}
                           >
                             <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center [&>svg]:w-[15px] [&>svg]:h-[15px]">{iconMap[child.icon] || null}</span>
                             <span className="truncate">{child.label}</span>
-                          </motion.button>
+                          </Link>
                         );
                       })}
                     </div>
