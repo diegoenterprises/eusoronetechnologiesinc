@@ -59,11 +59,12 @@ export default function TrainingLMS() {
   const [selectedCountry, setSelectedCountry] = useState<string>("");
 
   // ── Country ──
-  const userCountry = (user as any)?.country || "";
+  const [effectiveCountry, setEffectiveCountry] = useState<string>((user as any)?.country || "");
+  const userCountry = effectiveCountry;
   const setCountryMutation = trpc.trainingLMS.setUserCountry.useMutation({
     onSuccess: () => {
+      setEffectiveCountry(selectedCountry);
       setShowCountryPicker(false);
-      courses.refetch();
     },
   });
 
@@ -72,6 +73,7 @@ export default function TrainingLMS() {
   const courses = trpc.trainingLMS.listCourses.useQuery({
     category: categoryFilter || undefined,
     search: searchQuery || undefined,
+    country: effectiveCountry || undefined,
     page: 1,
     limit: 50,
   });
