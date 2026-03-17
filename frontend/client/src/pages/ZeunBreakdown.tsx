@@ -394,7 +394,7 @@ export default function ZeunBreakdown() {
                   {emergencyProcQuery.data.doNot && emergencyProcQuery.data.doNot.length > 0 && (
                     <div className="mt-3 p-2 rounded-lg bg-red-500/10 border border-red-500/20 space-y-1">
                       {emergencyProcQuery.data.doNot.map((w: string, i: number) => (
-                        <p key={i} className="text-xs font-bold text-red-500">⚠ {w}</p>
+                        <p key={i} className="text-xs font-bold text-red-500">DO NOT: {w}</p>
                       ))}
                     </div>
                   )}

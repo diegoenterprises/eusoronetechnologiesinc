@@ -21,11 +21,30 @@ import {
   AlertTriangle,
   Crown,
   ArrowRight,
+  ArrowLeft,
   CheckCircle,
   Sun,
   Moon,
+  TrainFront,
+  Ship,
+  Anchor,
+  Globe,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+
+// V5 Multi-Modal: Country options
+const COUNTRIES = [
+  { code: "US", flag: "\ud83c\uddfa\ud83c\uddf8", name: "United States", desc: "FMCSA/DOT/FRA/USCG regulated operations" },
+  { code: "CA", flag: "\ud83c\udde8\ud83c\udde6", name: "Canada", desc: "Transport Canada/TDG/Railway Safety Act" },
+  { code: "MX", flag: "\ud83c\uddf2\ud83c\uddfd", name: "Mexico", desc: "SCT/NOM/Ley de Navegaci\u00f3n" },
+];
+
+// V5 Multi-Modal: Transport mode options
+const TRANSPORT_MODES = [
+  { code: "TRUCK", icon: Truck, name: "Trucking", desc: "Highway freight & hazmat transport", color: "from-[#F97316] to-[#FB923C]" },
+  { code: "RAIL", icon: TrainFront, name: "Rail", desc: "Railroad freight & intermodal operations", color: "from-[#3B82F6] to-[#60A5FA]" },
+  { code: "VESSEL", icon: Ship, name: "Vessel / Maritime", desc: "Ocean, barge & inland waterway freight", color: "from-[#06B6D4] to-[#22D3EE]" },
+];
 
 const REGISTRATION_ROLES = [
   {
@@ -38,6 +57,7 @@ const REGISTRATION_ROLES = [
     requirements: ["PHMSA Registration", "EPA ID (if applicable)", "Insurance Certificate"],
     regulations: ["PHMSA", "EPA RCRA", "DOT 49 CFR"],
     path: "/register/shipper",
+    modes: ["TRUCK"],
   },
   {
     role: "CATALYST",
@@ -49,6 +69,7 @@ const REGISTRATION_ROLES = [
     requirements: ["USDOT Number", "MC Authority", "Hazmat Authority", "Insurance ($1M+ liability)"],
     regulations: ["FMCSA", "PHMSA", "DOT 49 CFR"],
     path: "/register/catalyst",
+    modes: ["TRUCK"],
   },
   {
     role: "BROKER",
@@ -60,6 +81,7 @@ const REGISTRATION_ROLES = [
     requirements: ["Broker Authority", "Surety Bond ($75K)", "Insurance"],
     regulations: ["FMCSA", "PHMSA"],
     path: "/register/broker",
+    modes: ["TRUCK"],
   },
   {
     role: "DRIVER",
@@ -71,6 +93,7 @@ const REGISTRATION_ROLES = [
     requirements: ["CDL (Class A/B)", "Medical Certificate", "Hazmat/TWIC (if applicable)", "TSA Background (if hazmat)"],
     regulations: ["FMCSA", "TSA", "DOT"],
     path: "/register/driver",
+    modes: ["TRUCK"],
   },
   {
     role: "DISPATCH",
@@ -82,6 +105,7 @@ const REGISTRATION_ROLES = [
     requirements: ["Associated with Catalyst", "Hazmat Training (if applicable)"],
     regulations: ["FMCSA"],
     path: "/register/dispatch",
+    modes: ["TRUCK"],
   },
   {
     role: "ESCORT",
@@ -93,6 +117,7 @@ const REGISTRATION_ROLES = [
     requirements: ["State Certifications", "Vehicle Insurance", "Equipment Requirements"],
     regulations: ["State DOT", "FHWA"],
     path: "/register/escort",
+    modes: ["TRUCK"],
   },
   {
     role: "TERMINAL_MANAGER",
@@ -104,6 +129,7 @@ const REGISTRATION_ROLES = [
     requirements: ["Facility EPA ID", "SPCC Plan", "State Permits"],
     regulations: ["EPA", "OSHA", "EIA", "State DEQ"],
     path: "/register/terminal",
+    modes: ["TRUCK", "RAIL", "VESSEL"],
   },
   {
     role: "COMPLIANCE_OFFICER",
@@ -115,6 +141,7 @@ const REGISTRATION_ROLES = [
     requirements: ["Associated with Company", "Compliance Training"],
     regulations: ["Internal Role"],
     path: "/register/compliance",
+    modes: ["TRUCK", "RAIL", "VESSEL"],
   },
   {
     role: "SAFETY_MANAGER",
@@ -126,6 +153,7 @@ const REGISTRATION_ROLES = [
     requirements: ["Associated with Company", "Safety Certifications"],
     regulations: ["FMCSA", "OSHA"],
     path: "/register/safety",
+    modes: ["TRUCK", "RAIL", "VESSEL"],
   },
   {
     role: "ADMIN",
@@ -138,6 +166,153 @@ const REGISTRATION_ROLES = [
     regulations: ["Internal Role"],
     path: "/register/admin",
     inviteOnly: true,
+    modes: ["TRUCK", "RAIL", "VESSEL"],
+  },
+  // V5 Rail Roles
+  {
+    role: "RAIL_SHIPPER",
+    name: "Rail Shipper",
+    description: "Companies shipping freight by rail — bulk, intermodal, unit trains",
+    icon: Package,
+    gradient: "from-[#3B82F6] to-[#60A5FA]",
+    iconGradient: "from-[#3B82F6] to-[#60A5FA]",
+    requirements: ["STB Registration", "Insurance Certificate"],
+    regulations: ["STB", "FRA", "DOT 49 CFR"],
+    path: "/register/shipper",
+    modes: ["RAIL"],
+  },
+  {
+    role: "RAIL_CARRIER",
+    name: "Railroad Carrier",
+    description: "Class I, II, III railroads and short lines",
+    icon: TrainFront,
+    gradient: "from-[#3B82F6] to-[#60A5FA]",
+    iconGradient: "from-[#3B82F6] to-[#60A5FA]",
+    requirements: ["STB Docket", "FRA Certificate", "Operating Authority"],
+    regulations: ["STB", "FRA", "AAR"],
+    path: "/register/catalyst",
+    modes: ["RAIL"],
+  },
+  {
+    role: "RAIL_DISPATCHER",
+    name: "Rail Dispatcher",
+    description: "Train dispatchers coordinating rail movements",
+    icon: Flame,
+    gradient: "from-[#3B82F6] to-[#60A5FA]",
+    iconGradient: "from-[#3B82F6] to-[#60A5FA]",
+    requirements: ["FRA Dispatcher Certification", "Associated with Railroad"],
+    regulations: ["FRA", "49 CFR Part 241"],
+    path: "/register/dispatch",
+    modes: ["RAIL"],
+  },
+  {
+    role: "RAIL_ENGINEER",
+    name: "Rail Engineer",
+    description: "Locomotive engineers — certified under 49 CFR Part 240",
+    icon: User,
+    gradient: "from-[#3B82F6] to-[#60A5FA]",
+    iconGradient: "from-[#3B82F6] to-[#60A5FA]",
+    requirements: ["Engineer Certification (49 CFR 240)", "Medical Fitness", "Rules Qualification"],
+    regulations: ["FRA", "49 CFR Part 240"],
+    path: "/register/driver",
+    modes: ["RAIL"],
+  },
+  {
+    role: "RAIL_CONDUCTOR",
+    name: "Rail Conductor",
+    description: "Train conductors — certified under 49 CFR Part 242",
+    icon: User,
+    gradient: "from-[#3B82F6] to-[#60A5FA]",
+    iconGradient: "from-[#3B82F6] to-[#60A5FA]",
+    requirements: ["Conductor Certification (49 CFR 242)", "Medical Fitness", "Rules Qualification"],
+    regulations: ["FRA", "49 CFR Part 242"],
+    path: "/register/driver",
+    modes: ["RAIL"],
+  },
+  {
+    role: "RAIL_BROKER",
+    name: "Rail Broker",
+    description: "Intermodal marketing companies and rail freight brokers",
+    icon: Users,
+    gradient: "from-[#3B82F6] to-[#60A5FA]",
+    iconGradient: "from-[#3B82F6] to-[#60A5FA]",
+    requirements: ["IMC Registration", "Surety Bond", "Insurance"],
+    regulations: ["STB", "FRA"],
+    path: "/register/broker",
+    modes: ["RAIL"],
+  },
+  // V5 Vessel Roles
+  {
+    role: "VESSEL_SHIPPER",
+    name: "Vessel Shipper",
+    description: "Companies shipping freight by ocean — containerized, bulk, breakbulk",
+    icon: Package,
+    gradient: "from-[#06B6D4] to-[#22D3EE]",
+    iconGradient: "from-[#06B6D4] to-[#22D3EE]",
+    requirements: ["FMC Registration", "Insurance Certificate"],
+    regulations: ["FMC", "CBP", "USCG"],
+    path: "/register/shipper",
+    modes: ["VESSEL"],
+  },
+  {
+    role: "VESSEL_OPERATOR",
+    name: "Vessel Operator",
+    description: "VOCC and NVOCC operators — ocean freight carriers",
+    icon: Ship,
+    gradient: "from-[#06B6D4] to-[#22D3EE]",
+    iconGradient: "from-[#06B6D4] to-[#22D3EE]",
+    requirements: ["FMC License/Bond", "USCG Documentation", "ISM DOC"],
+    regulations: ["FMC", "USCG", "IMO"],
+    path: "/register/catalyst",
+    modes: ["VESSEL"],
+  },
+  {
+    role: "PORT_MASTER",
+    name: "Port Master",
+    description: "Port authorities and terminal operators",
+    icon: Anchor,
+    gradient: "from-[#06B6D4] to-[#22D3EE]",
+    iconGradient: "from-[#06B6D4] to-[#22D3EE]",
+    requirements: ["MTSA Facility Security Plan", "TWIC", "Port Authority License"],
+    regulations: ["USCG", "MTSA", "CBP"],
+    path: "/register/terminal",
+    modes: ["VESSEL"],
+  },
+  {
+    role: "SHIP_CAPTAIN",
+    name: "Ship Captain",
+    description: "Licensed mariners — STCW certified masters",
+    icon: User,
+    gradient: "from-[#06B6D4] to-[#22D3EE]",
+    iconGradient: "from-[#06B6D4] to-[#22D3EE]",
+    requirements: ["USCG License (MMC)", "STCW Certification", "TWIC Card", "Medical Certificate"],
+    regulations: ["USCG", "STCW", "IMO"],
+    path: "/register/driver",
+    modes: ["VESSEL"],
+  },
+  {
+    role: "VESSEL_BROKER",
+    name: "Vessel Broker",
+    description: "Ocean freight forwarders and vessel brokers",
+    icon: Users,
+    gradient: "from-[#06B6D4] to-[#22D3EE]",
+    iconGradient: "from-[#06B6D4] to-[#22D3EE]",
+    requirements: ["FMC License", "Surety Bond", "Insurance"],
+    regulations: ["FMC", "CBP"],
+    path: "/register/broker",
+    modes: ["VESSEL"],
+  },
+  {
+    role: "CUSTOMS_BROKER",
+    name: "Customs Broker",
+    description: "Licensed customs brokers — CBP entry processing",
+    icon: Shield,
+    gradient: "from-[#06B6D4] to-[#22D3EE]",
+    iconGradient: "from-[#06B6D4] to-[#22D3EE]",
+    requirements: ["CBP Customs Broker License", "National Permit", "Surety Bond"],
+    regulations: ["CBP", "FMC", "19 CFR"],
+    path: "/register/broker",
+    modes: ["VESSEL"],
   },
 ];
 
@@ -146,11 +321,32 @@ export default function Register() {
   const [mounted, setMounted] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const isLight = theme === 'light';
+  // V5 Multi-Modal: multi-step state
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [selectedModes, setSelectedModes] = useState<string[]>([]);
 
   useEffect(() => {
     const t = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(t);
   }, []);
+
+  const toggleCountry = (code: string) =>
+    setSelectedCountries((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+    );
+
+  const toggleMode = (code: string) =>
+    setSelectedModes((prev) =>
+      prev.includes(code) ? prev.filter((m) => m !== code) : [...prev, code]
+    );
+
+  // Filter roles by selected modes
+  const filteredRoles = selectedModes.length === 0
+    ? REGISTRATION_ROLES
+    : REGISTRATION_ROLES.filter((r: any) =>
+        r.modes?.some((m: string) => selectedModes.includes(m))
+      );
 
   return (
     <div className={`min-h-screen overflow-hidden transition-colors duration-300 ${isLight ? 'bg-gradient-to-br from-slate-50 via-white to-slate-100' : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'}`}>
@@ -231,13 +427,31 @@ export default function Register() {
         </div>
       </div>
 
+      {/* Step Progress */}
+      <div className="max-w-3xl mx-auto px-6 pt-8">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          {[1, 2, 3].map((s) => (
+            <div key={s} className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                s < step ? 'bg-emerald-500 text-white' : s === step ? 'bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white' : isLight ? 'bg-slate-200 text-slate-400' : 'bg-slate-700 text-slate-500'
+              }`}>
+                {s < step ? <CheckCircle className="w-4 h-4" /> : s}
+              </div>
+              {s < 3 && <div className={`w-16 h-0.5 ${s < step ? 'bg-emerald-500' : isLight ? 'bg-slate-200' : 'bg-slate-700'}`} />}
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-center gap-[52px] text-[10px] mb-6">
+          <span className={step >= 1 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>Country</span>
+          <span className={step >= 2 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>Mode</span>
+          <span className={step >= 3 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>Role</span>
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 pb-12">
         {/* Hero */}
-        <div
-          className="text-center mb-12"
-          style={{ opacity: mounted ? 1 : 0 }}
-        >
+        <div className="text-center mb-10" style={{ opacity: mounted ? 1 : 0 }}>
           <h1
             className={`text-4xl md:text-5xl font-bold mb-4 ${isLight ? 'text-slate-900' : 'text-white'} ${mounted ? "hero-animate" : "opacity-0"}`}
             style={{ animationDelay: "0.1s" }}
@@ -251,118 +465,260 @@ export default function Register() {
             className={`text-xl max-w-2xl mx-auto ${isLight ? 'text-slate-500' : 'text-slate-400'} ${mounted ? "hero-animate" : "opacity-0"}`}
             style={{ animationDelay: "0.25s" }}
           >
-            Select your role to begin the registration process. Each role has specific regulatory requirements
-            that we'll help you verify.
+            {step === 1 && "Select your operating country. Multi-select allowed for cross-border operators."}
+            {step === 2 && "Select your transport mode(s). Multi-select allowed for multi-modal operators."}
+            {step === 3 && "Select your role to begin registration. Each role has specific regulatory requirements."}
           </p>
         </div>
 
-        {/* Compliance Notice */}
-        <div
-          className={`mb-10 p-4 rounded-xl border max-w-3xl mx-auto ${isLight ? 'bg-blue-50 border-blue-200' : 'bg-blue-500/10 border-blue-500/20'} ${mounted ? "notice-animate" : "opacity-0"}`}
-          style={{ animationDelay: "0.4s" }}
-        >
-          <div className="flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className={`text-sm font-medium ${isLight ? 'text-blue-700' : 'text-blue-300'}`}>Regulatory Compliance Verified</p>
-              <p className={`text-xs mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                EusoTrip automatically verifies FMCSA, PHMSA, TSA, and state requirements during registration.
-                All data is encrypted and stored securely per DOT 49 CFR standards.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Role Cards Grid */}
-        <div role="list" aria-label="Registration role options" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {REGISTRATION_ROLES.map((roleData: any, index: number) => {
-            const Icon = roleData.icon;
-            const staggerDelay = 0.5 + index * 0.09;
-            return (
-              <Card
-                key={roleData.role}
-                role="listitem"
-                tabIndex={roleData.inviteOnly ? -1 : 0}
-                aria-label={`Register as ${roleData.name}${roleData.inviteOnly ? ' (invite only)' : ''}`}
-                onKeyDown={(e: React.KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && !roleData.inviteOnly) { e.preventDefault(); setLocation(roleData.path); } }}
-                className={`domino-card ${mounted ? "animate" : ""} cursor-pointer group hover:scale-[1.02] transition-all duration-300 ${isLight ? 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-xl hover:shadow-blue-500/5' : 'bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:shadow-xl hover:shadow-blue-500/10'} ${
-                  roleData.inviteOnly ? "opacity-70" : ""
-                }`}
-                style={{ animationDelay: `${staggerDelay}s` }}
-                onClick={() => !roleData.inviteOnly && setLocation(roleData.path)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between mb-3">
-                    {/* Theme-aware icon: dark = brand gradient bg + white icon, light = white circle + brand gradient icon */}
-                    <div className={`card-icon-wrap w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                      isLight
-                        ? 'bg-white shadow-md shadow-slate-200 border border-slate-100'
-                        : 'bg-gradient-to-br from-[#1473FF] to-[#BE01FF]'
-                    }`}>
-                      {isLight ? (
-                        <svg width="0" height="0" className="absolute">
-                          <defs>
-                            <linearGradient id={`grad-${roleData.role}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                              <stop offset="0%" stopColor="#1473FF" />
-                              <stop offset="100%" stopColor="#BE01FF" />
-                            </linearGradient>
-                          </defs>
-                        </svg>
-                      ) : null}
-                      <Icon
-                        className="h-6 w-6"
-                        style={isLight ? { stroke: `url(#grad-${roleData.role})` } : undefined}
-                        {...(isLight ? {} : { color: 'white' })}
-                      />
-                    </div>
-                    {roleData.inviteOnly && (
-                      <Badge variant="outline" className="text-xs bg-slate-700/50 text-slate-400">
-                        Invite Only
-                      </Badge>
-                    )}
-                  </div>
-                  <CardTitle className={`flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                    {roleData.name}
-                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
-                  </CardTitle>
-                  <CardDescription className={isLight ? 'text-slate-500' : 'text-slate-400'}>
-                    {roleData.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Requirements */}
-                  <div>
-                    <p className={`text-xs font-semibold mb-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Requirements:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {roleData.requirements.slice(0, 3).map((req: any, idx: number) => (
-                        <Badge key={idx} variant="secondary" className={`text-xs ${isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-700/50 text-slate-300'}`}>
-                          {req}
-                        </Badge>
-                      ))}
-                      {roleData.requirements.length > 3 && (
-                        <Badge variant="secondary" className={`text-xs ${isLight ? 'bg-slate-100 text-slate-400' : 'bg-slate-700/50 text-slate-400'}`}>
-                          +{roleData.requirements.length - 3} more
-                        </Badge>
+        {/* ═══ STEP 1: COUNTRY SELECTION ═══ */}
+        {step === 1 && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mb-8">
+              {COUNTRIES.map((c) => {
+                const selected = selectedCountries.includes(c.code);
+                return (
+                  <Card
+                    key={c.code}
+                    onClick={() => toggleCountry(c.code)}
+                    className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
+                      selected
+                        ? isLight
+                          ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50 shadow-lg shadow-blue-500/10'
+                          : 'ring-2 ring-blue-500 border-blue-500/50 bg-blue-500/10 shadow-lg shadow-blue-500/10'
+                        : isLight
+                          ? 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-lg'
+                          : 'bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:shadow-lg'
+                    }`}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className="text-5xl mb-3">{c.flag}</div>
+                      <CardTitle className={`text-lg mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>{c.name}</CardTitle>
+                      <CardDescription className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{c.desc}</CardDescription>
+                      {selected && (
+                        <CheckCircle className="w-5 h-5 text-blue-500 mx-auto mt-3" />
                       )}
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+            <div className="flex justify-center">
+              <Button
+                disabled={selectedCountries.length === 0}
+                onClick={() => setStep(2)}
+                className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white px-8"
+              >
+                Continue <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </>
+        )}
 
-                  {/* Regulations */}
-                  <div>
-                    <p className={`text-xs font-semibold mb-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Regulatory Bodies:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {roleData.regulations.map((reg: any, idx: number) => (
-                        <Badge key={idx} variant="outline" className={`text-xs ${isLight ? 'text-blue-600 border-blue-300' : 'text-blue-400 border-blue-500/30'}`}>
-                          {reg}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        {/* ═══ STEP 2: TRANSPORT MODE SELECTION ═══ */}
+        {step === 2 && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mb-8">
+              {TRANSPORT_MODES.map((m) => {
+                const ModeIcon = m.icon;
+                const selected = selectedModes.includes(m.code);
+                return (
+                  <Card
+                    key={m.code}
+                    onClick={() => toggleMode(m.code)}
+                    className={`cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
+                      selected
+                        ? isLight
+                          ? 'ring-2 ring-blue-500 border-blue-300 bg-blue-50 shadow-lg shadow-blue-500/10'
+                          : 'ring-2 ring-blue-500 border-blue-500/50 bg-blue-500/10 shadow-lg shadow-blue-500/10'
+                        : isLight
+                          ? 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-lg'
+                          : 'bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:shadow-lg'
+                    }`}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className={`w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center bg-gradient-to-br ${m.color}`}>
+                        <ModeIcon className="w-8 h-8 text-white" />
+                      </div>
+                      <CardTitle className={`text-lg mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>{m.name}</CardTitle>
+                      <CardDescription className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{m.desc}</CardDescription>
+                      {selected && (
+                        <CheckCircle className="w-5 h-5 text-blue-500 mx-auto mt-3" />
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+            <div className="flex justify-center gap-3">
+              <Button variant="outline" onClick={() => setStep(1)}>
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back
+              </Button>
+              <Button
+                disabled={selectedModes.length === 0}
+                onClick={() => setStep(3)}
+                className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white px-8"
+              >
+                Continue <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </>
+        )}
+
+        {/* ═══ STEP 3: ROLE SELECTION (filtered by mode) ═══ */}
+        {step === 3 && (
+          <>
+            {/* Compliance Notice */}
+            <div
+              className={`mb-8 p-4 rounded-xl border max-w-3xl mx-auto ${isLight ? 'bg-blue-50 border-blue-200' : 'bg-blue-500/10 border-blue-500/20'} ${mounted ? "notice-animate" : "opacity-0"}`}
+              style={{ animationDelay: "0.4s" }}
+            >
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className={`text-sm font-medium ${isLight ? 'text-blue-700' : 'text-blue-300'}`}>Regulatory Compliance Verified</p>
+                  <p className={`text-xs mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                    EusoTrip automatically verifies FMCSA, PHMSA, TSA, FRA, FMC, USCG, and state requirements during registration.
+                    All data is encrypted and stored securely per DOT 49 CFR standards.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Selected tags */}
+            <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
+              {selectedCountries.map((c) => {
+                const country = COUNTRIES.find((x) => x.code === c);
+                return (
+                  <Badge key={c} className={`text-xs ${isLight ? 'bg-blue-100 text-blue-700' : 'bg-blue-500/20 text-blue-400'}`}>
+                    {country?.flag} {country?.name}
+                  </Badge>
+                );
+              })}
+              {selectedModes.map((m) => {
+                const mode = TRANSPORT_MODES.find((x) => x.code === m);
+                return (
+                  <Badge key={m} className={`text-xs ${isLight ? 'bg-violet-100 text-violet-700' : 'bg-violet-500/20 text-violet-400'}`}>
+                    {mode?.name}
+                  </Badge>
+                );
+              })}
+            </div>
+
+            {/* Role Cards Grid */}
+            <div role="list" aria-label="Registration role options" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredRoles.map((roleData: any, index: number) => {
+                const Icon = roleData.icon;
+                const staggerDelay = 0.1 + index * 0.06;
+                return (
+                  <Card
+                    key={roleData.role}
+                    role="listitem"
+                    tabIndex={roleData.inviteOnly ? -1 : 0}
+                    aria-label={`Register as ${roleData.name}${roleData.inviteOnly ? ' (invite only)' : ''}`}
+                    onKeyDown={(e: React.KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && !roleData.inviteOnly) { e.preventDefault(); setLocation(roleData.path); } }}
+                    className={`domino-card ${mounted ? "animate" : ""} cursor-pointer group hover:scale-[1.02] transition-all duration-300 ${isLight ? 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-xl hover:shadow-blue-500/5' : 'bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:shadow-xl hover:shadow-blue-500/10'} ${
+                      roleData.inviteOnly ? "opacity-70" : ""
+                    }`}
+                    style={{ animationDelay: `${staggerDelay}s` }}
+                    onClick={() => !roleData.inviteOnly && setLocation(roleData.path)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className={`card-icon-wrap w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                          isLight
+                            ? 'bg-white shadow-md shadow-slate-200 border border-slate-100'
+                            : 'bg-gradient-to-br from-[#1473FF] to-[#BE01FF]'
+                        }`}>
+                          {isLight ? (
+                            <svg width="0" height="0" className="absolute">
+                              <defs>
+                                <linearGradient id={`grad-${roleData.role}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                  <stop offset="0%" stopColor="#1473FF" />
+                                  <stop offset="100%" stopColor="#BE01FF" />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+                          ) : null}
+                          <Icon
+                            className="h-6 w-6"
+                            style={isLight ? { stroke: `url(#grad-${roleData.role})` } : undefined}
+                            {...(isLight ? {} : { color: 'white' })}
+                          />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {roleData.modes?.map((m: string) => {
+                            const modeData = TRANSPORT_MODES.find((t) => t.code === m);
+                            if (!modeData) return null;
+                            const MIcon = modeData.icon;
+                            return (
+                              <div key={m} className={`w-5 h-5 rounded flex items-center justify-center ${
+                                m === 'TRUCK' ? 'bg-orange-500/20' : m === 'RAIL' ? 'bg-blue-500/20' : 'bg-cyan-500/20'
+                              }`}>
+                                <MIcon className={`w-3 h-3 ${
+                                  m === 'TRUCK' ? 'text-orange-400' : m === 'RAIL' ? 'text-blue-400' : 'text-cyan-400'
+                                }`} />
+                              </div>
+                            );
+                          })}
+                          {roleData.inviteOnly && (
+                            <Badge variant="outline" className="text-xs bg-slate-700/50 text-slate-400 ml-1">
+                              Invite Only
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <CardTitle className={`flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        {roleData.name}
+                        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
+                      </CardTitle>
+                      <CardDescription className={isLight ? 'text-slate-500' : 'text-slate-400'}>
+                        {roleData.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Requirements */}
+                      <div>
+                        <p className={`text-xs font-semibold mb-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Requirements:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {roleData.requirements.slice(0, 3).map((req: any, idx: number) => (
+                            <Badge key={idx} variant="secondary" className={`text-xs ${isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-700/50 text-slate-300'}`}>
+                              {req}
+                            </Badge>
+                          ))}
+                          {roleData.requirements.length > 3 && (
+                            <Badge variant="secondary" className={`text-xs ${isLight ? 'bg-slate-100 text-slate-400' : 'bg-slate-700/50 text-slate-400'}`}>
+                              +{roleData.requirements.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Regulations */}
+                      <div>
+                        <p className={`text-xs font-semibold mb-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Regulatory Bodies:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {roleData.regulations.map((reg: any, idx: number) => (
+                            <Badge key={idx} variant="outline" className={`text-xs ${isLight ? 'text-blue-600 border-blue-300' : 'text-blue-400 border-blue-500/30'}`}>
+                              {reg}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Back button */}
+            <div className="flex justify-center mt-8">
+              <Button variant="outline" onClick={() => setStep(2)}>
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Mode Selection
+              </Button>
+            </div>
+          </>
+        )}
 
         {/* Footer Info */}
         <div

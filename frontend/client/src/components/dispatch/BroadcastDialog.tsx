@@ -23,11 +23,11 @@ interface BroadcastDialogProps {
 type Audience = "all" | "available" | "on_load" | "custom";
 
 const TEMPLATES = [
-  { id: "weather", label: "Weather Alert", text: "⚠️ Weather advisory: Please check conditions before proceeding. Contact dispatch if unsafe." },
+  { id: "weather", label: "Weather Alert", text: "WEATHER ADVISORY: Please check conditions before proceeding. Contact dispatch if unsafe." },
   { id: "checkpoint", label: "Check-In Request", text: "Please confirm your current status and ETA. Reply with your location." },
   { id: "hours", label: "HOS Reminder", text: "Reminder: Please verify your HOS compliance before starting your next segment." },
   { id: "facility", label: "Facility Update", text: "Facility update: Please contact dispatch before arriving at your next stop." },
-  { id: "safety", label: "Safety Alert", text: "🚨 Safety reminder: Perform a thorough pre-trip inspection. Report any concerns." },
+  { id: "safety", label: "Safety Alert", text: "SAFETY ALERT: Perform a thorough pre-trip inspection. Report any concerns." },
 ];
 
 export default function BroadcastDialog({ open, onClose }: BroadcastDialogProps) {

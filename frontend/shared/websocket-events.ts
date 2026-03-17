@@ -304,6 +304,68 @@ export const SYSTEM_EVENTS = {
 } as const;
 
 // ============================================================================
+// V5 RAIL EVENTS (18 events)
+// ============================================================================
+export const RAIL_EVENTS = {
+  RAIL_SHIPMENT_CREATED: 'rail:shipment_created',
+  RAIL_CAR_ORDERED: 'rail:car_ordered',
+  RAIL_CAR_PLACED: 'rail:car_placed',
+  RAIL_LOADING_STARTED: 'rail:loading_started',
+  RAIL_LOADED: 'rail:loaded',
+  RAIL_IN_CONSIST: 'rail:in_consist',
+  RAIL_DEPARTED: 'rail:departed',
+  RAIL_AT_INTERCHANGE: 'rail:at_interchange',
+  RAIL_IN_YARD: 'rail:in_yard',
+  RAIL_SPOTTED: 'rail:spotted',
+  RAIL_UNLOADING: 'rail:unloading',
+  RAIL_DELIVERED: 'rail:delivered',
+  RAIL_DERAILMENT_ALERT: 'rail:derailment_alert',
+  RAIL_HAZMAT_ALERT: 'rail:hazmat_alert',
+  RAIL_CREW_HOS_WARNING: 'rail:crew_hos_warning',
+  RAIL_DEMURRAGE_START: 'rail:demurrage_start',
+  RAIL_CONSIST_UPDATE: 'rail:consist_update',
+  RAIL_TRACKING_UPDATE: 'rail:tracking_update',
+} as const;
+
+// ============================================================================
+// V5 VESSEL EVENTS (20 events)
+// ============================================================================
+export const VESSEL_EVENTS = {
+  VESSEL_BOOKED: 'vessel:booked',
+  VESSEL_CONTAINER_RELEASED: 'vessel:container_released',
+  VESSEL_GATE_IN_CONFIRMED: 'vessel:gate_in_confirmed',
+  VESSEL_LOADED: 'vessel:loaded',
+  VESSEL_DEPARTED: 'vessel:departed',
+  VESSEL_POSITION_UPDATE: 'vessel:position_update',
+  VESSEL_ARRIVED: 'vessel:arrived',
+  VESSEL_DISCHARGED: 'vessel:discharged',
+  VESSEL_CUSTOMS_HOLD_ALERT: 'vessel:customs_hold_alert',
+  VESSEL_CUSTOMS_CLEARED: 'vessel:customs_cleared',
+  VESSEL_GATE_OUT_CONFIRMED: 'vessel:gate_out_confirmed',
+  VESSEL_DELIVERED: 'vessel:delivered',
+  VESSEL_WEATHER_ALERT: 'vessel:weather_alert',
+  VESSEL_BERTH_ASSIGNED: 'vessel:berth_assigned',
+  VESSEL_PILOT_DISPATCHED: 'vessel:pilot_dispatched',
+  VESSEL_TUG_DISPATCHED: 'vessel:tug_dispatched',
+  VESSEL_DEMURRAGE_START: 'vessel:demurrage_start',
+  VESSEL_DETENTION_START: 'vessel:detention_start',
+  VESSEL_ISF_DEADLINE_WARNING: 'vessel:isf_deadline_warning',
+  VESSEL_COMPLIANCE_ALERT: 'vessel:compliance_alert',
+} as const;
+
+// ============================================================================
+// V5 INTERMODAL EVENTS (6 events)
+// ============================================================================
+export const INTERMODAL_EVENTS = {
+  INTERMODAL_SEGMENT_STARTED: 'intermodal:segment_started',
+  INTERMODAL_TRANSFER_INITIATED: 'intermodal:transfer_initiated',
+  INTERMODAL_TRANSFER_COMPLETED: 'intermodal:transfer_completed',
+  INTERMODAL_MODE_CHANGE: 'intermodal:mode_change',
+  INTERMODAL_DELAY_ALERT: 'intermodal:delay_alert',
+  INTERMODAL_DELIVERED: 'intermodal:delivered',
+} as const;
+
+// ============================================================================
 // ALL EVENTS COMBINED
 // ============================================================================
 export const WS_EVENTS = {
@@ -324,6 +386,9 @@ export const WS_EVENTS = {
   ...ZEUN_EVENTS,
   ...EMERGENCY_EVENTS,
   ...SYSTEM_EVENTS,
+  ...RAIL_EVENTS,
+  ...VESSEL_EVENTS,
+  ...INTERMODAL_EVENTS,
 } as const;
 
 export type WSEventType = typeof WS_EVENTS[keyof typeof WS_EVENTS];
@@ -376,6 +441,26 @@ export const WS_CHANNELS = {
   EMERGENCY_OPERATION: (operationId: string) => `emergency:${operationId}`,
   EMERGENCY_ZONE: (zoneId: string) => `emergency:zone:${zoneId}`,
   EMERGENCY_MOBILIZATION: 'emergency:mobilization',
+  
+  // V5 Rail channels
+  RAIL_SHIPMENT: (shipmentId: string) => `rail:shipment:${shipmentId}`,
+  RAIL_YARD: (yardId: string) => `rail:yard:${yardId}`,
+  RAIL_DISPATCH: 'rail:dispatch',
+  RAIL_ALERTS: 'rail:alerts',
+  RAIL_TRACKING: 'rail:tracking',
+  
+  // V5 Vessel channels
+  VESSEL_BOOKING: (bookingId: string) => `vessel:booking:${bookingId}`,
+  VESSEL_CONTAINER: (containerId: string) => `vessel:container:${containerId}`,
+  VESSEL_PORT: (portId: string) => `vessel:port:${portId}`,
+  VESSEL_FLEET: 'vessel:fleet',
+  VESSEL_CUSTOMS: 'vessel:customs',
+  VESSEL_ALERTS: 'vessel:alerts',
+  
+  // V5 Intermodal channels
+  INTERMODAL_SHIPMENT: (shipmentId: string) => `intermodal:shipment:${shipmentId}`,
+  INTERMODAL_TRANSFER: (transferId: string) => `intermodal:transfer:${transferId}`,
+  INTERMODAL_ALERTS: 'intermodal:alerts',
 } as const;
 
 // ============================================================================
@@ -578,6 +663,111 @@ export interface EmergencyPayload {
   };
   driverId?: string;
   driverResponse?: string;
+  timestamp: string;
+}
+
+// ============================================================================
+// V5 RAIL PAYLOAD TYPES
+// ============================================================================
+export interface RailShipmentPayload {
+  shipmentId: string;
+  shipmentNumber: string;
+  status: string;
+  previousStatus?: string;
+  carrierId?: string;
+  carrierName?: string;
+  originYardId?: string;
+  destinationYardId?: string;
+  carNumber?: string;
+  commodity?: string;
+  hazmat?: boolean;
+  timestamp: string;
+}
+
+export interface RailAlertPayload {
+  alertType: 'derailment' | 'hazmat' | 'crew_hos' | 'demurrage';
+  severity: 'info' | 'warning' | 'critical' | 'emergency';
+  shipmentId?: string;
+  yardId?: string;
+  crewMemberId?: string;
+  message: string;
+  location?: { lat: number; lng: number };
+  timestamp: string;
+}
+
+export interface RailConsistPayload {
+  consistId: string;
+  trainNumber: string;
+  carCount: number;
+  action: 'built' | 'modified' | 'departed' | 'arrived';
+  yardId?: string;
+  timestamp: string;
+}
+
+// ============================================================================
+// V5 VESSEL PAYLOAD TYPES
+// ============================================================================
+export interface VesselBookingPayload {
+  bookingId: string;
+  bookingNumber: string;
+  status: string;
+  previousStatus?: string;
+  vesselName?: string;
+  voyageNumber?: string;
+  containerNumber?: string;
+  portOfLoading?: string;
+  portOfDischarge?: string;
+  timestamp: string;
+}
+
+export interface VesselPositionPayload {
+  vesselId: string;
+  vesselName: string;
+  imo?: string;
+  lat: number;
+  lng: number;
+  speed?: number;
+  heading?: number;
+  destination?: string;
+  eta?: string;
+  timestamp: string;
+}
+
+export interface VesselAlertPayload {
+  alertType: 'customs_hold' | 'weather' | 'isf_deadline' | 'compliance' | 'demurrage' | 'detention';
+  severity: 'info' | 'warning' | 'critical';
+  bookingId?: string;
+  containerId?: string;
+  vesselId?: string;
+  portId?: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface VesselPortPayload {
+  portId: string;
+  portName: string;
+  eventType: 'berth_assigned' | 'pilot_dispatched' | 'tug_dispatched' | 'gate_in' | 'gate_out';
+  vesselId?: string;
+  containerId?: string;
+  data: Record<string, unknown>;
+  timestamp: string;
+}
+
+// ============================================================================
+// V5 INTERMODAL PAYLOAD TYPES
+// ============================================================================
+export interface IntermodalPayload {
+  shipmentId: string;
+  shipmentNumber: string;
+  eventType: 'segment_started' | 'transfer_initiated' | 'transfer_completed' | 'mode_change' | 'delay_alert' | 'delivered';
+  fromMode?: string;
+  toMode?: string;
+  currentMode?: string;
+  segmentIndex?: number;
+  transferLocation?: string;
+  delayMinutes?: number;
+  message?: string;
   timestamp: string;
 }
 

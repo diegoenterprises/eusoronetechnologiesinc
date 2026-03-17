@@ -27,12 +27,14 @@ import { toast } from "sonner";
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const LOBBY_RULES = [
-  "Be professional and respectful at all times",
-  "No profanity, slurs, or hate speech",
-  "No solicitation, spam, or scams",
-  "No harassment, threats, or doxxing",
-  "Keep conversations relevant to freight, logistics & business",
-  "This is a professional digital truck stop — act accordingly",
+  "Be professional and respectful — this is a business networking space",
+  "No profanity, slurs, hate speech, or harassment of any kind",
+  "No sharing personal contact info (phone, email, social media) — use EusoTrip Messaging",
+  "No soliciting off-platform transactions — all deals must stay on EusoTrip (ToS §4)",
+  "No arranging payments outside EusoWallet (Venmo, Zelle, CashApp, etc. are prohibited)",
+  "No competitor platform promotion or links to external booking services",
+  "Violations are logged and result in strikes → mute → permanent Lobby ban",
+  "Anti-circumvention violations may incur 2× lost revenue penalties per ToS §4.5",
 ];
 
 const ROLE_COLORS: Record<string, string> = {
@@ -502,11 +504,15 @@ export default function TheHaul() {
                 <ChevronDown className={cn("w-3.5 h-3.5 text-amber-400 transition-transform", showRules && "rotate-180")} />
               </button>
               {showRules && (
-                <div className={cn("px-4 py-3 rounded-xl border space-y-1.5", isLight ? "bg-amber-50/50 border-amber-200/60" : "bg-amber-500/5 border-amber-500/10")}>
+                <div className={cn("px-4 py-3 rounded-xl border space-y-2", isLight ? "bg-amber-50/50 border-amber-200/60" : "bg-amber-500/5 border-amber-500/10")}>
+                  <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-semibold mb-1", isLight ? "bg-red-50 text-red-700 border border-red-200" : "bg-red-500/10 text-red-400 border border-red-500/20")}>
+                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                    AI-monitored · All messages are analyzed for ToS compliance · Violations are logged with your account
+                  </div>
                   {LOBBY_RULES.map((r, i) => (
                     <div key={i} className="flex items-start gap-2 text-xs">
-                      <span className="text-amber-400 font-bold mt-px">{i + 1}.</span>
-                      <span className={isLight ? "text-amber-800" : "text-amber-300/80"}>{r}</span>
+                      <span className={cn("font-bold mt-px", i >= 2 && i <= 5 ? "text-red-400" : "text-amber-400")}>{i + 1}.</span>
+                      <span className={cn(i >= 2 && i <= 5 ? (isLight ? "text-red-700 font-medium" : "text-red-300/90 font-medium") : (isLight ? "text-amber-800" : "text-amber-300/80"))}>{r}</span>
                     </div>
                   ))}
                 </div>

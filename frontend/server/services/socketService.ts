@@ -88,6 +88,48 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
       socket.leave("loadboard:global");
     });
 
+    // ── V5: Rail shipment & yard rooms ──
+    socket.on("rail:shipment:join", (shipmentId: string) => {
+      socket.join(`rail:shipment:${shipmentId}`);
+    });
+    socket.on("rail:shipment:leave", (shipmentId: string) => {
+      socket.leave(`rail:shipment:${shipmentId}`);
+    });
+    socket.on("rail:yard:join", (yardId: string) => {
+      socket.join(`rail:yard:${yardId}`);
+    });
+    socket.on("rail:yard:leave", (yardId: string) => {
+      socket.leave(`rail:yard:${yardId}`);
+    });
+
+    // ── V5: Vessel booking, container & port rooms ──
+    socket.on("vessel:booking:join", (bookingId: string) => {
+      socket.join(`vessel:booking:${bookingId}`);
+    });
+    socket.on("vessel:booking:leave", (bookingId: string) => {
+      socket.leave(`vessel:booking:${bookingId}`);
+    });
+    socket.on("vessel:container:join", (containerId: string) => {
+      socket.join(`vessel:container:${containerId}`);
+    });
+    socket.on("vessel:container:leave", (containerId: string) => {
+      socket.leave(`vessel:container:${containerId}`);
+    });
+    socket.on("vessel:port:join", (portId: string) => {
+      socket.join(`vessel:port:${portId}`);
+    });
+    socket.on("vessel:port:leave", (portId: string) => {
+      socket.leave(`vessel:port:${portId}`);
+    });
+
+    // ── V5: Intermodal shipment & transfer rooms ──
+    socket.on("intermodal:shipment:join", (shipmentId: string) => {
+      socket.join(`intermodal:shipment:${shipmentId}`);
+    });
+    socket.on("intermodal:shipment:leave", (shipmentId: string) => {
+      socket.leave(`intermodal:shipment:${shipmentId}`);
+    });
+
     socket.on("disconnect", (reason) => {
       logger.info(`[WS] Disconnected: ${socket.id} (${reason})`);
     });
@@ -652,4 +694,444 @@ export function emitETACalculated(event: TrackingEventPayload): void {
 export function emitTrafficUpdate(companyId: string | number, event: TrackingEventPayload): void {
   if (!io) return;
   io.to(`fleet:${companyId}`).emit("tracking:traffic_update", event);
+}
+
+// ═══════════════════════════════════════════════════════════
+// V5 MULTI-MODAL: RAIL EVENT EMITTERS (18)
+// ═══════════════════════════════════════════════════════════
+
+export interface RailShipmentEvent {
+  shipmentId: string;
+  shipmentNumber: string;
+  status: string;
+  previousStatus?: string;
+  carrierId?: string;
+  carrierName?: string;
+  carNumber?: string;
+  yardId?: string;
+  hazmat?: boolean;
+  timestamp: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface RailAlertEvent {
+  alertType: string;
+  severity: "info" | "warning" | "critical" | "emergency";
+  shipmentId?: string;
+  yardId?: string;
+  crewMemberId?: string;
+  message: string;
+  location?: { lat: number; lng: number };
+  timestamp: string;
+}
+
+export interface RailConsistEvent {
+  consistId: string;
+  trainNumber: string;
+  carCount: number;
+  action: string;
+  yardId?: string;
+  timestamp: string;
+}
+
+/** Rail shipment created */
+export function emitRailShipmentCreated(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:shipment_created", event);
+  io.to("role:rail_dispatcher").emit("rail:shipment_created", event);
+  io.to("role:rail_shipper").emit("rail:shipment_created", event);
+}
+
+/** Rail car ordered */
+export function emitRailCarOrdered(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:car_ordered", event);
+  io.to("role:rail_dispatcher").emit("rail:car_ordered", event);
+}
+
+/** Rail car placed at shipper */
+export function emitRailCarPlaced(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:car_placed", event);
+  io.to("role:rail_shipper").emit("rail:car_placed", event);
+}
+
+/** Rail loading started */
+export function emitRailLoadingStarted(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:loading_started", event);
+}
+
+/** Rail car loaded */
+export function emitRailLoaded(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:loaded", event);
+  io.to("role:rail_dispatcher").emit("rail:loaded", event);
+}
+
+/** Rail car added to consist */
+export function emitRailInConsist(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:in_consist", event);
+}
+
+/** Train departed */
+export function emitRailDeparted(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:departed", event);
+  io.to("role:rail_dispatcher").emit("rail:departed", event);
+  io.to("role:rail_shipper").emit("rail:departed", event);
+}
+
+/** Rail car at interchange */
+export function emitRailAtInterchange(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:at_interchange", event);
+  io.to("role:rail_dispatcher").emit("rail:at_interchange", event);
+}
+
+/** Rail car arrived at yard */
+export function emitRailInYard(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:in_yard", event);
+  if (event.yardId) io.to(`rail:yard:${event.yardId}`).emit("rail:in_yard", event);
+}
+
+/** Rail car spotted at consignee */
+export function emitRailSpotted(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:spotted", event);
+  io.to("role:rail_shipper").emit("rail:spotted", event);
+}
+
+/** Rail car unloading */
+export function emitRailUnloading(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:unloading", event);
+}
+
+/** Rail shipment delivered */
+export function emitRailDelivered(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:delivered", event);
+  io.to("role:rail_dispatcher").emit("rail:delivered", event);
+  io.to("role:rail_shipper").emit("rail:delivered", event);
+  io.to("role:rail_broker").emit("rail:delivered", event);
+}
+
+/** CRITICAL: Rail derailment alert — notify ALL dispatchers */
+export function emitRailDerailmentAlert(event: RailAlertEvent): void {
+  if (!io) return;
+  io.to("role:rail_dispatcher").emit("rail:derailment_alert", event);
+  io.to("role:rail_engineer").emit("rail:derailment_alert", event);
+  io.to("role:rail_conductor").emit("rail:derailment_alert", event);
+  io.to("role:admin").emit("rail:derailment_alert", event);
+  io.to("role:super_admin").emit("rail:derailment_alert", event);
+  if (event.shipmentId) io.to(`rail:shipment:${event.shipmentId}`).emit("rail:derailment_alert", event);
+  logger.warn(`[WS] RAIL DERAILMENT ALERT: ${event.message}`);
+}
+
+/** Rail hazmat alert */
+export function emitRailHazmatAlert(event: RailAlertEvent): void {
+  if (!io) return;
+  io.to("role:rail_dispatcher").emit("rail:hazmat_alert", event);
+  io.to("role:safety_manager").emit("rail:hazmat_alert", event);
+  io.to("role:admin").emit("rail:hazmat_alert", event);
+  if (event.shipmentId) io.to(`rail:shipment:${event.shipmentId}`).emit("rail:hazmat_alert", event);
+}
+
+/** Rail crew HOS warning */
+export function emitRailCrewHOSWarning(event: RailAlertEvent): void {
+  if (!io) return;
+  io.to("role:rail_dispatcher").emit("rail:crew_hos_warning", event);
+  if (event.crewMemberId) io.to(`user:${event.crewMemberId}`).emit("rail:crew_hos_warning", event);
+}
+
+/** Rail demurrage started */
+export function emitRailDemurrageStart(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:demurrage_start", event);
+  io.to("role:rail_shipper").emit("rail:demurrage_start", event);
+  io.to("role:rail_broker").emit("rail:demurrage_start", event);
+}
+
+/** Consist updated (built/modified) */
+export function emitConsistUpdate(event: RailConsistEvent): void {
+  if (!io) return;
+  io.to("role:rail_dispatcher").emit("rail:consist_update", event);
+  if (event.yardId) io.to(`rail:yard:${event.yardId}`).emit("rail:consist_update", event);
+}
+
+/** Rail tracking position update */
+export function emitRailTrackingUpdate(event: RailShipmentEvent): void {
+  if (!io) return;
+  io.to(`rail:shipment:${event.shipmentId}`).emit("rail:tracking_update", event);
+}
+
+// ═══════════════════════════════════════════════════════════
+// V5 MULTI-MODAL: VESSEL EVENT EMITTERS (20)
+// ═══════════════════════════════════════════════════════════
+
+export interface VesselBookingEvent {
+  bookingId: string;
+  bookingNumber: string;
+  status: string;
+  previousStatus?: string;
+  vesselName?: string;
+  voyageNumber?: string;
+  containerNumber?: string;
+  portId?: string;
+  timestamp: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface VesselPositionEvent {
+  vesselId: string;
+  vesselName: string;
+  imo?: string;
+  lat: number;
+  lng: number;
+  speed?: number;
+  heading?: number;
+  destination?: string;
+  eta?: string;
+  timestamp: string;
+}
+
+export interface VesselAlertEvent {
+  alertType: string;
+  severity: "info" | "warning" | "critical";
+  bookingId?: string;
+  containerId?: string;
+  vesselId?: string;
+  portId?: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface VesselPortEvent {
+  portId: string;
+  portName: string;
+  eventType: string;
+  vesselId?: string;
+  containerId?: string;
+  data: Record<string, unknown>;
+  timestamp: string;
+}
+
+/** Vessel booking created */
+export function emitVesselBooked(event: VesselBookingEvent): void {
+  if (!io) return;
+  io.to(`vessel:booking:${event.bookingId}`).emit("vessel:booked", event);
+  io.to("role:vessel_operator").emit("vessel:booked", event);
+  io.to("role:vessel_shipper").emit("vessel:booked", event);
+}
+
+/** Container released */
+export function emitContainerReleased(event: VesselBookingEvent): void {
+  if (!io) return;
+  io.to(`vessel:booking:${event.bookingId}`).emit("vessel:container_released", event);
+  if (event.containerNumber) io.to(`vessel:container:${event.containerNumber}`).emit("vessel:container_released", event);
+}
+
+/** Gate-in confirmed */
+export function emitGateInConfirmed(event: VesselBookingEvent): void {
+  if (!io) return;
+  io.to(`vessel:booking:${event.bookingId}`).emit("vessel:gate_in_confirmed", event);
+  if (event.portId) io.to(`vessel:port:${event.portId}`).emit("vessel:gate_in_confirmed", event);
+}
+
+/** Vessel loaded */
+export function emitVesselLoaded(event: VesselBookingEvent): void {
+  if (!io) return;
+  io.to(`vessel:booking:${event.bookingId}`).emit("vessel:loaded", event);
+  io.to("role:vessel_operator").emit("vessel:loaded", event);
+}
+
+/** Vessel departed port */
+export function emitVesselDeparted(event: VesselBookingEvent): void {
+  if (!io) return;
+  io.to(`vessel:booking:${event.bookingId}`).emit("vessel:departed", event);
+  io.to("role:vessel_shipper").emit("vessel:departed", event);
+  io.to("role:vessel_operator").emit("vessel:departed", event);
+  if (event.portId) io.to(`vessel:port:${event.portId}`).emit("vessel:departed", event);
+}
+
+/** Vessel position update (AIS) */
+export function emitVesselPositionUpdate(event: VesselPositionEvent): void {
+  if (!io) return;
+  io.to(`vessel:fleet`).emit("vessel:position_update", event);
+  if (event.vesselId) io.to(`vessel:container:${event.vesselId}`).emit("vessel:position_update", event);
+}
+
+/** Vessel arrived at port */
+export function emitVesselArrived(event: VesselBookingEvent): void {
+  if (!io) return;
+  io.to(`vessel:booking:${event.bookingId}`).emit("vessel:arrived", event);
+  io.to("role:vessel_shipper").emit("vessel:arrived", event);
+  io.to("role:port_master").emit("vessel:arrived", event);
+  if (event.portId) io.to(`vessel:port:${event.portId}`).emit("vessel:arrived", event);
+}
+
+/** Vessel discharged */
+export function emitVesselDischarged(event: VesselBookingEvent): void {
+  if (!io) return;
+  io.to(`vessel:booking:${event.bookingId}`).emit("vessel:discharged", event);
+  io.to("role:vessel_shipper").emit("vessel:discharged", event);
+}
+
+/** Customs hold alert */
+export function emitCustomsHoldAlert(event: VesselAlertEvent): void {
+  if (!io) return;
+  if (event.bookingId) io.to(`vessel:booking:${event.bookingId}`).emit("vessel:customs_hold_alert", event);
+  io.to("role:customs_broker").emit("vessel:customs_hold_alert", event);
+  io.to("role:vessel_shipper").emit("vessel:customs_hold_alert", event);
+  io.to("vessel:customs").emit("vessel:customs_hold_alert", event);
+}
+
+/** Customs cleared */
+export function emitCustomsCleared(event: VesselAlertEvent): void {
+  if (!io) return;
+  if (event.bookingId) io.to(`vessel:booking:${event.bookingId}`).emit("vessel:customs_cleared", event);
+  io.to("role:vessel_shipper").emit("vessel:customs_cleared", event);
+  io.to("vessel:customs").emit("vessel:customs_cleared", event);
+}
+
+/** Gate-out confirmed */
+export function emitGateOutConfirmed(event: VesselBookingEvent): void {
+  if (!io) return;
+  io.to(`vessel:booking:${event.bookingId}`).emit("vessel:gate_out_confirmed", event);
+  if (event.portId) io.to(`vessel:port:${event.portId}`).emit("vessel:gate_out_confirmed", event);
+}
+
+/** Vessel shipment delivered */
+export function emitVesselDelivered(event: VesselBookingEvent): void {
+  if (!io) return;
+  io.to(`vessel:booking:${event.bookingId}`).emit("vessel:delivered", event);
+  io.to("role:vessel_shipper").emit("vessel:delivered", event);
+  io.to("role:vessel_broker").emit("vessel:delivered", event);
+}
+
+/** Vessel weather alert */
+export function emitVesselWeatherAlert(event: VesselAlertEvent): void {
+  if (!io) return;
+  io.to("vessel:fleet").emit("vessel:weather_alert", event);
+  io.to("role:ship_captain").emit("vessel:weather_alert", event);
+  io.to("role:vessel_operator").emit("vessel:weather_alert", event);
+}
+
+/** Berth assigned at port */
+export function emitBerthAssigned(event: VesselPortEvent): void {
+  if (!io) return;
+  io.to(`vessel:port:${event.portId}`).emit("vessel:berth_assigned", event);
+  io.to("role:port_master").emit("vessel:berth_assigned", event);
+  io.to("role:ship_captain").emit("vessel:berth_assigned", event);
+}
+
+/** Pilot dispatched */
+export function emitPilotDispatched(event: VesselPortEvent): void {
+  if (!io) return;
+  io.to(`vessel:port:${event.portId}`).emit("vessel:pilot_dispatched", event);
+  io.to("role:port_master").emit("vessel:pilot_dispatched", event);
+  io.to("role:ship_captain").emit("vessel:pilot_dispatched", event);
+}
+
+/** Tug dispatched */
+export function emitTugDispatched(event: VesselPortEvent): void {
+  if (!io) return;
+  io.to(`vessel:port:${event.portId}`).emit("vessel:tug_dispatched", event);
+  io.to("role:port_master").emit("vessel:tug_dispatched", event);
+}
+
+/** Vessel demurrage started */
+export function emitVesselDemurrageStart(event: VesselAlertEvent): void {
+  if (!io) return;
+  if (event.bookingId) io.to(`vessel:booking:${event.bookingId}`).emit("vessel:demurrage_start", event);
+  io.to("role:vessel_shipper").emit("vessel:demurrage_start", event);
+  io.to("role:vessel_broker").emit("vessel:demurrage_start", event);
+}
+
+/** Vessel detention started */
+export function emitVesselDetentionStart(event: VesselAlertEvent): void {
+  if (!io) return;
+  if (event.bookingId) io.to(`vessel:booking:${event.bookingId}`).emit("vessel:detention_start", event);
+  io.to("role:vessel_shipper").emit("vessel:detention_start", event);
+}
+
+/** ISF filing deadline warning */
+export function emitISFDeadlineWarning(event: VesselAlertEvent): void {
+  if (!io) return;
+  if (event.bookingId) io.to(`vessel:booking:${event.bookingId}`).emit("vessel:isf_deadline_warning", event);
+  io.to("role:customs_broker").emit("vessel:isf_deadline_warning", event);
+  io.to("role:vessel_shipper").emit("vessel:isf_deadline_warning", event);
+  io.to("vessel:customs").emit("vessel:isf_deadline_warning", event);
+}
+
+/** Vessel compliance alert */
+export function emitVesselComplianceAlert(event: VesselAlertEvent): void {
+  if (!io) return;
+  io.to("vessel:alerts").emit("vessel:compliance_alert", event);
+  io.to("role:vessel_operator").emit("vessel:compliance_alert", event);
+  io.to("role:ship_captain").emit("vessel:compliance_alert", event);
+  io.to("role:compliance_officer").emit("vessel:compliance_alert", event);
+}
+
+// ═══════════════════════════════════════════════════════════
+// V5 MULTI-MODAL: INTERMODAL EVENT EMITTERS (6)
+// ═══════════════════════════════════════════════════════════
+
+export interface IntermodalEvent {
+  shipmentId: string;
+  shipmentNumber: string;
+  fromMode?: string;
+  toMode?: string;
+  currentMode?: string;
+  segmentIndex?: number;
+  transferLocation?: string;
+  delayMinutes?: number;
+  message?: string;
+  timestamp: string;
+}
+
+/** Intermodal segment started */
+export function emitIntermodalSegmentStarted(event: IntermodalEvent): void {
+  if (!io) return;
+  io.to(`intermodal:shipment:${event.shipmentId}`).emit("intermodal:segment_started", event);
+  io.to("role:rail_dispatcher").emit("intermodal:segment_started", event);
+}
+
+/** Intermodal transfer initiated */
+export function emitIntermodalTransferInitiated(event: IntermodalEvent): void {
+  if (!io) return;
+  io.to(`intermodal:shipment:${event.shipmentId}`).emit("intermodal:transfer_initiated", event);
+  io.to("intermodal:alerts").emit("intermodal:transfer_initiated", event);
+}
+
+/** Intermodal transfer completed */
+export function emitIntermodalTransferCompleted(event: IntermodalEvent): void {
+  if (!io) return;
+  io.to(`intermodal:shipment:${event.shipmentId}`).emit("intermodal:transfer_completed", event);
+  io.to("intermodal:alerts").emit("intermodal:transfer_completed", event);
+}
+
+/** Intermodal mode change */
+export function emitIntermodalModeChange(event: IntermodalEvent): void {
+  if (!io) return;
+  io.to(`intermodal:shipment:${event.shipmentId}`).emit("intermodal:mode_change", event);
+}
+
+/** Intermodal delay alert */
+export function emitIntermodalDelayAlert(event: IntermodalEvent): void {
+  if (!io) return;
+  io.to(`intermodal:shipment:${event.shipmentId}`).emit("intermodal:delay_alert", event);
+  io.to("intermodal:alerts").emit("intermodal:delay_alert", event);
+  io.to("role:rail_dispatcher").emit("intermodal:delay_alert", event);
+  io.to("role:vessel_operator").emit("intermodal:delay_alert", event);
+}
+
+/** Intermodal shipment delivered */
+export function emitIntermodalDelivered(event: IntermodalEvent): void {
+  if (!io) return;
+  io.to(`intermodal:shipment:${event.shipmentId}`).emit("intermodal:delivered", event);
+  io.to("intermodal:alerts").emit("intermodal:delivered", event);
 }

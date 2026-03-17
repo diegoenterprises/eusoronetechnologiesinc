@@ -144,6 +144,7 @@ import { trpc } from "@/lib/trpc";
 import { useIsMobile } from "@/hooks/useMobile";
 import EsangFloatingButton from "./EsangFloatingButton";
 import EmergencyFAB from "./driver/EmergencyFAB";
+import { ModeProvider, ModeSelector, ModeBadge } from "./ModeSelector";
 
 // Icon map for rendering icons from string names
 const iconMap: Record<string, React.ReactNode> = {
@@ -623,6 +624,7 @@ export default function DashboardLayout({
   };
 
   return (
+    <ModeProvider userRole={userRole}>
     <div className={`flex h-screen relative overflow-hidden ${theme === "light" ? "bg-[#f8f9fb] text-slate-900" : "bg-gray-950 text-white"}`}>
       {/* WS-E2E-015: Skip-to-content link for keyboard/screen reader users */}
       <a href="#main-content" className="skip-to-content">Skip to content</a>
@@ -676,6 +678,7 @@ export default function DashboardLayout({
               </motion.span>
             )}
           </AnimatePresence>
+          {sidebarOpen && <ModeBadge />}
         </div>
 
         {/* Menu Items */}
@@ -1040,7 +1043,10 @@ export default function DashboardLayout({
               </AnimatePresence>
             </div>
 
-            {/* Spacer between search and action icons */}
+            {/* Transport Mode Selector */}
+            <ModeSelector />
+
+            {/* Spacer between mode selector and action icons */}
             <div className={`hidden md:block w-px h-5 ${theme === "light" ? "bg-slate-200" : "bg-gray-700/50"}`} />
 
             {/* Right action icons group */}
@@ -1178,5 +1184,6 @@ export default function DashboardLayout({
         </main>
       </div>
     </div>
+    </ModeProvider>
   );
 }

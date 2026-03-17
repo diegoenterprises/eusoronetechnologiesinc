@@ -1052,6 +1052,27 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX idx_pending (alert_sent, detected_at)
     )`);
 
+    // --- detention_claims: columns added for Detention & Accessorials module ---
+    await addColIfMissing("detention_claims", "catalystId", "INT DEFAULT NULL");
+    await addColIfMissing("detention_claims", "shipperId", "INT DEFAULT NULL");
+    await addColIfMissing("detention_claims", "type", "VARCHAR(50) DEFAULT 'detention'");
+    await addColIfMissing("detention_claims", "description", "TEXT DEFAULT NULL");
+    await addColIfMissing("detention_claims", "containerNumber", "VARCHAR(50) DEFAULT NULL");
+    await addColIfMissing("detention_claims", "receiptUrl", "VARCHAR(500) DEFAULT NULL");
+    await addColIfMissing("detention_claims", "disputeDate", "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing("detention_claims", "disputedBy", "INT DEFAULT NULL");
+    // Extend status enum to include submitted, invoiced, reimbursed, voided
+    try {
+      await pool!.query(`
+        ALTER TABLE detention_claims MODIFY COLUMN status ENUM(
+          'submitted','accruing','pending_review','approved','invoiced',
+          'disputed','denied','paid','reimbursed','voided'
+        ) NOT NULL DEFAULT 'accruing'
+      `);
+    } catch (e: any) {
+      if (!e?.message?.includes("Duplicate")) logger.warn("[SchemaSync] detention_claims status enum:", e?.message?.slice(0, 120));
+    }
+
     // --- road_segments: LiDAR-enrichment columns (EusoRoads symbiotic layer) ---
     await addColIfMissing("road_segments", "elevationStartFt", "DECIMAL(8,2) DEFAULT NULL");
     await addColIfMissing("road_segments", "elevationEndFt", "DECIMAL(8,2) DEFAULT NULL");

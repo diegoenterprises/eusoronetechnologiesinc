@@ -337,9 +337,9 @@ export default function RegisterDriver() {
             </Label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
-                { code: "US", label: "United States", subtitle: "FMCSA / DOT regulations", flag: "🇺🇸" },
-                { code: "CA", label: "Canada", subtitle: "TDG / Transport Canada", flag: "🇨🇦" },
-                { code: "MX", label: "Mexico", subtitle: "SCT / NOM regulations", flag: "🇲🇽" },
+                { code: "US", label: "United States", subtitle: "FMCSA / DOT regulations", flag: "US" },
+                { code: "CA", label: "Canada", subtitle: "TDG / Transport Canada", flag: "CA" },
+                { code: "MX", label: "Mexico", subtitle: "SCT / NOM regulations", flag: "MX" },
               ].map((c) => (
                 <div
                   key={c.code}

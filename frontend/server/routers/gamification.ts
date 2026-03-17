@@ -28,6 +28,7 @@ import {
 import { pickWeeklyMissions, getRewardsCatalogForRole, generateWeeklyMissions, forceRotateMissions } from "../services/missionGenerator";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
 import { canDriverAcceptLoad } from "../services/hosEngine";
+import { moderateMessage, getStrikeAction } from "../services/lobbyModeration";
 
 /**
  * Template fallback: when DB missions are empty or table doesn't exist,
@@ -1348,42 +1349,27 @@ export const gamificationRouter = router({
         } catch { /* non-critical */ }
       }
 
-      // ---- CONTENT MODERATION ----
-      const msg = input.message.toLowerCase();
+      // ════════════════════════════════════════════════════════════
+      // CONTENT MODERATION ENGINE — ToS §4 & §6 Enforcement
+      // ════════════════════════════════════════════════════════════
 
-      // Profanity / slur filter (expandable)
-      const BANNED_WORDS = [
-        "fuck", "shit", "ass", "bitch", "damn", "cunt", "dick", "nigger", "nigga",
-        "faggot", "retard", "whore", "slut", "bastard", "piss",
-      ];
-      const hasProfanity = BANNED_WORDS.some(w => msg.includes(w));
-      if (hasProfanity) {
-        return { success: false, error: "Message contains inappropriate language. The Haul Lobby enforces professional standards." };
-      }
+      // 1. Check if user is muted or banned
+      try {
+        const [strikeRows] = await db.execute(sql`
+          SELECT strikeCount, mutedUntil, isBanned FROM haul_lobby_user_strikes
+          WHERE userId = ${userId} LIMIT 1
+        `) as any;
+        const strikes = (Array.isArray(strikeRows) ? strikeRows[0] : strikeRows) as any;
+        if (strikes?.isBanned) {
+          return { success: false, error: "🚫 You have been permanently banned from The Haul Lobby due to repeated policy violations. Contact support@eusoronetech.com to appeal." };
+        }
+        if (strikes?.mutedUntil && new Date(strikes.mutedUntil) > new Date()) {
+          const remaining = Math.ceil((new Date(strikes.mutedUntil).getTime() - Date.now()) / 60000);
+          return { success: false, error: `🔇 You are muted from The Lobby for ${remaining > 60 ? Math.ceil(remaining / 60) + " hours" : remaining + " minutes"} due to policy violations. Review our Community Guidelines and Terms of Service.` };
+        }
+      } catch (_) { /* strike check non-critical */ }
 
-      // Solicitation / spam filter
-      const SPAM_PATTERNS = [
-        /\b(buy|sell)\s+(drugs|guns|weapons)/i,
-        /\b(click here|free money|make \$\d+)/i,
-        /\b(onlyfans|escort service|adult)/i,
-        /\b(wire me|send money|cashapp me|venmo me|zelle me)/i,
-      ];
-      const isSpam = SPAM_PATTERNS.some(p => p.test(input.message));
-      if (isSpam) {
-        return { success: false, error: "Message flagged as solicitation or spam. This is a professional networking space." };
-      }
-
-      // Harassment detection
-      const HARASSMENT_PATTERNS = [
-        /\b(i('ll|m going to) kill|death threat|bomb)\b/i,
-        /\b(stalk|harass|dox)\b/i,
-      ];
-      const isHarassment = HARASSMENT_PATTERNS.some(p => p.test(input.message));
-      if (isHarassment) {
-        return { success: false, error: "Message flagged for potential harassment. This behavior is not tolerated." };
-      }
-
-      // Rate limit: max 1 message per 3 seconds per user
+      // 2. Rate limit: max 1 message per 3 seconds per user
       try {
         const recent = await db.execute(sql`
           SELECT COUNT(*) as cnt FROM haul_lobby_messages
@@ -1393,8 +1379,88 @@ export const gamificationRouter = router({
         if (Number(cnt) > 0) {
           return { success: false, error: "Please wait a moment before posting again." };
         }
-      } catch (_) { /* rate limit check is non-critical */ }
+      } catch (_) { /* rate limit check non-critical */ }
 
+      // 3. Run comprehensive moderation analysis
+      const modResult = moderateMessage(input.message, userRole);
+
+      if (!modResult.allowed) {
+        // Log the violation
+        try {
+          await db.execute(sql`
+            INSERT INTO haul_lobby_moderation_log
+              (userId, userName, userRole, originalMessage, violationType, severity, reason, tosReference, actionTaken)
+            VALUES
+              (${userId}, ${userName}, ${userRole}, ${input.message},
+               ${modResult.violation || "PROFANITY"}, ${modResult.severity || "BLOCK"},
+               ${modResult.reason || ""}, ${modResult.tosRef || ""},
+               'blocked')
+          `);
+        } catch (logErr) {
+          logger.warn("[TheHaul] Failed to log moderation event:", logErr);
+        }
+
+        // Update strike counter for STRIKE-level violations
+        if (modResult.severity === "STRIKE" || modResult.severity === "SUSPEND") {
+          try {
+            // Upsert strike record
+            await db.execute(sql`
+              INSERT INTO haul_lobby_user_strikes (userId, strikeCount, lastViolationType, lastStrikeAt)
+              VALUES (${userId}, 1, ${modResult.violation || ""}, NOW())
+              ON DUPLICATE KEY UPDATE
+                strikeCount = strikeCount + 1,
+                lastViolationType = ${modResult.violation || ""},
+                lastStrikeAt = NOW()
+            `);
+
+            // Get updated strike count
+            const [sRows] = await db.execute(sql`
+              SELECT strikeCount FROM haul_lobby_user_strikes WHERE userId = ${userId} LIMIT 1
+            `) as any;
+            const currentStrikes = (Array.isArray(sRows) ? sRows[0] : sRows)?.strikeCount || 1;
+            const strikeAction = getStrikeAction(currentStrikes);
+
+            // Apply mute/ban based on strike count
+            if (strikeAction.action === "mute_1h") {
+              await db.execute(sql`
+                UPDATE haul_lobby_user_strikes SET mutedUntil = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE userId = ${userId}
+              `);
+              // Update moderation log with action taken
+              await db.execute(sql`
+                UPDATE haul_lobby_moderation_log SET actionTaken = 'muted_1h'
+                WHERE userId = ${userId} ORDER BY id DESC LIMIT 1
+              `);
+            } else if (strikeAction.action === "mute_24h") {
+              await db.execute(sql`
+                UPDATE haul_lobby_user_strikes SET mutedUntil = DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE userId = ${userId}
+              `);
+              await db.execute(sql`
+                UPDATE haul_lobby_moderation_log SET actionTaken = 'muted_24h'
+                WHERE userId = ${userId} ORDER BY id DESC LIMIT 1
+              `);
+            } else if (strikeAction.action === "ban") {
+              await db.execute(sql`
+                UPDATE haul_lobby_user_strikes SET isBanned = TRUE WHERE userId = ${userId}
+              `);
+              await db.execute(sql`
+                UPDATE haul_lobby_moderation_log SET actionTaken = 'banned'
+                WHERE userId = ${userId} ORDER BY id DESC LIMIT 1
+              `);
+            }
+
+            logger.warn(`[TheHaul] MODERATION: User ${userId} (${userName}) strike ${currentStrikes} — ${modResult.violation} — action: ${strikeAction.action}`);
+
+            return { success: false, error: strikeAction.message };
+          } catch (strikeErr) {
+            logger.warn("[TheHaul] Strike update failed:", strikeErr);
+          }
+        }
+
+        logger.info(`[TheHaul] MODERATION: Blocked message from user ${userId} (${userName}) — ${modResult.violation}`);
+        return { success: false, error: modResult.reason || "Message blocked by content moderation." };
+      }
+
+      // ✅ Message passed moderation — insert
       try {
         await db.execute(sql`
           INSERT INTO haul_lobby_messages (userId, userName, userRole, message, messageType)
@@ -1623,5 +1689,168 @@ export const gamificationRouter = router({
           purchasedAt: i.createdAt?.toISOString(),
         }));
       } catch { return []; }
+    }),
+
+  // ════════════════════════════════════════════════════════════════
+  // ADMIN: Lobby Moderation Dashboard
+  // ════════════════════════════════════════════════════════════════
+
+  /**
+   * Get moderation log — admin only
+   */
+  getModerationLog: adminProcedure
+    .input(z.object({
+      limit: z.number().default(50),
+      offset: z.number().default(0),
+      violationType: z.string().optional(),
+      unreviewedOnly: z.boolean().default(false),
+    }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { logs: [], total: 0 };
+      const limit = input?.limit || 50;
+      const offset = input?.offset || 0;
+
+      try {
+        let whereClause = sql`1=1`;
+        if (input?.violationType) {
+          whereClause = sql`${whereClause} AND violationType = ${input.violationType}`;
+        }
+        if (input?.unreviewedOnly) {
+          whereClause = sql`${whereClause} AND reviewedByAdmin = FALSE`;
+        }
+
+        const [rows] = await db.execute(sql`
+          SELECT * FROM haul_lobby_moderation_log
+          WHERE ${whereClause}
+          ORDER BY createdAt DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `) as any;
+
+        const [countRows] = await db.execute(sql`
+          SELECT COUNT(*) as total FROM haul_lobby_moderation_log WHERE ${whereClause}
+        `) as any;
+        const total = (Array.isArray(countRows) ? countRows[0] : countRows)?.total || 0;
+
+        return {
+          logs: Array.isArray(rows) ? rows : [],
+          total: Number(total),
+        };
+      } catch (err) {
+        logger.error("[TheHaul] getModerationLog error:", err);
+        return { logs: [], total: 0 };
+      }
+    }),
+
+  /**
+   * Review a moderation log entry — admin only
+   */
+  reviewModerationLog: adminProcedure
+    .input(z.object({
+      logId: z.number(),
+      adminNotes: z.string().optional(),
+      removeStrike: z.boolean().default(false),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      try {
+        await db.execute(sql`
+          UPDATE haul_lobby_moderation_log
+          SET reviewedByAdmin = TRUE, adminNotes = ${input.adminNotes || "Reviewed"}
+          WHERE id = ${input.logId}
+        `);
+
+        // Optionally remove a strike (false positive)
+        if (input.removeStrike) {
+          const [logRow] = await db.execute(sql`
+            SELECT userId FROM haul_lobby_moderation_log WHERE id = ${input.logId} LIMIT 1
+          `) as any;
+          const userId = (Array.isArray(logRow) ? logRow[0] : logRow)?.userId;
+          if (userId) {
+            await db.execute(sql`
+              UPDATE haul_lobby_user_strikes
+              SET strikeCount = GREATEST(strikeCount - 1, 0),
+                  isBanned = CASE WHEN strikeCount - 1 < 7 THEN FALSE ELSE isBanned END,
+                  mutedUntil = CASE WHEN strikeCount - 1 < 3 THEN NULL ELSE mutedUntil END
+              WHERE userId = ${userId}
+            `);
+          }
+        }
+
+        return { success: true };
+      } catch (err) {
+        logger.error("[TheHaul] reviewModerationLog error:", err);
+        throw new Error("Failed to review moderation log");
+      }
+    }),
+
+  /**
+   * Get user strike summary — admin only
+   */
+  getUserStrikes: adminProcedure
+    .input(z.object({
+      userId: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        if (input?.userId) {
+          const [rows] = await db.execute(sql`
+            SELECT s.*, u.name, u.email FROM haul_lobby_user_strikes s
+            LEFT JOIN users u ON u.id = s.userId
+            WHERE s.userId = ${input.userId} LIMIT 1
+          `) as any;
+          return Array.isArray(rows) ? rows : [];
+        }
+
+        const [rows] = await db.execute(sql`
+          SELECT s.*, u.name, u.email FROM haul_lobby_user_strikes s
+          LEFT JOIN users u ON u.id = s.userId
+          WHERE s.strikeCount > 0
+          ORDER BY s.strikeCount DESC, s.lastStrikeAt DESC
+          LIMIT 100
+        `) as any;
+        return Array.isArray(rows) ? rows : [];
+      } catch (err) {
+        logger.error("[TheHaul] getUserStrikes error:", err);
+        return [];
+      }
+    }),
+
+  /**
+   * Unban / unmute a user — admin only
+   */
+  unbanUser: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      resetStrikes: z.boolean().default(false),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      try {
+        if (input.resetStrikes) {
+          await db.execute(sql`
+            UPDATE haul_lobby_user_strikes
+            SET strikeCount = 0, isBanned = FALSE, mutedUntil = NULL
+            WHERE userId = ${input.userId}
+          `);
+        } else {
+          await db.execute(sql`
+            UPDATE haul_lobby_user_strikes
+            SET isBanned = FALSE, mutedUntil = NULL
+            WHERE userId = ${input.userId}
+          `);
+        }
+        return { success: true };
+      } catch (err) {
+        logger.error("[TheHaul] unbanUser error:", err);
+        throw new Error("Failed to unban user");
+      }
     }),
 });

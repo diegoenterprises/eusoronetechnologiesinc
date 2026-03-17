@@ -201,7 +201,7 @@ export default function MissionBalancerPage() {
                       <div className="p-2 rounded-lg bg-slate-900/30">
                         <p className="text-[8px] text-slate-500 uppercase tracking-wide mb-1">Why This Driver</p>
                         {a.reasoning.map((r: string, i: number) => (
-                          <p key={i} className="text-[9px] text-emerald-300 py-0.5">✓ {r}</p>
+                          <p key={i} className="text-[9px] text-emerald-300 py-0.5">- {r}</p>
                         ))}
                       </div>
 

@@ -695,8 +695,8 @@ export default function TerminalCreateLoad() {
                 Number(form.quantity) > selectedTank.currentLevel ? "text-red-400" : "text-emerald-500"
               )}>
                 {Number(form.quantity) > selectedTank.currentLevel
-                  ? `⚠ Exceeds available (${selectedTank.currentLevel.toLocaleString()} ${selectedTank.unit})`
-                  : `✓ ${((Number(form.quantity) / selectedTank.currentLevel) * 100).toFixed(1)}% of available inventory`
+                  ? `Exceeds available (${selectedTank.currentLevel.toLocaleString()} ${selectedTank.unit})`
+                  : `${((Number(form.quantity) / selectedTank.currentLevel) * 100).toFixed(1)}% of available inventory`
                 }
               </p>
             )}

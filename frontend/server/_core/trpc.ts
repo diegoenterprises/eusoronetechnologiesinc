@@ -12,6 +12,7 @@ import { sanitizeForStorage, sanitizeLogMessage } from "./pciCompliance";
 // =============================================================================
 
 export const ROLES = {
+  // TRUCKING (12)
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
   SHIPPER: 'SHIPPER',
@@ -24,6 +25,20 @@ export const ROLES = {
   FACTORING: 'FACTORING',
   COMPLIANCE_OFFICER: 'COMPLIANCE_OFFICER',
   SAFETY_MANAGER: 'SAFETY_MANAGER',
+  // RAIL (6)
+  RAIL_SHIPPER: 'RAIL_SHIPPER',
+  RAIL_CARRIER: 'RAIL_CARRIER',
+  RAIL_DISPATCHER: 'RAIL_DISPATCHER',
+  RAIL_ENGINEER: 'RAIL_ENGINEER',
+  RAIL_CONDUCTOR: 'RAIL_CONDUCTOR',
+  RAIL_BROKER: 'RAIL_BROKER',
+  // VESSEL (6)
+  VESSEL_SHIPPER: 'VESSEL_SHIPPER',
+  VESSEL_OPERATOR: 'VESSEL_OPERATOR',
+  PORT_MASTER: 'PORT_MASTER',
+  SHIP_CAPTAIN: 'SHIP_CAPTAIN',
+  VESSEL_BROKER: 'VESSEL_BROKER',
+  CUSTOMS_BROKER: 'CUSTOMS_BROKER',
 } as const;
 
 export type UserRole = typeof ROLES[keyof typeof ROLES];
@@ -31,11 +46,7 @@ export type UserRole = typeof ROLES[keyof typeof ROLES];
 // Role hierarchy: higher roles inherit access from lower roles
 const ROLE_HIERARCHY: Record<string, string[]> = {
   SUPER_ADMIN: Object.values(ROLES),
-  ADMIN: [
-    ROLES.ADMIN, ROLES.SHIPPER, ROLES.CATALYST, ROLES.BROKER,
-    ROLES.DRIVER, ROLES.DISPATCH, ROLES.ESCORT, ROLES.TERMINAL_MANAGER,
-    ROLES.FACTORING, ROLES.COMPLIANCE_OFFICER, ROLES.SAFETY_MANAGER,
-  ],
+  ADMIN: Object.values(ROLES).filter(r => r !== 'SUPER_ADMIN'),
 };
 
 /**
@@ -150,6 +161,50 @@ export const safetyProcedure = roleProcedure(ROLES.SAFETY_MANAGER);
 export const shipperCatalystProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CATALYST);
 export const operationsProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CATALYST, ROLES.BROKER, ROLES.DISPATCH);
 export const complianceSafetyProcedure = roleProcedure(ROLES.COMPLIANCE_OFFICER, ROLES.SAFETY_MANAGER);
+
+// RAIL role procedures
+export const railShipperProcedure = roleProcedure(ROLES.RAIL_SHIPPER);
+export const railCarrierProcedure = roleProcedure(ROLES.RAIL_CARRIER);
+export const railDispatcherProcedure = roleProcedure(ROLES.RAIL_DISPATCHER);
+export const railEngineerProcedure = roleProcedure(ROLES.RAIL_ENGINEER);
+export const railConductorProcedure = roleProcedure(ROLES.RAIL_CONDUCTOR);
+export const railBrokerProcedure = roleProcedure(ROLES.RAIL_BROKER);
+
+// VESSEL role procedures
+export const vesselShipperProcedure = roleProcedure(ROLES.VESSEL_SHIPPER);
+export const vesselOperatorProcedure = roleProcedure(ROLES.VESSEL_OPERATOR);
+export const portMasterProcedure = roleProcedure(ROLES.PORT_MASTER);
+export const shipCaptainProcedure = roleProcedure(ROLES.SHIP_CAPTAIN);
+export const vesselBrokerProcedure = roleProcedure(ROLES.VESSEL_BROKER);
+export const customsBrokerProcedure = roleProcedure(ROLES.CUSTOMS_BROKER);
+
+// =============================================================================
+// TRANSPORT MODE PROCEDURES — Enforce TRUCK/RAIL/VESSEL mode access
+// =============================================================================
+
+import { userHasMode } from './transportModes';
+
+const requireTruckMode = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED', message: UNAUTHED_ERR_MSG });
+  if (!userHasMode(ctx.user as any, 'TRUCK')) throw new TRPCError({ code: 'FORBIDDEN', message: 'Truck mode access required' });
+  return next({ ctx: { ...ctx, user: ctx.user, transportMode: 'TRUCK' as const } });
+});
+
+const requireRailMode = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED', message: UNAUTHED_ERR_MSG });
+  if (!userHasMode(ctx.user as any, 'RAIL')) throw new TRPCError({ code: 'FORBIDDEN', message: 'Rail mode access required' });
+  return next({ ctx: { ...ctx, user: ctx.user, transportMode: 'RAIL' as const } });
+});
+
+const requireVesselMode = t.middleware(async ({ ctx, next }) => {
+  if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED', message: UNAUTHED_ERR_MSG });
+  if (!userHasMode(ctx.user as any, 'VESSEL')) throw new TRPCError({ code: 'FORBIDDEN', message: 'Vessel mode access required' });
+  return next({ ctx: { ...ctx, user: ctx.user, transportMode: 'VESSEL' as const } });
+});
+
+export const truckProcedure = t.procedure.use(requireUser).use(requireTruckMode);
+export const railProcedure = t.procedure.use(requireUser).use(requireRailMode);
+export const vesselProcedure = t.procedure.use(requireUser).use(requireVesselMode);
 
 // =============================================================================
 // APPROVAL GATING MIDDLEWARE

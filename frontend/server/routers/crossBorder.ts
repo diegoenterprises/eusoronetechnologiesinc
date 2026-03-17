@@ -24,6 +24,8 @@ import { randomBytes } from "crypto";
 import { eq, and, desc, sql, gte, lte, like, count, sum, avg, isNull, or, inArray, ne } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
+import { getLiveBorderWaitTimes, getPortMetadata, isLiveDataAvailable, getCacheAgeSeconds } from "../services/borderWaitTimes";
+import { screenEntity } from "../services/ofacScreening";
 import { getDb } from "../db";
 import {
   loads,
@@ -140,34 +142,7 @@ const HTS_SAMPLE: HtsEntry[] = [
   { code: "3901.10", description: "Polyethylene - specific gravity < 0.94", dutyRate: 6.5, unit: "kg", chapter: 39, section: "VII", usExciseTax: 0, caGst: 5, mxIva: 16 },
 ];
 
-// ─── Customs Brokers (static reference data) ────────────────────────────────
-
-interface CustomsBroker {
-  id: string;
-  name: string;
-  company: string;
-  licenseNumber: string;
-  border: "US-CA" | "US-MX" | "BOTH";
-  rating: number;
-  totalClearances: number;
-  avgClearanceHours: number;
-  specialties: string[];
-  portsServed: string[];
-  phone: string;
-  email: string;
-  fastCertified: boolean;
-  ctpatCertified: boolean;
-  hazmatCapable: boolean;
-  available: boolean;
-}
-
-const BROKERS: CustomsBroker[] = [
-  { id: "brk-001", name: "Maria Gonzalez", company: "TransBorder Customs Inc.", licenseNumber: "CB-2024-0871", border: "BOTH", rating: 4.9, totalClearances: 14200, avgClearanceHours: 2.1, specialties: ["Automotive", "Perishables", "HAZMAT"], portsServed: ["Laredo", "El Paso", "Otay Mesa"], phone: "+1-956-555-0142", email: "mgonzalez@transborder.com", fastCertified: true, ctpatCertified: true, hazmatCapable: true, available: true },
-  { id: "brk-002", name: "James Chen", company: "Northern Gateway Brokers", licenseNumber: "CB-2023-0443", border: "US-CA", rating: 4.8, totalClearances: 9800, avgClearanceHours: 1.8, specialties: ["Lumber", "Manufacturing", "Electronics"], portsServed: ["Ambassador Bridge", "Blue Water Bridge", "Peace Bridge"], phone: "+1-519-555-0289", email: "jchen@northerngateway.com", fastCertified: true, ctpatCertified: true, hazmatCapable: false, available: true },
-  { id: "brk-003", name: "Sarah Thompson", company: "Pacific Customs Solutions", licenseNumber: "CB-2024-0156", border: "US-CA", rating: 4.7, totalClearances: 7500, avgClearanceHours: 2.4, specialties: ["Agriculture", "Seafood", "Forestry"], portsServed: ["Pacific Highway", "Blaine"], phone: "+1-604-555-0317", email: "sthompson@pacificcustoms.com", fastCertified: true, ctpatCertified: true, hazmatCapable: true, available: true },
-  { id: "brk-004", name: "Roberto Alvarez", company: "Frontera Aduanera MX", licenseNumber: "CB-2023-1092", border: "US-MX", rating: 4.6, totalClearances: 11300, avgClearanceHours: 3.2, specialties: ["Automotive Parts", "Textiles", "Agriculture"], portsServed: ["Nogales", "Pharr", "Brownsville"], phone: "+1-520-555-0455", email: "ralvarez@fronteraaduanera.com", fastCertified: true, ctpatCertified: true, hazmatCapable: true, available: false },
-  { id: "brk-005", name: "Emily Watson", company: "Great Lakes Brokerage", licenseNumber: "CB-2024-0728", border: "US-CA", rating: 4.5, totalClearances: 5200, avgClearanceHours: 2.0, specialties: ["Steel", "Automotive", "Chemicals"], portsServed: ["Ambassador Bridge", "Thousand Islands Bridge", "Champlain"], phone: "+1-716-555-0623", email: "ewatson@greatlakesbrokerage.com", fastCertified: true, ctpatCertified: false, hazmatCapable: true, available: true },
-];
+// ─── Customs Brokers — now queried from companies DB table ───────────────────
 
 // ─── Customs document type constants ────────────────────────────────────────
 
@@ -324,6 +299,7 @@ export const crossBorderRouter = router({
       // Company compliance for C-TPAT snapshot
       const [companyRow] = await db
         .select({
+          id: companies.id,
           complianceStatus: companies.complianceStatus,
           name: companies.name,
         })
@@ -377,16 +353,39 @@ export const crossBorderRouter = router({
         });
       }
 
-      // Border alerts from high-wait ports
-      const borderAlerts = PORTS_OF_ENTRY
-        .filter((p) => p.currentWaitMinutes > 40)
-        .map((p, i) => ({
-          id: `ba-${i + 1}`,
-          severity: (p.currentWaitMinutes > 60 ? "high" : "moderate") as "high" | "moderate" | "low",
-          message: `${p.name} experiencing ${p.currentWaitMinutes}+ min commercial wait times`,
-          portOfEntry: p.name,
-          timestamp: iso(),
-        }));
+      // Border alerts from LIVE wait times (CBP API) — no fallback to fake data
+      let borderAlerts: Array<{ id: string; severity: "high" | "moderate" | "low"; message: string; portOfEntry: string; timestamp: string }> = [];
+      try {
+        const livePorts = await getLiveBorderWaitTimes();
+        borderAlerts = livePorts
+          .filter((p) => p.commercialWaitMinutes !== null && p.commercialWaitMinutes > 40)
+          .map((p, i) => ({
+            id: `ba-${i + 1}`,
+            severity: (p.commercialWaitMinutes! > 60 ? "high" : "moderate") as "high" | "moderate" | "low",
+            message: `${p.crossingName || p.portName} experiencing ${p.commercialWaitMinutes}+ min commercial wait times`,
+            portOfEntry: p.crossingName || p.portName,
+            timestamp: p.updatedAt || iso(),
+          }));
+      } catch {
+        // CBP API unavailable — no fake alerts
+      }
+
+      // Query real bond / cargo coverage amount from insurance policies
+      let bondAmount = 0;
+      try {
+        const [bondRow] = await db
+          .select({ amount: insurancePolicies.perOccurrenceLimit })
+          .from(insurancePolicies)
+          .where(
+            and(
+              eq(insurancePolicies.companyId, companyRow?.id ?? 0),
+              eq(insurancePolicies.status, "active"),
+            )
+          )
+          .orderBy(desc(insurancePolicies.perOccurrenceLimit))
+          .limit(1);
+        bondAmount = bondRow?.amount ? Number(bondRow.amount) : 0;
+      } catch { /* no policy found */ }
 
       return {
         period,
@@ -394,8 +393,16 @@ export const crossBorderRouter = router({
           activeCrossings: activeCrossings.length,
           totalCrossingsThisPeriod: cbLoads.length,
           pendingClearance: pendingClearance.length,
-          averageCrossingTimeMinutes: 47, // Would need GPS event data for real calc
-          complianceRate: companyRow?.complianceStatus === "compliant" ? 98.7 : 85.0,
+          averageCrossingTimeMinutes: completedCrossings.length > 0
+            ? Math.round(completedCrossings.reduce((sum, l) => {
+                const pickup = l.pickupDate ? new Date(l.pickupDate).getTime() : 0;
+                const delivery = l.actualDeliveryDate ? new Date(l.actualDeliveryDate).getTime() : (l.deliveryDate ? new Date(l.deliveryDate).getTime() : 0);
+                return sum + (delivery && pickup ? (delivery - pickup) / 60000 : 0);
+              }, 0) / completedCrossings.length) || 0
+            : 0,
+          complianceRate: cbLoads.length > 0
+            ? Math.round((completedCrossings.length / Math.max(cbLoads.length, 1)) * 1000) / 10
+            : 100.0,
           totalDutiesPaid,
           currency: "USD",
         },
@@ -404,11 +411,11 @@ export const crossBorderRouter = router({
         complianceSnapshot: {
           ctpatStatus: companyRow?.complianceStatus === "compliant" ? "CERTIFIED" : "PENDING",
           ctpatTier: companyRow?.complianceStatus === "compliant" ? "Tier II" : "Tier I",
-          fastCardsActive: Math.min(activeDriverCount, 23),
-          fastCardsExpiringSoon: Math.max(0, Math.floor(activeDriverCount * 0.1)),
-          bondedCarrierStatus: "ACTIVE",
-          bondAmount: 75_000,
-          bondExpiry: future(245),
+          fastCardsActive: activeDriverCount,
+          fastCardsExpiringSoon: 0,
+          bondedCarrierStatus: companyRow?.complianceStatus === "compliant" ? "ACTIVE" : "PENDING",
+          bondAmount,
+          bondExpiry: null,
           eManifestsPending: emanifestPending,
           eManifestsAccepted: emanifestAccepted,
           eManifestsRejected: emanifestRejected,
@@ -417,37 +424,64 @@ export const crossBorderRouter = router({
     }),
 
   // ══════════════════════════════════════════════════════════════════════════
-  // 2. Border Wait Times (static reference — port data kept as constants)
+  // 2. Border Wait Times — LIVE from CBP BWT API (no fallback)
   // ══════════════════════════════════════════════════════════════════════════
   getBorderWaitTimes: protectedProcedure
     .input(z.object({
       border: z.enum(["US-CA", "US-MX", "ALL"]).default("ALL"),
       portCode: z.string().optional(),
     }).optional())
-    .query(({ input }) => {
+    .query(async ({ input }) => {
       const border = input?.border ?? "ALL";
-      let ports = PORTS_OF_ENTRY;
-      if (border !== "ALL") ports = ports.filter(p => p.border === border);
-      if (input?.portCode) ports = ports.filter(p => p.code === input.portCode);
+
+      // Try live CBP data first
+      const livePorts = await getLiveBorderWaitTimes();
+      const useLive = livePorts.length > 0;
+
+      // Map live CBP data, enriched with our port metadata
+      let mapped = livePorts
+        .filter(p => p.commercialWaitMinutes !== null || p.commercialFastWaitMinutes !== null)
+        .map(p => {
+          const meta = getPortMetadata(p.portNumber);
+          const waitMin = p.commercialWaitMinutes ?? 0;
+          // Find matching reference port for averageWaitMinutes baseline (4-digit prefix match)
+          const portPrefix = p.portNumber.substring(0, 4);
+          const refPort = PORTS_OF_ENTRY.find(sp => sp.code === portPrefix);
+          const avgWait = refPort?.averageWaitMinutes ?? Math.round(waitMin * 0.8);
+          const severity: "low" | "moderate" | "high" | "critical" =
+            waitMin <= 15 ? "low" : waitMin <= 35 ? "moderate" : waitMin <= 60 ? "high" : "critical";
+          return {
+            id: `poe-${p.portNumber}`,
+            name: p.crossingName || p.portName,
+            code: p.portNumber,
+            border: p.border,
+            state: meta?.state ?? refPort?.state ?? "",
+            currentWaitMinutes: waitMin,
+            averageWaitMinutes: avgWait,
+            fastLaneWaitMinutes: p.commercialFastWaitMinutes,
+            severity,
+            trend: waitMin > avgWait ? ("increasing" as const) : ("decreasing" as const),
+            lat: meta?.lat ?? refPort?.lat ?? 0,
+            lng: meta?.lng ?? refPort?.lng ?? 0,
+            lastUpdated: p.updatedAt,
+            lanesOpen: p.commercialLanesOpen,
+            fastLanesOpen: p.commercialFastLanesOpen,
+            operationalStatus: p.commercialOperationalStatus,
+          };
+        });
+
+      if (border !== "ALL") mapped = mapped.filter(p => p.border === border);
+      if (input?.portCode) mapped = mapped.filter(p => p.code === input.portCode);
+
       return {
-        updatedAt: iso(),
-        ports: ports.map(p => ({
-          id: p.id,
-          name: p.name,
-          code: p.code,
-          border: p.border,
-          state: p.state,
-          currentWaitMinutes: p.currentWaitMinutes,
-          averageWaitMinutes: p.averageWaitMinutes,
-          fastLaneWaitMinutes: p.fastLane ? Math.max(5, Math.round(p.currentWaitMinutes * 0.4)) : null,
-          severity: p.waitSeverity,
-          trend: p.currentWaitMinutes > p.averageWaitMinutes ? ("increasing" as const) : ("decreasing" as const),
-          lat: p.lat,
-          lng: p.lng,
-          lastUpdated: p.lastUpdated,
-        })),
-        systemStatus: "OPERATIONAL" as const,
-        dataSource: "CBP BWT API / CBSA",
+        updatedAt: new Date().toISOString(),
+        ports: mapped,
+        systemStatus: useLive ? "LIVE" as const : "UNAVAILABLE" as const,
+        dataSource: useLive
+          ? "CBP Border Wait Times API (bwt.cbp.gov)"
+          : "CBP API temporarily unavailable — no data to display",
+        cacheAgeSeconds: getCacheAgeSeconds(),
+        live: useLive,
       };
     }),
 
@@ -943,11 +977,11 @@ export const crossBorderRouter = router({
         )
         .limit(50);
 
-      // Simulate FAST card status from driver license/hazmat data
+      // Derive FAST card status from real driver license/hazmat data
       const now = new Date();
       const soonThreshold = new Date(Date.now() + 90 * 86_400_000);
 
-      const cards = driverRows.map((d, i) => {
+      const cards = driverRows.map((d) => {
         const expiry = d.licenseExpiry ?? new Date(Date.now() + 365 * 86_400_000);
         const isExpiringSoon = expiry <= soonThreshold && expiry > now;
         const isExpired = expiry <= now;
@@ -955,13 +989,13 @@ export const crossBorderRouter = router({
         return {
           id: `fast-${d.driverId}`,
           driverName: d.driverName ?? `Driver ${d.driverId}`,
-          cardNumber: `FAST-${String(d.driverId).padStart(4, "0")}${randomBytes(2).toString("hex").toUpperCase()}`,
+          cardNumber: `FAST-${String(d.driverId).padStart(6, "0")}`,
           status: (isExpired ? "EXPIRED" : isExpiringSoon ? "EXPIRING_SOON" : "ACTIVE") as "ACTIVE" | "EXPIRING_SOON" | "EXPIRED",
-          issueDate: past(730 - i * 100),
+          issueDate: d.licenseExpiry ? new Date(expiry.getTime() - 5 * 365 * 86_400_000).toISOString() : null,
           expiryDate: expiry.toISOString(),
-          border: (i % 2 === 0 ? "US-MX" : "US-CA") as "US-MX" | "US-CA",
-          enrollmentCenter: i % 2 === 0 ? "Laredo, TX" : "Detroit, MI",
-          backgroundCheckStatus: "CLEARED" as const,
+          border: "BOTH" as const,
+          enrollmentCenter: null as string | null,
+          backgroundCheckStatus: (d.status === "active" ? "CLEARED" : "PENDING") as "CLEARED" | "PENDING",
         };
       });
 
@@ -1185,6 +1219,7 @@ export const crossBorderRouter = router({
         loadId: string;
         bondNumber: string;
         entryPort: string;
+        exitPort: string;
         commodity: string;
         value: number;
         bondCoverage: number;
@@ -1205,6 +1240,7 @@ export const crossBorderRouter = router({
             rate: loads.rate,
             pickupDate: loads.pickupDate,
             deliveryDate: loads.deliveryDate,
+            deliveryLocation: loads.deliveryLocation,
           })
           .from(loads)
           .where(inArray(loads.id, bondLoadIds));
@@ -1212,11 +1248,13 @@ export const crossBorderRouter = router({
         for (const bl of bondLoads) {
           const stop = customsStops.find((s) => s.loadId === bl.id);
           const value = bl.rate ? Number(bl.rate) * 10 : 100_000;
+          const deliv = bl.deliveryLocation;
           activeBonds.push({
             id: `itb-${bl.id}`,
             loadId: bl.loadNumber,
             bondNumber: rid("IT"),
             entryPort: stop?.facilityName ?? stop?.city ?? "Unknown",
+            exitPort: deliv ? `${deliv.city}, ${deliv.state}` : "Destination",
             commodity: bl.commodityName ?? "General Cargo",
             value,
             bondCoverage: Math.round(value * 1.5),
@@ -1546,15 +1584,66 @@ export const crossBorderRouter = router({
       specialty: z.string().optional(),
       available: z.boolean().optional(),
     }).optional())
-    .query(({ input }) => {
-      let filtered = BROKERS;
-      const border = input?.border ?? "ALL";
-      if (border !== "ALL") filtered = filtered.filter(b => b.border === border || b.border === "BOTH");
-      if (input?.specialty) {
-        const sp = input.specialty.toLowerCase();
-        filtered = filtered.filter(b => b.specialties.some(s => s.toLowerCase().includes(sp)));
-      }
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { brokers: [], total: 0 };
+
+      // Query companies from the DB
+      const companyRows = await db
+        .select({
+          id: companies.id,
+          name: companies.name,
+          complianceStatus: companies.complianceStatus,
+          dotNumber: companies.dotNumber,
+          mcNumber: companies.mcNumber,
+          phone: companies.phone,
+          email: companies.email,
+          state: companies.state,
+          createdAt: companies.createdAt,
+        })
+        .from(companies)
+        .where(
+          and(
+            isNull(companies.deletedAt),
+            eq(companies.isActive, true),
+          )
+        )
+        .orderBy(desc(companies.createdAt))
+        .limit(50);
+
+      // Map companies to broker format using real data
+      const brokers = companyRows.map((c) => {
+        const state = c.state ?? "";
+        // Derive border affinity from state
+        const isMXBorder = ["TX", "CA", "AZ", "NM"].includes(state);
+        const isCABorder = ["MI", "NY", "WA", "MT", "ME", "MN", "ND", "VT", "NH", "OH"].includes(state);
+        const border: "US-CA" | "US-MX" | "BOTH" = isMXBorder && isCABorder ? "BOTH" : isMXBorder ? "US-MX" : isCABorder ? "US-CA" : "BOTH";
+
+        return {
+          id: `brk-${c.id}`,
+          name: c.name ?? "Unknown",
+          company: c.name ?? "Unknown",
+          licenseNumber: c.mcNumber ? `MC-${c.mcNumber}` : c.dotNumber ? `DOT-${c.dotNumber}` : `CB-${c.id}`,
+          border,
+          rating: 0,
+          totalClearances: 0,
+          avgClearanceHours: 0,
+          specialties: [] as string[],
+          portsServed: [] as string[],
+          phone: c.phone ?? "",
+          email: c.email ?? "",
+          fastCertified: false,
+          ctpatCertified: c.complianceStatus === "compliant",
+          hazmatCapable: false,
+          available: c.complianceStatus !== "non_compliant",
+        };
+      });
+
+      let filtered = brokers;
+      const borderFilter = input?.border ?? "ALL";
+      if (borderFilter !== "ALL") filtered = filtered.filter(b => b.border === borderFilter || b.border === "BOTH");
       if (input?.available !== undefined) filtered = filtered.filter(b => b.available === input!.available);
+
       return { brokers: filtered, total: filtered.length };
     }),
 
@@ -1573,8 +1662,15 @@ export const crossBorderRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
-      const broker = BROKERS.find(b => b.id === input.brokerId);
       const fee = input.serviceType === "expedited" ? 350 : input.serviceType === "hazmat" ? 425 : 175;
+
+      // Look up broker company from DB
+      const brokerId = input.brokerId.replace("brk-", "");
+      const [brokerRow] = await db
+        .select({ id: companies.id, name: companies.name })
+        .from(companies)
+        .where(eq(companies.id, Number(brokerId) || 0))
+        .limit(1);
 
       // Find load for audit log
       const [loadRow] = await db
@@ -1591,14 +1687,14 @@ export const crossBorderRouter = router({
         entityId: loadRow?.id ?? null,
         changes: {
           brokerId: input.brokerId,
-          brokerName: broker?.name ?? "Unknown",
+          brokerName: brokerRow?.name ?? "Unknown",
           portOfEntry: input.portOfEntry,
           serviceType: input.serviceType,
           fee,
         } as Record<string, unknown>,
         metadata: {
           loadId: input.loadId,
-          brokerCompany: broker?.company ?? "Unknown",
+          brokerCompany: brokerRow?.name ?? "Unknown",
         } as Record<string, unknown>,
         severity: "MEDIUM",
       });
@@ -1607,13 +1703,13 @@ export const crossBorderRouter = router({
         assignmentId: rid("BA"),
         loadId: input.loadId,
         brokerId: input.brokerId,
-        brokerName: broker?.name ?? "Unknown",
-        brokerCompany: broker?.company ?? "Unknown",
+        brokerName: brokerRow?.name ?? "Unknown",
+        brokerCompany: brokerRow?.name ?? "Unknown",
         portOfEntry: input.portOfEntry,
         serviceType: input.serviceType,
         status: "ASSIGNED" as const,
         assignedAt: iso(),
-        estimatedClearanceHours: broker?.avgClearanceHours ?? 4,
+        estimatedClearanceHours: 4,
         fee,
         notes: input.notes ?? null,
       };
@@ -1704,7 +1800,7 @@ export const crossBorderRouter = router({
     }),
 
   // ══════════════════════════════════════════════════════════════════════════
-  // 20. Export Controls (deterministic screening rules)
+  // 20. Export Controls — REAL OFAC SDN + Consolidated screening
   // ══════════════════════════════════════════════════════════════════════════
   getExportControls: protectedProcedure
     .input(z.object({
@@ -1713,41 +1809,44 @@ export const crossBorderRouter = router({
       eccnCode: z.string().optional(),
       htsCode: z.string().optional(),
     }))
-    .query(({ input }) => ({
-      screeningResult: {
-        entityName: input.entityName ?? "N/A",
-        screenedAt: iso(),
-        deniedPartyMatch: false,
-        sdnMatch: false,
-        entityListMatch: false,
-        unscMatch: false,
-        bisMatch: false,
-        overallRisk: "LOW" as const,
-        listsScreened: [
-          { name: "SDN (Specially Designated Nationals)", source: "OFAC", match: false },
-          { name: "Entity List", source: "BIS", match: false },
-          { name: "Denied Persons List", source: "BIS", match: false },
-          { name: "Unverified List", source: "BIS", match: false },
-          { name: "ITAR Debarred", source: "DDTC", match: false },
-          { name: "UN Consolidated Sanctions", source: "UN", match: false },
-          { name: "EU Consolidated List", source: "EU", match: false },
-          { name: "Canada SEMA List", source: "GAC", match: false },
+    .query(async ({ input }) => {
+      const result = await screenEntity(input.entityName ?? "");
+
+      return {
+        screeningResult: {
+          entityName: result.entityName,
+          screenedAt: result.screenedAt,
+          totalEntriesScreened: result.totalEntriesScreened,
+          deniedPartyMatch: result.matches.length > 0,
+          sdnMatch: result.sdnMatch,
+          consolidatedMatch: result.consolidatedMatch,
+          entityListMatch: false,
+          unscMatch: false,
+          bisMatch: false,
+          overallRisk: result.overallRisk,
+          matches: result.matches,
+          listsScreened: [
+            ...result.listsScreened,
+            { name: "Entity List", source: "BIS", match: false, entriesCount: 0 },
+            { name: "ITAR Debarred", source: "DDTC", match: false, entriesCount: 0 },
+          ],
+        },
+        exportClassification: input.eccnCode ? {
+          eccn: input.eccnCode,
+          controlReason: "NS (National Security)",
+          licenseRequired: false,
+          licenseException: "TSR",
+          destinationRestrictions: ["Country Group D:1", "Embargoed nations"],
+        } : null,
+        guidance: [
+          "All parties (shipper, consignee, end-user) must be screened before export",
+          "ITAR-controlled items require State Department license (DDTC)",
+          "EAR-controlled items may need BIS license based on ECCN + destination",
+          "Screening must be re-run if parties change or for each new transaction",
+          `Screened against ${result.totalEntriesScreened.toLocaleString()} entities from OFAC SDN + Consolidated lists`,
         ],
-      },
-      exportClassification: input.eccnCode ? {
-        eccn: input.eccnCode,
-        controlReason: "NS (National Security)",
-        licenseRequired: false,
-        licenseException: "TSR",
-        destinationRestrictions: ["Country Group D:1", "Embargoed nations"],
-      } : null,
-      guidance: [
-        "All parties (shipper, consignee, end-user) must be screened before export",
-        "ITAR-controlled items require State Department license (DDTC)",
-        "EAR-controlled items may need BIS license based on ECCN + destination",
-        "Screening must be re-run if parties change or for each new transaction",
-      ],
-    })),
+      };
+    }),
 
   // ══════════════════════════════════════════════════════════════════════════
   // 21. DG / HAZMAT Cross-Border (deterministic regulatory rules)
@@ -1801,11 +1900,34 @@ export const crossBorderRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       const base = input?.baseCurrency ?? "USD";
-      const rates: Record<string, Record<string, number>> = {
-        USD: { USD: 1, CAD: 1.3645, MXN: 17.12 },
-        CAD: { USD: 0.7328, CAD: 1, MXN: 12.55 },
-        MXN: { USD: 0.0584, CAD: 0.0797, MXN: 1 },
-      };
+
+      // Fetch live exchange rates from Frankfurter API (free, no key)
+      const allCurrencies = ["USD", "CAD", "MXN"];
+      const targets = allCurrencies.filter(c => c !== base).join(",");
+      let liveRates: Record<string, number> = {};
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const fxRes = await fetch(`https://api.frankfurter.app/latest?from=${base}&to=${targets}`, {
+          signal: controller.signal,
+          headers: { "Accept": "application/json" },
+        });
+        clearTimeout(timeout);
+        if (fxRes.ok) {
+          const fxData = await fxRes.json() as { rates?: Record<string, number> };
+          liveRates = fxData.rates ?? {};
+        }
+      } catch (err: any) {
+        logger.warn(`Frankfurter FX API failed: ${err.message}`);
+      }
+
+      // Build rates map: base currency = 1, others from live API
+      const rates: Record<string, number> = { [base]: 1 };
+      for (const cur of allCurrencies) {
+        if (cur !== base) {
+          rates[cur] = liveRates[cur] ?? 0;
+        }
+      }
 
       // Query recent cross-border loads with rates for real invoices
       let recentInvoices: Array<{
@@ -1827,7 +1949,7 @@ export const crossBorderRouter = router({
         recentInvoices = cbLoads.slice(0, 5).map((l) => {
           const loadCurrency = l.currency ?? "USD";
           const amount = l.rate ? Number(l.rate) : 0;
-          const fxRate = rates[loadCurrency]?.[base] ?? 1;
+          const fxRate = loadCurrency === base ? 1 : (rates[loadCurrency] ? 1 / rates[loadCurrency] : 1);
           return {
             id: `inv-${l.id}`,
             loadId: l.loadNumber,
@@ -1843,7 +1965,7 @@ export const crossBorderRouter = router({
       return {
         baseCurrency: base,
         updatedAt: iso(),
-        exchangeRates: rates[base],
+        exchangeRates: rates,
         recentInvoices,
         hedgingOptions: [
           { type: "Forward Contract", description: "Lock in exchange rate for future settlement", minAmount: 10_000, term: "30-180 days" },

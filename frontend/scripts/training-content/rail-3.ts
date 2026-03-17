@@ -1,0 +1,36 @@
+import { ModuleDef } from "./types";
+const M = "multiple_choice" as const, T = "true_false" as const;
+const mc = (q:string,a:string[],c:number,e:string,r:string) => ({questionText:q,questionType:M,options:a.map((t,i)=>({id:"abcd"[i],text:t,isCorrect:i===c})),correctAnswer:"abcd"[c],explanation:e,difficulty:"medium" as const,regulationReference:r});
+const tf = (q:string,v:boolean,e:string,r:string) => ({questionText:q,questionType:T,options:[{id:"a",text:"True",isCorrect:v},{id:"b",text:"False",isCorrect:!v}],correctAnswer:v?"a":"b",explanation:e,difficulty:"easy" as const,regulationReference:r});
+const les = (t:string,h:string,i:number,d:number,rc:string) => ({title:t,contentHtml:h,orderIndex:i,lessonType:"reading" as const,estimatedDurationMinutes:d,keyRegulations:[{code:rc,title:t,jurisdiction:"US",summary:t}]});
+const mod = (t:string,ds:string,oi:number,dur:number,ls:any[],qs:any[]):ModuleDef => ({title:t,description:ds,orderIndex:oi,contentType:"text",estimatedDurationMinutes:dur,lessons:ls,quiz:{title:t+" Quiz",description:"Assessment: "+ds,questions:qs}});
+
+export function getRail3(): Record<string, ModuleDef[]> { return {
+"rail-yard-safety": [
+  mod("Yard Hazards & Blue Signal","Yard safety Part 218",1,45,[
+    les("Yard Hazards","<h2>Rail Yard Hazards</h2><p>Part 218: moving equipment, fouling points, hump yards (gravity), RCL ops, noise. Blue flags/lights when workers on/under/between equipment — no movement allowed. Violations carry serious FRA penalties.</p>",1,25,"49 CFR Part 218"),
+    les("Yard Procedures","<h2>Switching</h2><p>Flat switching uses locos. 3-point contact, coupling speed limits, communication before moves. Yard tracks Class 1 (10 mph). Must comply Part 213.</p>",2,20,"49 CFR Part 218 Subpart C"),
+  ],[mc("Hump yard uses:",["Locos pushing","Gravity to roll cars","Conveyors","Cranes"],1,"Gravity classification.","49 CFR Part 218"),mc("Blue signals mean:",["Track clear","Workers protected—no move","Speed restrict","Malfunction"],1,"Worker protection.","49 CFR Part 218 Subpart B"),tf("Yard tracks exempt from Part 213.",false,"Must comply.","49 CFR Part 213"),mc("3-point contact when:",["Using radio","Mounting/dismounting equip","Operating switch","Signing papers"],1,"Fall prevention.","49 CFR Part 218"),mc("Yard speed:",["5 mph","10 mph","25 mph","40 mph"],1,"Class 1=10 mph.","49 CFR §213.9")]),
+  mod("Yard Emergency & Security","Emergency and TSA security",2,45,[
+    les("Emergency Response","<h2>Emergencies</h2><p>Derailment: stop moves, protect. Injury: secure, 911. Hazmat: evacuate, CHEMTREC 1-800-424-9300. Fire: evacuate, FD. Multiple egress routes required.</p>",1,25,"49 CFR Part 225"),
+    les("Yard Security","<h2>Security</h2><p>Part 1580 TSA: fencing, CCTV, background checks, suspicious activity reporting.</p>",2,20,"49 CFR Part 1580"),
+  ],[mc("First derailment action:",["Continue ops","Stop all moves, protect","Call media","Rerail now"],1,"Safety first.","49 CFR Part 225"),mc("Security mandated by:",["FRA","TSA","Police","OSHA"],1,"TSA Part 1580.","49 CFR Part 1580"),tf("Background checks for hazmat workers.",true,"Required.","49 CFR Part 1580"),mc("Hazmat release—contact:",["Customer","CHEMTREC","Car owner","No one"],1,"1-800-424-9300.","Industry"),tf("All must know evac routes.",true,"OSHA requires.","OSHA 1910.38")]),
+  mod("RCL & Hazmat Handling","Remote control and hazmat cars",3,45,[
+    les("RCL Operations","<h2>Remote Control</h2><p>Single operator via handheld. Must maintain visual contact with leading end. Special training required. AEI tags for car ID.</p>",1,25,"49 CFR Part 218"),
+    les("Hazmat in Yards","<h2>Hazmat Rules</h2><p>Part 174: coupling speed limits, no humping Class 1/PIH, ID placards before switching, special placement.</p>",2,20,"49 CFR Part 174"),
+  ],[mc("RCL operator must maintain:",["Radio only","Visual contact leading end","GPS","Radar"],1,"Visual required.","49 CFR Part 218"),mc("Cannot be humped:",["Class 3","Class 1 explosives","Class 8","Class 9"],1,"Too dangerous.","49 CFR Part 174"),tf("RCL needs special certification.",true,"Required.","49 CFR Part 218"),mc("Before switching hazmat:",["Weigh","ID placards","Photograph","Empty"],1,"Identify first.","49 CFR Part 174"),tf("Standard coupling speed for all cars.",false,"Hazmat reduced.","49 CFR Part 174")]),
+],
+"grade-crossing-safety": [
+  mod("Warning Systems & Horn","Parts 222 and 234",1,50,[
+    les("Warning Types","<h2>Crossings</h2><p>Part 234: passive (crossbuck) to active (lights, gates, bells). ~130K US public crossings. Four-quadrant gates prevent drive-around.</p>",1,25,"49 CFR Part 234"),
+    les("Horn Rules","<h2>Horn</h2><p>Part 222: 15+ sec before. Pattern: 2 long, 1 short, 1 long. Quiet zones with supplementary safety measures.</p>",2,25,"49 CFR Part 222"),
+  ],[mc("Horn pattern:",["3 short","2 long 1 short 1 long","1 continuous","No pattern"],1,"Standard pattern.","49 CFR Part 222"),mc("Horn begins:",["5 sec","15 sec before","30 sec","1 min"],1,"15 seconds min.","49 CFR Part 222"),mc("Quiet zones need:",["Nothing","Supplementary safety measures","Request only","FRA only"],1,"Must compensate.","49 CFR Part 222"),tf("All crossings have active warnings.",false,"Many passive.","49 CFR Part 234"),mc("US public crossings:",["50K","130K","300K","500K"],1,"~130,000.","FRA stats")]),
+  mod("Crew Duties & Prevention","Prevention and crew responsibilities",2,50,[
+    les("Crew Duties","<h2>At Crossings</h2><p>Sound horn Part 222. Report malfunctions to dispatcher. After collision: stop, protect scene, call 911/dispatcher, don't move until released.</p>",1,25,"49 CFR Parts 222, 234"),
+    les("Prevention Programs","<h2>Improvement</h2><p>Section 130 federal funds. Grade separation most effective. Freight at 55 mph needs 1+ mile to stop. Operation Lifesaver: national safety nonprofit.</p>",2,25,"23 USC §130"),
+  ],[mc("Train at 55 mph stops in:",["500 ft","1+ mile","100 yards","2000 ft"],1,"Over 1 mile.","Operation Lifesaver"),mc("Signal malfunction→report to:",["Police","Dispatcher immediately","FRA","Next crew"],1,"Immediate.","49 CFR Part 234"),tf("All crossing collisions reported to FRA.",true,"Regardless of damage.","49 CFR Part 225"),mc("Most effective improvement:",["Signage","Grade separation","Speed bumps","Lighting"],1,"Eliminates crossing.","23 USC §130"),mc("Operation Lifesaver is:",["FRA enforcement","Nonprofit safety education","Insurance","Highway program"],1,"National nonprofit.","Operation Lifesaver")]),
+  mod("Trespasser Prevention","Trespasser awareness",3,40,[
+    les("Trespasser Risks","<h2>Trespassing</h2><p>Trespasser deaths exceed crossing fatalities. Illegal on RR property. Common at bridges, tunnels, yards. RRs partner with Operation Lifesaver.</p>",1,20,"State trespass laws"),
+  ],[tf("Trespasser deaths exceed crossing fatalities.",true,"Leading cause.","FRA stats"),mc("RR trespassing is:",["Legal daytime","Always illegal","Legal at crossings","Misdemeanor"],1,"Illegal.","State laws"),mc("Common trespasser locations:",["Malls","Bridges, tunnels, yards","Highways","Airports"],1,"RR structures.","FRA stats"),tf("RRs partner with Operation Lifesaver.",true,"Prevention.","Operation Lifesaver"),mc("Crew sees trespasser:",["Ignore","Report to dispatcher","Stop train","Confront"],1,"Report.","Operating rules")]),
+],
+};}

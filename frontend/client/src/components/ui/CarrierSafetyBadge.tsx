@@ -200,7 +200,7 @@ function BasicRow({ label, value, alert }: { label: string; value?: number | nul
     <div className="flex items-center justify-between">
       <span className="text-slate-500 truncate">{label}</span>
       <span className={`tabular-nums ${alertColor}`}>
-        {alert && "⚠ "}{displayVal}
+        {alert && "! "}{displayVal}
       </span>
     </div>
   );

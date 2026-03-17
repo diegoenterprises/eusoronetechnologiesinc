@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils";
 import { Languages } from "lucide-react";
 
 const LANGS = [
-  { code: "en", flag: "🇺🇸", label: "EN" },
-  { code: "es", flag: "🇪🇸", label: "ES" },
-  { code: "fr", flag: "🇫🇷", label: "FR" },
+  { code: "en", flag: "US", label: "EN" },
+  { code: "es", flag: "ES", label: "ES" },
+  { code: "fr", flag: "FR", label: "FR" },
 ];
 
 export default function LanguageSwitcher({ compact = false }: { compact?: boolean }) {

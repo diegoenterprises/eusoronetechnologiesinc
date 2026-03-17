@@ -145,7 +145,7 @@ export default function UptimeDashboard() {
                       <div className="grid grid-cols-2 gap-2">
                         <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Latest Snapshot</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.latestSnapshot ? new Date(p.latestSnapshot).toLocaleString() : "—"}</p></div>
                         <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Size</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.snapshotSize}</p></div>
-                        <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Encrypted</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.encrypted ? "✓ AES-256" : "✗"}</p></div>
+                        <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Encrypted</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.encrypted ? "AES-256" : "None"}</p></div>
                         <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Replication Lag</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.replicationLag}</p></div>
                       </div>
                     </CardContent>

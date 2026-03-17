@@ -9,7 +9,7 @@ import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { trainingModules, userTraining, trainingRecords, users, drivers } from "../../drizzle/schema";
+import { trainingModules, userTraining, trainingRecords, users, drivers, loads } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
 
 const trainingStatusSchema = z.enum(["not_started", "in_progress", "completed", "expired"]);
@@ -495,6 +495,380 @@ export const trainingRouter = router({
       } catch (e) {
         logger.error("[Training] getComplianceGap error:", e);
         return { gaps: [], completedCount: 0, totalRequired: 0, compliancePercent: 0 };
+      }
+    }),
+
+  // ============================================================================
+  // CROSS-VERTICAL MANDATORY TRAINING ASSIGNMENT SYSTEM
+  // ANY authorized role can push specific courses to drivers:
+  //   SHIPPER — requires drivers to complete training before load pickup
+  //   DISPATCH — assigns pre-job training to fleet drivers
+  //   CATALYST — ensures carrier drivers are trained for their loads
+  //   BROKER — mandates compliance training for carrier network
+  //   TERMINAL_MANAGER — requires site-specific safety training
+  //   COMPLIANCE_OFFICER / SAFETY_MANAGER — enforces regulatory training
+  //   ADMIN / SUPER_ADMIN — platform-wide training mandates
+  // Supports bulk assignment, load-linking, SMS + WebSocket notifications.
+  // ============================================================================
+
+  /**
+   * Assign course(s) to driver(s) — mandatory pre-job training
+   * Called by: ALL roles with authority over drivers (shipper, dispatch, catalyst,
+   *   broker, terminal_manager, compliance_officer, safety_manager, admin, super_admin)
+   * Writes to userTraining, sends SMS + WebSocket push to each driver
+   */
+  dispatchAssignCourse: protectedProcedure
+    .input(z.object({
+      driverIds: z.array(z.string()).min(1),
+      courseId: z.string(),
+      loadId: z.string().optional(),
+      priority: z.enum(["standard", "urgent", "mandatory"]).default("mandatory"),
+      deadline: z.string(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const assignerId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+      const moduleId = parseInt(input.courseId, 10);
+      const dueDate = new Date(input.deadline);
+
+      // Resolve course name
+      let courseName = "Training Course";
+      try {
+        const [mod] = await db.select({ name: trainingModules.name }).from(trainingModules).where(eq(trainingModules.id, moduleId)).limit(1);
+        if (mod) courseName = mod.name;
+      } catch {}
+
+      // Resolve assigner name + role
+      let assignerName = "Dispatch";
+      let assignerRole = (ctx.user as any)?.role || "UNKNOWN";
+      try {
+        const [u] = await db.select({ name: users.name, role: users.role }).from(users).where(eq(users.id, assignerId)).limit(1);
+        if (u?.name) assignerName = u.name;
+        if (u?.role) assignerRole = u.role;
+      } catch {}
+
+      const results: Array<{ driverId: string; assignmentId: string; driverName: string; notified: boolean }> = [];
+
+      for (const did of input.driverIds) {
+        const driverUserId = parseInt(did, 10);
+
+        // Check if already assigned (skip duplicates)
+        try {
+          const [existing] = await db.select({ id: userTraining.id })
+            .from(userTraining)
+            .where(and(
+              eq(userTraining.userId, driverUserId),
+              eq(userTraining.moduleId, moduleId),
+              eq(userTraining.status, "not_started"),
+            ))
+            .limit(1);
+          if (existing) {
+            results.push({ driverId: did, assignmentId: String(existing.id), driverName: "", notified: false });
+            continue;
+          }
+        } catch {}
+
+        // Insert assignment
+        const [inserted] = await db.insert(userTraining).values({
+          userId: driverUserId,
+          moduleId,
+          status: "not_started",
+          progress: 0,
+          expiresAt: dueDate,
+        } as never).$returningId();
+
+        const assignmentId = String(inserted.id);
+
+        // Get driver info for notification
+        let driverName = "";
+        let driverPhone = "";
+        try {
+          const [driverUser] = await db.select({ name: users.name, phone: users.phone })
+            .from(users).where(eq(users.id, driverUserId)).limit(1);
+          driverName = driverUser?.name || "";
+          driverPhone = driverUser?.phone || "";
+        } catch {}
+
+        let notified = false;
+
+        // SMS notification
+        if (driverPhone) {
+          try {
+            const { sendSms } = await import("../services/eusosms");
+            const loadRef = input.loadId ? ` for load ${input.loadId}` : "";
+            const urgency = input.priority === "urgent" ? "URGENT: " : input.priority === "mandatory" ? "MANDATORY: " : "";
+            await sendSms({
+              to: driverPhone,
+              message: `EusoTrip: ${urgency}${assignerName} assigned you "${courseName}"${loadRef}. Due: ${dueDate.toLocaleDateString()}. Complete at https://eusotrip.com/training`,
+              userId: driverUserId,
+            });
+            notified = true;
+          } catch (e) {
+            logger.warn("[Training] SMS send failed for driver", driverUserId, e);
+          }
+        }
+
+        // WebSocket notification
+        try {
+          const { emitUserNotification } = await import("../services/socketService");
+          emitUserNotification(driverUserId, {
+            type: "training_assigned",
+            title: `${input.priority === "mandatory" ? "Mandatory" : "New"} Training Assigned`,
+            message: `${assignerName} assigned "${courseName}". Due: ${dueDate.toLocaleDateString()}.${input.loadId ? ` Required before load ${input.loadId}.` : ""}`,
+            data: { assignmentId, courseId: input.courseId, loadId: input.loadId, priority: input.priority, deadline: input.deadline },
+          });
+        } catch {}
+
+        results.push({ driverId: did, assignmentId, driverName, notified });
+      }
+
+      // Audit log
+      try {
+        const { auditLogs } = await import("../../drizzle/schema");
+        await db.insert(auditLogs).values({
+          userId: assignerId,
+          action: "training_dispatched",
+          entityType: "TRAINING",
+          entityId: input.courseId,
+          metadata: JSON.stringify({
+            courseId: input.courseId,
+            courseName,
+            driverIds: input.driverIds,
+            loadId: input.loadId || null,
+            priority: input.priority,
+            deadline: input.deadline,
+            notes: input.notes || null,
+            assignmentCount: results.length,
+            assignerRole,
+          }),
+        } as never);
+      } catch {}
+
+      return {
+        success: true,
+        courseName,
+        assignments: results,
+        totalAssigned: results.length,
+        assignedBy: assignerName,
+        assignedAt: new Date().toISOString(),
+      };
+    }),
+
+  /**
+   * Get fleet training status — cross-vertical view of drivers + their training status
+   * SHIPPER: sees drivers assigned to their loads (across companies)
+   * DISPATCH/CATALYST/BROKER/ADMIN/COMPLIANCE_OFFICER/SAFETY_MANAGER: sees drivers in their company fleet
+   * TERMINAL_MANAGER: sees drivers in their company
+   */
+  getFleetTrainingStatus: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      filter: z.enum(["all", "pending", "overdue", "compliant"]).optional().default("all"),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { drivers: [], totalDrivers: 0, totalPending: 0, totalOverdue: 0, viewType: "fleet" };
+      const { userId, companyId } = await resolveUserContext(ctx.user);
+      const userRole = (ctx.user as any)?.role || "DRIVER";
+
+      try {
+        // ── Resolve which drivers to show based on caller's role ──
+        let driverRows: Array<{ driverId: number; userId: number; status: string | null }> = [];
+        let viewType = "fleet"; // fleet | loads
+
+        if (userRole === "SHIPPER") {
+          // SHIPPER: show drivers assigned to their loads
+          viewType = "loads";
+          const shipperLoads = await db.select({
+            driverId: loads.driverId,
+          }).from(loads)
+            .where(and(
+              eq(loads.shipperId, userId),
+              sql`${loads.driverId} IS NOT NULL`,
+            ))
+            .orderBy(desc(loads.updatedAt))
+            .limit(100);
+
+          const driverUserIds = [...new Set(shipperLoads.map(l => l.driverId).filter(Boolean))] as number[];
+          if (driverUserIds.length > 0) {
+            for (const duid of driverUserIds) {
+              try {
+                const [d] = await db.select({ driverId: drivers.id, userId: drivers.userId, status: drivers.status })
+                  .from(drivers).where(eq(drivers.userId, duid)).limit(1);
+                if (d) driverRows.push(d);
+              } catch {}
+            }
+          }
+        } else {
+          // ALL OTHER ROLES: show drivers in their company fleet
+          if (!companyId) return { drivers: [], totalDrivers: 0, totalPending: 0, totalOverdue: 0, viewType };
+          driverRows = await db.select({
+            driverId: drivers.id,
+            userId: drivers.userId,
+            status: drivers.status,
+          }).from(drivers).where(eq(drivers.companyId, companyId)).limit(100);
+        }
+
+        const now = new Date();
+        const result: Array<{
+          driverId: string;
+          userId: string;
+          driverName: string;
+          driverStatus: string;
+          pendingCourses: number;
+          completedCourses: number;
+          overdueCourses: number;
+          assignments: Array<{ id: string; courseName: string; status: string; progress: number; dueDate: string | null; priority: string }>;
+        }> = [];
+
+        let totalPending = 0;
+        let totalOverdue = 0;
+
+        for (const d of driverRows) {
+          // Get driver name
+          let driverName = "";
+          try {
+            const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, d.userId)).limit(1);
+            driverName = u?.name || `Driver #${d.driverId}`;
+          } catch {}
+
+          // Search filter
+          if (input?.search && !driverName.toLowerCase().includes(input.search.toLowerCase())) continue;
+
+          // Get training assignments
+          const assignments = await db.select({
+            id: userTraining.id,
+            moduleId: userTraining.moduleId,
+            status: userTraining.status,
+            progress: userTraining.progress,
+            expiresAt: userTraining.expiresAt,
+          }).from(userTraining).where(eq(userTraining.userId, d.userId)).orderBy(desc(userTraining.id));
+
+          // Get module names
+          const moduleIds = [...new Set(assignments.map(a => a.moduleId))];
+          const moduleNames: Record<number, string> = {};
+          if (moduleIds.length > 0) {
+            const modules = await db.select({ id: trainingModules.id, name: trainingModules.name }).from(trainingModules);
+            for (const m of modules) moduleNames[m.id] = m.name;
+          }
+
+          const pending = assignments.filter(a => a.status === "not_started" || a.status === "in_progress");
+          const completed = assignments.filter(a => a.status === "completed");
+          const overdue = assignments.filter(a =>
+            (a.status === "not_started" || a.status === "in_progress") && a.expiresAt && new Date(a.expiresAt) < now
+          );
+
+          totalPending += pending.length;
+          totalOverdue += overdue.length;
+
+          // Apply filter
+          if (input?.filter === "pending" && pending.length === 0) continue;
+          if (input?.filter === "overdue" && overdue.length === 0) continue;
+          if (input?.filter === "compliant" && (pending.length > 0 || overdue.length > 0)) continue;
+
+          result.push({
+            driverId: String(d.driverId),
+            userId: String(d.userId),
+            driverName,
+            driverStatus: d.status || "active",
+            pendingCourses: pending.length,
+            completedCourses: completed.length,
+            overdueCourses: overdue.length,
+            assignments: assignments.slice(0, 10).map(a => ({
+              id: String(a.id),
+              courseName: moduleNames[a.moduleId] || `Course #${a.moduleId}`,
+              status: a.status || "not_started",
+              progress: a.progress || 0,
+              dueDate: a.expiresAt?.toISOString() || null,
+              priority: overdue.some(o => o.id === a.id) ? "overdue" : pending.some(p => p.id === a.id) ? "pending" : "completed",
+            })),
+          });
+        }
+
+        return {
+          drivers: result,
+          totalDrivers: result.length,
+          totalPending,
+          totalOverdue,
+          viewType,
+        };
+      } catch (e) {
+        logger.error("[Training] getFleetTrainingStatus error:", e);
+        return { drivers: [], totalDrivers: 0, totalPending: 0, totalOverdue: 0, viewType: "fleet" };
+      }
+    }),
+
+  /**
+   * Get pending mandatory training for a driver — what the driver sees
+   * Shows only not_started / in_progress assignments with course details
+   */
+  getPendingMandatoryTraining: protectedProcedure
+    .input(z.object({ driverId: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { pending: [], overdue: [], totalPending: 0, totalOverdue: 0 };
+
+      const userId = input?.driverId
+        ? parseInt(input.driverId, 10)
+        : (typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0));
+
+      try {
+        const assignments = await db.select({
+          id: userTraining.id,
+          moduleId: userTraining.moduleId,
+          status: userTraining.status,
+          progress: userTraining.progress,
+          expiresAt: userTraining.expiresAt,
+          startedAt: userTraining.startedAt,
+          createdAt: userTraining.createdAt,
+        }).from(userTraining)
+          .where(and(
+            eq(userTraining.userId, userId),
+            sql`${userTraining.status} IN ('not_started', 'in_progress')`,
+          ))
+          .orderBy(userTraining.expiresAt);
+
+        const now = new Date();
+        const pending: Array<{ id: string; courseId: string; courseName: string; description: string; status: string; progress: number; dueDate: string | null; assignedAt: string | null; isOverdue: boolean; duration: number }> = [];
+        const overdue: typeof pending = [];
+
+        for (const a of assignments) {
+          let courseName = "";
+          let description = "";
+          let duration = 0;
+          try {
+            const [m] = await db.select({ name: trainingModules.name, description: trainingModules.description, duration: trainingModules.duration })
+              .from(trainingModules).where(eq(trainingModules.id, a.moduleId)).limit(1);
+            courseName = m?.name || `Course #${a.moduleId}`;
+            description = m?.description || "";
+            duration = m?.duration || 0;
+          } catch {}
+
+          const isOverdue = a.expiresAt ? new Date(a.expiresAt) < now : false;
+          const item = {
+            id: String(a.id),
+            courseId: String(a.moduleId),
+            courseName,
+            description,
+            status: a.status || "not_started",
+            progress: a.progress || 0,
+            dueDate: a.expiresAt?.toISOString() || null,
+            assignedAt: a.createdAt?.toISOString() || null,
+            isOverdue,
+            duration,
+          };
+
+          if (isOverdue) overdue.push(item);
+          else pending.push(item);
+        }
+
+        return { pending, overdue, totalPending: pending.length, totalOverdue: overdue.length };
+      } catch (e) {
+        logger.error("[Training] getPendingMandatoryTraining error:", e);
+        return { pending: [], overdue: [], totalPending: 0, totalOverdue: 0 };
       }
     }),
 

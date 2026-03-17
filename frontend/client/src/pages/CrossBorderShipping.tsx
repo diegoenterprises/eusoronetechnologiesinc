@@ -151,8 +151,8 @@ export default function CrossBorderShipping() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function DashboardTab({ isLight = false, cardCls = "", headerCls = "", mutedCls = "" }: TabStyleProps) {
-  const dash = (trpc as any).crossBorderShipping?.getCrossBorderDashboard?.useQuery?.({}) ?? { data: null, isLoading: true };
-  const waitQ = (trpc as any).crossBorderShipping?.getBorderWaitTimes?.useQuery?.({}) ?? { data: null, isLoading: true };
+  const dash = (trpc as any).crossBorderShipping?.getCrossBorderDashboard?.useQuery?.({}, { refetchInterval: 300_000 }) ?? { data: null, isLoading: true };
+  const waitQ = (trpc as any).crossBorderShipping?.getBorderWaitTimes?.useQuery?.({}, { refetchInterval: 300_000 }) ?? { data: null, isLoading: true };
   const d = dash.data as any;
   const w = waitQ.data as any;
 
@@ -248,7 +248,10 @@ function DashboardTab({ isLight = false, cardCls = "", headerCls = "", mutedCls 
           <CardHeader className="pb-3">
             <CardTitle className={cn(headerCls, "flex items-center gap-2")}>
               <Clock className="w-5 h-5 text-cyan-400" /> Live Border Wait Times
+              {w?.live && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 ml-2 text-[10px]">LIVE</Badge>}
+              {w?.live === false && <Badge className="bg-red-500/20 text-red-400 border-red-500/30 ml-2 text-[10px]">UNAVAILABLE</Badge>}
             </CardTitle>
+            {w?.dataSource && <p className="text-[10px] text-slate-500 mt-0.5">{w.dataSource}</p>}
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -1071,12 +1074,28 @@ function BrokersTab({ isLight = false, cardCls = "", headerCls = "", mutedCls = 
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function ExportControlTab({ isLight = false, cardCls = "", headerCls = "", mutedCls = "" }: TabStyleProps) {
-  const [entityName, setEntityName] = useState("");
-  const ecQ = (trpc as any).crossBorderShipping?.getExportControls?.useQuery?.({ entityName: entityName || undefined }) ?? { data: null, isLoading: false };
+  const [entityInput, setEntityInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const ecQ = (trpc as any).crossBorderShipping?.getExportControls?.useQuery?.(
+    { entityName: searchQuery || undefined },
+    { enabled: searchQuery.length >= 2 }
+  ) ?? { data: null, isLoading: false };
   const dgQ = (trpc as any).crossBorderShipping?.getDangerousGoodsCrossBorder?.useQuery?.({ origin: "US" as const, destination: "CA" as const }) ?? { data: null, isLoading: false };
 
   const ec = ecQ.data as any;
   const dg = dgQ.data as any;
+  const sr = ec?.screeningResult;
+  const hasMatches = sr?.matches?.length > 0;
+
+  const riskColor = (risk: string) => {
+    if (risk === "CRITICAL") return { bg: "bg-red-500/10 border-red-500/30", text: "text-red-400" };
+    if (risk === "HIGH") return { bg: "bg-orange-500/10 border-orange-500/30", text: "text-orange-400" };
+    if (risk === "MEDIUM") return { bg: "bg-amber-500/10 border-amber-500/30", text: "text-amber-400" };
+    if (risk === "LOW") return { bg: "bg-yellow-500/10 border-yellow-500/30", text: "text-yellow-400" };
+    return { bg: "bg-emerald-500/10 border-emerald-500/20", text: "text-emerald-400" };
+  };
+
+  const handleScreen = () => { if (entityInput.trim().length >= 2) setSearchQuery(entityInput.trim()); };
 
   return (
     <div className="space-y-6">
@@ -1085,38 +1104,79 @@ function ExportControlTab({ isLight = false, cardCls = "", headerCls = "", muted
         <CardHeader className="pb-3">
           <CardTitle className={cn(headerCls, "flex items-center gap-2")}>
             <Lock className="w-5 h-5 text-red-400" /> Export Control Screening
+            {sr && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 ml-2 text-[10px]">LIVE OFAC</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2 mb-4">
             <Input
               placeholder="Enter entity name to screen..."
-              value={entityName}
-              onChange={e => setEntityName(e.target.value)}
+              value={entityInput}
+              onChange={e => setEntityInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleScreen()}
               className="bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500"
             />
-            <Button className={cn(accentGradient, "text-white border-0")} size="sm">
-              <Search className="w-4 h-4 mr-1" /> Screen
+            <Button className={cn(accentGradient, "text-white border-0")} size="sm" onClick={handleScreen} disabled={ecQ.isLoading}>
+              <Search className="w-4 h-4 mr-1" /> {ecQ.isLoading ? "Screening..." : "Screen"}
             </Button>
           </div>
 
-          {ec?.screeningResult && (
+          {ecQ.isLoading && (
+            <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/30 text-center text-sm text-slate-400">
+              Screening against OFAC SDN + Consolidated lists...
+            </div>
+          )}
+
+          {sr && !ecQ.isLoading && (
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                <CheckCircle className="w-6 h-6 text-emerald-400" />
-                <div>
-                  <div className="text-sm font-semibold text-emerald-400">Risk: {ec.screeningResult.overallRisk}</div>
-                  <div className="text-xs text-slate-400">No matches found on denied party lists</div>
+              {/* Risk Banner */}
+              <div className={cn("flex items-center gap-3 p-4 rounded-lg border", riskColor(sr.overallRisk).bg)}>
+                {hasMatches ? <AlertTriangle className={cn("w-6 h-6", riskColor(sr.overallRisk).text)} /> : <CheckCircle className="w-6 h-6 text-emerald-400" />}
+                <div className="flex-1">
+                  <div className={cn("text-sm font-semibold", riskColor(sr.overallRisk).text)}>
+                    Risk: {sr.overallRisk} — &quot;{sr.entityName}&quot;
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {hasMatches
+                      ? `${sr.matches.length} potential match${sr.matches.length > 1 ? "es" : ""} found across ${sr.totalEntriesScreened?.toLocaleString() ?? 0} screened entities`
+                      : `No matches found — screened against ${sr.totalEntriesScreened?.toLocaleString() ?? 0} entities`}
+                  </div>
                 </div>
               </div>
+
+              {/* Matches */}
+              {hasMatches && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-red-400">Potential Matches</h4>
+                  {sr.matches.slice(0, 10).map((m: any, i: number) => (
+                    <div key={i} className="p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-white">{m.name}</span>
+                        <Badge className={cn("text-[10px]", m.score >= 95 ? "bg-red-500/20 text-red-400 border-red-500/30" : m.score >= 85 ? "bg-orange-500/20 text-orange-400 border-orange-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30")}>
+                          {m.score}% match
+                        </Badge>
+                      </div>
+                      <div className="flex gap-3 mt-1 text-xs text-slate-400">
+                        {m.country && <span>Country: {m.country}</span>}
+                        <span>Type: {m.type}</span>
+                        <span>List: {m.listSource}</span>
+                        <span>UID: {m.uid}</span>
+                      </div>
+                      {m.remarks && <div className="text-xs text-slate-500 mt-1 truncate">{m.remarks}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Lists Screened */}
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                {ec.screeningResult.listsScreened?.map((list: any) => (
+                {sr.listsScreened?.map((list: any) => (
                   <div key={list.name} className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/30 text-xs">
                     <div className="flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3 text-emerald-400" />
+                      {list.match ? <AlertTriangle className="w-3 h-3 text-red-400" /> : <CheckCircle className="w-3 h-3 text-emerald-400" />}
                       <span className="text-white truncate">{list.name}</span>
                     </div>
-                    <div className="text-slate-500 ml-4">{list.source}</div>
+                    <div className="text-slate-500 ml-4">{list.source}{list.entriesCount ? ` (${list.entriesCount.toLocaleString()})` : ""}</div>
                   </div>
                 ))}
               </div>

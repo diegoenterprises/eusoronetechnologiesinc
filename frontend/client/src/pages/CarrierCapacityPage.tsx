@@ -178,7 +178,7 @@ export default function CarrierCapacityPage() {
                           {sc.label}
                         </Badge>
                         {slot.hazmatAvailable && (
-                          <span className="block text-[8px] text-amber-500 mt-0.5">HM ✓</span>
+                          <span className="block text-[8px] text-amber-500 mt-0.5">HM OK</span>
                         )}
                         {slot.notes && <span className="block text-[8px] text-slate-600 mt-0.5">{slot.notes}</span>}
                       </div>

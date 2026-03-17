@@ -29,6 +29,14 @@ import {
   EmergencyPayload,
   EscortPayload,
   ConvoyPayload,
+  RailShipmentPayload,
+  RailAlertPayload,
+  RailConsistPayload,
+  VesselBookingPayload,
+  VesselPositionPayload,
+  VesselAlertPayload,
+  VesselPortPayload,
+  IntermodalPayload,
 } from "@shared/websocket-events";
 
 type WSMessage = SharedWSMessage;
@@ -386,11 +394,62 @@ class WebSocketService {
       case "ESCORT":
         channels.push("escort:jobs");
         break;
+      // V5 Rail roles
+      case "RAIL_SHIPPER":
+        channels.push("rail:alerts");
+        break;
+      case "RAIL_CARRIER":
+        channels.push("rail:alerts");
+        channels.push("rail:tracking");
+        break;
+      case "RAIL_DISPATCHER":
+        channels.push("rail:dispatch");
+        channels.push("rail:alerts");
+        channels.push("rail:tracking");
+        channels.push("intermodal:alerts");
+        break;
+      case "RAIL_ENGINEER":
+        channels.push("rail:alerts");
+        break;
+      case "RAIL_CONDUCTOR":
+        channels.push("rail:alerts");
+        break;
+      case "RAIL_BROKER":
+        channels.push("rail:alerts");
+        break;
+      // V5 Vessel roles
+      case "VESSEL_SHIPPER":
+        channels.push("vessel:alerts");
+        channels.push("vessel:customs");
+        break;
+      case "VESSEL_OPERATOR":
+        channels.push("vessel:fleet");
+        channels.push("vessel:alerts");
+        channels.push("intermodal:alerts");
+        break;
+      case "PORT_MASTER":
+        channels.push("vessel:fleet");
+        channels.push("vessel:alerts");
+        break;
+      case "SHIP_CAPTAIN":
+        channels.push("vessel:fleet");
+        channels.push("vessel:alerts");
+        break;
+      case "VESSEL_BROKER":
+        channels.push("vessel:alerts");
+        break;
+      case "CUSTOMS_BROKER":
+        channels.push("vessel:customs");
+        channels.push("vessel:alerts");
+        break;
       case "ADMIN":
       case "SUPER_ADMIN":
         channels.push("emergency:ops");
         channels.push("emergency:mobilization");
         channels.push("admin:alerts");
+        channels.push("rail:alerts");
+        channels.push("vessel:alerts");
+        channels.push("intermodal:alerts");
         break;
     }
 
@@ -1232,4 +1291,253 @@ export function emitSupplyImpactAlert(payload: EmergencyPayload): void {
       timestamp: new Date().toISOString(),
     }
   );
+}
+
+// ============================================================================
+// V5 MULTI-MODAL: RAIL EVENT EMITTERS
+// ============================================================================
+
+/**
+ * Emit rail shipment status change
+ */
+export function emitRailShipmentStatus(payload: RailShipmentPayload): void {
+  const eventMap: Record<string, WSEventType> = {
+    created: WS_EVENTS.RAIL_SHIPMENT_CREATED,
+    car_ordered: WS_EVENTS.RAIL_CAR_ORDERED,
+    car_placed: WS_EVENTS.RAIL_CAR_PLACED,
+    loading: WS_EVENTS.RAIL_LOADING_STARTED,
+    loaded: WS_EVENTS.RAIL_LOADED,
+    in_consist: WS_EVENTS.RAIL_IN_CONSIST,
+    departed: WS_EVENTS.RAIL_DEPARTED,
+    at_interchange: WS_EVENTS.RAIL_AT_INTERCHANGE,
+    in_yard: WS_EVENTS.RAIL_IN_YARD,
+    spotted: WS_EVENTS.RAIL_SPOTTED,
+    unloading: WS_EVENTS.RAIL_UNLOADING,
+    delivered: WS_EVENTS.RAIL_DELIVERED,
+  };
+
+  const eventType = eventMap[payload.status] || WS_EVENTS.RAIL_TRACKING_UPDATE;
+
+  // Broadcast to shipment-specific channel
+  wsService.broadcastToChannel(
+    WS_CHANNELS.RAIL_SHIPMENT(payload.shipmentId),
+    { type: eventType, data: payload, timestamp: new Date().toISOString() }
+  );
+
+  // Broadcast to rail alerts channel
+  wsService.broadcastToChannel(
+    WS_CHANNELS.RAIL_ALERTS,
+    { type: eventType, data: payload, timestamp: new Date().toISOString() }
+  );
+
+  // Bridge → Socket.io
+  try {
+    const { emitRailShipmentCreated, emitRailDeparted, emitRailDelivered } = require("../../server/services/socketService");
+    if (payload.status === 'created') emitRailShipmentCreated({ ...payload, timestamp: new Date().toISOString() });
+    else if (payload.status === 'departed') emitRailDeparted({ ...payload, timestamp: new Date().toISOString() });
+    else if (payload.status === 'delivered') emitRailDelivered({ ...payload, timestamp: new Date().toISOString() });
+  } catch { /* socketService bridge optional */ }
+}
+
+/**
+ * Emit rail alert (derailment, hazmat, crew HOS)
+ */
+export function emitRailAlert(payload: RailAlertPayload): void {
+  const eventMap: Record<string, WSEventType> = {
+    derailment: WS_EVENTS.RAIL_DERAILMENT_ALERT,
+    hazmat: WS_EVENTS.RAIL_HAZMAT_ALERT,
+    crew_hos: WS_EVENTS.RAIL_CREW_HOS_WARNING,
+    demurrage: WS_EVENTS.RAIL_DEMURRAGE_START,
+  };
+
+  const eventType = eventMap[payload.alertType] || WS_EVENTS.RAIL_TRACKING_UPDATE;
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.RAIL_ALERTS,
+    { type: eventType, data: payload, timestamp: new Date().toISOString() }
+  );
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.RAIL_DISPATCH,
+    { type: eventType, data: payload, timestamp: new Date().toISOString() }
+  );
+
+  if (payload.shipmentId) {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.RAIL_SHIPMENT(payload.shipmentId),
+      { type: eventType, data: payload, timestamp: new Date().toISOString() }
+    );
+  }
+}
+
+/**
+ * Emit rail consist update
+ */
+export function emitRailConsistUpdate(payload: RailConsistPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.RAIL_DISPATCH,
+    { type: WS_EVENTS.RAIL_CONSIST_UPDATE, data: payload, timestamp: new Date().toISOString() }
+  );
+
+  if (payload.yardId) {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.RAIL_YARD(payload.yardId),
+      { type: WS_EVENTS.RAIL_CONSIST_UPDATE, data: payload, timestamp: new Date().toISOString() }
+    );
+  }
+}
+
+// ============================================================================
+// V5 MULTI-MODAL: VESSEL EVENT EMITTERS
+// ============================================================================
+
+/**
+ * Emit vessel booking status change
+ */
+export function emitVesselBookingStatus(payload: VesselBookingPayload): void {
+  const eventMap: Record<string, WSEventType> = {
+    booked: WS_EVENTS.VESSEL_BOOKED,
+    container_released: WS_EVENTS.VESSEL_CONTAINER_RELEASED,
+    gate_in: WS_EVENTS.VESSEL_GATE_IN_CONFIRMED,
+    loaded: WS_EVENTS.VESSEL_LOADED,
+    departed: WS_EVENTS.VESSEL_DEPARTED,
+    arrived: WS_EVENTS.VESSEL_ARRIVED,
+    discharged: WS_EVENTS.VESSEL_DISCHARGED,
+    customs_cleared: WS_EVENTS.VESSEL_CUSTOMS_CLEARED,
+    gate_out: WS_EVENTS.VESSEL_GATE_OUT_CONFIRMED,
+    delivered: WS_EVENTS.VESSEL_DELIVERED,
+  };
+
+  const eventType = eventMap[payload.status] || WS_EVENTS.VESSEL_POSITION_UPDATE;
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.VESSEL_BOOKING(payload.bookingId),
+    { type: eventType, data: payload, timestamp: new Date().toISOString() }
+  );
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.VESSEL_ALERTS,
+    { type: eventType, data: payload, timestamp: new Date().toISOString() }
+  );
+
+  if (payload.containerNumber) {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.VESSEL_CONTAINER(payload.containerNumber),
+      { type: eventType, data: payload, timestamp: new Date().toISOString() }
+    );
+  }
+}
+
+/**
+ * Emit vessel position update (AIS tracking)
+ */
+export function emitVesselPosition(payload: VesselPositionPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.VESSEL_FLEET,
+    { type: WS_EVENTS.VESSEL_POSITION_UPDATE, data: payload, timestamp: new Date().toISOString() }
+  );
+}
+
+/**
+ * Emit vessel alert (customs hold, weather, ISF deadline, compliance)
+ */
+export function emitVesselAlert(payload: VesselAlertPayload): void {
+  const eventMap: Record<string, WSEventType> = {
+    customs_hold: WS_EVENTS.VESSEL_CUSTOMS_HOLD_ALERT,
+    weather: WS_EVENTS.VESSEL_WEATHER_ALERT,
+    isf_deadline: WS_EVENTS.VESSEL_ISF_DEADLINE_WARNING,
+    compliance: WS_EVENTS.VESSEL_COMPLIANCE_ALERT,
+    demurrage: WS_EVENTS.VESSEL_DEMURRAGE_START,
+    detention: WS_EVENTS.VESSEL_DETENTION_START,
+  };
+
+  const eventType = eventMap[payload.alertType] || WS_EVENTS.VESSEL_COMPLIANCE_ALERT;
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.VESSEL_ALERTS,
+    { type: eventType, data: payload, timestamp: new Date().toISOString() }
+  );
+
+  if (payload.bookingId) {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.VESSEL_BOOKING(payload.bookingId),
+      { type: eventType, data: payload, timestamp: new Date().toISOString() }
+    );
+  }
+
+  if (payload.alertType === 'customs_hold' || payload.alertType === 'isf_deadline') {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.VESSEL_CUSTOMS,
+      { type: eventType, data: payload, timestamp: new Date().toISOString() }
+    );
+  }
+
+  if (payload.portId) {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.VESSEL_PORT(payload.portId),
+      { type: eventType, data: payload, timestamp: new Date().toISOString() }
+    );
+  }
+}
+
+/**
+ * Emit vessel port event (berth assigned, pilot/tug dispatched, gate in/out)
+ */
+export function emitVesselPortEvent(payload: VesselPortPayload): void {
+  const eventMap: Record<string, WSEventType> = {
+    berth_assigned: WS_EVENTS.VESSEL_BERTH_ASSIGNED,
+    pilot_dispatched: WS_EVENTS.VESSEL_PILOT_DISPATCHED,
+    tug_dispatched: WS_EVENTS.VESSEL_TUG_DISPATCHED,
+    gate_in: WS_EVENTS.VESSEL_GATE_IN_CONFIRMED,
+    gate_out: WS_EVENTS.VESSEL_GATE_OUT_CONFIRMED,
+  };
+
+  const eventType = eventMap[payload.eventType] || WS_EVENTS.VESSEL_POSITION_UPDATE;
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.VESSEL_PORT(payload.portId),
+    { type: eventType, data: payload, timestamp: new Date().toISOString() }
+  );
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.VESSEL_FLEET,
+    { type: eventType, data: payload, timestamp: new Date().toISOString() }
+  );
+}
+
+// ============================================================================
+// V5 MULTI-MODAL: INTERMODAL EVENT EMITTERS
+// ============================================================================
+
+/**
+ * Emit intermodal shipment event
+ */
+export function emitIntermodalEvent(payload: IntermodalPayload): void {
+  const eventMap: Record<string, WSEventType> = {
+    segment_started: WS_EVENTS.INTERMODAL_SEGMENT_STARTED,
+    transfer_initiated: WS_EVENTS.INTERMODAL_TRANSFER_INITIATED,
+    transfer_completed: WS_EVENTS.INTERMODAL_TRANSFER_COMPLETED,
+    mode_change: WS_EVENTS.INTERMODAL_MODE_CHANGE,
+    delay_alert: WS_EVENTS.INTERMODAL_DELAY_ALERT,
+    delivered: WS_EVENTS.INTERMODAL_DELIVERED,
+  };
+
+  const eventType = eventMap[payload.eventType] || WS_EVENTS.INTERMODAL_SEGMENT_STARTED;
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.INTERMODAL_SHIPMENT(payload.shipmentId),
+    { type: eventType, data: payload, timestamp: new Date().toISOString() }
+  );
+
+  wsService.broadcastToChannel(
+    WS_CHANNELS.INTERMODAL_ALERTS,
+    { type: eventType, data: payload, timestamp: new Date().toISOString() }
+  );
+
+  if (payload.eventType === 'delay_alert') {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.RAIL_DISPATCH,
+      { type: eventType, data: payload, timestamp: new Date().toISOString() }
+    );
+  }
 }

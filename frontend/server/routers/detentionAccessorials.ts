@@ -80,13 +80,13 @@ async function queryDetentionClaims(db: any, filters: {
   try {
     const conditions: any[] = [];
     if (filters.companyId) {
-      conditions.push(sql`(dc.catalyst_id = ${filters.companyId} OR dc.shipper_id = ${filters.companyId})`);
+      conditions.push(sql`(dc.catalystId = ${filters.companyId} OR dc.shipperId = ${filters.companyId})`);
     }
     if (filters.status) conditions.push(sql`dc.status = ${filters.status}`);
-    if (filters.facilityName) conditions.push(sql`dc.facility_name LIKE ${`%${filters.facilityName}%`}`);
-    if (filters.dateFrom) conditions.push(sql`dc.created_at >= ${filters.dateFrom}`);
-    if (filters.dateTo) conditions.push(sql`dc.created_at <= ${filters.dateTo + " 23:59:59"}`);
-    if (filters.customerId) conditions.push(sql`dc.shipper_id = ${filters.customerId}`);
+    if (filters.facilityName) conditions.push(sql`dc.facilityName LIKE ${`%${filters.facilityName}%`}`);
+    if (filters.dateFrom) conditions.push(sql`dc.createdAt >= ${filters.dateFrom}`);
+    if (filters.dateTo) conditions.push(sql`dc.createdAt <= ${filters.dateTo + " 23:59:59"}`);
+    if (filters.customerId) conditions.push(sql`dc.shipperId = ${filters.customerId}`);
 
     const whereClause = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``;
     const limit = filters.limit || 50;
@@ -96,11 +96,11 @@ async function queryDetentionClaims(db: any, filters: {
       SELECT dc.*, l.pickupLocation, l.deliveryLocation, l.cargoType, l.rate as loadRate,
              c_carrier.name as carrierName, c_shipper.name as shipperName
       FROM detention_claims dc
-      LEFT JOIN loads l ON dc.load_id = l.id
-      LEFT JOIN companies c_carrier ON dc.catalyst_id = c_carrier.id
-      LEFT JOIN companies c_shipper ON dc.shipper_id = c_shipper.id
+      LEFT JOIN loads l ON dc.loadId = l.id
+      LEFT JOIN companies c_carrier ON dc.catalystId = c_carrier.id
+      LEFT JOIN companies c_shipper ON dc.shipperId = c_shipper.id
       ${whereClause}
-      ORDER BY dc.created_at DESC
+      ORDER BY dc.createdAt DESC
       LIMIT ${limit} OFFSET ${offset}
     `);
     return ((result as [RawSqlRow[], unknown])[0]) || [];
@@ -150,14 +150,14 @@ export const detentionAccessorialsRouter = router({
             SELECT
               COUNT(*) as total_events,
               SUM(CASE WHEN status IN ('submitted', 'pending_review') THEN 1 ELSE 0 END) as active_count,
-              COALESCE(AVG(total_minutes), 0) as avg_wait,
-              COALESCE(SUM(total_charge), 0) as total_charges,
-              COALESCE(SUM(CASE WHEN status IN ('approved', 'paid') THEN total_charge ELSE 0 END), 0) as billed,
-              COALESCE(SUM(CASE WHEN status = 'paid' THEN total_charge ELSE 0 END), 0) as collected,
-              COALESCE(SUM(CASE WHEN status = 'disputed' THEN total_charge ELSE 0 END), 0) as disputed
+              COALESCE(AVG(totalDwellMinutes), 0) as avg_wait,
+              COALESCE(SUM(totalAmount), 0) as total_charges,
+              COALESCE(SUM(CASE WHEN status IN ('approved', 'paid') THEN totalAmount ELSE 0 END), 0) as billed,
+              COALESCE(SUM(CASE WHEN status = 'paid' THEN totalAmount ELSE 0 END), 0) as collected,
+              COALESCE(SUM(CASE WHEN status = 'disputed' THEN totalAmount ELSE 0 END), 0) as disputed
             FROM detention_claims
-            WHERE created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
-              AND (catalyst_id = ${companyId} OR shipper_id = ${companyId})
+            WHERE createdAt >= ${dateFrom} AND createdAt <= ${dateTo + " 23:59:59"}
+              AND (catalystId = ${companyId} OR shipperId = ${companyId})
           `) as unknown as [RawSqlRow[], unknown];
           const row = Array.isArray(stats) ? (stats as RawSqlRow[])[0] : stats as RawSqlRow;
           activeCount = Number(row?.active_count || 0);
@@ -173,19 +173,19 @@ export const detentionAccessorialsRouter = router({
         let worstOffenders: { facilityName: string; eventCount: number; totalAmount: number; avgWaitMinutes: number }[] = [];
         try {
           const offenderResult = await db.execute(sql`
-            SELECT facility_name, COUNT(*) as event_count,
-                   COALESCE(SUM(total_charge), 0) as total_amount,
-                   COALESCE(AVG(total_minutes), 0) as avg_wait
+            SELECT facilityName, COUNT(*) as event_count,
+                   COALESCE(SUM(totalAmount), 0) as total_amount,
+                   COALESCE(AVG(totalDwellMinutes), 0) as avg_wait
             FROM detention_claims
-            WHERE created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
-              AND (catalyst_id = ${companyId} OR shipper_id = ${companyId})
-              AND facility_name IS NOT NULL AND facility_name != ''
-            GROUP BY facility_name
+            WHERE createdAt >= ${dateFrom} AND createdAt <= ${dateTo + " 23:59:59"}
+              AND (catalystId = ${companyId} OR shipperId = ${companyId})
+              AND facilityName IS NOT NULL AND facilityName != ''
+            GROUP BY facilityName
             ORDER BY event_count DESC
             LIMIT 10
           `);
           worstOffenders = (((offenderResult as unknown as [RawSqlRow[], unknown])[0]) || []).map((r: RawSqlRow) => ({
-            facilityName: String(r.facility_name || "Unknown"),
+            facilityName: String(r.facilityName || "Unknown"),
             eventCount: Number(r.event_count || 0),
             totalAmount: Number(r.total_amount || 0),
             avgWaitMinutes: Math.round(Number(r.avg_wait || 0)),
@@ -196,21 +196,21 @@ export const detentionAccessorialsRouter = router({
         const recentEvents = (await queryDetentionClaims(db, {
           companyId, dateFrom, dateTo, limit: 5,
         })).map((r: RawSqlRow) => ({
-          id: r.id, loadId: r.load_id, facilityName: r.facility_name || "Unknown",
-          status: r.status, totalMinutes: Number(r.total_minutes || 0),
-          totalCharge: Number(r.total_charge || 0),
+          id: r.id, loadId: r.loadId, facilityName: r.facilityName || "Unknown",
+          status: r.status, totalMinutes: Number(r.totalDwellMinutes || 0),
+          totalCharge: Number(r.totalAmount || 0),
           carrierName: r.carrierName || "N/A", shipperName: r.shipperName || "N/A",
-          createdAt: r.created_at,
+          createdAt: r.createdAt,
         }));
 
         // Charges by type
         let chargesByType: { type: string; count: number; totalAmount: number }[] = [];
         try {
           const typeResult = await db.execute(sql`
-            SELECT type, COUNT(*) as cnt, COALESCE(SUM(total_charge), 0) as total
+            SELECT type, COUNT(*) as cnt, COALESCE(SUM(totalAmount), 0) as total
             FROM detention_claims
-            WHERE created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
-              AND (catalyst_id = ${companyId} OR shipper_id = ${companyId})
+            WHERE createdAt >= ${dateFrom} AND createdAt <= ${dateTo + " 23:59:59"}
+              AND (catalystId = ${companyId} OR shipperId = ${companyId})
             GROUP BY type
             ORDER BY total DESC
           `);
@@ -262,16 +262,16 @@ export const detentionAccessorialsRouter = router({
         });
 
         const detentions = rows.map((r: RawSqlRow) => {
-          const arrivalTime = r.arrival_time || r.created_at;
+          const arrivalTime = r.arrivalTime || r.createdAt;
           const elapsed = arrivalTime ? Math.round((Date.now() - new Date(String(arrivalTime)).getTime()) / 60000) : 0;
-          const freeTime = Number(r.free_time_minutes || 120);
+          const freeTime = Number(r.freeTimeMinutes || 120);
           const billableMinutes = Math.max(0, elapsed - freeTime);
 
           return {
             id: r.id,
-            loadId: r.load_id,
-            facilityName: r.facility_name || "Unknown",
-            locationType: r.location_type || "pickup",
+            loadId: r.loadId,
+            facilityName: r.facilityName || "Unknown",
+            locationType: r.locationType || "pickup",
             arrivalTime,
             elapsedMinutes: elapsed,
             freeTimeMinutes: freeTime,
@@ -318,21 +318,21 @@ export const detentionAccessorialsRouter = router({
 
         const events = rows.map((r: RawSqlRow) => ({
           id: r.id,
-          loadId: r.load_id,
-          facilityName: r.facility_name || "Unknown",
-          locationType: r.location_type || "pickup",
-          arrivalTime: r.arrival_time,
-          departureTime: r.departure_time,
-          totalMinutes: Number(r.total_minutes || 0),
-          freeTimeMinutes: Number(r.free_time_minutes || 120),
-          billableMinutes: Number(r.billable_minutes || 0),
-          totalCharge: Number(r.total_charge || 0),
+          loadId: r.loadId,
+          facilityName: r.facilityName || "Unknown",
+          locationType: r.locationType || "pickup",
+          arrivalTime: r.arrivalTime,
+          departureTime: r.departureTime,
+          totalMinutes: Number(r.totalDwellMinutes || 0),
+          freeTimeMinutes: Number(r.freeTimeMinutes || 120),
+          billableMinutes: Number(r.billableMinutes || 0),
+          totalCharge: Number(r.totalAmount || 0),
           status: r.status,
           billingStatus: r.status === "paid" ? "paid" : r.status === "approved" ? "invoiced" : r.status === "disputed" ? "disputed" : "pending",
           carrierName: r.carrierName || "N/A",
           shipperName: r.shipperName || "N/A",
           cargoType: r.cargoType || "general",
-          createdAt: r.created_at,
+          createdAt: r.createdAt,
         }));
 
         return { events, total: events.length };
@@ -407,18 +407,18 @@ export const detentionAccessorialsRouter = router({
       try {
         const result = await db.execute(sql`
           SELECT
-            facility_name,
+            facilityName,
             COUNT(*) as event_count,
-            COALESCE(SUM(total_charge), 0) as total_charges,
-            COALESCE(AVG(total_minutes), 0) as avg_wait_minutes,
-            COALESCE(MAX(total_minutes), 0) as max_wait_minutes,
-            COALESCE(AVG(total_charge), 0) as avg_charge,
+            COALESCE(SUM(totalAmount), 0) as total_charges,
+            COALESCE(AVG(totalDwellMinutes), 0) as avg_wait_minutes,
+            COALESCE(MAX(totalDwellMinutes), 0) as max_wait_minutes,
+            COALESCE(AVG(totalAmount), 0) as avg_charge,
             SUM(CASE WHEN status = 'disputed' THEN 1 ELSE 0 END) as dispute_count
           FROM detention_claims
-          WHERE created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
-            AND (catalyst_id = ${companyId} OR shipper_id = ${companyId})
-            AND facility_name IS NOT NULL AND facility_name != ''
-          GROUP BY facility_name
+          WHERE createdAt >= ${dateFrom} AND createdAt <= ${dateTo + " 23:59:59"}
+            AND (catalystId = ${companyId} OR shipperId = ${companyId})
+            AND facilityName IS NOT NULL AND facilityName != ''
+          GROUP BY facilityName
           ORDER BY total_charges DESC
           LIMIT ${input?.limit || 20}
         `);
@@ -427,7 +427,7 @@ export const detentionAccessorialsRouter = router({
         return {
           facilities: rows.map((r: RawSqlRow, idx: number) => ({
             rank: idx + 1,
-            facilityName: r.facility_name,
+            facilityName: r.facilityName,
             eventCount: Number(r.event_count || 0),
             totalCharges: Number(r.total_charges || 0),
             avgWaitMinutes: Math.round(Number(r.avg_wait_minutes || 0)),
@@ -462,17 +462,17 @@ export const detentionAccessorialsRouter = router({
       try {
         const result = await db.execute(sql`
           SELECT
-            dc.shipper_id, c.name as customer_name,
+            dc.shipperId, c.name as customer_name,
             COUNT(*) as event_count,
-            COALESCE(SUM(dc.total_charge), 0) as total_charges,
-            COALESCE(AVG(dc.total_minutes), 0) as avg_wait_minutes,
-            SUM(CASE WHEN dc.status = 'paid' THEN dc.total_charge ELSE 0 END) as paid_amount,
+            COALESCE(SUM(dc.totalAmount), 0) as total_charges,
+            COALESCE(AVG(dc.totalDwellMinutes), 0) as avg_wait_minutes,
+            SUM(CASE WHEN dc.status = 'paid' THEN dc.totalAmount ELSE 0 END) as paid_amount,
             SUM(CASE WHEN dc.status = 'disputed' THEN 1 ELSE 0 END) as dispute_count
           FROM detention_claims dc
-          LEFT JOIN companies c ON dc.shipper_id = c.id
-          WHERE dc.created_at >= ${dateFrom} AND dc.created_at <= ${dateTo + " 23:59:59"}
-            AND dc.catalyst_id = ${companyId}
-          GROUP BY dc.shipper_id, c.name
+          LEFT JOIN companies c ON dc.shipperId = c.id
+          WHERE dc.createdAt >= ${dateFrom} AND dc.createdAt <= ${dateTo + " 23:59:59"}
+            AND dc.catalystId = ${companyId}
+          GROUP BY dc.shipperId, c.name
           ORDER BY total_charges DESC
           LIMIT ${input?.limit || 20}
         `);
@@ -480,7 +480,7 @@ export const detentionAccessorialsRouter = router({
 
         return {
           customers: rows.map((r: RawSqlRow) => ({
-            customerId: r.shipper_id,
+            customerId: r.shipperId,
             customerName: r.customer_name || "Unknown",
             eventCount: Number(r.event_count || 0),
             totalCharges: Number(r.total_charges || 0),
@@ -516,9 +516,9 @@ export const detentionAccessorialsRouter = router({
         await db.execute(sql`
           UPDATE detention_claims
           SET status = 'disputed',
-              dispute_reason = ${input.reason},
-              dispute_date = NOW(),
-              disputed_by = ${ctx.user?.id || 0}
+              disputeReason = ${input.reason},
+              disputeDate = NOW(),
+              disputedBy = ${ctx.user?.id || 0}
           WHERE id = ${input.claimId}
         `);
 
@@ -554,10 +554,10 @@ export const detentionAccessorialsRouter = router({
         // Query demurrage-type detention claims
         const conditions: any[] = [
           sql`dc.type = 'demurrage'`,
-          sql`(dc.catalyst_id = ${companyId} OR dc.shipper_id = ${companyId})`,
+          sql`(dc.catalystId = ${companyId} OR dc.shipperId = ${companyId})`,
         ];
-        if (input?.dateFrom) conditions.push(sql`dc.created_at >= ${input.dateFrom}`);
-        if (input?.dateTo) conditions.push(sql`dc.created_at <= ${input.dateTo + " 23:59:59"}`);
+        if (input?.dateFrom) conditions.push(sql`dc.createdAt >= ${input.dateFrom}`);
+        if (input?.dateTo) conditions.push(sql`dc.createdAt <= ${input.dateTo + " 23:59:59"}`);
         if (input?.status) conditions.push(sql`dc.status = ${input.status}`);
 
         const whereClause = sql`WHERE ${sql.join(conditions, sql` AND `)}`;
@@ -565,23 +565,23 @@ export const detentionAccessorialsRouter = router({
         const result = await db.execute(sql`
           SELECT dc.*, c_shipper.name as shipperName
           FROM detention_claims dc
-          LEFT JOIN companies c_shipper ON dc.shipper_id = c_shipper.id
+          LEFT JOIN companies c_shipper ON dc.shipperId = c_shipper.id
           ${whereClause}
-          ORDER BY dc.created_at DESC
+          ORDER BY dc.createdAt DESC
           LIMIT ${input?.limit || 25}
         `);
         const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
         const containers = rows.map((r: RawSqlRow) => ({
           id: r.id,
-          loadId: r.load_id,
-          containerNumber: r.container_number || `CNT-${r.id}`,
-          facilityName: r.facility_name || "Port/Rail Terminal",
-          arrivalDate: r.arrival_time,
-          lastFreeDay: r.departure_time,
-          daysHeld: Math.ceil(Number(r.total_minutes || 0) / 1440),
-          perDiemRate: Number(r.rate_per_hour || 150),
-          totalCharge: Number(r.total_charge || 0),
+          loadId: r.loadId,
+          containerNumber: r.containerNumber || `CNT-${r.id}`,
+          facilityName: r.facilityName || "Port/Rail Terminal",
+          arrivalDate: r.arrivalTime,
+          lastFreeDay: r.departureTime,
+          daysHeld: Math.ceil(Number(r.totalDwellMinutes || 0) / 1440),
+          perDiemRate: Number(r.hourlyRate || 150),
+          totalCharge: Number(r.totalAmount || 0),
           status: r.status,
           shipperName: r.shipperName || "N/A",
         }));
@@ -720,11 +720,11 @@ export const detentionAccessorialsRouter = router({
 
         // Insert into detention_claims as a generic accessorial
         await db.execute(sql`
-          INSERT INTO detention_claims (load_id, catalyst_id, shipper_id, type, total_charge, status, description, created_at)
+          INSERT INTO detention_claims (loadId, catalystId, shipperId, type, totalAmount, status, description, createdAt, locationType, arrivalTime, claimedByUserId)
           SELECT ${input.loadId}, l.catalystId, l.shipperId,
                  ${input.chargeCode}, ${totalAmount}, 'submitted',
                  ${input.description || `Accessorial: ${input.chargeCode}`},
-                 NOW()
+                 NOW(), 'pickup', NOW(), ${ctx.user?.id || 0}
           FROM loads l WHERE l.id = ${input.loadId}
         `);
 
@@ -761,35 +761,35 @@ export const detentionAccessorialsRouter = router({
       try {
         const conditions = [
           sql`dc.type = 'tonu'`,
-          sql`(dc.catalyst_id = ${companyId} OR dc.shipper_id = ${companyId})`,
-          sql`dc.created_at >= ${dateFrom}`,
-          sql`dc.created_at <= ${dateTo + " 23:59:59"}`,
+          sql`(dc.catalystId = ${companyId} OR dc.shipperId = ${companyId})`,
+          sql`dc.createdAt >= ${dateFrom}`,
+          sql`dc.createdAt <= ${dateTo + " 23:59:59"}`,
         ];
         if (input?.status) conditions.push(sql`dc.status = ${input.status}`);
 
         const result = await db.execute(sql`
           SELECT dc.*, l.pickupLocation, l.deliveryLocation, c_shipper.name as shipperName, c_carrier.name as carrierName
           FROM detention_claims dc
-          LEFT JOIN loads l ON dc.load_id = l.id
-          LEFT JOIN companies c_shipper ON dc.shipper_id = c_shipper.id
-          LEFT JOIN companies c_carrier ON dc.catalyst_id = c_carrier.id
+          LEFT JOIN loads l ON dc.loadId = l.id
+          LEFT JOIN companies c_shipper ON dc.shipperId = c_shipper.id
+          LEFT JOIN companies c_carrier ON dc.catalystId = c_carrier.id
           WHERE ${sql.join(conditions, sql` AND `)}
-          ORDER BY dc.created_at DESC
+          ORDER BY dc.createdAt DESC
           LIMIT ${input?.limit || 25}
         `);
         const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
         const tonus = rows.map((r: RawSqlRow) => ({
           id: r.id,
-          loadId: r.load_id,
-          amount: Number(r.total_charge || 250),
+          loadId: r.loadId,
+          amount: Number(r.totalAmount || 250),
           reason: r.description || "Load cancelled / not ready",
           status: r.status,
           carrierName: r.carrierName || "N/A",
           shipperName: r.shipperName || "N/A",
           origin: r.pickupLocation || "N/A",
           destination: r.deliveryLocation || "N/A",
-          filedDate: r.created_at,
+          filedDate: r.createdAt,
         }));
 
         return {
@@ -824,11 +824,11 @@ export const detentionAccessorialsRouter = router({
 
       try {
         await db.execute(sql`
-          INSERT INTO detention_claims (load_id, catalyst_id, shipper_id, type, total_charge, status, description, created_at)
+          INSERT INTO detention_claims (loadId, catalystId, shipperId, type, totalAmount, status, description, createdAt, locationType, arrivalTime, claimedByUserId)
           SELECT ${input.loadId}, l.catalystId, l.shipperId,
                  'tonu', ${input.amount}, 'submitted',
                  ${`TONU: ${input.reason}${input.driverArrived ? " (driver arrived)" : ""}${input.milesDriven ? ` - ${input.milesDriven} mi driven` : ""}`},
-                 NOW()
+                 NOW(), 'pickup', NOW(), ${ctx.user?.id || 0}
           FROM loads l WHERE l.id = ${input.loadId}
         `);
 
@@ -866,29 +866,29 @@ export const detentionAccessorialsRouter = router({
           SELECT dc.*, l.pickupLocation, l.deliveryLocation,
                  c_carrier.name as carrierName, c_shipper.name as shipperName
           FROM detention_claims dc
-          LEFT JOIN loads l ON dc.load_id = l.id
-          LEFT JOIN companies c_carrier ON dc.catalyst_id = c_carrier.id
-          LEFT JOIN companies c_shipper ON dc.shipper_id = c_shipper.id
+          LEFT JOIN loads l ON dc.loadId = l.id
+          LEFT JOIN companies c_carrier ON dc.catalystId = c_carrier.id
+          LEFT JOIN companies c_shipper ON dc.shipperId = c_shipper.id
           WHERE dc.type = 'layover'
-            AND (dc.catalyst_id = ${companyId} OR dc.shipper_id = ${companyId})
-            AND dc.created_at >= ${dateFrom}
-            AND dc.created_at <= ${dateTo + " 23:59:59"}
-          ORDER BY dc.created_at DESC
+            AND (dc.catalystId = ${companyId} OR dc.shipperId = ${companyId})
+            AND dc.createdAt >= ${dateFrom}
+            AND dc.createdAt <= ${dateTo + " 23:59:59"}
+          ORDER BY dc.createdAt DESC
           LIMIT ${input?.limit || 25}
         `);
         const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
         const layovers = rows.map((r: RawSqlRow) => {
-          const days = Math.ceil(Number(r.total_minutes || 0) / 1440);
+          const days = Math.ceil(Number(r.totalDwellMinutes || 0) / 1440);
           return {
             id: r.id,
-            loadId: r.load_id,
-            facilityName: r.facility_name || "N/A",
-            startDate: r.arrival_time,
-            endDate: r.departure_time,
+            loadId: r.loadId,
+            facilityName: r.facilityName || "N/A",
+            startDate: r.arrivalTime,
+            endDate: r.departureTime,
             days,
             dailyRate: 350,
-            totalCharge: Number(r.total_charge || days * 350),
+            totalCharge: Number(r.totalAmount || days * 350),
             status: r.status,
             reason: r.description || "Shipper/receiver delay",
             carrierName: r.carrierName || "N/A",
@@ -931,30 +931,30 @@ export const detentionAccessorialsRouter = router({
           SELECT dc.*, l.pickupLocation, l.deliveryLocation,
                  c_carrier.name as carrierName, c_shipper.name as shipperName
           FROM detention_claims dc
-          LEFT JOIN loads l ON dc.load_id = l.id
-          LEFT JOIN companies c_carrier ON dc.catalyst_id = c_carrier.id
-          LEFT JOIN companies c_shipper ON dc.shipper_id = c_shipper.id
+          LEFT JOIN loads l ON dc.loadId = l.id
+          LEFT JOIN companies c_carrier ON dc.catalystId = c_carrier.id
+          LEFT JOIN companies c_shipper ON dc.shipperId = c_shipper.id
           WHERE dc.type = 'lumper'
-            AND (dc.catalyst_id = ${companyId} OR dc.shipper_id = ${companyId})
-            AND dc.created_at >= ${dateFrom}
-            AND dc.created_at <= ${dateTo + " 23:59:59"}
-          ORDER BY dc.created_at DESC
+            AND (dc.catalystId = ${companyId} OR dc.shipperId = ${companyId})
+            AND dc.createdAt >= ${dateFrom}
+            AND dc.createdAt <= ${dateTo + " 23:59:59"}
+          ORDER BY dc.createdAt DESC
           LIMIT ${input?.limit || 25}
         `);
         const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
         const lumpers = rows.map((r: RawSqlRow) => ({
           id: r.id,
-          loadId: r.load_id,
-          facilityName: r.facility_name || "N/A",
-          amount: Number(r.total_charge || 0),
-          hasReceipt: !!(r.receipt_url),
-          receiptUrl: r.receipt_url || null,
+          loadId: r.loadId,
+          facilityName: r.facilityName || "N/A",
+          amount: Number(r.totalAmount || 0),
+          hasReceipt: !!(r.receiptUrl),
+          receiptUrl: r.receiptUrl || null,
           status: r.status,
           reimbursementStatus: r.status === "paid" ? "reimbursed" : r.status === "approved" ? "approved" : "pending",
           carrierName: r.carrierName || "N/A",
           shipperName: r.shipperName || "N/A",
-          filedDate: r.created_at,
+          filedDate: r.createdAt,
         }));
 
         const totalAmount = lumpers.reduce((s: number, l: any) => s + l.amount, 0);
@@ -994,29 +994,29 @@ export const detentionAccessorialsRouter = router({
         const result = await db.execute(sql`
           SELECT dc.*, c_carrier.name as carrierName, c_shipper.name as shipperName
           FROM detention_claims dc
-          LEFT JOIN companies c_carrier ON dc.catalyst_id = c_carrier.id
-          LEFT JOIN companies c_shipper ON dc.shipper_id = c_shipper.id
+          LEFT JOIN companies c_carrier ON dc.catalystId = c_carrier.id
+          LEFT JOIN companies c_shipper ON dc.shipperId = c_shipper.id
           WHERE dc.type = 'driver_assist'
-            AND (dc.catalyst_id = ${companyId} OR dc.shipper_id = ${companyId})
-            AND dc.created_at >= ${dateFrom}
-            AND dc.created_at <= ${dateTo + " 23:59:59"}
-          ORDER BY dc.created_at DESC
+            AND (dc.catalystId = ${companyId} OR dc.shipperId = ${companyId})
+            AND dc.createdAt >= ${dateFrom}
+            AND dc.createdAt <= ${dateTo + " 23:59:59"}
+          ORDER BY dc.createdAt DESC
           LIMIT ${input?.limit || 25}
         `);
         const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
         const charges = rows.map((r: RawSqlRow) => ({
           id: r.id,
-          loadId: r.load_id,
-          facilityName: r.facility_name || "N/A",
-          hours: Math.round(Number(r.total_minutes || 60) / 60 * 10) / 10,
+          loadId: r.loadId,
+          facilityName: r.facilityName || "N/A",
+          hours: Math.round(Number(r.totalDwellMinutes || 60) / 60 * 10) / 10,
           ratePerHour: 50,
-          totalCharge: Number(r.total_charge || 0),
+          totalCharge: Number(r.totalAmount || 0),
           status: r.status,
           description: r.description || "Driver loading/unloading assist",
           carrierName: r.carrierName || "N/A",
           shipperName: r.shipperName || "N/A",
-          filedDate: r.created_at,
+          filedDate: r.createdAt,
         }));
 
         return {
@@ -1053,26 +1053,26 @@ export const detentionAccessorialsRouter = router({
         const result = await db.execute(sql`
           SELECT dc.*, l.rate as loadRate, l.pickupLocation, l.deliveryLocation
           FROM detention_claims dc
-          LEFT JOIN loads l ON dc.load_id = l.id
+          LEFT JOIN loads l ON dc.loadId = l.id
           WHERE dc.type = 'fuel_surcharge'
-            AND (dc.catalyst_id = ${companyId} OR dc.shipper_id = ${companyId})
-            AND dc.created_at >= ${dateFrom}
-            AND dc.created_at <= ${dateTo + " 23:59:59"}
-          ORDER BY dc.created_at DESC
+            AND (dc.catalystId = ${companyId} OR dc.shipperId = ${companyId})
+            AND dc.createdAt >= ${dateFrom}
+            AND dc.createdAt <= ${dateTo + " 23:59:59"}
+          ORDER BY dc.createdAt DESC
           LIMIT ${input?.limit || 25}
         `);
         const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
         const surcharges = rows.map((r: RawSqlRow) => ({
           id: r.id,
-          loadId: r.load_id,
+          loadId: r.loadId,
           loadRate: Number(r.loadRate || 0),
-          surchargeAmount: Number(r.total_charge || 0),
-          surchargePercent: Number(r.loadRate) > 0 ? Math.round(Number(r.total_charge || 0) / Number(r.loadRate) * 10000) / 100 : 0,
+          surchargeAmount: Number(r.totalAmount || 0),
+          surchargePercent: Number(r.loadRate) > 0 ? Math.round(Number(r.totalAmount || 0) / Number(r.loadRate) * 10000) / 100 : 0,
           origin: r.pickupLocation || "N/A",
           destination: r.deliveryLocation || "N/A",
           status: r.status,
-          appliedDate: r.created_at,
+          appliedDate: r.createdAt,
         }));
 
         const totalAmount = surcharges.reduce((s: number, sc: any) => s + sc.surchargeAmount, 0);
@@ -1113,13 +1113,13 @@ export const detentionAccessorialsRouter = router({
         const result = await db.execute(sql`
           SELECT dc.*, c_carrier.name as carrierName, c_shipper.name as shipperName
           FROM detention_claims dc
-          LEFT JOIN companies c_carrier ON dc.catalyst_id = c_carrier.id
-          LEFT JOIN companies c_shipper ON dc.shipper_id = c_shipper.id
+          LEFT JOIN companies c_carrier ON dc.catalystId = c_carrier.id
+          LEFT JOIN companies c_shipper ON dc.shipperId = c_shipper.id
           WHERE dc.status = 'disputed'
-            AND (dc.catalyst_id = ${companyId} OR dc.shipper_id = ${companyId})
-            AND dc.created_at >= ${dateFrom}
-            AND dc.created_at <= ${dateTo + " 23:59:59"}
-          ORDER BY dc.created_at DESC
+            AND (dc.catalystId = ${companyId} OR dc.shipperId = ${companyId})
+            AND dc.createdAt >= ${dateFrom}
+            AND dc.createdAt <= ${dateTo + " 23:59:59"}
+          ORDER BY dc.createdAt DESC
           LIMIT ${input?.limit || 25}
         `);
         const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
@@ -1127,13 +1127,13 @@ export const detentionAccessorialsRouter = router({
         const disputes = rows.map((r: RawSqlRow) => ({
           id: r.id,
           claimId: r.id,
-          loadId: r.load_id,
+          loadId: r.loadId,
           type: r.type || "detention",
-          originalAmount: Number(r.total_charge || 0),
-          disputedAmount: Number(r.total_charge || 0),
-          reason: r.dispute_reason || r.description || "Amount contested",
+          originalAmount: Number(r.totalAmount || 0),
+          disputedAmount: Number(r.totalAmount || 0),
+          reason: r.disputeReason || r.description || "Amount contested",
           status: "under_review" as const,
-          filedDate: r.dispute_date || r.created_at,
+          filedDate: r.disputeDate || r.createdAt,
           carrierName: r.carrierName || "N/A",
           shipperName: r.shipperName || "N/A",
         }));
@@ -1178,11 +1178,11 @@ export const detentionAccessorialsRouter = router({
       try {
         // By type
         const typeResult = await db.execute(sql`
-          SELECT type, COUNT(*) as cnt, COALESCE(SUM(total_charge), 0) as total,
-                 COALESCE(AVG(total_charge), 0) as avg_charge
+          SELECT type, COUNT(*) as cnt, COALESCE(SUM(totalAmount), 0) as total,
+                 COALESCE(AVG(totalAmount), 0) as avg_charge
           FROM detention_claims
-          WHERE (catalyst_id = ${companyId} OR shipper_id = ${companyId})
-            AND created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
+          WHERE (catalystId = ${companyId} OR shipperId = ${companyId})
+            AND createdAt >= ${dateFrom} AND createdAt <= ${dateTo + " 23:59:59"}
           GROUP BY type ORDER BY total DESC
         `);
         const byType = (((typeResult as unknown as [RawSqlRow[], unknown])[0]) || []).map((r: RawSqlRow) => ({
@@ -1194,11 +1194,11 @@ export const detentionAccessorialsRouter = router({
 
         // By month
         const monthResult = await db.execute(sql`
-          SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as cnt,
-                 COALESCE(SUM(total_charge), 0) as total
+          SELECT DATE_FORMAT(createdAt, '%Y-%m') as month, COUNT(*) as cnt,
+                 COALESCE(SUM(totalAmount), 0) as total
           FROM detention_claims
-          WHERE (catalyst_id = ${companyId} OR shipper_id = ${companyId})
-            AND created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
+          WHERE (catalystId = ${companyId} OR shipperId = ${companyId})
+            AND createdAt >= ${dateFrom} AND createdAt <= ${dateTo + " 23:59:59"}
           GROUP BY month ORDER BY month ASC
         `);
         const byMonth = (((monthResult as unknown as [RawSqlRow[], unknown])[0]) || []).map((r: RawSqlRow) => ({
@@ -1209,10 +1209,10 @@ export const detentionAccessorialsRouter = router({
 
         // By status
         const statusResult = await db.execute(sql`
-          SELECT status, COUNT(*) as cnt, COALESCE(SUM(total_charge), 0) as total
+          SELECT status, COUNT(*) as cnt, COALESCE(SUM(totalAmount), 0) as total
           FROM detention_claims
-          WHERE (catalyst_id = ${companyId} OR shipper_id = ${companyId})
-            AND created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
+          WHERE (catalystId = ${companyId} OR shipperId = ${companyId})
+            AND createdAt >= ${dateFrom} AND createdAt <= ${dateTo + " 23:59:59"}
           GROUP BY status
         `);
         const byStatus = (((statusResult as unknown as [RawSqlRow[], unknown])[0]) || []).map((r: RawSqlRow) => ({
@@ -1305,18 +1305,18 @@ export const detentionAccessorialsRouter = router({
         // Get facilities with detention history to generate letter data
         const result = await db.execute(sql`
           SELECT
-            facility_name,
+            facilityName,
             COUNT(*) as event_count,
-            COALESCE(SUM(total_charge), 0) as total_charges,
-            COALESCE(AVG(total_minutes), 0) as avg_wait,
-            MIN(created_at) as first_event,
-            MAX(created_at) as last_event
+            COALESCE(SUM(totalAmount), 0) as total_charges,
+            COALESCE(AVG(totalDwellMinutes), 0) as avg_wait,
+            MIN(createdAt) as first_event,
+            MAX(createdAt) as last_event
           FROM detention_claims
-          WHERE (catalyst_id = ${companyId} OR shipper_id = ${companyId})
-            AND created_at >= ${dateFrom} AND created_at <= ${dateTo + " 23:59:59"}
-            AND facility_name IS NOT NULL AND facility_name != ''
-            ${input?.facilityName ? sql`AND facility_name LIKE ${`%${input.facilityName}%`}` : sql``}
-          GROUP BY facility_name
+          WHERE (catalystId = ${companyId} OR shipperId = ${companyId})
+            AND createdAt >= ${dateFrom} AND createdAt <= ${dateTo + " 23:59:59"}
+            AND facilityName IS NOT NULL AND facilityName != ''
+            ${input?.facilityName ? sql`AND facilityName LIKE ${`%${input.facilityName}%`}` : sql``}
+          GROUP BY facilityName
           HAVING event_count >= 2
           ORDER BY total_charges DESC
           LIMIT 20
@@ -1325,7 +1325,7 @@ export const detentionAccessorialsRouter = router({
 
         return {
           letters: rows.map((r: RawSqlRow) => ({
-            facilityName: r.facility_name,
+            facilityName: r.facilityName,
             eventCount: Number(r.event_count || 0),
             totalCharges: Number(r.total_charges || 0),
             avgWaitMinutes: Math.round(Number(r.avg_wait || 0)),
@@ -1366,30 +1366,30 @@ export const detentionAccessorialsRouter = router({
           SELECT dc.*, l.pickupLocation, l.deliveryLocation,
                  c_shipper.name as shipperName, c_carrier.name as carrierName
           FROM detention_claims dc
-          LEFT JOIN loads l ON dc.load_id = l.id
-          LEFT JOIN companies c_shipper ON dc.shipper_id = c_shipper.id
-          LEFT JOIN companies c_carrier ON dc.catalyst_id = c_carrier.id
+          LEFT JOIN loads l ON dc.loadId = l.id
+          LEFT JOIN companies c_shipper ON dc.shipperId = c_shipper.id
+          LEFT JOIN companies c_carrier ON dc.catalystId = c_carrier.id
           WHERE dc.status = ${status}
-            AND (dc.catalyst_id = ${companyId} OR dc.shipper_id = ${companyId})
-            AND dc.created_at >= ${dateFrom}
-            AND dc.created_at <= ${dateTo + " 23:59:59"}
-          ORDER BY dc.created_at ASC
+            AND (dc.catalystId = ${companyId} OR dc.shipperId = ${companyId})
+            AND dc.createdAt >= ${dateFrom}
+            AND dc.createdAt <= ${dateTo + " 23:59:59"}
+          ORDER BY dc.createdAt ASC
           LIMIT ${input?.batchSize || 50}
         `);
         const rows = ((result as unknown as [RawSqlRow[], unknown])[0]) || [];
 
         const pendingCharges = rows.map((r: RawSqlRow) => ({
           id: r.id,
-          loadId: r.load_id,
+          loadId: r.loadId,
           type: String(r.type || "detention"),
-          amount: Number(r.total_charge || 0),
+          amount: Number(r.totalAmount || 0),
           status: r.status,
-          facilityName: r.facility_name || "N/A",
+          facilityName: r.facilityName || "N/A",
           shipperName: r.shipperName || "N/A",
           carrierName: r.carrierName || "N/A",
           origin: r.pickupLocation || "N/A",
           destination: r.deliveryLocation || "N/A",
-          createdAt: r.created_at,
+          createdAt: r.createdAt,
           selected: false,
         }));
 

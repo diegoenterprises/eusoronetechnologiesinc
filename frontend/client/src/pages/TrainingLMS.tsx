@@ -579,7 +579,7 @@ function CourseDetail({ course, isLoading, onEnroll, enrolling, onOpenLesson, on
                 course.enrollment?.status === "in_progress" ? "bg-blue-500/20 text-blue-400" :
                 "bg-gray-500/20 text-gray-400"
               )}>
-                {course.enrollment?.status === "completed" ? "✓ Completed" : course.enrollment?.status === "in_progress" ? "In Progress" : "Enrolled"}
+                {course.enrollment?.status === "completed" ? "Completed" : course.enrollment?.status === "in_progress" ? "In Progress" : "Enrolled"}
               </Badge>
             </div>
           ) : (

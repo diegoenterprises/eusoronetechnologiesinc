@@ -153,7 +153,7 @@ export default function MyProductsTab() {
                   </SelectTrigger>
                   <SelectContent>
                     {TRAILER_TYPES.map(t => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}{t.hazmat ? " ⚠️" : ""}</SelectItem>
+                      <SelectItem key={t.id} value={t.id}>{t.name}{t.hazmat ? " (HM)" : ""}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

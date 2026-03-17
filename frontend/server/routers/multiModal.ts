@@ -6,7 +6,7 @@
  */
 
 import { z } from "zod";
-import { eq, sql, and, desc } from "drizzle-orm";
+import { eq, sql, and, desc, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
@@ -156,26 +156,111 @@ export const multiModalRouter = router({
       mode: transportModeSchema.optional(),
     })))
     .query(async ({ input }) => {
-      const statuses: Array<z.infer<typeof bookingStatusSchema>> = ["confirmed", "in_transit", "pending", "draft", "completed"];
-      const bookings = Array.from({ length: 18 }, (_, i) => ({
-        id: seededId("IMB", i + 1),
-        bookingNumber: `IMB-2026${String(3).padStart(2, "0")}${String(10 + i).padStart(2, "0")}-${String(i + 1).padStart(3, "0")}`,
-        status: statuses[i % statuses.length],
-        mode: (i % 2 === 0 ? "intermodal" : "rail") as z.infer<typeof transportModeSchema>,
-        origin: { city: RAMPS[i % RAMPS.length].city, state: RAMPS[i % RAMPS.length].state, ramp: RAMPS[i % RAMPS.length].name },
-        destination: { city: RAMPS[(i + 3) % RAMPS.length].city, state: RAMPS[(i + 3) % RAMPS.length].state, ramp: RAMPS[(i + 3) % RAMPS.length].name },
-        railroad: RAMPS[i % RAMPS.length].railroad,
-        containerNumber: `MSCU${String(1000000 + i * 111)}`,
-        containerSize: (i % 2 === 0 ? "53ft" : "40ft") as z.infer<typeof containerSizeSchema>,
-        weight: 38000 + i * 500,
-        commodity: ["Electronics", "Auto Parts", "Consumer Goods", "Paper Products", "Food & Beverage"][i % 5],
-        pickupDate: new Date(Date.now() + i * 86400000).toISOString().split("T")[0],
-        deliveryDate: new Date(Date.now() + (i + 5) * 86400000).toISOString().split("T")[0],
-        rate: 2800 + i * 150,
-        drayageOrigin: i % 3 === 0,
-        drayageDestination: i % 4 === 0,
-        createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-      }));
+      // ── Real DB: query loads with cargoType = 'intermodal' ──
+      let bookings: Array<{
+        id: string; bookingNumber: string; status: string; mode: string;
+        origin: { city: string; state: string; ramp: string };
+        destination: { city: string; state: string; ramp: string };
+        railroad: string; containerNumber: string; containerSize: string;
+        weight: number; commodity: string; pickupDate: string; deliveryDate: string;
+        rate: number; drayageOrigin: boolean; drayageDestination: boolean; createdAt: string;
+      }> = [];
+
+      try {
+        const db = await getDb();
+        if (db) {
+          const statusMap: Record<string, string> = {
+            draft: "draft", posted: "pending", bidding: "pending", awarded: "confirmed",
+            accepted: "confirmed", assigned: "confirmed", confirmed: "confirmed",
+            en_route_pickup: "in_transit", at_pickup: "in_transit", loading: "in_transit",
+            loaded: "in_transit", in_transit: "in_transit", at_delivery: "in_transit",
+            unloading: "in_transit", delivered: "completed", complete: "completed",
+            paid: "completed", cancelled: "cancelled",
+          };
+
+          const dbRows = await db
+            .select({
+              id: loads.id,
+              loadNumber: loads.loadNumber,
+              status: loads.status,
+              cargoType: loads.cargoType,
+              pickupLocation: loads.pickupLocation,
+              deliveryLocation: loads.deliveryLocation,
+              pickupDate: loads.pickupDate,
+              deliveryDate: loads.deliveryDate,
+              weight: loads.weight,
+              rate: loads.rate,
+              commodityName: loads.commodityName,
+              createdAt: loads.createdAt,
+            })
+            .from(loads)
+            .where(eq(loads.cargoType, "intermodal"))
+            .orderBy(desc(loads.createdAt))
+            .limit(100);
+
+          if (dbRows.length > 0) {
+            bookings = dbRows.map((row, i) => {
+              const pickup = row.pickupLocation as any;
+              const delivery = row.deliveryLocation as any;
+              const ramp = RAMPS[i % RAMPS.length];
+              const destRamp = RAMPS[(i + 3) % RAMPS.length];
+              return {
+                id: `IMB-DB-${row.id}`,
+                bookingNumber: row.loadNumber || `IMB-${row.id}`,
+                status: statusMap[row.status] || "pending",
+                mode: "intermodal" as string,
+                origin: {
+                  city: pickup?.city || ramp.city,
+                  state: pickup?.state || ramp.state,
+                  ramp: ramp.name,
+                },
+                destination: {
+                  city: delivery?.city || destRamp.city,
+                  state: delivery?.state || destRamp.state,
+                  ramp: destRamp.name,
+                },
+                railroad: ramp.railroad,
+                containerNumber: `MSCU${String(1000000 + row.id * 111)}`,
+                containerSize: (i % 2 === 0 ? "53ft" : "40ft") as string,
+                weight: Number(row.weight) || 38000,
+                commodity: row.commodityName || ["Electronics", "Auto Parts", "Consumer Goods", "Paper Products", "Food & Beverage"][i % 5],
+                pickupDate: row.pickupDate ? new Date(row.pickupDate).toISOString().split("T")[0] : new Date(Date.now() + i * 86400000).toISOString().split("T")[0],
+                deliveryDate: row.deliveryDate ? new Date(row.deliveryDate).toISOString().split("T")[0] : new Date(Date.now() + (i + 5) * 86400000).toISOString().split("T")[0],
+                rate: Number(row.rate) || 2800 + i * 150,
+                drayageOrigin: i % 3 === 0,
+                drayageDestination: i % 4 === 0,
+                createdAt: row.createdAt ? row.createdAt.toISOString() : new Date().toISOString(),
+              };
+            });
+          }
+        }
+      } catch (e) {
+        logger.warn("[MultiModal] getIntermodalBooking DB query failed, using fallback:", e);
+      }
+
+      // Fallback: seeded data only when DB returns nothing
+      if (bookings.length === 0) {
+        const statuses: Array<z.infer<typeof bookingStatusSchema>> = ["confirmed", "in_transit", "pending", "draft", "completed"];
+        bookings = Array.from({ length: 18 }, (_, i) => ({
+          id: seededId("IMB", i + 1),
+          bookingNumber: `IMB-2026${String(3).padStart(2, "0")}${String(10 + i).padStart(2, "0")}-${String(i + 1).padStart(3, "0")}`,
+          status: statuses[i % statuses.length],
+          mode: (i % 2 === 0 ? "intermodal" : "rail") as string,
+          origin: { city: RAMPS[i % RAMPS.length].city, state: RAMPS[i % RAMPS.length].state, ramp: RAMPS[i % RAMPS.length].name },
+          destination: { city: RAMPS[(i + 3) % RAMPS.length].city, state: RAMPS[(i + 3) % RAMPS.length].state, ramp: RAMPS[(i + 3) % RAMPS.length].name },
+          railroad: RAMPS[i % RAMPS.length].railroad,
+          containerNumber: `MSCU${String(1000000 + i * 111)}`,
+          containerSize: (i % 2 === 0 ? "53ft" : "40ft") as string,
+          weight: 38000 + i * 500,
+          commodity: ["Electronics", "Auto Parts", "Consumer Goods", "Paper Products", "Food & Beverage"][i % 5],
+          pickupDate: new Date(Date.now() + i * 86400000).toISOString().split("T")[0],
+          deliveryDate: new Date(Date.now() + (i + 5) * 86400000).toISOString().split("T")[0],
+          rate: 2800 + i * 150,
+          drayageOrigin: i % 3 === 0,
+          drayageDestination: i % 4 === 0,
+          createdAt: new Date(Date.now() - i * 86400000).toISOString(),
+        }));
+      }
 
       let filtered = bookings;
       if (input.status) filtered = filtered.filter(b => b.status === input.status);
@@ -242,27 +327,106 @@ export const multiModalRouter = router({
     })))
     .query(async ({ input }) => {
       const railStatuses = ["en_route", "at_ramp", "loaded", "empty_return", "delayed"] as const;
-      const trains = Array.from({ length: 24 }, (_, i) => {
-        const rr = (["BNSF", "UP", "NS", "CSX"] as const)[i % 4];
-        const status = railStatuses[i % railStatuses.length];
-        return {
-          id: seededId("RAIL", i + 1),
-          trainId: `${rr}-Q${String(100 + i)}`,
-          railroad: rr,
-          status,
-          origin: RAMPS[i % RAMPS.length],
-          destination: RAMPS[(i + 2) % RAMPS.length],
-          departureTime: new Date(Date.now() - i * 3600000 * 6).toISOString(),
-          estimatedArrival: new Date(Date.now() + (5 - i % 5) * 86400000).toISOString(),
-          containerCount: 120 + i * 10,
-          currentLocation: { lat: 34.05 + i * 0.5, lng: -118.25 + i * 0.8 },
-          milesRemaining: 200 + i * 50,
-          speedMph: status === "en_route" ? 45 + i % 20 : 0,
-          delayHours: status === "delayed" ? 4 + i % 8 : 0,
-          delayReason: status === "delayed" ? ["Weather", "Congestion", "Mechanical", "Crew change"][i % 4] : null,
-          lastUpdate: new Date(Date.now() - i * 1800000).toISOString(),
-        };
-      });
+
+      // ── Real DB: query in-transit loads as rail operations proxy ──
+      let trains: Array<{
+        id: string; trainId: string; railroad: string;
+        status: typeof railStatuses[number];
+        origin: typeof RAMPS[number]; destination: typeof RAMPS[number];
+        departureTime: string; estimatedArrival: string; containerCount: number;
+        currentLocation: { lat: number; lng: number }; milesRemaining: number;
+        speedMph: number; delayHours: number; delayReason: string | null;
+        lastUpdate: string;
+      }> = [];
+
+      try {
+        const db = await getDb();
+        if (db) {
+          const transitStatuses = [
+            "en_route_pickup", "at_pickup", "loading", "loaded",
+            "in_transit", "transit_hold", "transit_exception",
+            "at_delivery", "unloading",
+          ];
+          const dbRows = await db
+            .select({
+              id: loads.id,
+              loadNumber: loads.loadNumber,
+              status: loads.status,
+              pickupLocation: loads.pickupLocation,
+              deliveryLocation: loads.deliveryLocation,
+              pickupDate: loads.pickupDate,
+              deliveryDate: loads.deliveryDate,
+              distance: loads.distance,
+              currentLocation: loads.currentLocation,
+              updatedAt: loads.updatedAt,
+            })
+            .from(loads)
+            .where(sql`${loads.status} IN (${sql.join(transitStatuses.map(s => sql`${s}`), sql`, `)})`)
+            .orderBy(desc(loads.updatedAt))
+            .limit(50);
+
+          if (dbRows.length > 0) {
+            const railStatusMap: Record<string, typeof railStatuses[number]> = {
+              en_route_pickup: "en_route", at_pickup: "at_ramp", loading: "loaded",
+              loaded: "loaded", in_transit: "en_route", transit_hold: "delayed",
+              transit_exception: "delayed", at_delivery: "at_ramp", unloading: "at_ramp",
+            };
+
+            trains = dbRows.map((row, i) => {
+              const rr = (["BNSF", "UP", "NS", "CSX"] as const)[i % 4];
+              const st = railStatusMap[row.status] || "en_route";
+              const pickup = row.pickupLocation as any;
+              const delivery = row.deliveryLocation as any;
+              const dist = Number(row.distance) || 500;
+              const curLoc = row.currentLocation as any;
+              return {
+                id: `RAIL-DB-${row.id}`,
+                trainId: `${rr}-Q${String(100 + row.id)}`,
+                railroad: rr,
+                status: st,
+                origin: RAMPS[i % RAMPS.length],
+                destination: RAMPS[(i + 2) % RAMPS.length],
+                departureTime: row.pickupDate ? new Date(row.pickupDate).toISOString() : new Date(Date.now() - i * 3600000 * 6).toISOString(),
+                estimatedArrival: row.deliveryDate ? new Date(row.deliveryDate).toISOString() : new Date(Date.now() + (5 - i % 5) * 86400000).toISOString(),
+                containerCount: 120 + i * 10,
+                currentLocation: curLoc ? { lat: Number(curLoc.lat) || 34.05, lng: Number(curLoc.lng) || -118.25 } : { lat: 34.05 + i * 0.5, lng: -118.25 + i * 0.8 },
+                milesRemaining: st === "at_ramp" ? 0 : Math.round(dist * (0.3 + (i % 7) * 0.1)),
+                speedMph: st === "en_route" ? 45 + i % 20 : 0,
+                delayHours: st === "delayed" ? 4 + i % 8 : 0,
+                delayReason: st === "delayed" ? ["Weather", "Congestion", "Mechanical", "Crew change"][i % 4] : null,
+                lastUpdate: row.updatedAt ? row.updatedAt.toISOString() : new Date().toISOString(),
+              };
+            });
+          }
+        }
+      } catch (e) {
+        logger.warn("[MultiModal] getRailOperations DB query failed, using fallback:", e);
+      }
+
+      // Fallback: seeded data only when DB returns nothing
+      if (trains.length === 0) {
+        trains = Array.from({ length: 24 }, (_, i) => {
+          const rr = (["BNSF", "UP", "NS", "CSX"] as const)[i % 4];
+          const status = railStatuses[i % railStatuses.length];
+          return {
+            id: seededId("RAIL", i + 1),
+            trainId: `${rr}-Q${String(100 + i)}`,
+            railroad: rr,
+            status,
+            origin: RAMPS[i % RAMPS.length],
+            destination: RAMPS[(i + 2) % RAMPS.length],
+            departureTime: new Date(Date.now() - i * 3600000 * 6).toISOString(),
+            estimatedArrival: new Date(Date.now() + (5 - i % 5) * 86400000).toISOString(),
+            containerCount: 120 + i * 10,
+            currentLocation: { lat: 34.05 + i * 0.5, lng: -118.25 + i * 0.8 },
+            milesRemaining: 200 + i * 50,
+            speedMph: status === "en_route" ? 45 + i % 20 : 0,
+            delayHours: status === "delayed" ? 4 + i % 8 : 0,
+            delayReason: status === "delayed" ? ["Weather", "Congestion", "Mechanical", "Crew change"][i % 4] : null,
+            lastUpdate: new Date(Date.now() - i * 1800000).toISOString(),
+          };
+        });
+      }
 
       let filtered = trains;
       if (input.railroad) filtered = filtered.filter(t => t.railroad === input.railroad);
@@ -414,31 +578,116 @@ export const multiModalRouter = router({
     .query(async ({ input }) => {
       const drayStatuses = ["pending", "dispatched", "in_transit", "at_port", "completed"] as const;
       const drayTypes: Array<z.infer<typeof drayageTypeSchema>> = ["import", "export", "pier_pass", "shuttle", "repositioning"];
-      const orders = Array.from({ length: 30 }, (_, i) => {
-        const port = PORTS[i % PORTS.length];
-        return {
-          id: seededId("DRY", i + 1),
-          orderNumber: `DRY-${20260310 + i}-${String(i + 1).padStart(3, "0")}`,
-          type: drayTypes[i % drayTypes.length],
-          status: drayStatuses[i % drayStatuses.length],
-          port,
-          terminal: `${port.code}T${(i % 2) + 1}`,
-          containerNumber: `${["MSCU", "CMAU", "HLXU", "OOLU"][i % 4]}${String(1000000 + i * 123)}`,
-          containerSize: (i % 2 === 0 ? "40ft" : "20ft") as z.infer<typeof containerSizeSchema>,
-          chassisNumber: `DCLI-${String(50000 + i)}`,
-          driver: { id: `drv_${i}`, name: `Driver ${i + 1}` },
-          truck: { id: `trk_${i}`, number: `TRK-${1000 + i}` },
-          pickupLocation: port.name,
-          deliveryLocation: `Warehouse ${String.fromCharCode(65 + i % 8)}, ${["City of Industry", "Commerce", "Vernon", "Carson"][i % 4]}, CA`,
-          appointmentTime: new Date(Date.now() + i * 3600000 * 4).toISOString(),
-          lastFreeDay: new Date(Date.now() + (3 - i % 5) * 86400000).toISOString(),
-          perDiemDays: Math.max(0, i % 5 - 2),
-          rate: 350 + i * 25,
-          weight: 35000 + i * 500,
-          seal: `SL${String(100000 + i)}`,
-          createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-        };
-      });
+
+      // ── Real DB: query loads with terminal IDs as drayage orders ──
+      type DrayOrder = {
+        id: string; orderNumber: string; type: z.infer<typeof drayageTypeSchema>;
+        status: typeof drayStatuses[number]; port: typeof PORTS[number];
+        terminal: string; containerNumber: string; containerSize: string;
+        chassisNumber: string; driver: { id: string; name: string };
+        truck: { id: string; number: string }; pickupLocation: string;
+        deliveryLocation: string; appointmentTime: string; lastFreeDay: string;
+        perDiemDays: number; rate: number; weight: number; seal: string; createdAt: string;
+      };
+      let orders: DrayOrder[] = [];
+
+      try {
+        const db = await getDb();
+        if (db) {
+          const dbRows = await db
+            .select({
+              id: loads.id,
+              loadNumber: loads.loadNumber,
+              status: loads.status,
+              pickupLocation: loads.pickupLocation,
+              deliveryLocation: loads.deliveryLocation,
+              pickupDate: loads.pickupDate,
+              deliveryDate: loads.deliveryDate,
+              weight: loads.weight,
+              rate: loads.rate,
+              driverId: loads.driverId,
+              vehicleId: loads.vehicleId,
+              originTerminalId: loads.originTerminalId,
+              destinationTerminalId: loads.destinationTerminalId,
+              createdAt: loads.createdAt,
+            })
+            .from(loads)
+            .where(sql`(${loads.originTerminalId} IS NOT NULL OR ${loads.destinationTerminalId} IS NOT NULL)`)
+            .orderBy(desc(loads.createdAt))
+            .limit(60);
+
+          if (dbRows.length > 0) {
+            const drayStatusMap: Record<string, typeof drayStatuses[number]> = {
+              draft: "pending", posted: "pending", bidding: "pending",
+              awarded: "pending", accepted: "dispatched", assigned: "dispatched",
+              confirmed: "dispatched", en_route_pickup: "in_transit",
+              at_pickup: "at_port", loading: "at_port", loaded: "in_transit",
+              in_transit: "in_transit", at_delivery: "at_port",
+              unloading: "at_port", delivered: "completed", complete: "completed",
+              paid: "completed", cancelled: "completed",
+            };
+
+            orders = dbRows.map((row, i) => {
+              const port = PORTS[i % PORTS.length];
+              const pickup = row.pickupLocation as any;
+              const delivery = row.deliveryLocation as any;
+              return {
+                id: `DRY-DB-${row.id}`,
+                orderNumber: row.loadNumber || `DRY-${row.id}`,
+                type: drayTypes[i % drayTypes.length],
+                status: drayStatusMap[row.status] || "pending",
+                port,
+                terminal: `${port.code}T${(i % 2) + 1}`,
+                containerNumber: `${["MSCU", "CMAU", "HLXU", "OOLU"][i % 4]}${String(1000000 + row.id * 123)}`,
+                containerSize: (i % 2 === 0 ? "40ft" : "20ft") as string,
+                chassisNumber: `DCLI-${String(50000 + row.id)}`,
+                driver: { id: row.driverId ? `drv_${row.driverId}` : `drv_${i}`, name: `Driver ${row.driverId || i + 1}` },
+                truck: { id: row.vehicleId ? `trk_${row.vehicleId}` : `trk_${i}`, number: `TRK-${row.vehicleId || 1000 + i}` },
+                pickupLocation: pickup?.city ? `${pickup.city}, ${pickup.state}` : port.name,
+                deliveryLocation: delivery?.city ? `${delivery.city}, ${delivery.state}` : `Warehouse ${String.fromCharCode(65 + i % 8)}, ${["City of Industry", "Commerce", "Vernon", "Carson"][i % 4]}, CA`,
+                appointmentTime: row.pickupDate ? new Date(row.pickupDate).toISOString() : new Date(Date.now() + i * 3600000 * 4).toISOString(),
+                lastFreeDay: new Date(Date.now() + (3 - i % 5) * 86400000).toISOString(),
+                perDiemDays: Math.max(0, i % 5 - 2),
+                rate: Number(row.rate) || 350 + i * 25,
+                weight: Number(row.weight) || 35000 + i * 500,
+                seal: `SL${String(100000 + row.id)}`,
+                createdAt: row.createdAt ? row.createdAt.toISOString() : new Date().toISOString(),
+              };
+            });
+          }
+        }
+      } catch (e) {
+        logger.warn("[MultiModal] getDrayageManagement DB query failed, using fallback:", e);
+      }
+
+      // Fallback: seeded data only when DB returns nothing
+      if (orders.length === 0) {
+        orders = Array.from({ length: 30 }, (_, i) => {
+          const port = PORTS[i % PORTS.length];
+          return {
+            id: seededId("DRY", i + 1),
+            orderNumber: `DRY-${20260310 + i}-${String(i + 1).padStart(3, "0")}`,
+            type: drayTypes[i % drayTypes.length],
+            status: drayStatuses[i % drayStatuses.length],
+            port,
+            terminal: `${port.code}T${(i % 2) + 1}`,
+            containerNumber: `${["MSCU", "CMAU", "HLXU", "OOLU"][i % 4]}${String(1000000 + i * 123)}`,
+            containerSize: (i % 2 === 0 ? "40ft" : "20ft") as string,
+            chassisNumber: `DCLI-${String(50000 + i)}`,
+            driver: { id: `drv_${i}`, name: `Driver ${i + 1}` },
+            truck: { id: `trk_${i}`, number: `TRK-${1000 + i}` },
+            pickupLocation: port.name,
+            deliveryLocation: `Warehouse ${String.fromCharCode(65 + i % 8)}, ${["City of Industry", "Commerce", "Vernon", "Carson"][i % 4]}, CA`,
+            appointmentTime: new Date(Date.now() + i * 3600000 * 4).toISOString(),
+            lastFreeDay: new Date(Date.now() + (3 - i % 5) * 86400000).toISOString(),
+            perDiemDays: Math.max(0, i % 5 - 2),
+            rate: 350 + i * 25,
+            weight: 35000 + i * 500,
+            seal: `SL${String(100000 + i)}`,
+            createdAt: new Date(Date.now() - i * 86400000).toISOString(),
+          };
+        });
+      }
 
       let filtered = orders;
       if (input.type) filtered = filtered.filter(o => o.type === input.type);
@@ -737,27 +986,93 @@ export const multiModalRouter = router({
     .query(async ({ input }) => {
       const pools = ["DCLI", "TRAC", "Flexi-Van", "Direct ChassisLink"];
       const chStatuses = ["available", "in_use", "maintenance", "out_of_service"] as const;
-      const chassis = Array.from({ length: 50 }, (_, i) => {
-        const pool = pools[i % pools.length];
-        const status = chStatuses[i % chStatuses.length];
-        return {
-          id: seededId("CHS", i + 1),
-          chassisNumber: `${pool.substring(0, 4).toUpperCase()}-${String(50000 + i)}`,
-          pool,
-          type: (["standard", "tri_axle", "gooseneck", "extendable"] as const)[i % 4],
-          size: (["20ft", "40ft", "45ft", "53ft"] as const)[i % 4],
-          status,
-          location: status === "in_use" ? `In transit - ${RAMPS[i % RAMPS.length].city}` : PORTS[i % PORTS.length].name,
-          lastInspection: new Date(Date.now() - i * 86400000 * 15).toISOString().split("T")[0],
-          nextInspection: new Date(Date.now() + (90 - i * 3) * 86400000).toISOString().split("T")[0],
-          iepCompliant: i % 5 !== 4,
-          uiiaCompliant: i % 7 !== 6,
-          licensePlate: `CH-${String(10000 + i)}`,
-          tireCondition: (["good", "fair", "needs_replacement"] as const)[i % 3],
-          daysOut: status === "in_use" ? 1 + i % 10 : 0,
-          perDiemRate: 25,
-        };
-      });
+
+      // ── Real DB: query vehicles as chassis inventory ──
+      type ChassisRecord = {
+        id: string; chassisNumber: string; pool: string;
+        type: string; size: string; status: typeof chStatuses[number];
+        location: string; lastInspection: string; nextInspection: string;
+        iepCompliant: boolean; uiiaCompliant: boolean; licensePlate: string;
+        tireCondition: string; daysOut: number; perDiemRate: number;
+      };
+      let chassis: ChassisRecord[] = [];
+
+      try {
+        const db = await getDb();
+        if (db) {
+          const dbRows = await db
+            .select({
+              id: vehicles.id,
+              vin: vehicles.vin,
+              licensePlate: vehicles.licensePlate,
+              make: vehicles.make,
+              model: vehicles.model,
+              vehicleType: vehicles.vehicleType,
+              status: vehicles.status,
+              mileage: vehicles.mileage,
+            })
+            .from(vehicles)
+            .orderBy(desc(vehicles.id))
+            .limit(100);
+
+          if (dbRows.length > 0) {
+            const vStatusMap: Record<string, typeof chStatuses[number]> = {
+              active: "in_use", available: "available", idle: "available",
+              maintenance: "maintenance", out_of_service: "out_of_service",
+              retired: "out_of_service",
+            };
+
+            chassis = dbRows.map((v, i) => {
+              const pool = pools[i % pools.length];
+              const st = vStatusMap[v.status || "active"] || chStatuses[i % chStatuses.length];
+              return {
+                id: `CHS-DB-${v.id}`,
+                chassisNumber: v.licensePlate || v.vin || `${pool.substring(0, 4).toUpperCase()}-${String(50000 + v.id)}`,
+                pool,
+                type: (["standard", "tri_axle", "gooseneck", "extendable"] as const)[i % 4],
+                size: (["20ft", "40ft", "45ft", "53ft"] as const)[i % 4],
+                status: st,
+                location: st === "in_use" ? `In transit - ${RAMPS[i % RAMPS.length].city}` : PORTS[i % PORTS.length].name,
+                lastInspection: new Date(Date.now() - i * 86400000 * 15).toISOString().split("T")[0],
+                nextInspection: new Date(Date.now() + (90 - i * 3) * 86400000).toISOString().split("T")[0],
+                iepCompliant: i % 5 !== 4,
+                uiiaCompliant: i % 7 !== 6,
+                licensePlate: v.licensePlate || `CH-${String(10000 + v.id)}`,
+                tireCondition: (["good", "fair", "needs_replacement"] as const)[i % 3],
+                daysOut: st === "in_use" ? 1 + i % 10 : 0,
+                perDiemRate: 25,
+              };
+            });
+          }
+        }
+      } catch (e) {
+        logger.warn("[MultiModal] getChassisManagement DB query failed, using fallback:", e);
+      }
+
+      // Fallback: seeded data only when DB returns nothing
+      if (chassis.length === 0) {
+        chassis = Array.from({ length: 50 }, (_, i) => {
+          const pool = pools[i % pools.length];
+          const status = chStatuses[i % chStatuses.length];
+          return {
+            id: seededId("CHS", i + 1),
+            chassisNumber: `${pool.substring(0, 4).toUpperCase()}-${String(50000 + i)}`,
+            pool,
+            type: (["standard", "tri_axle", "gooseneck", "extendable"] as const)[i % 4],
+            size: (["20ft", "40ft", "45ft", "53ft"] as const)[i % 4],
+            status,
+            location: status === "in_use" ? `In transit - ${RAMPS[i % RAMPS.length].city}` : PORTS[i % PORTS.length].name,
+            lastInspection: new Date(Date.now() - i * 86400000 * 15).toISOString().split("T")[0],
+            nextInspection: new Date(Date.now() + (90 - i * 3) * 86400000).toISOString().split("T")[0],
+            iepCompliant: i % 5 !== 4,
+            uiiaCompliant: i % 7 !== 6,
+            licensePlate: `CH-${String(10000 + i)}`,
+            tireCondition: (["good", "fair", "needs_replacement"] as const)[i % 3],
+            daysOut: status === "in_use" ? 1 + i % 10 : 0,
+            perDiemRate: 25,
+          };
+        });
+      }
 
       let filtered = chassis;
       if (input.pool) filtered = filtered.filter(c => c.pool === input.pool);
@@ -821,7 +1136,69 @@ export const multiModalRouter = router({
     })))
     .query(async ({ input }) => {
       const pdStatuses = ["accruing", "paid", "disputed", "waived"] as const;
-      const records = Array.from({ length: 22 }, (_, i) => ({
+
+      // ── Real DB: query detentionRecords for per diem tracking ──
+      let records: Array<{
+        id: string; containerNumber: string; shippingLine: string;
+        status: typeof pdStatuses[number]; lastFreeDay: string;
+        daysAccrued: number; dailyRate: number; totalCharges: number;
+        location: string; bookingRef: string; returnLocation: string;
+      }> = [];
+
+      try {
+        const db = await getDb();
+        if (db) {
+          const dbRows = await db
+            .select({
+              id: detentionRecords.id,
+              loadId: detentionRecords.loadId,
+              locationType: detentionRecords.locationType,
+              freeTimeMinutes: detentionRecords.freeTimeMinutes,
+              totalDwellMinutes: detentionRecords.totalDwellMinutes,
+              detentionMinutes: detentionRecords.detentionMinutes,
+              detentionRatePerHour: detentionRecords.detentionRatePerHour,
+              detentionCharge: detentionRecords.detentionCharge,
+              isBillable: detentionRecords.isBillable,
+              isPaid: detentionRecords.isPaid,
+              geofenceEnterAt: detentionRecords.geofenceEnterAt,
+              createdAt: detentionRecords.createdAt,
+            })
+            .from(detentionRecords)
+            .orderBy(desc(detentionRecords.createdAt))
+            .limit(50);
+
+          if (dbRows.length > 0) {
+            records = dbRows.map((r, i) => {
+              const freeTimeDays = Math.round((r.freeTimeMinutes ?? 120) / 60 / 24) || 4;
+              const dwellDays = Math.round((r.totalDwellMinutes ?? 0) / 60 / 24);
+              const overDays = Math.max(0, dwellDays - freeTimeDays);
+              const rate = Number(r.detentionRatePerHour ?? 0) * 24 || 150;
+              const charge = Number(r.detentionCharge ?? 0) || overDays * rate;
+              return {
+                id: `PD-DB-${r.id}`,
+                containerNumber: `LD-${r.loadId}`,
+                shippingLine: SHIPPING_LINES[i % SHIPPING_LINES.length],
+                status: r.isPaid ? "paid" as const : r.isBillable ? "accruing" as const : "waived" as const,
+                lastFreeDay: r.geofenceEnterAt
+                  ? new Date(r.geofenceEnterAt.getTime() + freeTimeDays * 86400000).toISOString().split("T")[0]
+                  : new Date().toISOString().split("T")[0],
+                daysAccrued: overDays,
+                dailyRate: rate,
+                totalCharges: charge,
+                location: PORTS[i % PORTS.length].name,
+                bookingRef: `LD-${r.loadId}`,
+                returnLocation: `${["Pier A", "Pier E", "Terminal 3", "ITS"][i % 4]}`,
+              };
+            });
+          }
+        }
+      } catch (e) {
+        logger.warn("[MultiModal] getPerDiemTracking DB query failed, using fallback:", e);
+      }
+
+      // Fallback: seeded data only when DB returns nothing
+      if (records.length === 0) {
+        records = Array.from({ length: 22 }, (_, i) => ({
         id: seededId("PD", i + 1),
         containerNumber: `${["MSCU", "CMAU", "HLXU"][i % 3]}${String(3000000 + i * 99)}`,
         shippingLine: SHIPPING_LINES[i % SHIPPING_LINES.length],
@@ -834,6 +1211,7 @@ export const multiModalRouter = router({
         bookingRef: `IMB-${20260301 + i}`,
         returnLocation: `${["Pier A", "Pier E", "Terminal 3", "ITS"][i % 4]}`,
       }));
+      }
 
       let filtered = records;
       if (input.status) filtered = filtered.filter(r => r.status === input.status);
@@ -1023,7 +1401,63 @@ export const multiModalRouter = router({
   getLastFreeDayAlerts: protectedProcedure
     .input(z.object({ daysAhead: z.number().default(3) }))
     .query(async ({ input }) => {
-      const alerts = Array.from({ length: 12 }, (_, i) => {
+      // ── Real DB: derive LFD alerts from detentionRecords ──
+      let alerts: Array<{
+        id: string; containerNumber: string; shippingLine: string;
+        port: typeof PORTS[number]; terminal: string; lastFreeDay: string;
+        daysUntilLFD: number; severity: "critical" | "urgent" | "warning";
+        estimatedPerDiem: number; bookingRef: string; actionRequired: string;
+      }> = [];
+
+      try {
+        const db = await getDb();
+        if (db) {
+          const rows = await db
+            .select({
+              id: detentionRecords.id,
+              loadId: detentionRecords.loadId,
+              freeTimeMinutes: detentionRecords.freeTimeMinutes,
+              totalDwellMinutes: detentionRecords.totalDwellMinutes,
+              detentionRatePerHour: detentionRecords.detentionRatePerHour,
+              geofenceEnterAt: detentionRecords.geofenceEnterAt,
+              isPaid: detentionRecords.isPaid,
+            })
+            .from(detentionRecords)
+            .where(sql`${detentionRecords.isPaid} = false`)
+            .orderBy(desc(detentionRecords.createdAt))
+            .limit(30);
+
+          if (rows.length > 0) {
+            alerts = rows.map((r, i) => {
+              const freeTimeDays = Math.round((r.freeTimeMinutes ?? 120) / 60 / 24) || 4;
+              const enterAt = r.geofenceEnterAt ? r.geofenceEnterAt.getTime() : Date.now();
+              const lfdDate = new Date(enterAt + freeTimeDays * 86400000);
+              const daysUntilLFD = Math.round((lfdDate.getTime() - Date.now()) / 86400000);
+              const rate = Number(r.detentionRatePerHour ?? 0) * 24 || 175;
+              const port = PORTS[i % PORTS.length];
+              return {
+                id: `LFD-DB-${r.id}`,
+                containerNumber: `LD-${r.loadId}`,
+                shippingLine: SHIPPING_LINES[i % SHIPPING_LINES.length],
+                port,
+                terminal: `${port.code}T${(i % 2) + 1}`,
+                lastFreeDay: lfdDate.toISOString().split("T")[0],
+                daysUntilLFD,
+                severity: daysUntilLFD < 0 ? "critical" as const : daysUntilLFD === 0 ? "urgent" as const : "warning" as const,
+                estimatedPerDiem: daysUntilLFD < 0 ? Math.abs(daysUntilLFD) * rate : 0,
+                bookingRef: `LD-${r.loadId}`,
+                actionRequired: daysUntilLFD <= 0 ? "Immediate pickup required" : `Schedule pickup within ${daysUntilLFD} day(s)`,
+              };
+            }).sort((a, b) => a.daysUntilLFD - b.daysUntilLFD);
+          }
+        }
+      } catch (e) {
+        logger.warn("[MultiModal] getLastFreeDayAlerts DB query failed, using fallback:", e);
+      }
+
+      // Fallback: seeded data only when DB returns nothing
+      if (alerts.length === 0) {
+        alerts = Array.from({ length: 12 }, (_, i) => {
         const daysUntilLFD = -1 + i % (input.daysAhead + 2);
         return {
           id: seededId("LFD", i + 1),
@@ -1039,6 +1473,7 @@ export const multiModalRouter = router({
           actionRequired: daysUntilLFD <= 0 ? "Immediate pickup required" : `Schedule pickup within ${daysUntilLFD} day(s)`,
         };
       }).sort((a, b) => a.daysUntilLFD - b.daysUntilLFD);
+      }
 
       return {
         alerts,
@@ -1168,13 +1603,53 @@ export const multiModalRouter = router({
       dateRange: dateRangeInput.optional(),
     }))
     .query(async () => {
+      // ── Real DB: derive cost comparison from loads ──
+      let costComparison = [
+        { mode: "truck", avgCostPerMile: 2.85, avgTotalCost: 4275, volume: 142, trend: +2.1 },
+        { mode: "rail", avgCostPerMile: 0.95, avgTotalCost: 2400, volume: 58, trend: -0.8 },
+        { mode: "intermodal", avgCostPerMile: 1.45, avgTotalCost: 3200, volume: 15, trend: +0.5 },
+        { mode: "ocean", avgCostPerMile: 0.12, avgTotalCost: 3800, volume: 32, trend: -1.2 },
+      ];
+
+      try {
+        const db = await getDb();
+        if (db) {
+          // Truck loads (non-intermodal)
+          const [truckStats] = await db.select({
+            cnt: sql<number>`count(*)`,
+            totalRate: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+            totalDist: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)`,
+          }).from(loads).where(sql`${loads.cargoType} != 'intermodal' AND ${loads.deletedAt} IS NULL`);
+
+          // Intermodal loads
+          const [imStats] = await db.select({
+            cnt: sql<number>`count(*)`,
+            totalRate: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+            totalDist: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)`,
+          }).from(loads).where(sql`${loads.cargoType} = 'intermodal' AND ${loads.deletedAt} IS NULL`);
+
+          const tc = Number(truckStats?.cnt ?? 0);
+          const tr = Number(truckStats?.totalRate ?? 0);
+          const td = Number(truckStats?.totalDist ?? 0);
+          const ic = Number(imStats?.cnt ?? 0);
+          const ir = Number(imStats?.totalRate ?? 0);
+          const id = Number(imStats?.totalDist ?? 0);
+
+          if (tc > 0 || ic > 0) {
+            costComparison = [
+              { mode: "truck", avgCostPerMile: td > 0 ? Math.round((tr / td) * 100) / 100 : 2.85, avgTotalCost: tc > 0 ? Math.round(tr / tc) : 4275, volume: tc, trend: +2.1 },
+              { mode: "rail", avgCostPerMile: 0.95, avgTotalCost: 2400, volume: 0, trend: -0.8 },
+              { mode: "intermodal", avgCostPerMile: id > 0 ? Math.round((ir / id) * 100) / 100 : 1.45, avgTotalCost: ic > 0 ? Math.round(ir / ic) : 3200, volume: ic, trend: +0.5 },
+              { mode: "ocean", avgCostPerMile: 0.12, avgTotalCost: 3800, volume: 0, trend: -1.2 },
+            ];
+          }
+        }
+      } catch (e) {
+        logger.warn("[MultiModal] getCostByMode DB query failed, using fallback:", e);
+      }
+
       return {
-        costComparison: [
-          { mode: "truck", avgCostPerMile: 2.85, avgTotalCost: 4275, volume: 142, trend: +2.1 },
-          { mode: "rail", avgCostPerMile: 0.95, avgTotalCost: 2400, volume: 58, trend: -0.8 },
-          { mode: "intermodal", avgCostPerMile: 1.45, avgTotalCost: 3200, volume: 15, trend: +0.5 },
-          { mode: "ocean", avgCostPerMile: 0.12, avgTotalCost: 3800, volume: 32, trend: -1.2 },
-        ],
+        costComparison,
         monthlyCosts: Array.from({ length: 6 }, (_, i) => ({
           month: new Date(2026, 9 - i, 1).toISOString().split("T")[0],
           truck: 285000 + i * 12000,
@@ -1191,21 +1666,85 @@ export const multiModalRouter = router({
       destination: z.string().optional(),
     }))
     .query(async () => {
-      return {
-        comparison: [
-          { mode: "truck", avgDays: 2.3, minDays: 1, maxDays: 4, reliability: 94.2, samples: 142 },
-          { mode: "rail", avgDays: 4.8, minDays: 3, maxDays: 8, reliability: 87.5, samples: 58 },
-          { mode: "intermodal", avgDays: 5.1, minDays: 4, maxDays: 8, reliability: 89.3, samples: 15 },
-          { mode: "ocean", avgDays: 18.5, minDays: 14, maxDays: 28, reliability: 82.1, samples: 32 },
-        ],
-        topLanes: [
-          { origin: "Los Angeles, CA", destination: "Chicago, IL", truck: 2.5, rail: 4.2, intermodal: 4.8 },
-          { origin: "Savannah, GA", destination: "Atlanta, GA", truck: 0.5, rail: 1.5, intermodal: 1.8 },
-          { origin: "Newark, NJ", destination: "Chicago, IL", truck: 1.8, rail: 3.5, intermodal: 4.0 },
-          { origin: "Houston, TX", destination: "Dallas, TX", truck: 0.5, rail: 2.0, intermodal: 2.2 },
-          { origin: "Seattle, WA", destination: "Chicago, IL", truck: 3.0, rail: 5.5, intermodal: 5.8 },
-        ],
-      };
+      // ── Real DB: derive transit time from delivered loads ──
+      let comparison = [
+        { mode: "truck", avgDays: 2.3, minDays: 1, maxDays: 4, reliability: 94.2, samples: 142 },
+        { mode: "rail", avgDays: 4.8, minDays: 3, maxDays: 8, reliability: 87.5, samples: 58 },
+        { mode: "intermodal", avgDays: 5.1, minDays: 4, maxDays: 8, reliability: 89.3, samples: 15 },
+        { mode: "ocean", avgDays: 18.5, minDays: 14, maxDays: 28, reliability: 82.1, samples: 32 },
+      ];
+
+      let topLanes = [
+        { origin: "Los Angeles, CA", destination: "Chicago, IL", truck: 2.5, rail: 4.2, intermodal: 4.8 },
+        { origin: "Savannah, GA", destination: "Atlanta, GA", truck: 0.5, rail: 1.5, intermodal: 1.8 },
+        { origin: "Newark, NJ", destination: "Chicago, IL", truck: 1.8, rail: 3.5, intermodal: 4.0 },
+        { origin: "Houston, TX", destination: "Dallas, TX", truck: 0.5, rail: 2.0, intermodal: 2.2 },
+        { origin: "Seattle, WA", destination: "Chicago, IL", truck: 3.0, rail: 5.5, intermodal: 5.8 },
+      ];
+
+      try {
+        const db = await getDb();
+        if (db) {
+          // Get avg transit days for truck loads (delivered with both pickup and actual delivery dates)
+          const [truckTransit] = await db.select({
+            cnt: sql<number>`count(*)`,
+            avgDays: sql<number>`AVG(TIMESTAMPDIFF(DAY, ${loads.pickupDate}, ${loads.actualDeliveryDate}))`,
+            minDays: sql<number>`MIN(TIMESTAMPDIFF(DAY, ${loads.pickupDate}, ${loads.actualDeliveryDate}))`,
+            maxDays: sql<number>`MAX(TIMESTAMPDIFF(DAY, ${loads.pickupDate}, ${loads.actualDeliveryDate}))`,
+            delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
+          }).from(loads).where(sql`${loads.pickupDate} IS NOT NULL AND ${loads.actualDeliveryDate} IS NOT NULL AND ${loads.cargoType} != 'intermodal' AND ${loads.deletedAt} IS NULL`);
+
+          const tCnt = Number(truckTransit?.cnt ?? 0);
+          if (tCnt > 0) {
+            const tDelivered = Number(truckTransit?.delivered ?? 0);
+            comparison[0] = {
+              mode: "truck",
+              avgDays: Math.round(Number(truckTransit?.avgDays ?? 2.3) * 10) / 10,
+              minDays: Math.max(1, Number(truckTransit?.minDays ?? 1)),
+              maxDays: Number(truckTransit?.maxDays ?? 4),
+              reliability: tCnt > 0 ? Math.round((tDelivered / tCnt) * 1000) / 10 : 94.2,
+              samples: tCnt,
+            };
+          }
+
+          // Top lanes from DB
+          const laneRows = await db.select({
+            originCity: sql<string>`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.city'))`,
+            originState: sql<string>`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.state'))`,
+            destCity: sql<string>`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.city'))`,
+            destState: sql<string>`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.state'))`,
+            avgDays: sql<number>`AVG(TIMESTAMPDIFF(DAY, ${loads.pickupDate}, ${loads.actualDeliveryDate}))`,
+            cnt: sql<number>`count(*)`,
+          }).from(loads)
+            .where(sql`${loads.pickupDate} IS NOT NULL AND ${loads.actualDeliveryDate} IS NOT NULL AND ${loads.deletedAt} IS NULL`)
+            .groupBy(
+              sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.city'))`,
+              sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.state'))`,
+              sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.city'))`,
+              sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.state'))`,
+            )
+            .having(sql`count(*) >= 2`)
+            .orderBy(sql`count(*) DESC`)
+            .limit(5);
+
+          if (laneRows.length > 0) {
+            topLanes = laneRows.map((l) => {
+              const days = Math.round(Number(l.avgDays ?? 2) * 10) / 10;
+              return {
+                origin: `${l.originCity || "?"}, ${l.originState || "?"}`,
+                destination: `${l.destCity || "?"}, ${l.destState || "?"}`,
+                truck: days,
+                rail: Math.round(days * 2 * 10) / 10,
+                intermodal: Math.round(days * 2.2 * 10) / 10,
+              };
+            });
+          }
+        }
+      } catch (e) {
+        logger.warn("[MultiModal] getTransitTimeComparison DB query failed, using fallback:", e);
+      }
+
+      return { comparison, topLanes };
     }),
 
   getMultiModalAnalytics: protectedProcedure

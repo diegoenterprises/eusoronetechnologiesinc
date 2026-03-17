@@ -32,6 +32,10 @@ import {
   autonomousVehicles, avTelemetry, tenants, tenantDataIsolation,
   incidents, escortAssignments, allocationContracts, allocationDailyTracking,
   certifications,
+  railShipments, railCarriers, railYards, railcars, trainConsists, railShipmentEvents,
+  vesselShipments, vessels, ports, shippingContainers, containerTracking, vesselShipmentEvents,
+  vesselISPSRecords, vesselInspections,
+  intermodalShipments, intermodalSegments,
 } from "../../drizzle/schema";
 import { eq, and, desc, like, sql, count, gte, lte, or, inArray } from "drizzle-orm";
 
@@ -2206,6 +2210,313 @@ Format as a professional business report with sections, key metrics, trends, and
         },
       }],
     })
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: search_rail_shipments
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "search_rail_shipments",
+    "Search rail shipments on the EusoTrip platform. Filter by status, origin, destination, or carrier.",
+    {
+      status: z.string().optional().describe("Filter by status: pending, car_ordered, car_placed, loading, loaded, in_transit, at_interchange, in_yard, spotted, unloading, delivered, cancelled"),
+      originRailroad: z.string().optional().describe("Filter by origin railroad reporting mark (e.g. BNSF, UP)"),
+      destinationRailroad: z.string().optional().describe("Filter by destination railroad mark"),
+      carrierMark: z.string().optional().describe("Filter by primary carrier reporting mark (e.g. BNSF, UP, CSX, NS)"),
+      limit: z.number().optional().default(20).describe("Max results (default 20)"),
+    },
+    async ({ status, originRailroad, destinationRailroad, carrierMark, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const conds = [];
+      if (status) conds.push(eq(railShipments.status, status as any));
+      if (originRailroad) conds.push(eq(railShipments.originRailroad, originRailroad));
+      if (destinationRailroad) conds.push(eq(railShipments.destinationRailroad, destinationRailroad));
+      if (carrierMark) {
+        const carrier = await db.select({ id: railCarriers.id }).from(railCarriers).where(eq(railCarriers.reportingMark, carrierMark)).limit(1);
+        if (carrier.length > 0) conds.push(eq(railShipments.carrierId, carrier[0].id));
+      }
+      const results = await db.select({
+        id: railShipments.id, shipmentNumber: railShipments.shipmentNumber, status: railShipments.status,
+        originRailroad: railShipments.originRailroad, destinationRailroad: railShipments.destinationRailroad,
+        commodity: railShipments.commodity, weight: railShipments.weight, hazmatClass: railShipments.hazmatClass,
+        createdAt: railShipments.createdAt,
+      }).from(railShipments).where(conds.length > 0 ? and(...conds) : undefined).orderBy(desc(railShipments.createdAt)).limit(limit || 20);
+      return { content: [{ type: "text" as const, text: JSON.stringify({ count: results.length, railShipments: results }, null, 2) }] };
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: get_rail_shipment_details
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "get_rail_shipment_details",
+    "Get full details for a rail shipment by ID or shipment number, including events and railcar info.",
+    {
+      id: z.number().optional().describe("Rail shipment ID"),
+      shipmentNumber: z.string().optional().describe("Rail shipment number"),
+    },
+    async ({ id, shipmentNumber }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const cond = id ? eq(railShipments.id, id) : shipmentNumber ? eq(railShipments.shipmentNumber, shipmentNumber) : null;
+      if (!cond) return { content: [{ type: "text" as const, text: "Provide id or shipmentNumber" }] };
+      const [shipment] = await db.select().from(railShipments).where(cond).limit(1);
+      if (!shipment) return { content: [{ type: "text" as const, text: "Rail shipment not found" }] };
+      const events = await db.select().from(railShipmentEvents).where(eq(railShipmentEvents.shipmentId, shipment.id)).orderBy(desc(railShipmentEvents.timestamp)).limit(50);
+      const cars = await db.select().from(railcars).where(eq(railcars.assignedShipmentId, shipment.id));
+      return { content: [{ type: "text" as const, text: JSON.stringify({ shipment, events, railcars: cars }, null, 2) }] };
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: rail_yard_lookup
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "rail_yard_lookup",
+    "Search rail yards by railroad, state, or intermodal capability.",
+    {
+      state: z.string().optional().describe("Filter by US state abbreviation"),
+      railroad: z.string().optional().describe("Filter by railroad reporting mark"),
+      intermodal: z.boolean().optional().describe("Filter to intermodal-capable yards only"),
+      limit: z.number().optional().default(25).describe("Max results (default 25)"),
+    },
+    async ({ state, railroad, intermodal, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const conds = [];
+      if (state) conds.push(eq(railYards.state, state));
+      if (intermodal) conds.push(eq(railYards.hasIntermodal, true));
+      if (railroad) {
+        const carrier = await db.select({ id: railCarriers.id }).from(railCarriers).where(eq(railCarriers.reportingMark, railroad)).limit(1);
+        if (carrier.length > 0) conds.push(eq(railYards.railroadId, carrier[0].id));
+      }
+      const results = await db.select().from(railYards).where(conds.length > 0 ? and(...conds) : undefined).limit(limit || 25);
+      return { content: [{ type: "text" as const, text: JSON.stringify({ count: results.length, yards: results }, null, 2) }] };
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: rail_carrier_info
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "rail_carrier_info",
+    "Get railroad company details by reporting mark (e.g. BNSF, UP, CSX, NS, KCS).",
+    {
+      reportingMark: z.string().describe("Railroad reporting mark (e.g. BNSF, UP, CSX)"),
+    },
+    async ({ reportingMark }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const [carrier] = await db.select().from(railCarriers).where(eq(railCarriers.reportingMark, reportingMark.toUpperCase())).limit(1);
+      if (!carrier) return { content: [{ type: "text" as const, text: `Railroad '${reportingMark}' not found` }] };
+      const yardCount = await db.select({ c: count() }).from(railYards).where(eq(railYards.railroadId, carrier.id));
+      const shipmentCount = await db.select({ c: count() }).from(railShipments).where(eq(railShipments.carrierId, carrier.id));
+      return { content: [{ type: "text" as const, text: JSON.stringify({ carrier, yards: yardCount[0]?.c || 0, shipments: shipmentCount[0]?.c || 0 }, null, 2) }] };
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: rail_compliance_status
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "rail_compliance_status",
+    "Get FRA compliance status for a rail carrier including inspection history.",
+    {
+      reportingMark: z.string().describe("Railroad reporting mark"),
+    },
+    async ({ reportingMark }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const [carrier] = await db.select().from(railCarriers).where(eq(railCarriers.reportingMark, reportingMark.toUpperCase())).limit(1);
+      if (!carrier) return { content: [{ type: "text" as const, text: `Railroad '${reportingMark}' not found` }] };
+      const recentInspections = await db.execute(sql`SELECT ri.*, rc.railcarNumber FROM rail_inspections ri LEFT JOIN railcars rc ON ri.railcarId = rc.id ORDER BY ri.inspectionDate DESC LIMIT 20`);
+      return { content: [{ type: "text" as const, text: JSON.stringify({ carrier: { name: carrier.name, reportingMark: carrier.reportingMark, classType: carrier.classType, dotNumber: carrier.dotNumber, isActive: carrier.isActive }, recentInspections }, null, 2) }] };
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: search_vessel_bookings
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "search_vessel_bookings",
+    "Search vessel/maritime shipments by status, port, carrier, or booking number.",
+    {
+      status: z.string().optional().describe("Filter by status: pending, confirmed, gate_in, loaded, departed, in_transit, arrived, discharged, customs_hold, customs_cleared, gate_out, delivered, cancelled"),
+      portOfLoading: z.string().optional().describe("Filter by port of loading name (partial match)"),
+      portOfDischarge: z.string().optional().describe("Filter by port of discharge name (partial match)"),
+      carrier: z.string().optional().describe("Filter by shipping line name (partial match)"),
+      limit: z.number().optional().default(20).describe("Max results (default 20)"),
+    },
+    async ({ status, portOfLoading, portOfDischarge, carrier, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const conds = [];
+      if (status) conds.push(eq(vesselShipments.status, status as any));
+      if (portOfLoading) {
+        const p = await db.select({ id: ports.id }).from(ports).where(like(ports.name, `%${portOfLoading}%`)).limit(1);
+        if (p.length > 0) conds.push(eq(vesselShipments.originPortId, p[0].id));
+      }
+      if (portOfDischarge) {
+        const p = await db.select({ id: ports.id }).from(ports).where(like(ports.name, `%${portOfDischarge}%`)).limit(1);
+        if (p.length > 0) conds.push(eq(vesselShipments.destinationPortId, p[0].id));
+      }
+      if (carrier) conds.push(like(vesselShipments.serviceRoute, `%${carrier}%`));
+      const results = await db.select({
+        id: vesselShipments.id, bookingNumber: vesselShipments.bookingNumber, billOfLading: vesselShipments.billOfLading,
+        status: vesselShipments.status, serviceRoute: vesselShipments.serviceRoute,
+        commodity: vesselShipments.commodity, numberOfContainers: vesselShipments.numberOfContainers,
+        hazmatClass: vesselShipments.hazmatClass, createdAt: vesselShipments.createdAt,
+      }).from(vesselShipments).where(conds.length > 0 ? and(...conds) : undefined).orderBy(desc(vesselShipments.createdAt)).limit(limit || 20);
+      return { content: [{ type: "text" as const, text: JSON.stringify({ count: results.length, vesselBookings: results }, null, 2) }] };
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: get_vessel_booking_details
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "get_vessel_booking_details",
+    "Get full details for a vessel booking by ID or booking number, including events and containers.",
+    {
+      id: z.number().optional().describe("Vessel shipment ID"),
+      bookingNumber: z.string().optional().describe("Vessel booking number"),
+    },
+    async ({ id, bookingNumber }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const cond = id ? eq(vesselShipments.id, id) : bookingNumber ? eq(vesselShipments.bookingNumber, bookingNumber) : null;
+      if (!cond) return { content: [{ type: "text" as const, text: "Provide id or bookingNumber" }] };
+      const [booking] = await db.select().from(vesselShipments).where(cond).limit(1);
+      if (!booking) return { content: [{ type: "text" as const, text: "Vessel booking not found" }] };
+      const events = await db.select().from(vesselShipmentEvents).where(eq(vesselShipmentEvents.shipmentId, booking.id)).orderBy(desc(vesselShipmentEvents.timestamp)).limit(50);
+      const containers = await db.select().from(shippingContainers).where(eq(shippingContainers.assignedShipmentId, booking.id));
+      return { content: [{ type: "text" as const, text: JSON.stringify({ booking, events, containers }, null, 2) }] };
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: port_lookup
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "port_lookup",
+    "Search ports by country, name, UN/LOCODE, or capabilities (rail access, container terminal).",
+    {
+      country: z.string().optional().describe("Filter by country code (US, CA, MX)"),
+      name: z.string().optional().describe("Filter by port name (partial match)"),
+      unlocode: z.string().optional().describe("Filter by UN/LOCODE"),
+      hasRailAccess: z.boolean().optional().describe("Filter to ports with rail access"),
+      limit: z.number().optional().default(25).describe("Max results (default 25)"),
+    },
+    async ({ country, name, unlocode, hasRailAccess, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const conds = [];
+      if (country) conds.push(eq(ports.country, country as any));
+      if (name) conds.push(like(ports.name, `%${name}%`));
+      if (unlocode) conds.push(eq(ports.unlocode, unlocode));
+      if (hasRailAccess) conds.push(eq(ports.hasRailAccess, true));
+      const results = await db.select().from(ports).where(conds.length > 0 ? and(...conds) : undefined).limit(limit || 25);
+      return { content: [{ type: "text" as const, text: JSON.stringify({ count: results.length, ports: results }, null, 2) }] };
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: container_tracking
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "container_tracking",
+    "Track a shipping container by container number across all transport modes.",
+    {
+      containerNumber: z.string().describe("Container number (e.g. MSCU1234567)"),
+    },
+    async ({ containerNumber }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const [container] = await db.select().from(shippingContainers).where(eq(shippingContainers.containerNumber, containerNumber)).limit(1);
+      if (!container) return { content: [{ type: "text" as const, text: `Container '${containerNumber}' not found` }] };
+      const tracking = await db.select().from(containerTracking).where(eq(containerTracking.containerId, container.id)).orderBy(desc(containerTracking.timestamp)).limit(50);
+      let vesselBooking = null;
+      if (container.assignedShipmentId) {
+        const [b] = await db.select({ bookingNumber: vesselShipments.bookingNumber, status: vesselShipments.status, serviceRoute: vesselShipments.serviceRoute }).from(vesselShipments).where(eq(vesselShipments.id, container.assignedShipmentId)).limit(1);
+        vesselBooking = b || null;
+      }
+      return { content: [{ type: "text" as const, text: JSON.stringify({ container, vesselBooking, trackingHistory: tracking }, null, 2) }] };
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: vessel_compliance_status
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "vessel_compliance_status",
+    "Get maritime compliance status (ISM/ISPS/MARPOL) for a vessel by name or IMO number.",
+    {
+      vesselName: z.string().optional().describe("Vessel name (partial match)"),
+      imoNumber: z.string().optional().describe("IMO number"),
+    },
+    async ({ vesselName, imoNumber }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const cond = imoNumber ? eq(vessels.imoNumber, imoNumber) : vesselName ? like(vessels.name, `%${vesselName}%`) : null;
+      if (!cond) return { content: [{ type: "text" as const, text: "Provide vesselName or imoNumber" }] };
+      const [vessel] = await db.select().from(vessels).where(cond).limit(1);
+      if (!vessel) return { content: [{ type: "text" as const, text: "Vessel not found" }] };
+      const ispsRecords = await db.select().from(vesselISPSRecords).where(eq(vesselISPSRecords.vesselId, vessel.id)).orderBy(desc(vesselISPSRecords.createdAt)).limit(10);
+      const inspectionRecords = await db.select().from(vesselInspections).where(eq(vesselInspections.vesselId, vessel.id)).orderBy(desc(vesselInspections.inspectionDate)).limit(10);
+      return { content: [{ type: "text" as const, text: JSON.stringify({ vessel: { id: vessel.id, name: vessel.name, imoNumber: vessel.imoNumber, mmsiNumber: vessel.mmsiNumber, vesselType: vessel.vesselType, flag: vessel.flag, classificationSociety: vessel.classificationSociety, ownerCompany: vessel.ownerCompany }, ispsRecords, inspections: inspectionRecords }, null, 2) }] };
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: search_intermodal_shipments
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "search_intermodal_shipments",
+    "Search multi-modal intermodal shipments that span truck, rail, and/or vessel modes.",
+    {
+      status: z.string().optional().describe("Filter by status: pending, in_transit, at_transfer, delivered, cancelled"),
+      origin: z.string().optional().describe("Filter by origin (partial match)"),
+      destination: z.string().optional().describe("Filter by destination (partial match)"),
+      limit: z.number().optional().default(20).describe("Max results (default 20)"),
+    },
+    async ({ status, origin, destination, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const conds = [];
+      if (status) conds.push(eq(intermodalShipments.status, status as any));
+      if (origin) conds.push(sql`JSON_EXTRACT(originLocation, '$.description') LIKE ${`%${origin}%`}`);
+      if (destination) conds.push(sql`JSON_EXTRACT(destinationLocation, '$.description') LIKE ${`%${destination}%`}`);
+      const results = await db.select({
+        id: intermodalShipments.id, intermodalNumber: intermodalShipments.intermodalNumber,
+        status: intermodalShipments.status, originLocation: intermodalShipments.originLocation,
+        destinationLocation: intermodalShipments.destinationLocation, numberOfSegments: intermodalShipments.numberOfSegments,
+        createdAt: intermodalShipments.createdAt,
+      }).from(intermodalShipments).where(conds.length > 0 ? and(...conds) : undefined).orderBy(desc(intermodalShipments.createdAt)).limit(limit || 20);
+      return { content: [{ type: "text" as const, text: JSON.stringify({ count: results.length, intermodalShipments: results }, null, 2) }] };
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TOOL: get_intermodal_journey
+  // ══════════════════════════════════════════════════════════════════════════
+  mcp.tool(
+    "get_intermodal_journey",
+    "Get full journey detail for an intermodal shipment including all segments across transport modes.",
+    {
+      id: z.number().optional().describe("Intermodal shipment ID"),
+      intermodalNumber: z.string().optional().describe("Intermodal shipment number"),
+    },
+    async ({ id, intermodalNumber }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      const cond = id ? eq(intermodalShipments.id, id) : intermodalNumber ? eq(intermodalShipments.intermodalNumber, intermodalNumber) : null;
+      if (!cond) return { content: [{ type: "text" as const, text: "Provide id or intermodalNumber" }] };
+      const [shipment] = await db.select().from(intermodalShipments).where(cond).limit(1);
+      if (!shipment) return { content: [{ type: "text" as const, text: "Intermodal shipment not found" }] };
+      const segments = await db.select().from(intermodalSegments).where(eq(intermodalSegments.intermodalShipmentId, shipment.id)).orderBy(intermodalSegments.legNumber);
+      return { content: [{ type: "text" as const, text: JSON.stringify({ shipment, segments }, null, 2) }] };
+    }
   );
 
   return mcp;

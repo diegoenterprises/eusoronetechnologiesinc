@@ -437,6 +437,33 @@ const CommunicationHubPage = lazy(() => import("./pages/CommunicationHub"));
 const DataMigrationPage = lazy(() => import("./pages/DataMigration"));
 const SafetyRiskPage = lazy(() => import("./pages/SafetyRisk"));
 const MultiModalPage = lazy(() => import("./pages/MultiModal"));
+// ═══ V5 Multi-Modal: Rail Pages ═══
+const RailDashboard = lazy(() => import("./pages/rail/RailDashboard"));
+const RailShipmentCreate = lazy(() => import("./pages/rail/RailShipmentCreate"));
+const RailShipments = lazy(() => import("./pages/rail/RailShipments"));
+const RailShipmentDetail = lazy(() => import("./pages/rail/RailShipmentDetail"));
+const RailTracking = lazy(() => import("./pages/rail/RailTracking"));
+const RailYards = lazy(() => import("./pages/rail/RailYards"));
+const RailCommandCenter = lazy(() => import("./pages/rail/RailCommandCenter"));
+const RailConsists = lazy(() => import("./pages/rail/RailConsists"));
+const RailCrewHOS = lazy(() => import("./pages/rail/RailCrewHOS"));
+const RailCompliance = lazy(() => import("./pages/rail/RailCompliance"));
+// ═══ V5 Multi-Modal: Vessel Pages ═══
+const VesselDashboard = lazy(() => import("./pages/vessel/VesselDashboard"));
+const VesselBookingCreate = lazy(() => import("./pages/vessel/VesselBookingCreate"));
+const VesselBookings = lazy(() => import("./pages/vessel/VesselBookings"));
+const VesselBookingDetail = lazy(() => import("./pages/vessel/VesselBookingDetail"));
+const ContainerTracking = lazy(() => import("./pages/vessel/ContainerTracking"));
+const PortDirectory = lazy(() => import("./pages/vessel/PortDirectory"));
+const VesselFleet = lazy(() => import("./pages/vessel/VesselFleet"));
+const CustomsDashboard = lazy(() => import("./pages/vessel/CustomsDashboard"));
+const BillOfLading = lazy(() => import("./pages/vessel/BillOfLading"));
+const VesselCompliance = lazy(() => import("./pages/vessel/VesselCompliance"));
+// ═══ V5 Multi-Modal: Intermodal Pages ═══
+const IntermodalDashboard = lazy(() => import("./pages/intermodal/IntermodalDashboard"));
+const IntermodalShipmentCreate = lazy(() => import("./pages/intermodal/IntermodalShipmentCreate"));
+const IntermodalTracking = lazy(() => import("./pages/intermodal/IntermodalTracking"));
+const IntermodalTransfers = lazy(() => import("./pages/intermodal/IntermodalTransfers"));
 
 function Router() {
   // Role constants for route protection
@@ -455,6 +482,9 @@ function Router() {
   const SUPR: UserRole[] = ["SUPER_ADMIN"];
   const LOAD: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ADMIN","SUPER_ADMIN"];
   const ELDR: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ESCORT","TERMINAL_MANAGER","COMPLIANCE_OFFICER","SAFETY_MANAGER","ADMIN","SUPER_ADMIN"];
+  // V5 Multi-Modal role groups
+  const RAIL: UserRole[] = ["RAIL_SHIPPER","RAIL_CARRIER","RAIL_DISPATCHER","RAIL_ENGINEER","RAIL_CONDUCTOR","RAIL_BROKER","ADMIN","SUPER_ADMIN"] as UserRole[];
+  const VESL: UserRole[] = ["VESSEL_SHIPPER","VESSEL_OPERATOR","PORT_MASTER","SHIP_CAPTAIN","VESSEL_BROKER","CUSTOMS_BROKER","ADMIN","SUPER_ADMIN"] as UserRole[];
 
   // Helper: wrap page in DashboardLayout + ProtectedRoute
   const guard = (roles: UserRole[], Page: React.ReactNode) => () => (
@@ -1004,6 +1034,43 @@ function Router() {
       {/* FALLBACK */}
       {/* ============================================ */}
       <Route path={"/404"} component={NotFound} />
+      {/* ============================================ */}
+      {/* V5 RAIL ROUTES */}
+      {/* ============================================ */}
+      <Route path={"/rail/dashboard"} component={guard(RAIL, <RailDashboard />)} />
+      <Route path={"/rail/shipments/create"} component={guard(RAIL, <RailShipmentCreate />)} />
+      <Route path={"/rail/shipments/:id"} component={guard(RAIL, <RailShipmentDetail />)} />
+      <Route path={"/rail/shipments"} component={guard(RAIL, <RailShipments />)} />
+      <Route path={"/rail/tracking"} component={guard(RAIL, <RailTracking />)} />
+      <Route path={"/rail/yards"} component={guard(RAIL, <RailYards />)} />
+      <Route path={"/rail/command-center"} component={guard(RAIL, <RailCommandCenter />)} />
+      <Route path={"/rail/consists"} component={guard(RAIL, <RailConsists />)} />
+      <Route path={"/rail/crew/hos"} component={guard(RAIL, <RailCrewHOS />)} />
+      <Route path={"/rail/hos"} component={guard(RAIL, <RailCrewHOS />)} />
+      <Route path={"/rail/compliance"} component={guard(RAIL, <RailCompliance />)} />
+
+      {/* ============================================ */}
+      {/* V5 VESSEL ROUTES */}
+      {/* ============================================ */}
+      <Route path={"/vessel/dashboard"} component={guard(VESL, <VesselDashboard />)} />
+      <Route path={"/vessel/bookings/create"} component={guard(VESL, <VesselBookingCreate />)} />
+      <Route path={"/vessel/bookings/:id"} component={guard(VESL, <VesselBookingDetail />)} />
+      <Route path={"/vessel/bookings"} component={guard(VESL, <VesselBookings />)} />
+      <Route path={"/vessel/container-tracking"} component={guard(VESL, <ContainerTracking />)} />
+      <Route path={"/vessel/ports"} component={guard(VESL, <PortDirectory />)} />
+      <Route path={"/vessel/fleet"} component={guard(VESL, <VesselFleet />)} />
+      <Route path={"/vessel/customs"} component={guard(VESL, <CustomsDashboard />)} />
+      <Route path={"/vessel/bol"} component={guard(VESL, <BillOfLading />)} />
+      <Route path={"/vessel/compliance"} component={guard(VESL, <VesselCompliance />)} />
+
+      {/* ============================================ */}
+      {/* V5 INTERMODAL ROUTES */}
+      {/* ============================================ */}
+      <Route path={"/intermodal/dashboard"} component={guard([...RAIL, ...VESL] as UserRole[], <IntermodalDashboard />)} />
+      <Route path={"/intermodal/shipments/create"} component={guard([...RAIL, ...VESL] as UserRole[], <IntermodalShipmentCreate />)} />
+      <Route path={"/intermodal/tracking"} component={guard([...RAIL, ...VESL] as UserRole[], <IntermodalTracking />)} />
+      <Route path={"/intermodal/transfers"} component={guard([...RAIL, ...VESL] as UserRole[], <IntermodalTransfers />)} />
+
       <Route component={NotFound} />
     </Switch>
     </Suspense>

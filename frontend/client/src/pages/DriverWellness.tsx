@@ -1,7 +1,7 @@
 /**
- * DRIVER WELLNESS & RETENTION DASHBOARD
+ * WELLNESS & RETENTION DASHBOARD
  * Comprehensive wellness, fatigue monitoring, retention analytics,
- * career development, benefits, incentives, and peer recognition.
+ * career development, benefits, incentives, and peer recognition for all roles.
  */
 
 import React, { useState } from "react";
@@ -1203,7 +1203,7 @@ export default function DriverWellness() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-          Driver Wellness & Retention
+          Wellness & Retention
         </h1>
         <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
           Comprehensive wellness monitoring, retention analytics, and career development

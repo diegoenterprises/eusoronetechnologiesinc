@@ -157,7 +157,7 @@ export default function BulkImport() {
               (["upload", "validate", "import", "results"].indexOf(step) > i) ? "text-emerald-400" : "text-slate-500"
             )}>
               <span className="w-4 h-4 rounded-full border text-[10px] flex items-center justify-center">
-                {(["upload", "validate", "import", "results"].indexOf(step) > i) ? "✓" : i + 1}
+                {(["upload", "validate", "import", "results"].indexOf(step) > i) ? "\u2713" : i + 1}
               </span>
               {s === "upload" ? "Upload" : s === "validate" ? "Validate" : s === "import" ? "Import" : "Results"}
             </div>

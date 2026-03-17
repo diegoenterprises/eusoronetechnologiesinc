@@ -340,7 +340,7 @@ export default function TerminalAppointments() {
                           <p className={`text-sm font-medium truncate ${isLight ? "text-slate-900" : "text-white"}`}>{a.driver || "Unassigned"}</p>
                           {a.dock && <span className={`text-[9px] text-slate-500 px-1.5 py-0.5 rounded font-mono ${isLight ? "bg-slate-100" : "bg-white/[0.04]"}`}>{a.dock}</span>}
                           {a.truckNumber && <span className={`text-[9px] text-slate-500 px-1.5 py-0.5 rounded font-mono ${isLight ? "bg-slate-100" : "bg-white/[0.04]"}`}><Truck className="w-2.5 h-2.5 inline mr-0.5" />{a.truckNumber}</span>}
-                          {a.hazmatClass && <span className="text-[9px] text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded font-medium">⚠ Class {a.hazmatClass}</span>}
+                          {a.hazmatClass && <span className="text-[9px] text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded font-medium">HM Class {a.hazmatClass}</span>}
                         </div>
                         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                           <span className="text-[11px] text-slate-400"><Clock className="w-3 h-3 inline mr-1" />{time}</span>

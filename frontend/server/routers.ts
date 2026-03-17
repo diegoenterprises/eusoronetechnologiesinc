@@ -273,6 +273,10 @@ import { communicationHubRouter } from "./routers/communicationHub";
 import { dataMigrationRouter } from "./routers/dataMigration";
 // Driver Mobile — home dashboard, trip planner, expenses, roadside assistance, truck stops, parking, HOS, docs
 import { driverMobileRouter } from "./routers/driverMobile";
+// ═══ V5 Multi-Modal Expansion ═══
+import { railShipmentsRouter } from "./routers/railShipments";
+import { vesselShipmentsRouter } from "./routers/vesselShipments";
+import { intermodalRouter } from "./routers/intermodal";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -1561,6 +1565,10 @@ export const appRouter = router({
   brokerManagement: brokerManagementRouter,
   // Communication Hub — unified messaging, notifications, driver comms, dispatch alerts
   communicationHub: communicationHubRouter,
+  // ═══ V5 Multi-Modal Expansion ═══
+  railShipments: railShipmentsRouter,
+  vesselShipments: vesselShipmentsRouter,
+  intermodal: intermodalRouter,
 });
 
 export type AppRouter = typeof appRouter;

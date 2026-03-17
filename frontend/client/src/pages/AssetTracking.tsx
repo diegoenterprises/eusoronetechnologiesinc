@@ -694,7 +694,7 @@ export default function AssetTracking() {
                 <CardContent>
                   <div className="h-48 bg-zinc-800 rounded-lg flex items-end gap-0.5 p-4">
                     {Array.from({ length: 24 }).map((_, i) => {
-                      const height = 30 + Math.sin(i * 0.5) * 20 + Math.random() * 15;
+                      const height = 30 + Math.sin(i * 0.5) * 20 + Math.sin(i * 1.7 + 3) * 7.5 + 7.5;
                       const isExcursion = height > 55;
                       return (
                         <div

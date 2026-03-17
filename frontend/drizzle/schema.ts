@@ -45,6 +45,7 @@ export const users = mysqlTable(
     passwordHash: varchar("passwordHash", { length: 255 }),
     loginMethod: varchar("loginMethod", { length: 64 }),
     role: mysqlEnum("role", [
+      // TRUCKING ROLES (12)
       "SHIPPER",
       "CATALYST",
       "BROKER",
@@ -57,6 +58,20 @@ export const users = mysqlTable(
       "FACTORING",
       "ADMIN",
       "SUPER_ADMIN",
+      // RAIL ROLES (6)
+      "RAIL_SHIPPER",
+      "RAIL_CARRIER",
+      "RAIL_DISPATCHER",
+      "RAIL_ENGINEER",
+      "RAIL_CONDUCTOR",
+      "RAIL_BROKER",
+      // VESSEL/MARITIME ROLES (6)
+      "VESSEL_SHIPPER",
+      "VESSEL_OPERATOR",
+      "PORT_MASTER",
+      "SHIP_CAPTAIN",
+      "VESSEL_BROKER",
+      "CUSTOMS_BROKER",
     ])
       .default("DRIVER")
       .notNull(),
@@ -81,6 +96,8 @@ export const users = mysqlTable(
     country: mysqlEnum("country", ["US", "CA", "MX"]),
     countrySetAt: timestamp("countrySetAt"),
     provinceId: int("provinceId"),
+    transportModes: json("transportModes").$type<string[]>().default(["TRUCK"]),
+    primaryMode: mysqlEnum("primaryMode", ["TRUCK", "RAIL", "VESSEL"]).default("TRUCK"),
   },
   (table) => ({
     emailIdx: unique("email_unique").on(table.email),
@@ -142,6 +159,12 @@ export const companies = mysqlTable(
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
     deletedAt: timestamp("deletedAt"),
+    supportedModes: json("supportedModes").$type<string[]>().default(["TRUCK"]),
+    companyCategory: mysqlEnum("companyCategory", [
+      "motor_carrier", "freight_broker", "owner_operator", "3pl",
+      "class_i_railroad", "class_ii_railroad", "class_iii_railroad", "intermodal_marketing", "rail_broker",
+      "vocc", "nvocc", "ocean_freight_forwarder", "customs_broker", "terminal_operator", "ship_management",
+    ]),
   },
   (table) => ({
     dotIdx: index("dot_idx").on(table.dotNumber),
@@ -4978,8 +5001,14 @@ export const detentionClaims = mysqlTable(
     loadId: int("loadId").notNull(),
     claimedByUserId: int("claimedByUserId").notNull(),
     claimedAgainstUserId: int("claimedAgainstUserId"),
+    // Carrier & shipper company IDs for billing/reporting joins
+    catalystId: int("catalystId"),
+    shipperId: int("shipperId"),
+    // Charge type: detention, demurrage, tonu, layover, lumper, driver_assist, fuel_surcharge, etc.
+    type: varchar("type", { length: 50 }).default("detention"),
     locationType: mysqlEnum("locationType", ["pickup", "delivery"]).notNull(),
     facilityName: varchar("facilityName", { length: 255 }),
+    description: text("description"),
     appointmentTime: timestamp("appointmentTime"),
     arrivalTime: timestamp("arrivalTime").notNull(),
     departureTime: timestamp("departureTime"),
@@ -4989,9 +5018,17 @@ export const detentionClaims = mysqlTable(
     hourlyRate: decimal("hourlyRate", { precision: 10, scale: 2 }).default("75.00"),
     totalAmount: decimal("totalAmount", { precision: 10, scale: 2 }),
     status: mysqlEnum("status", [
-      "accruing", "pending_review", "approved", "disputed", "denied", "paid",
+      "submitted", "accruing", "pending_review", "approved", "invoiced",
+      "disputed", "denied", "paid", "reimbursed", "voided",
     ]).default("accruing").notNull(),
+    // Demurrage-specific
+    containerNumber: varchar("containerNumber", { length: 50 }),
+    // Lumper-specific
+    receiptUrl: varchar("receiptUrl", { length: 500 }),
+    // Dispute fields
     disputeReason: text("disputeReason"),
+    disputeDate: timestamp("disputeDate"),
+    disputedBy: int("disputedBy"),
     disputeEvidence: json("disputeEvidence").$type<{ type: string; url: string; description: string }[]>(),
     gpsEvidence: json("gpsEvidence").$type<{ lat: number; lng: number; timestamp: string }[]>(),
     approvedBy: int("approvedBy"),
@@ -5005,6 +5042,9 @@ export const detentionClaims = mysqlTable(
     loadIdx: index("detention_load_idx").on(table.loadId),
     claimedByIdx: index("detention_claimed_by_idx").on(table.claimedByUserId),
     statusIdx: index("detention_status_idx").on(table.status),
+    typeIdx: index("detention_type_idx").on(table.type),
+    catalystIdx: index("detention_catalyst_idx").on(table.catalystId),
+    shipperIdx: index("detention_shipper_idx").on(table.shipperId),
   })
 );
 
@@ -8880,3 +8920,972 @@ export const userCertificatesRelations = relations(userCertificates, ({ one }) =
   enrollment: one(userCourseEnrollments, { fields: [userCertificates.enrollmentId], references: [userCourseEnrollments.id] }),
 }));
 
+// ============================================================================
+// MULTI-MODAL TRANSPORT MODES
+// ============================================================================
+
+export const transportModes = mysqlTable("transport_modes", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  icon: varchar("icon", { length: 50 }),
+  regulatoryBodies: json("regulatoryBodies").$type<string[]>(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  codeIdx: uniqueIndex("transport_mode_code_idx").on(table.code),
+}));
+
+export const userTransportModes = mysqlTable("user_transport_modes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  modeId: int("modeId").notNull().references(() => transportModes.id),
+  isPrimary: boolean("isPrimary").default(false).notNull(),
+  grantedAt: timestamp("grantedAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("utm_user_idx").on(table.userId),
+  modeIdx: index("utm_mode_idx").on(table.modeId),
+}));
+
+export const transportModesRelations = relations(transportModes, ({ many }) => ({
+  userModes: many(userTransportModes),
+}));
+
+export const userTransportModesRelations = relations(userTransportModes, ({ one }) => ({
+  user: one(users, { fields: [userTransportModes.userId], references: [users.id] }),
+  mode: one(transportModes, { fields: [userTransportModes.modeId], references: [transportModes.id] }),
+}));
+
+// ============================================================================
+// RAIL FREIGHT TABLES (20)
+// ============================================================================
+
+export const railCarriers = mysqlTable("rail_carriers", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  reportingMark: varchar("reportingMark", { length: 4 }).notNull().unique(),
+  classType: mysqlEnum("classType", ["I", "II", "III"]).notNull(),
+  dotNumber: varchar("dotNumber", { length: 50 }),
+  stbDocketNumber: varchar("stbDocketNumber", { length: 50 }),
+  headquarters: json("headquarters").$type<{ city: string; state: string; country: string }>(),
+  serviceTerritory: text("serviceTerritory"),
+  totalMiles: int("totalMiles"),
+  website: varchar("website", { length: 255 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  markIdx: uniqueIndex("rc_mark_idx").on(table.reportingMark),
+  classIdx: index("rc_class_idx").on(table.classType),
+  activeIdx: index("rc_active_idx").on(table.isActive),
+}));
+
+export const railYards = mysqlTable("rail_yards", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  splcCode: varchar("splcCode", { length: 10 }),
+  railroadId: int("railroadId").references(() => railCarriers.id),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 50 }),
+  country: mysqlEnum("country", ["US", "CA", "MX"]).default("US"),
+  coordinates: json("coordinates").$type<{ lat: number; lng: number }>(),
+  yardType: mysqlEnum("yardType", ["classification", "flat", "intermodal_ramp", "team_track", "industry", "staging"]),
+  totalTracks: int("totalTracks"),
+  capacity: int("capacity"),
+  hasIntermodal: boolean("hasIntermodal").default(false),
+  hasHazmat: boolean("hasHazmat").default(true),
+  operatingHours: json("operatingHours").$type<{ open: string; close: string; timezone: string }>(),
+  status: mysqlEnum("status", ["active", "inactive", "maintenance"]).default("active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  railroadIdx: index("ry_railroad_idx").on(table.railroadId),
+  splcIdx: index("ry_splc_idx").on(table.splcCode),
+  typeIdx: index("ry_type_idx").on(table.yardType),
+  stateIdx: index("ry_state_idx").on(table.state),
+  intermodalIdx: index("ry_intermodal_idx").on(table.hasIntermodal),
+}));
+
+export const railcars = mysqlTable("railcars", {
+  id: int("id").autoincrement().primaryKey(),
+  railcarNumber: varchar("railcarNumber", { length: 20 }).notNull().unique(),
+  carType: mysqlEnum("carType", ["boxcar", "tankcar", "hopper", "flatcar", "gondola", "intermodal", "autorack", "centerbeam", "coilcar", "reefer", "covered_hopper", "open_hopper"]).notNull(),
+  owner: varchar("owner", { length: 100 }),
+  lessee: varchar("lessee", { length: 100 }),
+  capacityCubicFeet: int("capacityCubicFeet"),
+  tareWeight: int("tareWeight"),
+  loadLimit: int("loadLimit"),
+  lengthFeet: int("lengthFeet"),
+  insideDimensions: json("insideDimensions").$type<{ length: number; width: number; height: number }>(),
+  aarClass: varchar("aarClass", { length: 10 }),
+  dotSpec: varchar("dotSpec", { length: 20 }),
+  lastInspectionDate: timestamp("lastInspectionDate"),
+  nextInspectionDate: timestamp("nextInspectionDate"),
+  currentLocation: json("currentLocation").$type<{ lat: number; lng: number; description?: string }>(),
+  status: mysqlEnum("status", ["available", "loaded", "in_transit", "in_repair", "out_of_service", "stored", "assigned"]).default("available"),
+  assignedShipmentId: int("assignedShipmentId"),
+  currentYardId: int("currentYardId").references(() => railYards.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  numberIdx: uniqueIndex("rc_number_idx").on(table.railcarNumber),
+  typeIdx: index("rc_cartype_idx").on(table.carType),
+  statusIdx: index("rc_status_idx").on(table.status),
+  yardIdx: index("rc_yard_idx").on(table.currentYardId),
+}));
+
+export const railShipments = mysqlTable("rail_shipments", {
+  id: int("id").autoincrement().primaryKey(),
+  shipmentNumber: varchar("shipmentNumber", { length: 50 }).notNull().unique(),
+  shipperId: int("shipperId").references(() => users.id),
+  carrierId: int("carrierId").references(() => railCarriers.id),
+  originYardId: int("originYardId").references(() => railYards.id),
+  destinationYardId: int("destinationYardId").references(() => railYards.id),
+  carType: mysqlEnum("carType", ["boxcar", "tankcar", "hopper", "flatcar", "gondola", "intermodal", "autorack", "centerbeam", "coilcar", "reefer", "covered_hopper", "open_hopper"]),
+  numberOfCars: int("numberOfCars").default(1),
+  commodity: varchar("commodity", { length: 255 }),
+  hazmatClass: varchar("hazmatClass", { length: 10 }),
+  unNumber: varchar("unNumber", { length: 10 }),
+  weight: decimal("weight", { precision: 12, scale: 2 }),
+  status: mysqlEnum("status", [
+    "requested", "car_ordered", "car_placed", "loading", "loaded", "in_consist", "departed",
+    "in_transit", "at_interchange", "in_yard", "spotted", "unloading", "unloaded",
+    "empty_returned", "invoiced", "settled", "cancelled", "on_hold", "derailment_hold", "hazmat_exception", "interchange_delay",
+  ]).default("requested"),
+  rate: decimal("rate", { precision: 10, scale: 2 }),
+  rateType: mysqlEnum("rateType", ["per_car", "per_ton", "per_cwt", "per_mile"]),
+  estimatedTransitDays: int("estimatedTransitDays"),
+  actualTransitDays: int("actualTransitDays"),
+  originRailroad: varchar("originRailroad", { length: 10 }),
+  destinationRailroad: varchar("destinationRailroad", { length: 10 }),
+  routeDescription: text("routeDescription"),
+  waybillNumber: varchar("waybillNumber", { length: 50 }),
+  transportMode: varchar("transportMode", { length: 10 }).default("RAIL"),
+  companyId: int("companyId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  shipNumIdx: uniqueIndex("rs_shipnum_idx").on(table.shipmentNumber),
+  shipperIdx: index("rs_shipper_idx").on(table.shipperId),
+  carrierIdx: index("rs_carrier_idx").on(table.carrierId),
+  statusIdx: index("rs_status_idx").on(table.status),
+  hazmatIdx: index("rs_hazmat_idx").on(table.hazmatClass),
+  modeIdx: index("rs_mode_idx").on(table.transportMode),
+  companyIdx: index("rs_company_idx").on(table.companyId),
+}));
+
+export const trainConsists = mysqlTable("train_consists", {
+  id: int("id").autoincrement().primaryKey(),
+  consistNumber: varchar("consistNumber", { length: 50 }).notNull(),
+  locomotiveUnits: json("locomotiveUnits").$type<string[]>(),
+  totalCars: int("totalCars"),
+  totalWeight: decimal("totalWeight", { precision: 12, scale: 2 }),
+  totalLengthFeet: int("totalLengthFeet"),
+  trainType: mysqlEnum("trainType", ["unit", "manifest", "intermodal", "local", "work"]),
+  originYardId: int("originYardId").references(() => railYards.id),
+  destinationYardId: int("destinationYardId").references(() => railYards.id),
+  departureTime: timestamp("departureTime"),
+  arrivalTime: timestamp("arrivalTime"),
+  status: mysqlEnum("status", ["building", "ready", "departed", "in_transit", "arrived", "broken_up"]).default("building"),
+  engineerId: int("engineerId").references(() => users.id),
+  conductorId: int("conductorId").references(() => users.id),
+  railroadId: int("railroadId").references(() => railCarriers.id),
+  ptcActive: boolean("ptcActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  consistIdx: index("tc_consist_idx").on(table.consistNumber),
+  statusIdx: index("tc_status_idx").on(table.status),
+  railroadIdx: index("tc_railroad_idx").on(table.railroadId),
+  engineerIdx: index("tc_engineer_idx").on(table.engineerId),
+  conductorIdx: index("tc_conductor_idx").on(table.conductorId),
+}));
+
+export const consistCars = mysqlTable("consist_cars", {
+  id: int("id").autoincrement().primaryKey(),
+  consistId: int("consistId").notNull().references(() => trainConsists.id),
+  railcarId: int("railcarId").notNull().references(() => railcars.id),
+  position: int("position").notNull(),
+  shipmentId: int("shipmentId").references(() => railShipments.id),
+  coupledAt: timestamp("coupledAt").defaultNow().notNull(),
+  uncoupledAt: timestamp("uncoupledAt"),
+  status: mysqlEnum("status", ["coupled", "uncoupled", "set_out"]).default("coupled"),
+}, (table) => ({
+  consistIdx: index("cc_consist_idx").on(table.consistId),
+  railcarIdx: index("cc_railcar_idx").on(table.railcarId),
+  posIdx: index("cc_pos_idx").on(table.position),
+}));
+
+export const railRoutes = mysqlTable("rail_routes", {
+  id: int("id").autoincrement().primaryKey(),
+  originYardId: int("originYardId").references(() => railYards.id),
+  destinationYardId: int("destinationYardId").references(() => railYards.id),
+  railroadId: int("railroadId").references(() => railCarriers.id),
+  milesDistance: decimal("milesDistance", { precision: 8, scale: 2 }),
+  estimatedHours: decimal("estimatedHours", { precision: 6, scale: 2 }),
+  trackClass: int("trackClass"),
+  maxSpeedMph: int("maxSpeedMph"),
+  maxWeightTons: int("maxWeightTons"),
+  hazmatAllowed: boolean("hazmatAllowed").default(true),
+  routeDescription: text("routeDescription"),
+  interchangePoints: json("interchangePoints").$type<{ name: string; railroadIds: number[] }[]>(),
+});
+
+export const railInterchanges = mysqlTable("rail_interchanges", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  location: json("location").$type<{ lat: number; lng: number; city: string; state: string }>(),
+  railroad1Id: int("railroad1Id").references(() => railCarriers.id),
+  railroad2Id: int("railroad2Id").references(() => railCarriers.id),
+  interchangeCode: varchar("interchangeCode", { length: 20 }),
+  averageDwellHours: decimal("averageDwellHours", { precision: 6, scale: 2 }),
+  capacity: int("capacity"),
+  isActive: boolean("isActive").default(true),
+});
+
+export const railWaybills = mysqlTable("rail_waybills", {
+  id: int("id").autoincrement().primaryKey(),
+  waybillNumber: varchar("waybillNumber", { length: 50 }).notNull().unique(),
+  shipmentId: int("shipmentId").references(() => railShipments.id),
+  shipperId: int("shipperId").references(() => users.id),
+  consigneeId: int("consigneeId").references(() => users.id),
+  railcarNumber: varchar("railcarNumber", { length: 20 }),
+  commodity: varchar("commodity", { length: 255 }),
+  hazmatInfo: json("hazmatInfo").$type<{ class: string; un: string; name: string } | null>(),
+  originStation: varchar("originStation", { length: 100 }),
+  destinationStation: varchar("destinationStation", { length: 100 }),
+  routingInstructions: text("routingInstructions"),
+  freightCharges: decimal("freightCharges", { precision: 10, scale: 2 }),
+  weightPounds: int("weightPounds"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const railTariffs = mysqlTable("rail_tariffs", {
+  id: int("id").autoincrement().primaryKey(),
+  carrierId: int("carrierId").references(() => railCarriers.id),
+  originRegion: varchar("originRegion", { length: 100 }),
+  destinationRegion: varchar("destinationRegion", { length: 100 }),
+  carType: varchar("carType", { length: 50 }),
+  commodityCode: varchar("commodityCode", { length: 20 }),
+  ratePerCar: decimal("ratePerCar", { precision: 10, scale: 2 }),
+  ratePerTon: decimal("ratePerTon", { precision: 8, scale: 4 }),
+  minimumWeight: int("minimumWeight"),
+  fuelSurcharge: decimal("fuelSurcharge", { precision: 8, scale: 2 }),
+  accessorialCharges: json("accessorialCharges").$type<Record<string, number>>(),
+  effectiveDate: timestamp("effectiveDate"),
+  expirationDate: timestamp("expirationDate"),
+});
+
+export const railDemurrage = mysqlTable("rail_demurrage", {
+  id: int("id").autoincrement().primaryKey(),
+  shipmentId: int("shipmentId").references(() => railShipments.id),
+  railcarId: int("railcarId").references(() => railcars.id),
+  yardId: int("yardId").references(() => railYards.id),
+  placedAt: timestamp("placedAt"),
+  releasedAt: timestamp("releasedAt"),
+  freeTimeHours: int("freeTimeHours").default(48),
+  chargeableHours: int("chargeableHours"),
+  ratePerHour: decimal("ratePerHour", { precision: 8, scale: 2 }),
+  totalCharge: decimal("totalCharge", { precision: 10, scale: 2 }),
+  status: mysqlEnum("status", ["accruing", "invoiced", "paid", "disputed", "waived"]).default("accruing"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  shipmentIdx: index("rd_shipment_idx").on(table.shipmentId),
+  statusIdx: index("rd_status_idx").on(table.status),
+}));
+
+export const railInspections = mysqlTable("rail_inspections", {
+  id: int("id").autoincrement().primaryKey(),
+  railcarId: int("railcarId").references(() => railcars.id),
+  inspectorId: int("inspectorId").references(() => users.id),
+  inspectionType: mysqlEnum("inspectionType", ["pre_trip", "post_trip", "mechanical", "hazmat", "safety", "fra_audit"]).notNull(),
+  result: mysqlEnum("result", ["pass", "fail", "conditional"]),
+  defectsFound: json("defectsFound").$type<{ code: string; description: string; severity: string }[]>(),
+  notes: text("notes"),
+  inspectionDate: timestamp("inspectionDate").defaultNow().notNull(),
+  nextDueDate: timestamp("nextDueDate"),
+}, (table) => ({
+  railcarIdx: index("ri_railcar_idx").on(table.railcarId),
+  typeIdx: index("ri_type_idx").on(table.inspectionType),
+}));
+
+export const railHazmatPermits = mysqlTable("rail_hazmat_permits", {
+  id: int("id").autoincrement().primaryKey(),
+  carrierId: int("carrierId").references(() => railCarriers.id),
+  permitNumber: varchar("permitNumber", { length: 50 }).notNull(),
+  hazmatClasses: json("hazmatClasses").$type<string[]>(),
+  issuedBy: varchar("issuedBy", { length: 100 }),
+  issuedDate: timestamp("issuedDate"),
+  expirationDate: timestamp("expirationDate"),
+  status: mysqlEnum("status", ["active", "expired", "suspended", "revoked"]).default("active"),
+  territory: text("territory"),
+});
+
+export const railSwitchingOrders = mysqlTable("rail_switching_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  yardId: int("yardId").references(() => railYards.id),
+  dispatcherId: int("dispatcherId").references(() => users.id),
+  orderNumber: varchar("orderNumber", { length: 50 }).notNull(),
+  railcarsToSwitch: json("railcarsToSwitch").$type<{ railcarId: number; fromTrack: string; toTrack: string }[]>(),
+  priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"]).default("normal"),
+  status: mysqlEnum("status", ["pending", "in_progress", "completed", "cancelled"]).default("pending"),
+  scheduledAt: timestamp("scheduledAt"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  yardIdx: index("rso_yard_idx").on(table.yardId),
+  statusIdx: index("rso_status_idx").on(table.status),
+}));
+
+export const railCarRepairs = mysqlTable("rail_car_repairs", {
+  id: int("id").autoincrement().primaryKey(),
+  railcarId: int("railcarId").references(() => railcars.id),
+  inspectionId: int("inspectionId").references(() => railInspections.id),
+  repairType: varchar("repairType", { length: 100 }),
+  description: text("description"),
+  laborHours: decimal("laborHours", { precision: 6, scale: 2 }),
+  partsCost: decimal("partsCost", { precision: 10, scale: 2 }),
+  totalCost: decimal("totalCost", { precision: 10, scale: 2 }),
+  status: mysqlEnum("status", ["pending", "in_progress", "completed", "parts_ordered"]).default("pending"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const railTrackWarrants = mysqlTable("rail_track_warrants", {
+  id: int("id").autoincrement().primaryKey(),
+  warrantNumber: varchar("warrantNumber", { length: 50 }).notNull(),
+  dispatcherId: int("dispatcherId").references(() => users.id),
+  consistId: int("consistId").references(() => trainConsists.id),
+  subdivision: varchar("subdivision", { length: 100 }),
+  fromMilepost: decimal("fromMilepost", { precision: 8, scale: 2 }),
+  toMilepost: decimal("toMilepost", { precision: 8, scale: 2 }),
+  maxSpeed: int("maxSpeed"),
+  restrictions: json("restrictions").$type<string[]>(),
+  issuedAt: timestamp("issuedAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt"),
+  status: mysqlEnum("status", ["active", "fulfilled", "cancelled", "expired"]).default("active"),
+});
+
+export const railCrewAssignments = mysqlTable("rail_crew_assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").references(() => users.id),
+  consistId: int("consistId").references(() => trainConsists.id),
+  role: mysqlEnum("role", ["engineer", "conductor", "brakeman", "dispatcher"]).notNull(),
+  assignedAt: timestamp("assignedAt").defaultNow().notNull(),
+  relievedAt: timestamp("relievedAt"),
+  hoursOnDuty: decimal("hoursOnDuty", { precision: 6, scale: 2 }),
+  hoursOfServiceCompliant: boolean("hoursOfServiceCompliant").default(true),
+}, (table) => ({
+  userIdx: index("rca_user_idx").on(table.userId),
+  consistIdx: index("rca_consist_idx").on(table.consistId),
+}));
+
+export const railShipmentEvents = mysqlTable("rail_shipment_events", {
+  id: int("id").autoincrement().primaryKey(),
+  shipmentId: int("shipmentId").references(() => railShipments.id),
+  eventType: varchar("eventType", { length: 50 }).notNull(),
+  description: text("description"),
+  location: json("location").$type<{ lat: number; lng: number; description?: string }>(),
+  yardId: int("yardId").references(() => railYards.id),
+  railcarId: int("railcarId").references(() => railcars.id),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  metadata: json("metadata"),
+}, (table) => ({
+  shipmentIdx: index("rse_shipment_idx").on(table.shipmentId),
+  eventIdx: index("rse_event_idx").on(table.eventType),
+  tsIdx: index("rse_ts_idx").on(table.timestamp),
+}));
+
+export const railEdiTransactions = mysqlTable("rail_edi_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  transactionType: varchar("transactionType", { length: 10 }).notNull(),
+  direction: mysqlEnum("direction", ["inbound", "outbound"]).notNull(),
+  partnerId: int("partnerId"),
+  shipmentId: int("shipmentId").references(() => railShipments.id),
+  ediContent: text("ediContent"),
+  status: mysqlEnum("status", ["pending", "sent", "received", "acknowledged", "error"]).default("pending"),
+  errorMessage: text("errorMessage"),
+  processedAt: timestamp("processedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const railClaims = mysqlTable("rail_claims", {
+  id: int("id").autoincrement().primaryKey(),
+  shipmentId: int("shipmentId").references(() => railShipments.id),
+  claimantId: int("claimantId").references(() => users.id),
+  claimType: mysqlEnum("claimType", ["damage", "shortage", "delay", "overcharge", "loss"]).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }),
+  description: text("description"),
+  supportingDocs: json("supportingDocs").$type<string[]>(),
+  status: mysqlEnum("status", ["filed", "under_review", "approved", "denied", "settled"]).default("filed"),
+  filedAt: timestamp("filedAt").defaultNow().notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+});
+
+// ============================================================================
+// VESSEL / MARITIME TABLES (25)
+// ============================================================================
+
+export const ports = mysqlTable("ports", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  unlocode: varchar("unlocode", { length: 10 }).unique(),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 50 }),
+  country: mysqlEnum("country", ["US", "CA", "MX"]).default("US"),
+  coordinates: json("coordinates").$type<{ lat: number; lng: number }>(),
+  portType: mysqlEnum("portType", ["seaport", "river_port", "lake_port", "inland_port", "container_terminal"]),
+  maxDraft: decimal("maxDraft", { precision: 6, scale: 2 }),
+  totalBerths: int("totalBerths"),
+  containerCapacityTEU: int("containerCapacityTEU"),
+  hasCranes: boolean("hasCranes").default(true),
+  hasRailAccess: boolean("hasRailAccess").default(false),
+  customsOffice: boolean("customsOffice").default(true),
+  ftzNumber: varchar("ftzNumber", { length: 20 }),
+  operatingAuthority: varchar("operatingAuthority", { length: 100 }),
+  website: varchar("website", { length: 255 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  unlocodeIdx: index("p_unlocode_idx").on(table.unlocode),
+  countryIdx: index("p_country_idx").on(table.country),
+  typeIdx: index("p_type_idx").on(table.portType),
+  stateIdx: index("p_state_idx").on(table.state),
+}));
+
+export const vessels = mysqlTable("vessels", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  imoNumber: varchar("imoNumber", { length: 20 }).unique(),
+  mmsiNumber: varchar("mmsiNumber", { length: 20 }),
+  callSign: varchar("callSign", { length: 20 }),
+  vesselType: mysqlEnum("vesselType", ["container_ship", "bulk_carrier", "tanker", "ro_ro", "general_cargo", "barge", "tug", "lng_carrier", "reefer"]).notNull(),
+  flag: varchar("flag", { length: 50 }),
+  grossTonnage: int("grossTonnage"),
+  deadweightTonnage: int("deadweightTonnage"),
+  lengthMeters: decimal("lengthMeters", { precision: 8, scale: 2 }),
+  beamMeters: decimal("beamMeters", { precision: 8, scale: 2 }),
+  draftMeters: decimal("draftMeters", { precision: 6, scale: 2 }),
+  teuCapacity: int("teuCapacity"),
+  yearBuilt: int("yearBuilt"),
+  ownerCompany: varchar("ownerCompany", { length: 255 }),
+  operatorId: int("operatorId").references(() => users.id),
+  classificationSociety: varchar("classificationSociety", { length: 100 }),
+  currentPosition: json("currentPosition").$type<{ lat: number; lng: number; heading?: number; speed?: number }>(),
+  status: mysqlEnum("status", ["at_sea", "in_port", "anchored", "docked", "loading", "discharging", "dry_dock", "laid_up"]).default("in_port"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  imoIdx: index("v_imo_idx").on(table.imoNumber),
+  mmsiIdx: index("v_mmsi_idx").on(table.mmsiNumber),
+  typeIdx: index("v_type_idx").on(table.vesselType),
+  statusIdx: index("v_status_idx").on(table.status),
+  operatorIdx: index("v_operator_idx").on(table.operatorId),
+}));
+
+export const vesselShipments = mysqlTable("vessel_shipments", {
+  id: int("id").autoincrement().primaryKey(),
+  bookingNumber: varchar("bookingNumber", { length: 50 }).notNull().unique(),
+  billOfLading: varchar("billOfLading", { length: 50 }),
+  shipperId: int("shipperId").references(() => users.id),
+  operatorId: int("operatorId").references(() => users.id),
+  vesselId: int("vesselId").references(() => vessels.id),
+  originPortId: int("originPortId").references(() => ports.id),
+  destinationPortId: int("destinationPortId").references(() => ports.id),
+  cargoType: mysqlEnum("cargoType", ["container", "bulk_dry", "bulk_liquid", "breakbulk", "ro_ro", "reefer", "project_cargo"]),
+  commodity: varchar("commodity", { length: 255 }),
+  hazmatClass: varchar("hazmatClass", { length: 10 }),
+  imdgCode: varchar("imdgCode", { length: 10 }),
+  numberOfContainers: int("numberOfContainers"),
+  totalWeightKg: decimal("totalWeightKg", { precision: 14, scale: 2 }),
+  totalVolumeCBM: decimal("totalVolumeCBM", { precision: 10, scale: 2 }),
+  status: mysqlEnum("status", [
+    "booking_requested", "booking_confirmed", "documentation", "container_released",
+    "gate_in", "loaded_on_vessel", "departed", "in_transit", "transshipment",
+    "arrived", "customs_hold", "discharged", "gate_out", "delivered",
+    "invoiced", "settled", "cancelled", "rolled"
+  ]).default("booking_requested"),
+  freightTerms: mysqlEnum("freightTerms", ["prepaid", "collect", "third_party"]),
+  incoterms: varchar("incoterms", { length: 10 }),
+  rate: decimal("rate", { precision: 10, scale: 2 }),
+  rateType: mysqlEnum("rateType", ["per_teu", "per_ton", "per_cbm", "lump_sum"]),
+  etd: timestamp("etd"),
+  eta: timestamp("eta"),
+  atd: timestamp("atd"),
+  ata: timestamp("ata"),
+  voyageNumber: varchar("voyageNumber", { length: 50 }),
+  serviceRoute: varchar("serviceRoute", { length: 100 }),
+  transportMode: varchar("transportMode", { length: 10 }).default("VESSEL"),
+  companyId: int("companyId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  bookingIdx: uniqueIndex("vs_booking_idx").on(table.bookingNumber),
+  bolIdx: index("vs_bol_idx").on(table.billOfLading),
+  shipperIdx: index("vs_shipper_idx").on(table.shipperId),
+  vesselIdx: index("vs_vessel_idx").on(table.vesselId),
+  statusIdx: index("vs_status_idx").on(table.status),
+  modeIdx: index("vs_mode_idx").on(table.transportMode),
+  companyIdx: index("vs_company_idx").on(table.companyId),
+}));
+
+export const shippingContainers = mysqlTable("shipping_containers", {
+  id: int("id").autoincrement().primaryKey(),
+  containerNumber: varchar("containerNumber", { length: 20 }).notNull().unique(),
+  isoType: varchar("isoType", { length: 10 }),
+  sizeType: mysqlEnum("sizeType", ["20ft", "40ft", "40ft_hc", "45ft", "20ft_reefer", "40ft_reefer"]).notNull(),
+  ownerCompany: varchar("ownerCompany", { length: 255 }),
+  tareWeightKg: int("tareWeightKg"),
+  maxPayloadKg: int("maxPayloadKg"),
+  maxVolumeCBM: decimal("maxVolumeCBM", { precision: 8, scale: 2 }),
+  condition: mysqlEnum("condition", ["new", "good", "fair", "damaged", "retired"]).default("good"),
+  currentLocation: json("currentLocation").$type<{ lat: number; lng: number; description?: string }>(),
+  currentPortId: int("currentPortId").references(() => ports.id),
+  status: mysqlEnum("status", ["empty", "loaded", "in_transit", "at_port", "at_depot", "in_repair", "at_shipper", "at_consignee"]).default("empty"),
+  assignedShipmentId: int("assignedShipmentId").references(() => vesselShipments.id),
+  lastInspectionDate: timestamp("lastInspectionDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  numberIdx: uniqueIndex("sc_number_idx").on(table.containerNumber),
+  statusIdx: index("sc_status_idx").on(table.status),
+  portIdx: index("sc_port_idx").on(table.currentPortId),
+  shipmentIdx: index("sc_shipment_idx").on(table.assignedShipmentId),
+}));
+
+export const vesselVoyages = mysqlTable("vessel_voyages", {
+  id: int("id").autoincrement().primaryKey(),
+  vesselId: int("vesselId").references(() => vessels.id),
+  voyageNumber: varchar("voyageNumber", { length: 50 }).notNull(),
+  serviceRoute: varchar("serviceRoute", { length: 100 }),
+  departurePortId: int("departurePortId").references(() => ports.id),
+  arrivalPortId: int("arrivalPortId").references(() => ports.id),
+  scheduledDeparture: timestamp("scheduledDeparture"),
+  scheduledArrival: timestamp("scheduledArrival"),
+  actualDeparture: timestamp("actualDeparture"),
+  actualArrival: timestamp("actualArrival"),
+  status: mysqlEnum("status", ["scheduled", "departed", "in_transit", "arrived", "completed", "cancelled"]).default("scheduled"),
+  portCalls: json("portCalls").$type<{ portId: number; arrival: string; departure: string; status: string }[]>(),
+  captainId: int("captainId").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  vesselIdx: index("vv_vessel_idx").on(table.vesselId),
+  voyageIdx: index("vv_voyage_idx").on(table.voyageNumber),
+  statusIdx: index("vv_status_idx").on(table.status),
+}));
+
+export const billsOfLading = mysqlTable("bills_of_lading", {
+  id: int("id").autoincrement().primaryKey(),
+  bolNumber: varchar("bolNumber", { length: 50 }).notNull().unique(),
+  shipmentId: int("shipmentId").references(() => vesselShipments.id),
+  bolType: mysqlEnum("bolType", ["master", "house", "express", "seaway"]).notNull(),
+  shipperId: int("shipperId").references(() => users.id),
+  consigneeId: int("consigneeId").references(() => users.id),
+  notifyParty: json("notifyParty").$type<{ name: string; address: string; contact: string }>(),
+  originPort: varchar("originPort", { length: 100 }),
+  destinationPort: varchar("destinationPort", { length: 100 }),
+  vesselName: varchar("vesselName", { length: 255 }),
+  voyageNumber: varchar("voyageNumber", { length: 50 }),
+  cargoDescription: text("cargoDescription"),
+  numberOfPackages: int("numberOfPackages"),
+  grossWeightKg: decimal("grossWeightKg", { precision: 12, scale: 2 }),
+  volumeCBM: decimal("volumeCBM", { precision: 10, scale: 2 }),
+  freightTerms: mysqlEnum("freightTerms", ["prepaid", "collect"]),
+  dateOfIssue: timestamp("dateOfIssue"),
+  placeOfIssue: varchar("placeOfIssue", { length: 100 }),
+  status: mysqlEnum("status", ["draft", "issued", "surrendered", "accomplished", "void"]).default("draft"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  bolIdx: uniqueIndex("bol_number_idx").on(table.bolNumber),
+  shipmentIdx: index("bol_shipment_idx").on(table.shipmentId),
+  shipperIdx: index("bol_shipper_idx").on(table.shipperId),
+}));
+
+export const portBerths = mysqlTable("port_berths", {
+  id: int("id").autoincrement().primaryKey(),
+  portId: int("portId").references(() => ports.id),
+  berthNumber: varchar("berthNumber", { length: 20 }).notNull(),
+  berthType: mysqlEnum("berthType", ["container", "bulk", "general", "tanker", "ro_ro", "cruise"]),
+  lengthMeters: decimal("lengthMeters", { precision: 8, scale: 2 }),
+  depthMeters: decimal("depthMeters", { precision: 6, scale: 2 }),
+  craneCount: int("craneCount"),
+  currentVesselId: int("currentVesselId").references(() => vessels.id),
+  status: mysqlEnum("status", ["available", "occupied", "maintenance", "reserved"]).default("available"),
+});
+
+export const vesselBerthAssignments = mysqlTable("vessel_berth_assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  vesselId: int("vesselId").references(() => vessels.id),
+  berthId: int("berthId").references(() => portBerths.id),
+  voyageId: int("voyageId").references(() => vesselVoyages.id),
+  scheduledArrival: timestamp("scheduledArrival"),
+  actualArrival: timestamp("actualArrival"),
+  scheduledDeparture: timestamp("scheduledDeparture"),
+  actualDeparture: timestamp("actualDeparture"),
+  status: mysqlEnum("status", ["scheduled", "berthed", "departed", "cancelled"]).default("scheduled"),
+  pilotRequired: boolean("pilotRequired").default(true),
+  tugboatsRequired: int("tugboatsRequired"),
+});
+
+export const customsDeclarations = mysqlTable("customs_declarations", {
+  id: int("id").autoincrement().primaryKey(),
+  shipmentId: int("shipmentId").references(() => vesselShipments.id),
+  declarationType: mysqlEnum("declarationType", ["import", "export", "transit", "temporary_import"]).notNull(),
+  entryNumber: varchar("entryNumber", { length: 50 }),
+  htsCode: varchar("htsCode", { length: 20 }),
+  countryOfOrigin: varchar("countryOfOrigin", { length: 3 }),
+  declaredValue: decimal("declaredValue", { precision: 14, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  dutyRate: decimal("dutyRate", { precision: 6, scale: 4 }),
+  dutyAmount: decimal("dutyAmount", { precision: 12, scale: 2 }),
+  brokerId: int("brokerId").references(() => users.id),
+  filedDate: timestamp("filedDate"),
+  clearedDate: timestamp("clearedDate"),
+  status: mysqlEnum("status", ["draft", "filed", "under_review", "cleared", "held", "rejected"]).default("draft"),
+  holdReasons: json("holdReasons").$type<string[]>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  shipmentIdx: index("cd_shipment_idx").on(table.shipmentId),
+  statusIdx: index("cd_status_idx").on(table.status),
+  brokerIdx: index("cd_broker_idx").on(table.brokerId),
+}));
+
+export const vesselFreightRates = mysqlTable("vessel_freight_rates", {
+  id: int("id").autoincrement().primaryKey(),
+  operatorId: int("operatorId").references(() => users.id),
+  originPortId: int("originPortId").references(() => ports.id),
+  destinationPortId: int("destinationPortId").references(() => ports.id),
+  containerSize: mysqlEnum("containerSize", ["20ft", "40ft", "40ft_hc", "45ft"]),
+  ratePerUnit: decimal("ratePerUnit", { precision: 10, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  bafSurcharge: decimal("bafSurcharge", { precision: 8, scale: 2 }),
+  thcOrigin: decimal("thcOrigin", { precision: 8, scale: 2 }),
+  thcDestination: decimal("thcDestination", { precision: 8, scale: 2 }),
+  peakSeasonSurcharge: decimal("peakSeasonSurcharge", { precision: 8, scale: 2 }),
+  effectiveDate: timestamp("effectiveDate"),
+  expirationDate: timestamp("expirationDate"),
+  transitDays: int("transitDays"),
+  serviceRoute: varchar("serviceRoute", { length: 100 }),
+});
+
+export const vesselDemurrage = mysqlTable("vessel_demurrage", {
+  id: int("id").autoincrement().primaryKey(),
+  shipmentId: int("shipmentId").references(() => vesselShipments.id),
+  containerId: int("containerId").references(() => shippingContainers.id),
+  portId: int("portId").references(() => ports.id),
+  chargeType: mysqlEnum("chargeType", ["demurrage", "detention", "per_diem"]).notNull(),
+  freeTimeDays: int("freeTimeDays").default(7),
+  chargeableDays: int("chargeableDays"),
+  ratePerDay: decimal("ratePerDay", { precision: 8, scale: 2 }),
+  totalCharge: decimal("totalCharge", { precision: 10, scale: 2 }),
+  startDate: timestamp("startDate"),
+  endDate: timestamp("endDate"),
+  status: mysqlEnum("status", ["accruing", "invoiced", "paid", "disputed", "waived"]).default("accruing"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const vesselInspections = mysqlTable("vessel_inspections", {
+  id: int("id").autoincrement().primaryKey(),
+  vesselId: int("vesselId").references(() => vessels.id),
+  inspectorId: int("inspectorId").references(() => users.id),
+  inspectionType: mysqlEnum("inspectionType", ["psc", "flag_state", "class_survey", "isps", "vetting", "pre_loading"]).notNull(),
+  authority: varchar("authority", { length: 100 }),
+  result: mysqlEnum("result", ["pass", "fail", "detention", "conditional"]),
+  deficiencies: json("deficiencies").$type<{ code: string; description: string; action: string }[]>(),
+  inspectionDate: timestamp("inspectionDate").defaultNow().notNull(),
+  nextDueDate: timestamp("nextDueDate"),
+  detentionDays: int("detentionDays"),
+  notes: text("notes"),
+});
+
+export const vesselCrewManifests = mysqlTable("vessel_crew_manifests", {
+  id: int("id").autoincrement().primaryKey(),
+  vesselId: int("vesselId").references(() => vessels.id),
+  voyageId: int("voyageId").references(() => vesselVoyages.id),
+  crewName: varchar("crewName", { length: 255 }).notNull(),
+  rank: varchar("rank", { length: 100 }),
+  nationality: varchar("nationality", { length: 50 }),
+  passportNumber: varchar("passportNumber", { length: 50 }),
+  seamanBookNumber: varchar("seamanBookNumber", { length: 50 }),
+  stcwCertified: boolean("stcwCertified").default(false),
+  embarkedAt: timestamp("embarkedAt"),
+  disembarkedAt: timestamp("disembarkedAt"),
+});
+
+export const vesselCargoManifests = mysqlTable("vessel_cargo_manifests", {
+  id: int("id").autoincrement().primaryKey(),
+  voyageId: int("voyageId").references(() => vesselVoyages.id),
+  shipmentId: int("shipmentId").references(() => vesselShipments.id),
+  containerNumber: varchar("containerNumber", { length: 20 }),
+  sealNumber: varchar("sealNumber", { length: 50 }),
+  cargoDescription: text("cargoDescription"),
+  packageCount: int("packageCount"),
+  grossWeightKg: decimal("grossWeightKg", { precision: 12, scale: 2 }),
+  volumeCBM: decimal("volumeCBM", { precision: 10, scale: 2 }),
+  loadPortId: int("loadPortId").references(() => ports.id),
+  dischargePortId: int("dischargePortId").references(() => ports.id),
+  hazmatClass: varchar("hazmatClass", { length: 10 }),
+  temperatureRequired: decimal("temperatureRequired", { precision: 6, scale: 2 }),
+  stowagePosition: varchar("stowagePosition", { length: 20 }),
+});
+
+export const vesselHazmatDeclarations = mysqlTable("vessel_hazmat_declarations", {
+  id: int("id").autoincrement().primaryKey(),
+  shipmentId: int("shipmentId").references(() => vesselShipments.id),
+  imdgClass: varchar("imdgClass", { length: 10 }).notNull(),
+  unNumber: varchar("unNumber", { length: 10 }).notNull(),
+  properShippingName: varchar("properShippingName", { length: 255 }),
+  packingGroup: varchar("packingGroup", { length: 5 }),
+  flashPoint: varchar("flashPoint", { length: 20 }),
+  marinePollutant: boolean("marinePollutant").default(false),
+  ems: varchar("ems", { length: 20 }),
+  emergencyContact: json("emergencyContact").$type<{ name: string; phone: string }>(),
+  specialProvisions: text("specialProvisions"),
+  approvedAt: timestamp("approvedAt"),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending"),
+});
+
+export const vesselISPSRecords = mysqlTable("vessel_isps_records", {
+  id: int("id").autoincrement().primaryKey(),
+  vesselId: int("vesselId").references(() => vessels.id),
+  portId: int("portId").references(() => ports.id),
+  securityLevel: mysqlEnum("securityLevel", ["1", "2", "3"]).default("1"),
+  isscNumber: varchar("isscNumber", { length: 50 }),
+  isscExpiry: timestamp("isscExpiry"),
+  lastTenPorts: json("lastTenPorts").$type<{ port: string; date: string; securityLevel: string }[]>(),
+  declarationOfSecurity: boolean("declarationOfSecurity").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const vesselInsurance = mysqlTable("vessel_insurance", {
+  id: int("id").autoincrement().primaryKey(),
+  vesselId: int("vesselId").references(() => vessels.id),
+  policyType: mysqlEnum("policyType", ["hull_machinery", "p_and_i", "cargo", "war_risk", "freight_demurrage"]).notNull(),
+  insurer: varchar("insurer", { length: 255 }),
+  policyNumber: varchar("policyNumber", { length: 50 }),
+  coverageAmount: decimal("coverageAmount", { precision: 16, scale: 2 }),
+  deductible: decimal("deductible", { precision: 12, scale: 2 }),
+  effectiveDate: timestamp("effectiveDate"),
+  expirationDate: timestamp("expirationDate"),
+  status: mysqlEnum("status", ["active", "expired", "cancelled"]).default("active"),
+});
+
+export const vesselAgentNominations = mysqlTable("vessel_agent_nominations", {
+  id: int("id").autoincrement().primaryKey(),
+  vesselId: int("vesselId").references(() => vessels.id),
+  voyageId: int("voyageId").references(() => vesselVoyages.id),
+  portId: int("portId").references(() => ports.id),
+  agentCompany: varchar("agentCompany", { length: 255 }),
+  agentContact: json("agentContact").$type<{ name: string; email: string; phone: string }>(),
+  serviceType: mysqlEnum("serviceType", ["husbandry", "protective", "cargo", "full"]),
+  status: mysqlEnum("status", ["nominated", "confirmed", "active", "completed"]).default("nominated"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const containerTracking = mysqlTable("container_tracking", {
+  id: int("id").autoincrement().primaryKey(),
+  containerId: int("containerId").references(() => shippingContainers.id),
+  shipmentId: int("shipmentId").references(() => vesselShipments.id),
+  eventType: varchar("eventType", { length: 50 }).notNull(),
+  location: json("location").$type<{ lat: number; lng: number; description?: string }>(),
+  portId: int("portId").references(() => ports.id),
+  temperature: decimal("temperature", { precision: 6, scale: 2 }),
+  humidity: decimal("humidity", { precision: 5, scale: 2 }),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  metadata: json("metadata"),
+}, (table) => ({
+  containerIdx: index("ct_container_idx").on(table.containerId),
+  shipmentIdx: index("ct_shipment_idx").on(table.shipmentId),
+  tsIdx: index("ct_ts_idx").on(table.timestamp),
+}));
+
+export const vesselShipmentEvents = mysqlTable("vessel_shipment_events", {
+  id: int("id").autoincrement().primaryKey(),
+  shipmentId: int("shipmentId").references(() => vesselShipments.id),
+  eventType: varchar("eventType", { length: 50 }).notNull(),
+  description: text("description"),
+  location: json("location").$type<{ lat: number; lng: number; description?: string }>(),
+  portId: int("portId").references(() => ports.id),
+  vesselId: int("vesselId").references(() => vessels.id),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  metadata: json("metadata"),
+}, (table) => ({
+  shipmentIdx: index("vse_shipment_idx").on(table.shipmentId),
+  eventIdx: index("vse_event_idx").on(table.eventType),
+  tsIdx: index("vse_ts_idx").on(table.timestamp),
+}));
+
+export const vesselEdiTransactions = mysqlTable("vessel_edi_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  transactionType: varchar("transactionType", { length: 10 }).notNull(),
+  direction: mysqlEnum("direction", ["inbound", "outbound"]).notNull(),
+  partnerId: int("partnerId"),
+  shipmentId: int("shipmentId").references(() => vesselShipments.id),
+  ediContent: text("ediContent"),
+  status: mysqlEnum("status", ["pending", "sent", "received", "acknowledged", "error"]).default("pending"),
+  errorMessage: text("errorMessage"),
+  processedAt: timestamp("processedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const vesselClaims = mysqlTable("vessel_claims", {
+  id: int("id").autoincrement().primaryKey(),
+  shipmentId: int("shipmentId").references(() => vesselShipments.id),
+  claimantId: int("claimantId").references(() => users.id),
+  claimType: mysqlEnum("claimType", ["cargo_damage", "cargo_loss", "delay", "general_average", "salvage", "pollution"]).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  description: text("description"),
+  supportingDocs: json("supportingDocs").$type<string[]>(),
+  status: mysqlEnum("status", ["filed", "under_review", "approved", "denied", "settled", "arbitration"]).default("filed"),
+  filedAt: timestamp("filedAt").defaultNow().notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+});
+
+export const vesselPortCharges = mysqlTable("vessel_port_charges", {
+  id: int("id").autoincrement().primaryKey(),
+  vesselId: int("vesselId").references(() => vessels.id),
+  portId: int("portId").references(() => ports.id),
+  voyageId: int("voyageId").references(() => vesselVoyages.id),
+  chargeType: mysqlEnum("chargeType", ["port_dues", "pilotage", "towage", "wharfage", "anchorage", "light_dues", "canal_transit"]).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  invoiceNumber: varchar("invoiceNumber", { length: 50 }),
+  status: mysqlEnum("status", ["estimated", "invoiced", "paid"]).default("estimated"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const vesselBunkerRecords = mysqlTable("vessel_bunker_records", {
+  id: int("id").autoincrement().primaryKey(),
+  vesselId: int("vesselId").references(() => vessels.id),
+  portId: int("portId").references(() => ports.id),
+  fuelType: mysqlEnum("fuelType", ["hfo", "vlsfo", "mgo", "lng"]).notNull(),
+  quantityMT: decimal("quantityMT", { precision: 10, scale: 2 }),
+  pricePerMT: decimal("pricePerMT", { precision: 10, scale: 2 }),
+  totalCost: decimal("totalCost", { precision: 12, scale: 2 }),
+  supplier: varchar("supplier", { length: 255 }),
+  deliveryDate: timestamp("deliveryDate"),
+  bunkerDeliveryNote: varchar("bunkerDeliveryNote", { length: 50 }),
+  sulphurContent: decimal("sulphurContent", { precision: 4, scale: 2 }),
+});
+
+// ============================================================================
+// INTERMODAL BRIDGE TABLES (5)
+// ============================================================================
+
+export const intermodalShipments = mysqlTable("intermodal_shipments", {
+  id: int("id").autoincrement().primaryKey(),
+  intermodalNumber: varchar("intermodalNumber", { length: 50 }).notNull().unique(),
+  shipperId: int("shipperId").references(() => users.id),
+  originType: mysqlEnum("originType", ["TRUCK", "RAIL", "VESSEL"]).notNull(),
+  destinationType: mysqlEnum("destinationType", ["TRUCK", "RAIL", "VESSEL"]).notNull(),
+  originLocation: json("originLocation").$type<{ lat: number; lng: number; description: string }>(),
+  destinationLocation: json("destinationLocation").$type<{ lat: number; lng: number; description: string }>(),
+  commodity: varchar("commodity", { length: 255 }),
+  hazmatClass: varchar("hazmatClass", { length: 10 }),
+  totalWeight: decimal("totalWeight", { precision: 14, scale: 2 }),
+  totalVolume: decimal("totalVolume", { precision: 10, scale: 2 }),
+  numberOfSegments: int("numberOfSegments").default(2),
+  status: mysqlEnum("status", [
+    "planning", "booked", "first_leg_active", "at_transfer", "second_leg_active",
+    "third_leg_active", "delivered", "invoiced", "settled", "cancelled"
+  ]).default("planning"),
+  totalRate: decimal("totalRate", { precision: 12, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default("USD"),
+  estimatedTransitDays: int("estimatedTransitDays"),
+  actualTransitDays: int("actualTransitDays"),
+  companyId: int("companyId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  numberIdx: uniqueIndex("im_number_idx").on(table.intermodalNumber),
+  shipperIdx: index("im_shipper_idx").on(table.shipperId),
+  statusIdx: index("im_status_idx").on(table.status),
+  companyIdx: index("im_company_idx").on(table.companyId),
+}));
+
+export const intermodalSegments = mysqlTable("intermodal_segments", {
+  id: int("id").autoincrement().primaryKey(),
+  intermodalShipmentId: int("intermodalShipmentId").notNull().references(() => intermodalShipments.id),
+  legNumber: int("legNumber").notNull(),
+  mode: mysqlEnum("mode", ["TRUCK", "RAIL", "VESSEL"]).notNull(),
+  truckShipmentId: int("truckShipmentId"),
+  railShipmentId: int("railShipmentId").references(() => railShipments.id),
+  vesselShipmentId: int("vesselShipmentId").references(() => vesselShipments.id),
+  originDescription: varchar("originDescription", { length: 255 }),
+  destinationDescription: varchar("destinationDescription", { length: 255 }),
+  carrierId: int("carrierId"),
+  rate: decimal("rate", { precision: 10, scale: 2 }),
+  estimatedHours: decimal("estimatedHours", { precision: 8, scale: 2 }),
+  actualHours: decimal("actualHours", { precision: 8, scale: 2 }),
+  status: mysqlEnum("status", ["pending", "booked", "in_transit", "completed", "cancelled"]).default("pending"),
+  departedAt: timestamp("departedAt"),
+  arrivedAt: timestamp("arrivedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  shipmentIdx: index("ims_shipment_idx").on(table.intermodalShipmentId),
+  legIdx: index("ims_leg_idx").on(table.legNumber),
+  modeIdx: index("ims_mode_idx").on(table.mode),
+  statusIdx: index("ims_status_idx").on(table.status),
+}));
+
+export const intermodalTransfers = mysqlTable("intermodal_transfers", {
+  id: int("id").autoincrement().primaryKey(),
+  intermodalShipmentId: int("intermodalShipmentId").notNull().references(() => intermodalShipments.id),
+  fromSegmentId: int("fromSegmentId").references(() => intermodalSegments.id),
+  toSegmentId: int("toSegmentId").references(() => intermodalSegments.id),
+  transferType: mysqlEnum("transferType", ["truck_to_rail", "rail_to_truck", "truck_to_vessel", "vessel_to_truck", "rail_to_vessel", "vessel_to_rail"]).notNull(),
+  facilityName: varchar("facilityName", { length: 255 }),
+  facilityType: mysqlEnum("facilityType", ["intermodal_ramp", "port_terminal", "cross_dock", "rail_yard", "container_depot"]),
+  location: json("location").$type<{ lat: number; lng: number; description?: string }>(),
+  scheduledAt: timestamp("scheduledAt"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  dwellTimeHours: decimal("dwellTimeHours", { precision: 8, scale: 2 }),
+  transferCost: decimal("transferCost", { precision: 10, scale: 2 }),
+  status: mysqlEnum("status", ["scheduled", "in_progress", "completed", "delayed", "cancelled"]).default("scheduled"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  shipmentIdx: index("imt_shipment_idx").on(table.intermodalShipmentId),
+  typeIdx: index("imt_type_idx").on(table.transferType),
+  statusIdx: index("imt_status_idx").on(table.status),
+}));
+
+export const intermodalContainers = mysqlTable("intermodal_containers", {
+  id: int("id").autoincrement().primaryKey(),
+  intermodalShipmentId: int("intermodalShipmentId").notNull().references(() => intermodalShipments.id),
+  containerNumber: varchar("containerNumber", { length: 20 }),
+  containerType: mysqlEnum("containerType", ["20ft", "40ft", "40ft_hc", "45ft", "53ft_domestic", "20ft_reefer", "40ft_reefer"]).notNull(),
+  sealNumber: varchar("sealNumber", { length: 50 }),
+  weightKg: decimal("weightKg", { precision: 12, scale: 2 }),
+  currentMode: mysqlEnum("currentMode", ["TRUCK", "RAIL", "VESSEL"]),
+  currentSegmentId: int("currentSegmentId").references(() => intermodalSegments.id),
+  currentLocation: json("currentLocation").$type<{ lat: number; lng: number; description?: string }>(),
+  status: mysqlEnum("status", ["loaded", "in_transit", "at_transfer", "delivered", "empty_returned"]).default("loaded"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  shipmentIdx: index("imc_shipment_idx").on(table.intermodalShipmentId),
+  containerIdx: index("imc_container_idx").on(table.containerNumber),
+  statusIdx: index("imc_status_idx").on(table.status),
+}));
+
+export const intermodalChassisTracking = mysqlTable("intermodal_chassis_tracking", {
+  id: int("id").autoincrement().primaryKey(),
+  chassisNumber: varchar("chassisNumber", { length: 20 }).notNull(),
+  chassisPool: varchar("chassisPool", { length: 100 }),
+  chassisType: mysqlEnum("chassisType", ["20ft", "40ft", "45ft", "53ft", "combo", "triaxle"]).notNull(),
+  assignedContainerId: int("assignedContainerId").references(() => intermodalContainers.id),
+  currentLocation: json("currentLocation").$type<{ lat: number; lng: number; description?: string }>(),
+  status: mysqlEnum("status", ["available", "assigned", "in_use", "in_repair", "out_of_service"]).default("available"),
+  lastInspectionDate: timestamp("lastInspectionDate"),
+  ownerCompany: varchar("ownerCompany", { length: 255 }),
+  dailyRate: decimal("dailyRate", { precision: 8, scale: 2 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  chassisIdx: index("ict_chassis_idx").on(table.chassisNumber),
+  statusIdx: index("ict_status_idx").on(table.status),
+  poolIdx: index("ict_pool_idx").on(table.chassisPool),
+}));

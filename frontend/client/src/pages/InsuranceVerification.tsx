@@ -432,13 +432,13 @@ export default function InsuranceVerification() {
                   </div>
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     <Badge className={cn("text-[10px]", fmcsaResult.hasLiabilityFiling ? "bg-green-500/15 text-green-500" : "bg-red-500/15 text-red-500")}>
-                      {fmcsaResult.hasLiabilityFiling ? "✓" : "✗"} BIPD Liability
+                      {fmcsaResult.hasLiabilityFiling ? "Yes" : "No"} BIPD Liability
                     </Badge>
                     <Badge className={cn("text-[10px]", fmcsaResult.hasCargoFiling ? "bg-green-500/15 text-green-500" : "bg-yellow-500/15 text-yellow-500")}>
-                      {fmcsaResult.hasCargoFiling ? "✓" : "✗"} Cargo
+                      {fmcsaResult.hasCargoFiling ? "Yes" : "No"} Cargo
                     </Badge>
                     <Badge className={cn("text-[10px]", fmcsaResult.hmFlag === "Y" ? "bg-purple-500/15 text-purple-500" : "bg-slate-500/10 text-slate-400")}>
-                      {fmcsaResult.hmFlag === "Y" ? "✓ Hazmat Auth" : "No Hazmat"}
+                      {fmcsaResult.hmFlag === "Y" ? "Hazmat Auth" : "No Hazmat"}
                     </Badge>
                   </div>
                   {fmcsaResult.discrepancies?.length > 0 && (

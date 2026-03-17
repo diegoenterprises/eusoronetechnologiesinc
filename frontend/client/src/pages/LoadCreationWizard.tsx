@@ -2235,7 +2235,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 }}
                   placeholder={mapsLoaded ? "Address or coordinates (lat, lng)..." : "Address or coordinates (e.g. 30.283, -97.776)"} className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                 {formData.originLat && formData.originLng && (
-                  <p className="text-[10px] text-slate-500 mt-1">📍 {Number(formData.originLat).toFixed(6)}, {Number(formData.originLng).toFixed(6)}</p>
+                  <p className="text-[10px] text-slate-500 mt-1"><MapPin className="w-3 h-3 inline mr-0.5 text-blue-400" />{Number(formData.originLat).toFixed(6)}, {Number(formData.originLng).toFixed(6)}</p>
                 )}
               </div>
               <div>
@@ -2259,7 +2259,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 }}
                   placeholder={mapsLoaded ? "Address or coordinates (lat, lng)..." : "Address or coordinates (e.g. 30.283, -97.776)"} className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                 {formData.destLat && formData.destLng && (
-                  <p className="text-[10px] text-slate-500 mt-1">📍 {Number(formData.destLat).toFixed(6)}, {Number(formData.destLng).toFixed(6)}</p>
+                  <p className="text-[10px] text-slate-500 mt-1"><MapPin className="w-3 h-3 inline mr-0.5 text-red-400" />{Number(formData.destLat).toFixed(6)}, {Number(formData.destLng).toFixed(6)}</p>
                 )}
               </div>
               {/* Route Map Preview */}
