@@ -21,7 +21,7 @@ import { isolatedApprovedProcedure as protectedProcedure, router } from "../_cor
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { settlementBatches, settlementBatchItems, settlements, loads, notifications } from "../../drizzle/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { emitDispatchEvent, emitNotification } from "../_core/websocket";
 import { unsafeCast } from "../_core/types/unsafe";
 
@@ -51,69 +51,87 @@ export const settlementBatchingRouter = router({
       const companyId = Number(ctx.user!.companyId) || 0;
       if (!companyId) throw new Error("Company context required");
 
-      // Get settlements for the provided load IDs
-      const matchedSettlements: Array<typeof settlements.$inferSelect> = [];
-      for (const loadId of input.loadIds) {
-        const [s] = await db.select().from(settlements).where(eq(settlements.loadId, loadId)).limit(1);
-        if (s) {
-          // Double-batching prevention: check if already in another batch
-          const [existing] = await db.select()
-            .from(settlementBatchItems)
-            .where(eq(settlementBatchItems.settlementId, s.id))
-            .limit(1);
-          if (existing) {
-            throw new Error(`Settlement for load ${loadId} is already in batch #${existing.batchId}. Remove it first.`);
-          }
-          matchedSettlements.push(s);
-        }
-      }
-
-      if (matchedSettlements.length === 0) {
-        throw new Error("No settlements found for the provided load IDs");
-      }
-
-      // Calculate batch totals
-      let subtotal = 0, fscTotal = 0, accessorialTotal = 0, deductionTotal = 0;
-      for (const s of matchedSettlements) {
-        subtotal += Number(s.loadRate) || 0;
-        accessorialTotal += Number(s.accessorialCharges) || 0;
-        deductionTotal += Number(s.platformFeeAmount) || 0;
-      }
-      const total = subtotal + fscTotal + accessorialTotal - deductionTotal;
-
       const batchNumber = generateBatchNumber(input.batchType);
 
-      // Insert batch using raw SQL for date fields
-      await db.execute(
-        sql`INSERT INTO settlement_batches (batchNumber, companyId, batchType, periodStart, periodEnd, status, totalLoads, subtotalAmount, fscAmount, accessorialAmount, deductionAmount, totalAmount) VALUES (${batchNumber}, ${companyId}, ${input.batchType}, ${input.periodStart}, ${input.periodEnd}, 'draft', ${matchedSettlements.length}, ${subtotal.toFixed(2)}, ${fscTotal.toFixed(2)}, ${accessorialTotal.toFixed(2)}, ${deductionTotal.toFixed(2)}, ${total.toFixed(2)})`
-      );
+      // Wrap all writes in a transaction for atomicity — if any step fails, everything rolls back
+      const result = await db.transaction(async (tx) => {
+        // V8: Batch query — fetch all settlements for provided load IDs in one query
+        const allSettlements = await tx.select().from(settlements).where(inArray(settlements.loadId, input.loadIds));
+        const matchedSettlements: Array<typeof settlements.$inferSelect> = [];
+        if (allSettlements.length > 0) {
+          // V8: Batch check for double-batching prevention
+          const settlementIds = allSettlements.map(s => s.id);
+          const existingItems = await tx.select({ settlementId: settlementBatchItems.settlementId, batchId: settlementBatchItems.batchId })
+            .from(settlementBatchItems)
+            .where(inArray(settlementBatchItems.settlementId, settlementIds));
+          const existingMap = new Map(existingItems.map(e => [e.settlementId, e.batchId]));
 
-      // Retrieve the inserted batch
-      const [batch] = await db.select().from(settlementBatches)
-        .where(eq(settlementBatches.batchNumber, batchNumber)).limit(1);
-      if (!batch) throw new Error("Failed to create batch");
+          for (const s of allSettlements) {
+            const existingBatch = existingMap.get(s.id);
+            if (existingBatch) {
+              throw new Error(`Settlement for load ${s.loadId} is already in batch #${existingBatch}. Remove it first.`);
+            }
+            matchedSettlements.push(s);
+          }
+        }
 
-      // Insert batch items
-      for (const s of matchedSettlements) {
-        const lineAmt = Number(s.loadRate) || 0;
-        const accAmt = Number(s.accessorialCharges) || 0;
-        const dedAmt = Number(s.platformFeeAmount) || 0;
-        const netAmt = lineAmt + accAmt - dedAmt;
+        if (matchedSettlements.length === 0) {
+          throw new Error("No settlements found for the provided load IDs");
+        }
 
-        // Get load number
-        const [ld] = await db.select({ loadNumber: loads.loadNumber, pickupDate: loads.pickupDate, deliveryDate: loads.deliveryDate })
-          .from(loads).where(eq(loads.id, s.loadId)).limit(1);
+        // Calculate batch totals
+        let subtotal = 0, fscTotal = 0, accessorialTotal = 0, deductionTotal = 0;
+        for (const s of matchedSettlements) {
+          subtotal += Number(s.loadRate) || 0;
+          accessorialTotal += Number(s.accessorialCharges) || 0;
+          deductionTotal += Number(s.platformFeeAmount) || 0;
+        }
+        const total = subtotal + fscTotal + accessorialTotal - deductionTotal;
 
-        await db.execute(
-          sql`INSERT INTO settlement_batch_items (batchId, settlementId, loadId, loadNumber, pickupDate, deliveryDate, lineAmount, fscAmount, accessorialAmount, deductions, netAmount) VALUES (${batch.id}, ${s.id}, ${s.loadId}, ${ld?.loadNumber || null}, ${ld?.pickupDate || null}, ${ld?.deliveryDate || null}, ${lineAmt.toFixed(2)}, ${"0.00"}, ${accAmt.toFixed(2)}, ${dedAmt.toFixed(2)}, ${netAmt.toFixed(2)})`
+        // Insert batch using raw SQL for date fields
+        await tx.execute(
+          sql`INSERT INTO settlement_batches (batchNumber, companyId, batchType, periodStart, periodEnd, status, totalLoads, subtotalAmount, fscAmount, accessorialAmount, deductionAmount, totalAmount) VALUES (${batchNumber}, ${companyId}, ${input.batchType}, ${input.periodStart}, ${input.periodEnd}, 'draft', ${matchedSettlements.length}, ${subtotal.toFixed(2)}, ${fscTotal.toFixed(2)}, ${accessorialTotal.toFixed(2)}, ${deductionTotal.toFixed(2)}, ${total.toFixed(2)})`
         );
-      }
+
+        // Retrieve the inserted batch
+        const [batch] = await tx.select().from(settlementBatches)
+          .where(eq(settlementBatches.batchNumber, batchNumber)).limit(1);
+        if (!batch) throw new Error("Failed to create batch");
+
+        // V8: Batch-fetch all load details in one query instead of N queries
+        const loadIds = matchedSettlements.map(s => s.loadId);
+        const loadDetails = loadIds.length > 0
+          ? await tx.select({ id: loads.id, loadNumber: loads.loadNumber, pickupDate: loads.pickupDate, deliveryDate: loads.deliveryDate })
+              .from(loads).where(inArray(loads.id, loadIds))
+          : [];
+        const loadMap = new Map(loadDetails.map(ld => [ld.id, ld]));
+
+        // Insert batch items
+        for (const s of matchedSettlements) {
+          const lineAmt = Number(s.loadRate) || 0;
+          const accAmt = Number(s.accessorialCharges) || 0;
+          const dedAmt = Number(s.platformFeeAmount) || 0;
+          const netAmt = lineAmt + accAmt - dedAmt;
+
+          const ld = loadMap.get(s.loadId);
+
+          await tx.execute(
+            sql`INSERT INTO settlement_batch_items (batchId, settlementId, loadId, loadNumber, pickupDate, deliveryDate, lineAmount, fscAmount, accessorialAmount, deductions, netAmount) VALUES (${batch.id}, ${s.id}, ${s.loadId}, ${ld?.loadNumber || null}, ${ld?.pickupDate || null}, ${ld?.deliveryDate || null}, ${lineAmt.toFixed(2)}, ${"0.00"}, ${accAmt.toFixed(2)}, ${dedAmt.toFixed(2)}, ${netAmt.toFixed(2)})`
+          );
+        }
+
+        return {
+          batchId: batch.id,
+          totalLoads: matchedSettlements.length,
+          totalAmount: total,
+        };
+      });
 
       return {
-        batchId: batch.id,
+        batchId: result.batchId,
         batchNumber,
-        totalLoads: matchedSettlements.length,
-        totalAmount: total,
+        totalLoads: result.totalLoads,
+        totalAmount: result.totalAmount,
         status: "draft",
       };
     }),
@@ -201,11 +219,14 @@ export const settlementBatchingRouter = router({
           .from(settlementBatchItems).where(eq(settlementBatchItems.batchId, input.batchId));
         const carrierIds = new Set<number>();
         const shipperIds = new Set<number>();
-        for (const item of batchItems) {
-          if (item.settlementId) {
-            const [s] = await db.select({ carrierId: settlements.carrierId, shipperId: settlements.shipperId }).from(settlements).where(eq(settlements.id, item.settlementId)).limit(1);
-            if (s?.carrierId) carrierIds.add(s.carrierId);
-            if (s?.shipperId) shipperIds.add(s.shipperId);
+        // V8: Batch query — fetch all settlement parties in one query
+        const approveSettlementIds = batchItems.map(i => i.settlementId).filter(Boolean) as number[];
+        if (approveSettlementIds.length > 0) {
+          const approveSettlements = await db.select({ carrierId: settlements.carrierId, shipperId: settlements.shipperId })
+            .from(settlements).where(inArray(settlements.id, approveSettlementIds));
+          for (const s of approveSettlements) {
+            if (s.carrierId) carrierIds.add(s.carrierId);
+            if (s.shipperId) shipperIds.add(s.shipperId);
           }
         }
         const totalAmt = batch.totalAmount || "0.00";
@@ -326,11 +347,14 @@ export const settlementBatchingRouter = router({
           .from(settlementBatchItems).where(eq(settlementBatchItems.batchId, input.batchId));
         const paidCarrierIds = new Set<number>();
         const paidShipperIds = new Set<number>();
-        for (const item of paidItems) {
-          if (item.settlementId) {
-            const [s] = await db.select({ carrierId: settlements.carrierId, shipperId: settlements.shipperId }).from(settlements).where(eq(settlements.id, item.settlementId)).limit(1);
-            if (s?.carrierId) paidCarrierIds.add(s.carrierId);
-            if (s?.shipperId) paidShipperIds.add(s.shipperId);
+        // V8: Batch query — fetch all settlement parties in one query
+        const paidSettlementIds = paidItems.map(i => i.settlementId).filter(Boolean) as number[];
+        if (paidSettlementIds.length > 0) {
+          const paidSettlements = await db.select({ carrierId: settlements.carrierId, shipperId: settlements.shipperId })
+            .from(settlements).where(inArray(settlements.id, paidSettlementIds));
+          for (const s of paidSettlements) {
+            if (s.carrierId) paidCarrierIds.add(s.carrierId);
+            if (s.shipperId) paidShipperIds.add(s.shipperId);
           }
         }
         const paidAmt = batch.totalAmount || "0.00";
@@ -513,24 +537,27 @@ export const settlementBatchingRouter = router({
         ))
         .orderBy(sql`${settlementBatches.createdAt} DESC`);
 
-      // Filter to batches containing this driver's settlements
-      const result: Array<{ batchId: number; batchNumber: string; periodStart: Date | null; periodEnd: Date | null; totalAmount: string | null; status: string | null; paidAt: Date | null }> = [];
-      for (const b of batches) {
-        const [item] = await db.execute(
-          sql`SELECT sbi.id FROM settlement_batch_items sbi JOIN settlements s ON sbi.settlementId = s.id WHERE sbi.batchId = ${b.id} AND s.driverId = ${driverId} LIMIT 1`
-        ) as unknown as [Record<string, unknown>[]];
-        if (Array.isArray(item) && unsafeCast(item).length > 0) {
-          result.push({
-            batchId: b.id,
-            batchNumber: b.batchNumber,
-            periodStart: b.periodStart,
-            periodEnd: b.periodEnd,
-            totalAmount: b.totalAmount,
-            status: b.status,
-            paidAt: b.paidAt,
-          });
-        }
-      }
+      // V8: Batch query — find all batch IDs containing this driver's settlements in one query
+      if (batches.length === 0) return { batches: [] };
+      const batchIds = batches.map(b => b.id);
+      const [driverBatchRows] = await db.execute(
+        sql`SELECT DISTINCT sbi.batchId FROM settlement_batch_items sbi JOIN settlements s ON sbi.settlementId = s.id WHERE sbi.batchId IN (${sql.join(batchIds.map(id => sql`${id}`), sql`,`)}) AND s.driverId = ${driverId}`
+      ) as unknown as [Record<string, unknown>[]];
+      const driverBatchIds = new Set(
+        Array.isArray(driverBatchRows) ? unsafeCast(driverBatchRows).map((r: any) => Number(r.batchId)) : []
+      );
+
+      const result = batches
+        .filter(b => driverBatchIds.has(b.id))
+        .map(b => ({
+          batchId: b.id,
+          batchNumber: b.batchNumber,
+          periodStart: b.periodStart,
+          periodEnd: b.periodEnd,
+          totalAmount: b.totalAmount,
+          status: b.status,
+          paidAt: b.paidAt,
+        }));
 
       return { batches: result };
     }),

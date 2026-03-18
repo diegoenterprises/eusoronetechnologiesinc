@@ -133,6 +133,7 @@ import {
   UserCog,
   Users2,
   Warehouse,
+  Phone,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useLocation, Link } from "wouter";
@@ -831,6 +832,14 @@ export default function DashboardLayout({
             </motion.div>
           </motion.button>
         </div>
+
+        {/* Phone Support */}
+        {sidebarOpen && (
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-2 px-4 pb-2">
+            <Phone className="h-3 w-3" />
+            <span>Support: 1-855-EUSO-TRIP</span>
+          </div>
+        )}
 
         {/* User Profile Footer */}
         <div className={`p-3 border-t ${theme === "light" ? "border-slate-200/80" : "border-gray-800/50"}`}>

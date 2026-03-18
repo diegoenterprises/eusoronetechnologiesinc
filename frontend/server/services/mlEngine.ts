@@ -282,26 +282,45 @@ class MLEngine {
       const db = await getDb();
       if (!db) { this.state.isTraining = false; return; }
 
-      // 1. Learn from loads
-      const allLoads = await db.select({
-        id: loads.id,
-        pickupLocation: loads.pickupLocation,
-        deliveryLocation: loads.deliveryLocation,
-        rate: loads.rate,
-        distance: loads.distance,
-        weight: loads.weight,
-        cargoType: loads.cargoType,
-        status: loads.status,
-        shipperId: loads.shipperId,
-        catalystId: loads.catalystId,
-        driverId: loads.driverId,
-        pickupDate: loads.pickupDate,
-        deliveryDate: loads.deliveryDate,
-        createdAt: loads.createdAt,
-        commodityName: loads.commodityName,
-      }).from(loads)
-        .orderBy(desc(loads.createdAt))
-        .limit(2000);
+      // V8: Load training data in chunks of 1,000 to avoid memory spikes at scale.
+      // Only extract the columns needed for feature extraction. Cap at 50,000 total.
+      const CHUNK_SIZE = 1000;
+      const MAX_FEATURES = 50000;
+      const allLoads: Array<{
+        id: number; pickupLocation: any; deliveryLocation: any;
+        rate: any; distance: any; weight: any; cargoType: any;
+        status: any; shipperId: number; catalystId: number | null;
+        driverId: number | null; pickupDate: Date | null;
+        deliveryDate: Date | null; createdAt: Date; commodityName: string | null;
+      }> = [];
+
+      for (let chunkOffset = 0; chunkOffset < MAX_FEATURES; chunkOffset += CHUNK_SIZE) {
+        const chunk = await db.select({
+          id: loads.id,
+          pickupLocation: loads.pickupLocation,
+          deliveryLocation: loads.deliveryLocation,
+          rate: loads.rate,
+          distance: loads.distance,
+          weight: loads.weight,
+          cargoType: loads.cargoType,
+          status: loads.status,
+          shipperId: loads.shipperId,
+          catalystId: loads.catalystId,
+          driverId: loads.driverId,
+          pickupDate: loads.pickupDate,
+          deliveryDate: loads.deliveryDate,
+          createdAt: loads.createdAt,
+          commodityName: loads.commodityName,
+        }).from(loads)
+          .orderBy(desc(loads.createdAt))
+          .limit(CHUNK_SIZE)
+          .offset(chunkOffset);
+
+        if (chunk.length === 0) break;
+        allLoads.push(...chunk);
+        if (chunk.length < CHUNK_SIZE) break; // no more rows
+      }
+      logger.info(`[MLEngine] Loaded ${allLoads.length} training records in chunks of ${CHUNK_SIZE}`);
 
       // 2. Learn from bids
       const allBids = await db.select({

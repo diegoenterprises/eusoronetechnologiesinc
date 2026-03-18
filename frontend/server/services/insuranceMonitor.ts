@@ -715,3 +715,8 @@ export async function deepFMCSAComplianceScan(): Promise<void> {
     throw error;
   }
 }
+
+/**
+ * Convenience alias for monitorInsuranceExpirations — called from _core/index.ts startup.
+ */
+export const checkExpiringInsurance = monitorInsuranceExpirations;

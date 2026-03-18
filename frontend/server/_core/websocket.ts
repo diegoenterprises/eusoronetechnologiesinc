@@ -8,6 +8,7 @@
 import { Server as HTTPServer } from "http";
 import { logger } from "./logger";
 import { IncomingMessage } from "http";
+import jwt from "jsonwebtoken";
 import {
   WS_EVENTS,
   WS_CHANNELS,
@@ -184,23 +185,48 @@ class WebSocketService {
   /**
    * Handle authentication
    */
-  private handleAuth(clientId: string, data: { userId: string; role: string; companyId?: string }): void {
+  private handleAuth(clientId: string, data: { token: string }): void {
     const client = this.clients.get(clientId);
     if (!client) return;
 
-    client.userId = data.userId;
-    client.role = data.role;
-    client.companyId = data.companyId;
+    const JWT_SECRET = process.env.JWT_SECRET || "eusotrip-dev-secret-key-change-in-production";
 
-    this.sendToClient(clientId, {
-      type: "auth_success" as any,
-      data: { userId: data.userId },
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      const payload = jwt.verify(data.token, JWT_SECRET) as {
+        userId: string;
+        email: string;
+        role: string;
+        companyId?: string;
+      };
 
-    // Auto-subscribe to role-specific channels
-    const roleChannels = this.getRoleChannels(data.role, data.companyId);
-    roleChannels.forEach((channel) => this.handleSubscribe(clientId, channel));
+      client.userId = payload.userId;
+      client.role = payload.role;
+      client.companyId = payload.companyId;
+
+      this.sendToClient(clientId, {
+        type: "auth_success" as any,
+        data: { userId: payload.userId },
+        timestamp: new Date().toISOString(),
+      });
+
+      // Auto-subscribe to role-specific channels
+      const roleChannels = this.getRoleChannels(payload.role, payload.companyId);
+      roleChannels.forEach((channel) => this.handleSubscribe(clientId, channel));
+    } catch (err: any) {
+      logger.warn(`[WebSocket] JWT auth failed for client ${clientId}: ${err.message}`);
+      this.sendToClient(clientId, {
+        type: "auth_error" as any,
+        data: { error: "Invalid or expired token" },
+        timestamp: new Date().toISOString(),
+      });
+      // Schedule disconnection to allow client to receive the error
+      setTimeout(() => {
+        const c = this.clients.get(clientId);
+        if (c?.ws) {
+          c.ws.close(4001, "Authentication failed");
+        }
+      }, 1000);
+    }
   }
 
   /**
@@ -209,6 +235,40 @@ class WebSocketService {
   private handleSubscribe(clientId: string, channel: string): void {
     const client = this.clients.get(clientId);
     if (!client || !channel) return;
+
+    // Channel ownership verification
+    const companyMatch = channel.match(/^(company|fleet):(.+)$/);
+    if (companyMatch) {
+      const channelId = companyMatch[2];
+      if (client.companyId !== channelId) {
+        logger.warn(`[WebSocket] Client ${clientId} denied access to channel ${channel} (companyId mismatch)`);
+        this.sendToClient(clientId, {
+          type: "subscribe_error" as any,
+          channel,
+          data: { error: "Access denied: company mismatch" },
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+    }
+
+    const roleMatch = channel.match(/^role:(.+)$/);
+    if (roleMatch) {
+      const channelRole = roleMatch[1];
+      if (client.role !== channelRole) {
+        logger.warn(`[WebSocket] Client ${clientId} denied access to channel ${channel} (role mismatch)`);
+        this.sendToClient(clientId, {
+          type: "subscribe_error" as any,
+          channel,
+          data: { error: "Access denied: role mismatch" },
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+    }
+
+    // Universal channels (loadboard, news, etc.) allow all authenticated users
+    // No additional checks needed for those
 
     client.subscriptions.add(channel);
 
@@ -398,7 +458,7 @@ class WebSocketService {
       case "RAIL_SHIPPER":
         channels.push("rail:alerts");
         break;
-      case "RAIL_CARRIER":
+      case "RAIL_CATALYST":
         channels.push("rail:alerts");
         channels.push("rail:tracking");
         break;

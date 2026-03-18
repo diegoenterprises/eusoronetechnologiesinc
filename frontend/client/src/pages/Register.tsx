@@ -182,7 +182,7 @@ const REGISTRATION_ROLES = [
     modes: ["RAIL"],
   },
   {
-    role: "RAIL_CARRIER",
+    role: "RAIL_CATALYST",
     name: "Railroad Carrier",
     description: "Class I, II, III railroads and short lines",
     icon: TrainFront,

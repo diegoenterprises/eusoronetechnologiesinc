@@ -212,13 +212,36 @@ const WidgetCard: React.FC<{
   );
 };
 
+// Mode-aware accent colors for V5 widgets
+const getWidgetAccent = (widgetId: string): { bg: string; text: string; border: string } => {
+  if (widgetId.startsWith('rail_') || widgetId.startsWith('rail_eng_') || widgetId.startsWith('rail_con_') || widgetId.startsWith('rail_brk_')) {
+    return { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20' };
+  }
+  if (widgetId.startsWith('vessel_') || widgetId.startsWith('vbrk_') || widgetId.startsWith('captain_') || widgetId.startsWith('port_')) {
+    return { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/20' };
+  }
+  if (widgetId.startsWith('customs_')) {
+    return { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/20' };
+  }
+  if (widgetId.startsWith('factoring_')) {
+    return { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20' };
+  }
+  return { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20' };
+};
+
 const PlaceholderWidget: React.FC<{ widget: WidgetDefinition }> = ({ widget }) => {
   const Icon = widget.icon;
+  const accent = getWidgetAccent(widget.id);
   return (
-    <div className="flex flex-col items-center justify-center h-full text-gray-400 py-8">
-      <Icon className="w-12 h-12 mb-3 opacity-50" />
+    <div className="flex flex-col items-center justify-center h-full py-8">
+      <div className={`p-3 rounded-xl ${accent.bg} mb-3`}>
+        <Icon className={`w-8 h-8 ${accent.text}`} />
+      </div>
       <p className="text-base font-semibold text-white/80">{widget.name}</p>
-      <p className="text-xs text-gray-500 mt-1 text-center px-2">{widget.description}</p>
+      <p className="text-xs text-gray-500 mt-1 text-center px-2 max-w-[200px]">{widget.description}</p>
+      <div className={`mt-3 px-3 py-1 rounded-full text-[10px] font-medium ${accent.bg} ${accent.text}`}>
+        {widget.category}
+      </div>
     </div>
   );
 };
@@ -476,6 +499,108 @@ const ROLE_DEFAULT_WIDGETS: Record<string, string[]> = {
     'earnings_summary', 'fuel_stations', 'vehicle_health',
     'live_map', 'next_delivery', 'performance_score',
   ],
+  DISPATCH: [
+    'weather', 'escort_assignments', 'live_map',
+    'route_permits', 'oversized_loads', 'coordination_map',
+    'communication_hub', 'safety_protocols', 'escort_earnings',
+  ],
+  ESCORT: [
+    'weather', 'active_escort', 'emergency_contacts',
+    'route_navigation', 'load_dimensions', 'permit_verification',
+    'trip_log', 'escort_checklist', 'escort_pay',
+  ],
+  TERMINAL_MANAGER: [
+    'weather', 'yard_management', 'dock_scheduling',
+    'inbound_shipments', 'gate_activity', 'live_map',
+    'labor_management', 'terminal_kpis', 'storage_capacity',
+  ],
+  FACTORING: [
+    'weather', 'factoring_pending_invoices', 'factoring_portfolio',
+    'factoring_cash_flow', 'factoring_approval_rate', 'live_map',
+    'factoring_catalyst_portfolio', 'factoring_collections', 'factoring_history',
+  ],
+  COMPLIANCE_OFFICER: [
+    'weather', 'compliance_dashboard', 'driver_qualifications',
+    'vehicle_inspections', 'hos_violations', 'document_expiration',
+    'live_map', 'csa_scores', 'audit_tracker',
+  ],
+  SAFETY_MANAGER: [
+    'weather', 'safety_dashboard', 'accident_tracker',
+    'driver_safety_scores', 'live_map', 'vehicle_maintenance',
+    'hazmat_compliance', 'safety_inspections', 'risk_assessment',
+  ],
+  ADMIN: [
+    'weather', 'live_map', 'performance_summary',
+    'recent_activity', 'notifications', 'tasks',
+    'calendar', 'messages', 'stripe_connect',
+  ],
+  SUPER_ADMIN: [
+    'weather', 'live_map', 'performance_summary',
+    'recent_activity', 'notifications', 'tasks',
+    'calendar', 'messages', 'stripe_connect',
+  ],
+  // V5 Rail roles (fallback if redirect doesn't fire)
+  RAIL_SHIPPER: [
+    'weather', 'rail_active_shipments', 'rail_car_tracking',
+    'rail_demurrage', 'rail_rates', 'rail_analytics',
+    'rail_bol', 'rail_compliance_status', 'rail_timeline',
+  ],
+  RAIL_CATALYST: [
+    'weather', 'rail_fleet_consists', 'rail_revenue',
+    'rail_empty_cars', 'rail_loaded_cars', 'rail_crew_schedule',
+    'rail_utilization', 'rail_car_maintenance', 'rail_network',
+  ],
+  RAIL_DISPATCHER: [
+    'weather', 'rail_active_trains', 'rail_route_plan',
+    'rail_consist_assign', 'rail_crew_avail', 'rail_dwell_time',
+    'rail_schedule_adherence', 'rail_dest_yards', 'rail_incidents',
+  ],
+  RAIL_ENGINEER: [
+    'weather', 'rail_eng_assignment', 'rail_locomotive',
+    'rail_track_ahead', 'rail_eng_hos', 'rail_signals',
+    'rail_brake_test', 'rail_fuel_gauge', 'rail_eng_earnings',
+  ],
+  RAIL_CONDUCTOR: [
+    'weather', 'rail_con_train', 'rail_car_inspect',
+    'rail_switching', 'rail_con_hos', 'rail_con_manifest',
+    'rail_con_hazmat', 'rail_con_safety_brief', 'rail_con_earnings',
+  ],
+  RAIL_BROKER: [
+    'weather', 'rail_marketplace', 'rail_brk_shipments',
+    'rail_carrier_network', 'rail_brk_rates', 'rail_brk_commission',
+    'rail_brk_capacity', 'rail_brk_market', 'rail_brk_performance',
+  ],
+  // V5 Vessel roles (fallback if redirect doesn't fire)
+  VESSEL_SHIPPER: [
+    'weather', 'vessel_active_shipments', 'vessel_containers',
+    'vessel_port_status', 'vessel_customs', 'vessel_rates',
+    'vessel_bol', 'vessel_bookings', 'vessel_analytics',
+  ],
+  VESSEL_OPERATOR: [
+    'weather', 'vessel_fleet', 'vessel_port_schedule',
+    'vessel_container_inv', 'vessel_voyage_revenue', 'vessel_crew',
+    'vessel_bunker_fuel', 'vessel_utilization', 'vessel_network_map',
+  ],
+  PORT_MASTER: [
+    'weather', 'port_yard_inventory', 'port_arrivals',
+    'port_berths', 'port_cranes', 'port_truck_gate',
+    'port_container_movement', 'port_dwell_time', 'port_metrics',
+  ],
+  SHIP_CAPTAIN: [
+    'weather', 'captain_voyage', 'captain_nav_chart',
+    'captain_cargo', 'captain_crew', 'captain_weather',
+    'captain_engine', 'captain_fuel', 'captain_bridge_alerts',
+  ],
+  VESSEL_BROKER: [
+    'weather', 'vbrk_marketplace', 'vbrk_bookings',
+    'vbrk_shipping_lines', 'vbrk_rates', 'vbrk_commission',
+    'vbrk_capacity', 'vbrk_market_rates', 'vbrk_performance',
+  ],
+  CUSTOMS_BROKER: [
+    'weather', 'customs_pending', 'customs_processing',
+    'customs_tariff', 'customs_duty', 'customs_cbp_holds',
+    'customs_doc_status', 'customs_releases', 'customs_audits',
+  ],
 };
 
 const getDefaultLayout = (role: UserRole): WidgetLayout[] => {
@@ -597,6 +722,19 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
       SAFETY_MANAGER: 'Safety Manager',
       ADMIN: 'Administrator',
       SUPER_ADMIN: 'Super Admin',
+      FACTORING: 'Factoring',
+      RAIL_SHIPPER: 'Rail Shipper',
+      RAIL_CATALYST: 'Railroad Carrier',
+      RAIL_DISPATCHER: 'Rail Dispatcher',
+      RAIL_ENGINEER: 'Rail Engineer',
+      RAIL_CONDUCTOR: 'Rail Conductor',
+      RAIL_BROKER: 'Rail Broker',
+      VESSEL_SHIPPER: 'Vessel Shipper',
+      VESSEL_OPERATOR: 'Vessel Operator',
+      PORT_MASTER: 'Port Master',
+      SHIP_CAPTAIN: 'Ship Captain',
+      VESSEL_BROKER: 'Vessel Broker',
+      CUSTOMS_BROKER: 'Customs Broker',
     };
     return names[r] || r;
   };

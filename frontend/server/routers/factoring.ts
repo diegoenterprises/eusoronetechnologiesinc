@@ -8,7 +8,7 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { adminProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { factoringInvoices, loads, users, companies, hzCarrierSafety } from "../../drizzle/schema";
+import { factoringInvoices, loads, users, companies, hzCarrierSafety, settlements } from "../../drizzle/schema";
 import { like } from "drizzle-orm";
 import { unsafeCast } from "../_core/types/unsafe";
 
@@ -172,9 +172,19 @@ export const factoringRouter = router({
       const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
       const advRate = input.advanceRate || 97;
       const feePercent = input.factoringFeePercent || 3;
-      const feeAmount = Math.round(input.invoiceAmount * (feePercent / 100) * 100) / 100;
-      const advanceAmount = Math.round(input.invoiceAmount * (advRate / 100) * 100) / 100;
-      const reserveAmount = Math.round((input.invoiceAmount - advanceAmount - feeAmount) * 100) / 100;
+
+      // Use net-after-platform-fee amount from settlement if available
+      let netInvoiceAmount = Number(input.invoiceAmount);
+      try {
+        const [settlement] = await db.select().from(settlements).where(eq(settlements.loadId, input.loadId)).limit(1);
+        if (settlement) {
+          netInvoiceAmount = Number(settlement.totalShipperCharge || input.invoiceAmount) - Number(settlement.platformFeeAmount || 0);
+        }
+      } catch {}
+
+      const feeAmount = Math.round(netInvoiceAmount * (feePercent / 100) * 100) / 100;
+      const advanceAmount = Math.round(netInvoiceAmount * (advRate / 100) * 100) / 100;
+      const reserveAmount = Math.round((netInvoiceAmount - advanceAmount - feeAmount) * 100) / 100;
       const [result] = await db.insert(factoringInvoices).values({
         loadId: input.loadId,
         catalystUserId: userId,
@@ -211,6 +221,31 @@ export const factoringRouter = router({
       if (Object.keys(updates).length > 0) {
         await db.update(factoringInvoices).set(updates).where(eq(factoringInvoices.id, input.id));
       }
+
+      // Record factoring fee in platform revenue when invoice is funded
+      if (input.status === "funded") {
+        try {
+          const [invoice] = await db.select().from(factoringInvoices).where(eq(factoringInvoices.id, input.id)).limit(1);
+          if (invoice) {
+            const { platformRevenue } = await import("../../drizzle/schema");
+            const invoiceAmount = Number(invoice.invoiceAmount || 0);
+            const feeAmt = Number(invoice.factoringFeeAmount || 0);
+            await db.insert(platformRevenue).values({
+              transactionType: 'factoring_advance',
+              transactionId: invoice.id,
+              userId: invoice.catalystUserId,
+              grossAmount: String(invoiceAmount),
+              feeAmount: String(feeAmt),
+              netAmount: String(invoiceAmount - feeAmt),
+              description: `Factoring fee — Invoice #${invoice.invoiceNumber}`,
+            });
+            logger.info(`[Factoring] Platform revenue recorded: $${feeAmt.toFixed(2)} for invoice ${invoice.invoiceNumber}`);
+          }
+        } catch (err) {
+          logger.error('[Factoring] Failed to record platform revenue:', err);
+        }
+      }
+
       return { success: true, id: input.id };
     }),
 

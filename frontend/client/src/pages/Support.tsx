@@ -466,6 +466,9 @@ function UserSupportView() {
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Support Center</h1>
           <p className={mt}>Get help, manage tickets & explore the knowledge base</p>
+          <a href="tel:+18553876874" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors mt-2">
+            <Phone className="h-4 w-4" /> Call: 1-855-EUSO-TRIP
+          </a>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className={cn("rounded-xl", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setActiveTab("kb")}>

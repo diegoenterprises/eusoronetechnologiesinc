@@ -326,7 +326,7 @@ function BookingsTab({ isLight }: { isLight: boolean }) {
                     <td className="px-4 py-3 text-sm">{b.origin?.city}, {b.origin?.state}</td>
                     <td className="px-4 py-3 text-sm">{b.destination?.city}, {b.destination?.state}</td>
                     <td className="px-4 py-3 text-center">
-                      <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">{b.railroad}</Badge>
+                      <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">{typeof b.railroad === 'object' ? (b.railroad?.name || b.railroad?.code || JSON.stringify(b.railroad)) : (b.railroad || '—')}</Badge>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="text-xs">{b.containerNumber}</div>
@@ -628,8 +628,8 @@ function RailTab({ isLight }: { isLight: boolean }) {
                     <td className="px-4 py-3 text-center">
                       <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">{t.railroad}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm">{t.originRamp}</td>
-                    <td className="px-4 py-3 text-sm">{t.destinationRamp}</td>
+                    <td className="px-4 py-3 text-sm">{typeof t.origin === 'object' ? `${t.origin.city}, ${t.origin.state}` : (t.originRamp || '--')}</td>
+                    <td className="px-4 py-3 text-sm">{typeof t.destination === 'object' ? `${t.destination.city}, ${t.destination.state}` : (t.destinationRamp || '--')}</td>
                     <td className="px-4 py-3 text-center font-medium">{t.containerCount || 0}</td>
                     <td className="px-4 py-3 text-center text-xs">{t.eta || "TBD"}</td>
                     <td className="px-4 py-3 text-center">{statusBadge(t.status)}</td>
@@ -660,7 +660,7 @@ function RailTab({ isLight }: { isLight: boolean }) {
                   <span className="font-medium text-sm">{s.trainSymbol}</span>
                 </div>
                 <div className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>
-                  {s.origin} to {s.destination}
+                  {typeof s.origin === 'object' ? `${s.origin.city}, ${s.origin.state}` : s.origin} to {typeof s.destination === 'object' ? `${s.destination.city}, ${s.destination.state}` : s.destination}
                 </div>
                 <div className="text-xs text-right">
                   <div className="font-medium">{s.departureDay}</div>
@@ -723,7 +723,7 @@ function PortOpsTab({ isLight }: { isLight: boolean }) {
                     <tr key={i} className={cn("border-b last:border-0", isLight ? "border-slate-100 hover:bg-slate-50" : "border-slate-700/50 hover:bg-slate-700/30")}>
                       <td className="px-4 py-3 font-medium">{v.vesselName}</td>
                       <td className="px-4 py-3 text-sm">{v.voyage}</td>
-                      <td className="px-4 py-3 text-sm">{v.port}</td>
+                      <td className="px-4 py-3 text-sm">{typeof v.port === 'object' ? v.port.name : v.port}</td>
                       <td className="px-4 py-3 text-center text-xs">{v.eta}</td>
                       <td className="px-4 py-3 text-center">{v.containerCount || 0}</td>
                       <td className="px-4 py-3 text-center">{statusBadge(v.status || "en_route")}</td>
@@ -762,7 +762,7 @@ function PortOpsTab({ isLight }: { isLight: boolean }) {
                     <tr key={i} className={cn("border-b last:border-0", isLight ? "border-slate-100 hover:bg-slate-50" : "border-slate-700/50 hover:bg-slate-700/30")}>
                       <td className="px-4 py-3 font-mono text-sm">{c.containerNumber}</td>
                       <td className="px-4 py-3 text-sm">{c.entryNumber || "N/A"}</td>
-                      <td className="px-4 py-3 text-sm">{c.port}</td>
+                      <td className="px-4 py-3 text-sm">{typeof c.port === 'object' ? c.port.name : c.port}</td>
                       <td className="px-4 py-3 text-center text-xs">{c.filedDate || "--"}</td>
                       <td className="px-4 py-3 text-center">{statusBadge(c.status)}</td>
                       <td className="px-4 py-3 text-center">
@@ -990,7 +990,7 @@ function PerDiemTab({ isLight }: { isLight: boolean }) {
                   <span className="font-mono text-sm">{a.containerNumber}</span>
                 </div>
                 <div className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>
-                  LFD: {a.lastFreeDay} | {a.port}
+                  LFD: {a.lastFreeDay} | {typeof a.port === 'object' ? a.port.name : a.port}
                 </div>
                 <span className="text-sm font-medium text-red-400">
                   ${a.dailyRate || 0}/day

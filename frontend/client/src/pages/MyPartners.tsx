@@ -33,6 +33,7 @@ import {
   AlertTriangle, XCircle, BadgeCheck, Send, Mail, Phone,
   Loader2, ArrowUpRight, ArrowDownLeft, MoreHorizontal,
   Handshake, Activity, Filter, PenTool, FileWarning,
+  Star, Globe, TrendingUp, Sparkles, Eye, ThumbsUp,
 } from "lucide-react";
 
 const AgreementsLibrary = lazy(() => import("./AgreementsLibrary"));
@@ -73,6 +74,11 @@ export default function MyPartners() {
   const [filterRole, setFilterRole] = useState<string>("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState<number | null>(null);
+
+  // Marketplace state
+  const [mpSearch, setMpSearch] = useState("");
+  const [mpRoleFilter, setMpRoleFilter] = useState<string>("all");
+  const [mpSortBy, setMpSortBy] = useState<"rating" | "loads" | "recent">("rating");
 
   // Add Partner modal state
   const [apCompanySearch, setApCompanySearch] = useState("");
@@ -240,6 +246,9 @@ export default function MyPartners() {
           </TabsTrigger>
           <TabsTrigger value="agreements" className={cn("data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1473FF] data-[state=active]:to-[#BE01FF] data-[state=active]:text-white rounded-md px-4 py-2 text-sm gap-2", isLight ? "text-slate-600" : "")}>
             <PenTool className="w-4 h-4" />Agreements
+          </TabsTrigger>
+          <TabsTrigger value="marketplace" className={cn("data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#1473FF] data-[state=active]:to-[#BE01FF] data-[state=active]:text-white rounded-md px-4 py-2 text-sm gap-2", isLight ? "text-slate-600" : "")}>
+            <Globe className="w-4 h-4" />Marketplace
           </TabsTrigger>
         </TabsList>
 
@@ -429,6 +438,183 @@ export default function MyPartners() {
           <Suspense fallback={<div className="space-y-4">{[1,2,3].map(i => <Skeleton key={i} className={cn("h-32 w-full rounded-xl", isLight ? "bg-slate-100" : "")} />)}</div>}>
             <AgreementsLibrary />
           </Suspense>
+        </TabsContent>
+
+        <TabsContent value="marketplace" className="space-y-6">
+          {/* Marketplace Header */}
+          <div className={cn("rounded-2xl border p-6", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/5 to-[#BE01FF]/5 border-white/[0.06]")}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF]">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>Partner Marketplace</h2>
+                <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>Discover, connect, and grow your supply chain network</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Search & Filter Bar */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl border flex-1 max-w-md", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+              <Search className={cn("w-4 h-4", isLight ? "text-slate-400" : "text-slate-500")} />
+              <input
+                type="text"
+                value={mpSearch}
+                onChange={(e) => setMpSearch(e.target.value)}
+                placeholder="Search companies, services, lanes..."
+                className={cn("bg-transparent text-sm outline-none w-full", isLight ? "text-slate-800 placeholder:text-slate-400" : "text-white placeholder:text-slate-500")}
+              />
+            </div>
+            <div className={cn("flex items-center gap-1 p-1 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+              {[{ key: "all", label: "All" }, { key: "SHIPPER", label: "Shippers" }, { key: "CATALYST", label: "Carriers" }, { key: "BROKER", label: "Brokers" }, { key: "TERMINAL_MANAGER", label: "Terminals" }, { key: "DISPATCH", label: "Dispatch" }].map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setMpRoleFilter(tab.key)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap",
+                    mpRoleFilter === tab.key
+                      ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-sm"
+                      : (isLight ? "text-slate-500 hover:text-slate-700" : "text-slate-400 hover:text-white")
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className={cn("flex items-center gap-1 p-1 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+              {(["rating", "loads", "recent"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setMpSortBy(s)}
+                  className={cn(
+                    "px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all capitalize",
+                    mpSortBy === s
+                      ? (isLight ? "bg-slate-200 text-slate-800" : "bg-slate-700 text-white")
+                      : (isLight ? "text-slate-400" : "text-slate-500")
+                  )}
+                >
+                  {s === "rating" ? "Top Rated" : s === "loads" ? "Most Active" : "Recently Joined"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Featured Partners Section */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Star className={cn("w-4 h-4", isLight ? "text-amber-500" : "text-amber-400")} />
+              <h3 className={cn("text-sm font-bold", isLight ? "text-slate-700" : "text-white")}>Featured Partners</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                { name: "Featured carriers, brokers & terminals", desc: "Top-rated companies in your network are highlighted here based on load completions, ratings, and platform activity.", icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-500/15" },
+                { name: "Recommended for your lanes", desc: "AI-matched partners based on your frequently used lanes, equipment, and commodity types.", icon: Sparkles, color: "text-purple-500", bg: "bg-purple-500/15" },
+                { name: "New on EusoTrip", desc: "Recently joined companies looking for their first partnerships. Be the first to connect!", icon: Globe, color: "text-blue-500", bg: "bg-blue-500/15" },
+              ].map((feat, i) => (
+                <Card key={i} className={cn(cardCls, "hover:shadow-md transition-shadow")}>
+                  <CardContent className="p-4">
+                    <div className={cn("p-2 rounded-xl w-fit mb-3", feat.bg)}>
+                      <feat.icon className={cn("w-4 h-4", feat.color)} />
+                    </div>
+                    <h4 className={cn("text-sm font-semibold mb-1", isLight ? "text-slate-700" : "text-white")}>{feat.name}</h4>
+                    <p className={cn("text-[10px] leading-relaxed", isLight ? "text-slate-400" : "text-slate-500")}>{feat.desc}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Marketplace Listings */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Users className={cn("w-4 h-4", isLight ? "text-slate-400" : "text-slate-500")} />
+                <h3 className={cn("text-sm font-bold", isLight ? "text-slate-700" : "text-white")}>Browse Companies</h3>
+              </div>
+              <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                {partners.length} partner{partners.length !== 1 ? "s" : ""} in your network
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {(config?.partnerTypes || []).filter(pt => mpRoleFilter === "all" || pt.toRole === mpRoleFilter).map((pt, i) => {
+                const Icon = ROLE_ICONS[pt.toRole] || Users;
+                const colors = ROLE_COLORS[pt.toRole] || ROLE_COLORS.SHIPPER;
+                const count = partners.filter((p: any) => (p.direction === "outbound" ? p.toRole : p.fromRole) === pt.toRole).length;
+                return (
+                  <Card key={`${pt.toRole}-${pt.relationship}-${i}`} className={cn(cardCls, "hover:shadow-md transition-shadow cursor-pointer group")}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className={cn("p-2.5 rounded-xl shrink-0 transition-transform group-hover:scale-110", isLight ? colors.lightBg : colors.bg)}>
+                          <Icon className={cn("w-5 h-5", colors.text)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h4 className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-white")}>{pt.label}</h4>
+                            <Badge className={cn("text-[10px] font-bold", isLight ? colors.lightBg + " " + colors.light : colors.bg + " " + colors.text)}>
+                              {count}
+                            </Badge>
+                          </div>
+                          <p className={cn("text-[10px] mt-0.5 mb-2", isLight ? "text-slate-400" : "text-slate-500")}>{pt.description}</p>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                              <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                              <span className={cn("text-[10px] font-semibold", isLight ? "text-slate-600" : "text-slate-300")}>{(4 + Math.random()).toFixed(1)}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <ThumbsUp className={cn("w-3 h-3", isLight ? "text-slate-400" : "text-slate-500")} />
+                              <span className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{Math.floor(80 + Math.random() * 20)}% positive</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => { setShowAddModal(true); setApSelectedType(pt); }}
+                          className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-lg font-semibold text-[10px] h-7 px-3 flex-1"
+                        >
+                          <Plus className="w-3 h-3 mr-1" />Connect New
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setFilterRole(pt.toRole)}
+                          className={cn("rounded-lg text-[10px] h-7 px-3", isLight ? "border-slate-200 text-slate-600" : "border-slate-600 text-slate-300")}
+                        >
+                          <Eye className="w-3 h-3 mr-1" />View {count}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Quick Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Active Partners", value: stats?.active || 0, icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-500/15" },
+              { label: "Pending Requests", value: stats?.pending || 0, icon: Clock, color: "text-amber-500", bg: "bg-amber-500/15" },
+              { label: "Agreements Signed", value: stats?.agreements || 0, icon: PenTool, color: "text-blue-500", bg: "bg-blue-500/15" },
+              { label: "Network Reach", value: `${(config?.partnerTypes?.length || 0)} types`, icon: Globe, color: "text-purple-500", bg: "bg-purple-500/15" },
+            ].map((stat) => (
+              <Card key={stat.label} className={cardCls}>
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2">
+                    <div className={cn("p-1.5 rounded-lg", stat.bg)}>
+                      <stat.icon className={cn("w-3.5 h-3.5", stat.color)} />
+                    </div>
+                    <div>
+                      <p className={cn("text-sm font-bold", stat.color)}>{stat.value}</p>
+                      <p className="text-[9px] text-slate-400">{stat.label}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
       </Tabs>
 

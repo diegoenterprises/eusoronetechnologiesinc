@@ -204,3 +204,89 @@ export async function listCustomerPayments(customerId: string, limit: number = 1
   return charges.data;
 }
 
+/**
+ * Collect payment from shipper when a settlement is created on DELIVERED.
+ *
+ * Creates a Stripe PaymentIntent for the totalShipperCharge.
+ * If the shipper has a saved default payment method it is attached automatically;
+ * otherwise the PaymentIntent stays in "requires_payment_method" and the shipper
+ * is prompted to pay via the EusoWallet / Payments UI.
+ *
+ * Returns the PaymentIntent ID (or null on failure — fire-and-forget, non-blocking).
+ */
+export async function collectShipperPayment(params: {
+  loadId: number;
+  loadNumber: string;
+  shipperId: number;
+  shipperEmail: string;
+  shipperName: string;
+  totalShipperCharge: number; // dollars
+  platformFee: number; // dollars
+  carrierStripeConnectId?: string | null;
+  carrierPayout: number; // dollars
+}): Promise<string | null> {
+  const {
+    loadId, loadNumber, shipperId, shipperEmail, shipperName,
+    totalShipperCharge, platformFee, carrierStripeConnectId, carrierPayout,
+  } = params;
+
+  if (totalShipperCharge <= 0) return null;
+
+  try {
+    // 1. Resolve or create Stripe customer for shipper
+    let customerId: string | undefined;
+    try {
+      const existing = await stripe.customers.list({ email: shipperEmail, limit: 1 });
+      if (existing.data.length > 0) {
+        customerId = existing.data[0].id;
+      } else {
+        const newCust = await stripe.customers.create({
+          email: shipperEmail,
+          name: shipperName,
+          metadata: { userId: String(shipperId), platform: "eusotrip" },
+        });
+        customerId = newCust.id;
+      }
+    } catch {
+      // If customer resolution fails, create PI without customer (card entry required)
+    }
+
+    const amountCents = Math.round(totalShipperCharge * 100);
+    const feeCents = Math.round(platformFee * 100);
+
+    // 2. Build PaymentIntent params
+    const piParams: Stripe.PaymentIntentCreateParams = {
+      amount: amountCents,
+      currency: "usd",
+      description: `Load #${loadNumber} — Freight Payment`,
+      metadata: {
+        payment_type: "settlement_collection",
+        load_id: String(loadId),
+        load_number: loadNumber,
+        shipper_id: String(shipperId),
+        platform_fee: platformFee.toFixed(2),
+        carrier_payout: carrierPayout.toFixed(2),
+      },
+      automatic_payment_methods: { enabled: true },
+    };
+
+    if (customerId) {
+      piParams.customer = customerId;
+    }
+
+    // 3. If carrier has a Connect account, use destination charge so
+    //    funds flow directly to carrier minus platform application_fee
+    if (carrierStripeConnectId) {
+      piParams.application_fee_amount = feeCents;
+      piParams.transfer_data = { destination: carrierStripeConnectId };
+    }
+
+    // 4. Create PaymentIntent
+    const paymentIntent = await stripe.paymentIntents.create(piParams);
+    return paymentIntent.id;
+  } catch (err: any) {
+    // Non-blocking — log and return null; settlement still exists
+    console.error(`[Stripe] collectShipperPayment failed for load ${loadId}:`, err?.message);
+    return null;
+  }
+}

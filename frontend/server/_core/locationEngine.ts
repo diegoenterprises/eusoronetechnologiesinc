@@ -128,6 +128,63 @@ export function haversineDistanceMeters(a: LatLng, b: LatLng): number {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// V8: SPATIAL GRID INDEX FOR GEOFENCE LOOKUPS
+// Reduces brute-force geofence checks from O(n) to O(1) per GPS update.
+// Grid cells are ~11km squares. Each geofence is indexed in its cell + 8 neighbors.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const GRID_SIZE = 0.1; // ~11km squares
+const geofenceGrid = new Map<string, number[]>();
+
+function getGridKey(lat: number, lng: number): string {
+  return `${Math.floor(lat / GRID_SIZE)},${Math.floor(lng / GRID_SIZE)}`;
+}
+
+export function buildGeofenceGrid(geofences: Array<{id: number, lat: number, lng: number}>): void {
+  geofenceGrid.clear();
+  for (const gf of geofences) {
+    for (let dLat = -1; dLat <= 1; dLat++) {
+      for (let dLng = -1; dLng <= 1; dLng++) {
+        const key = getGridKey(gf.lat + dLat * GRID_SIZE, gf.lng + dLng * GRID_SIZE);
+        if (!geofenceGrid.has(key)) geofenceGrid.set(key, []);
+        geofenceGrid.get(key)!.push(gf.id);
+      }
+    }
+  }
+  logger.info(`[LocationEngine] Geofence grid built: ${geofences.length} geofences in ${geofenceGrid.size} grid cells`);
+}
+
+/**
+ * Get candidate geofence IDs near a GPS point using the spatial grid.
+ * Returns only geofences in the same ~11km grid cell, avoiding brute-force scan.
+ */
+export function getNearbyGeofenceIds(lat: number, lng: number): number[] {
+  const key = getGridKey(lat, lng);
+  return geofenceGrid.get(key) || [];
+}
+
+/**
+ * Refresh the spatial grid from the database (call on startup + periodically).
+ */
+export async function refreshGeofenceGrid(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    const activeGeofences = await db.select({
+      id: geofences.id,
+      center: geofences.center,
+    }).from(geofences).where(eq(geofences.isActive, true));
+
+    const parsed = activeGeofences
+      .filter(g => g.center && (g.center as any)?.lat && (g.center as any)?.lng)
+      .map(g => ({ id: g.id, lat: Number((g.center as any).lat), lng: Number((g.center as any).lng) }));
+    buildGeofenceGrid(parsed);
+  } catch (err) {
+    logger.warn("[LocationEngine] Failed to refresh geofence grid:", (err as any)?.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // ANTI-SPOOF (Section 5.3)
 // ═══════════════════════════════════════════════════════════════════════════
 

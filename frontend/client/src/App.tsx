@@ -414,6 +414,7 @@ const ESANGOperations = lazy(() => import("./pages/admin/ESANGOperations"));
 const UptimeDashboard = lazy(() => import("./pages/admin/UptimeDashboard"));
 const IndustryProfiles = lazy(() => import("./pages/admin/IndustryProfiles"));
 const DisasterResilience = lazy(() => import("./pages/admin/DisasterResilience"));
+const ReportingDashboard = lazy(() => import("./pages/admin/ReportingDashboard"));
 // ── Phase 5: Scale + Polish + Innovation (GAP-436 → GAP-451) ──
 const Phase5CommandCenter = lazy(() => import("./pages/superadmin/Phase5CommandCenter"));
 const HrWorkforce = lazy(() => import("./pages/HrWorkforce"));
@@ -448,6 +449,9 @@ const RailCommandCenter = lazy(() => import("./pages/rail/RailCommandCenter"));
 const RailConsists = lazy(() => import("./pages/rail/RailConsists"));
 const RailCrewHOS = lazy(() => import("./pages/rail/RailCrewHOS"));
 const RailCompliance = lazy(() => import("./pages/rail/RailCompliance"));
+const RailFinancial = lazy(() => import("./pages/rail/RailFinancial"));
+const RailCrew = lazy(() => import("./pages/rail/RailCrew"));
+const RailSafety = lazy(() => import("./pages/rail/RailSafety"));
 // ═══ V5 Multi-Modal: Vessel Pages ═══
 const VesselDashboard = lazy(() => import("./pages/vessel/VesselDashboard"));
 const VesselBookingCreate = lazy(() => import("./pages/vessel/VesselBookingCreate"));
@@ -459,6 +463,9 @@ const VesselFleet = lazy(() => import("./pages/vessel/VesselFleet"));
 const CustomsDashboard = lazy(() => import("./pages/vessel/CustomsDashboard"));
 const BillOfLading = lazy(() => import("./pages/vessel/BillOfLading"));
 const VesselCompliance = lazy(() => import("./pages/vessel/VesselCompliance"));
+const VesselFinancial = lazy(() => import("./pages/vessel/VesselFinancial"));
+const VesselCrew = lazy(() => import("./pages/vessel/VesselCrew"));
+const VesselSafety = lazy(() => import("./pages/vessel/VesselSafety"));
 // ═══ V5 Multi-Modal: Intermodal Pages ═══
 const IntermodalDashboard = lazy(() => import("./pages/intermodal/IntermodalDashboard"));
 const IntermodalShipmentCreate = lazy(() => import("./pages/intermodal/IntermodalShipmentCreate"));
@@ -467,7 +474,7 @@ const IntermodalTransfers = lazy(() => import("./pages/intermodal/IntermodalTran
 
 function Router() {
   // Role constants for route protection
-  const ALL: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ESCORT","TERMINAL_MANAGER","FACTORING","COMPLIANCE_OFFICER","SAFETY_MANAGER","ADMIN","SUPER_ADMIN"];
+  const ALL: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ESCORT","TERMINAL_MANAGER","FACTORING","COMPLIANCE_OFFICER","SAFETY_MANAGER","ADMIN","SUPER_ADMIN","RAIL_SHIPPER","RAIL_CATALYST","RAIL_DISPATCHER","RAIL_ENGINEER","RAIL_CONDUCTOR","RAIL_BROKER","VESSEL_SHIPPER","VESSEL_OPERATOR","PORT_MASTER","SHIP_CAPTAIN","VESSEL_BROKER","CUSTOMS_BROKER"] as UserRole[];
   const SHIP: UserRole[] = ["SHIPPER","ADMIN","SUPER_ADMIN"];
   const CARR: UserRole[] = ["CATALYST","ADMIN","SUPER_ADMIN"];
   const BROK: UserRole[] = ["BROKER","ADMIN","SUPER_ADMIN"];
@@ -483,8 +490,10 @@ function Router() {
   const LOAD: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ADMIN","SUPER_ADMIN"];
   const ELDR: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ESCORT","TERMINAL_MANAGER","COMPLIANCE_OFFICER","SAFETY_MANAGER","ADMIN","SUPER_ADMIN"];
   // V5 Multi-Modal role groups
-  const RAIL: UserRole[] = ["RAIL_SHIPPER","RAIL_CARRIER","RAIL_DISPATCHER","RAIL_ENGINEER","RAIL_CONDUCTOR","RAIL_BROKER","ADMIN","SUPER_ADMIN"] as UserRole[];
+  const RAIL: UserRole[] = ["RAIL_SHIPPER","RAIL_CATALYST","RAIL_DISPATCHER","RAIL_ENGINEER","RAIL_CONDUCTOR","RAIL_BROKER","ADMIN","SUPER_ADMIN"] as UserRole[];
   const VESL: UserRole[] = ["VESSEL_SHIPPER","VESSEL_OPERATOR","PORT_MASTER","SHIP_CAPTAIN","VESSEL_BROKER","CUSTOMS_BROKER","ADMIN","SUPER_ADMIN"] as UserRole[];
+  const PORT: UserRole[] = ["PORT_MASTER","ADMIN","SUPER_ADMIN"] as UserRole[];
+  const CUST: UserRole[] = ["CUSTOMS_BROKER","ADMIN","SUPER_ADMIN"] as UserRole[];
 
   // Helper: wrap page in DashboardLayout + ProtectedRoute
   const guard = (roles: UserRole[], Page: React.ReactNode) => () => (
@@ -894,6 +903,7 @@ function Router() {
       <Route path={"/admin/uptime"} component={guard(ADMN, <UptimeDashboard />)} />
       <Route path={"/admin/industry-profiles"} component={guard(ADMN, <IndustryProfiles />)} />
       <Route path={"/admin/disaster-resilience"} component={guard(ADMN, <DisasterResilience />)} />
+      <Route path={"/admin/reporting"} component={guard(ADMN, <ReportingDashboard />)} />
 
       {/* ============================================ */}
       {/* SUPER ADMIN ROUTES */}
@@ -1031,6 +1041,13 @@ function Router() {
       <Route path="/multi-modal" component={guard([...CARR, ...BROK, ...DISP, ...ADMN], <MultiModalPage />)} />
 
       {/* ============================================ */}
+      {/* TRUCK ROLE GAP FIXES — Routes previously missing */}
+      {/* ============================================ */}
+      <Route path="/driver-mobile" component={guard([...DRIV, ...CARR, ...DISP, ...ADMN], <MobileCommandPage />)} />
+      <Route path="/audit-compliance" component={guard([...COMP, ...SAFE, ...ADMN], <AuditLogsPage />)} />
+      <Route path="/shipping-papers" component={guard([...COMP, ...CARR, ...SHIP, ...ADMN], <ShippingPapersHub />)} />
+
+      {/* ============================================ */}
       {/* FALLBACK */}
       {/* ============================================ */}
       <Route path={"/404"} component={NotFound} />
@@ -1048,6 +1065,64 @@ function Router() {
       <Route path={"/rail/crew/hos"} component={guard(RAIL, <RailCrewHOS />)} />
       <Route path={"/rail/hos"} component={guard(RAIL, <RailCrewHOS />)} />
       <Route path={"/rail/compliance"} component={guard(RAIL, <RailCompliance />)} />
+      {/* ── V5 Rail: Financial ── */}
+      <Route path={"/rail/financial"} component={guard(RAIL, <RailFinancial />)} />
+      <Route path={"/rail/rates"} component={guard(RAIL, <RailFinancial />)} />
+      <Route path={"/rail/settlements"} component={guard(RAIL, <RailFinancial />)} />
+      <Route path={"/rail/demurrage"} component={guard(RAIL, <RailFinancial />)} />
+      <Route path={"/rail/invoices"} component={guard(RAIL, <RailFinancial />)} />
+      <Route path={"/rail/tariffs"} component={guard(RAIL, <RailFinancial />)} />
+      <Route path={"/rail/revenue"} component={guard(RAIL, <RailFinancial />)} />
+      <Route path={"/rail/earnings"} component={guard(RAIL, <RailFinancial />)} />
+      {/* ── V5 Rail: Crew ── */}
+      <Route path={"/rail/crew"} component={guard(RAIL, <RailCrew />)} />
+      <Route path={"/rail/crew/engineers"} component={guard(RAIL, <RailCrew />)} />
+      <Route path={"/rail/crew/conductors"} component={guard(RAIL, <RailCrew />)} />
+      <Route path={"/rail/crew/certifications"} component={guard(RAIL, <RailCrew />)} />
+      {/* ── V5 Rail: Safety ── */}
+      <Route path={"/rail/safety"} component={guard(RAIL, <RailSafety />)} />
+      <Route path={"/rail/incidents"} component={guard(RAIL, <RailSafety />)} />
+      <Route path={"/rail/inspections"} component={guard(RAIL, <RailCompliance />)} />
+      {/* ── V5 Rail: Operations & Fleet ── */}
+      <Route path={"/rail/operations"} component={guard(RAIL, <RailCommandCenter />)} />
+      <Route path={"/rail/yard-ops"} component={guard(RAIL, <RailYards />)} />
+      <Route path={"/rail/fleet"} component={guard(RAIL, <RailConsists />)} />
+      <Route path={"/rail/railcars"} component={guard(RAIL, <RailConsists />)} />
+      <Route path={"/rail/maintenance"} component={guard(RAIL, <RailConsists />)} />
+      <Route path={"/rail/car-status"} component={guard(RAIL, <RailConsists />)} />
+      <Route path={"/rail/carriers"} component={guard(RAIL, <RailConsists />)} />
+      <Route path={"/rail/interchanges"} component={guard(RAIL, <RailTracking />)} />
+      <Route path={"/rail/switching"} component={guard(RAIL, <RailCommandCenter />)} />
+      {/* ── V5 Rail: Documents & Training ── */}
+      <Route path={"/rail/documents"} component={guard(RAIL, <DocumentCenter />)} />
+      <Route path={"/rail/reports"} component={guard(RAIL, <Analytics />)} />
+      <Route path={"/rail/training"} component={guard(RAIL, <TrainingLMS />)} />
+      {/* ── V5 Rail: Marketplace ── */}
+      <Route path={"/rail/marketplace"} component={guard(RAIL, <FindLoadsPage />)} />
+      <Route path={"/rail/alerts"} component={guard(RAIL, <RailDashboard />)} />
+      <Route path={"/rail/assignments"} component={guard(RAIL, <RailCrewHOS />)} />
+      <Route path={"/rail/drug-testing"} component={guard(RAIL, <DrugTestingManagement />)} />
+      {/* ── V5 Rail: Dispatch ── */}
+      <Route path={"/rail/dispatch"} component={guard(RAIL, <RailCommandCenter />)} />
+      <Route path={"/rail/dispatch/schedule"} component={guard(RAIL, <RailCommandCenter />)} />
+      <Route path={"/rail/dispatch/routes"} component={guard(RAIL, <RailTracking />)} />
+      <Route path={"/rail/dispatch/tracks"} component={guard(RAIL, <RailYards />)} />
+      {/* ── V5 Rail: Role Dashboards ── */}
+      <Route path={"/rail/carrier/dashboard"} component={guard(RAIL, <RailDashboard />)} />
+      <Route path={"/rail/engineer/dashboard"} component={guard(RAIL, <RailDashboard />)} />
+      <Route path={"/rail/conductor/dashboard"} component={guard(RAIL, <RailDashboard />)} />
+      <Route path={"/rail/broker/dashboard"} component={guard(RAIL, <RailDashboard />)} />
+      {/* ── V5 Rail: Consists sub-pages ── */}
+      <Route path={"/rail/consists/build"} component={guard(RAIL, <RailConsists />)} />
+      <Route path={"/rail/consists/modify"} component={guard(RAIL, <RailConsists />)} />
+      <Route path={"/rail/consists/break"} component={guard(RAIL, <RailConsists />)} />
+      <Route path={"/rail/consists/history"} component={guard(RAIL, <RailConsists />)} />
+      {/* ── V5 Rail: Yards sub-pages ── */}
+      <Route path={"/rail/yards/tracks"} component={guard(RAIL, <RailYards />)} />
+      <Route path={"/rail/yards/spotting"} component={guard(RAIL, <RailYards />)} />
+      <Route path={"/rail/yards/capacity"} component={guard(RAIL, <RailYards />)} />
+      {/* ── V5 Rail: Compliance sub-pages ── */}
+      <Route path={"/rail/compliance/fra"} component={guard(RAIL, <RailCompliance />)} />
 
       {/* ============================================ */}
       {/* V5 VESSEL ROUTES */}
@@ -1062,6 +1137,144 @@ function Router() {
       <Route path={"/vessel/customs"} component={guard(VESL, <CustomsDashboard />)} />
       <Route path={"/vessel/bol"} component={guard(VESL, <BillOfLading />)} />
       <Route path={"/vessel/compliance"} component={guard(VESL, <VesselCompliance />)} />
+      {/* ── V5 Vessel: Financial ── */}
+      <Route path={"/vessel/financial"} component={guard(VESL, <VesselFinancial />)} />
+      <Route path={"/vessel/rates"} component={guard(VESL, <VesselFinancial />)} />
+      <Route path={"/vessel/invoices"} component={guard(VESL, <VesselFinancial />)} />
+      <Route path={"/vessel/demurrage"} component={guard(VESL, <VesselFinancial />)} />
+      {/* ── V5 Vessel: Crew ── */}
+      <Route path={"/vessel/crew"} component={guard(VESL, <VesselCrew />)} />
+      <Route path={"/vessel/crew/manifest"} component={guard(VESL, <VesselCrew />)} />
+      <Route path={"/vessel/crew/certs"} component={guard(VESL, <VesselCrew />)} />
+      <Route path={"/vessel/crew/stcw"} component={guard(VESL, <VesselCrew />)} />
+      <Route path={"/vessel/crew/watch"} component={guard(VESL, <VesselCrew />)} />
+      <Route path={"/vessel/crew/drills"} component={guard(VESL, <VesselCrew />)} />
+      {/* ── V5 Vessel: Safety ── */}
+      <Route path={"/vessel/safety"} component={guard(VESL, <VesselSafety />)} />
+      <Route path={"/vessel/safety/ism"} component={guard(VESL, <VesselSafety />)} />
+      <Route path={"/vessel/safety/incidents"} component={guard(VESL, <VesselSafety />)} />
+      <Route path={"/vessel/safety/drills"} component={guard(VESL, <VesselSafety />)} />
+      <Route path={"/vessel/safety/emergency"} component={guard(VESL, <VesselSafety />)} />
+      {/* ── V5 Vessel: Operations ── */}
+      <Route path={"/vessel/operations"} component={guard(VESL, <VesselFleet />)} />
+      <Route path={"/vessel/operations/berths"} component={guard(VESL, <VesselFleet />)} />
+      <Route path={"/vessel/operations/containers"} component={guard(VESL, <ContainerTracking />)} />
+      <Route path={"/vessel/operations/cargo"} component={guard(VESL, <VesselBookings />)} />
+      <Route path={"/vessel/voyages"} component={guard(VESL, <VesselFleet />)} />
+      <Route path={"/vessel/voyages/active"} component={guard(VESL, <VesselFleet />)} />
+      <Route path={"/vessel/voyages/schedule"} component={guard(VESL, <VesselFleet />)} />
+      {/* ── V5 Vessel: Environmental ── */}
+      <Route path={"/vessel/environmental"} component={guard(VESL, <VesselCompliance />)} />
+      <Route path={"/vessel/environmental/marpol"} component={guard(VESL, <VesselCompliance />)} />
+      <Route path={"/vessel/environmental/emissions"} component={guard(VESL, <VesselCompliance />)} />
+      <Route path={"/vessel/environmental/ballast"} component={guard(VESL, <VesselCompliance />)} />
+      {/* ── V5 Vessel: Navigation ── */}
+      <Route path={"/vessel/navigation"} component={guard(VESL, <VesselDashboard />)} />
+      <Route path={"/vessel/navigation/charts"} component={guard(VESL, <VesselDashboard />)} />
+      <Route path={"/vessel/navigation/weather"} component={guard(VESL, <VesselDashboard />)} />
+      <Route path={"/vessel/navigation/route"} component={guard(VESL, <VesselDashboard />)} />
+      {/* ── V5 Vessel: Cargo ── */}
+      <Route path={"/vessel/cargo"} component={guard(VESL, <VesselBookings />)} />
+      <Route path={"/vessel/cargo/stowage"} component={guard(VESL, <VesselBookings />)} />
+      <Route path={"/vessel/cargo/hazmat"} component={guard(VESL, <VesselBookings />)} />
+      <Route path={"/vessel/cargo/status"} component={guard(VESL, <VesselBookings />)} />
+      {/* ── V5 Vessel: Maintenance & Comms ── */}
+      <Route path={"/vessel/maintenance"} component={guard(VESL, <VesselFleet />)} />
+      <Route path={"/vessel/comms"} component={guard(VESL, <MessagesPage />)} />
+      {/* ── V5 Vessel: Logs ── */}
+      <Route path={"/vessel/logs"} component={guard(VESL, <VesselCompliance />)} />
+      <Route path={"/vessel/logs/official"} component={guard(VESL, <VesselCompliance />)} />
+      <Route path={"/vessel/logs/oil"} component={guard(VESL, <VesselCompliance />)} />
+      <Route path={"/vessel/logs/garbage"} component={guard(VESL, <VesselCompliance />)} />
+      {/* ── V5 Vessel: Documents & Training ── */}
+      <Route path={"/vessel/documents"} component={guard(VESL, <DocumentCenter />)} />
+      <Route path={"/vessel/documents/bol"} component={guard(VESL, <BillOfLading />)} />
+      <Route path={"/vessel/documents/customs"} component={guard(VESL, <CustomsDashboard />)} />
+      <Route path={"/vessel/documents/packing"} component={guard(VESL, <DocumentCenter />)} />
+      <Route path={"/vessel/reports"} component={guard(VESL, <Analytics />)} />
+      <Route path={"/vessel/training"} component={guard(VESL, <TrainingLMS />)} />
+      {/* ── V5 Vessel: Marketplace ── */}
+      <Route path={"/vessel/marketplace"} component={guard(VESL, <FindLoadsPage />)} />
+      <Route path={"/vessel/marketplace/schedules"} component={guard(VESL, <VesselBookings />)} />
+      <Route path={"/vessel/marketplace/rates"} component={guard(VESL, <VesselFinancial />)} />
+      <Route path={"/vessel/marketplace/spot"} component={guard(VESL, <VesselFinancial />)} />
+      {/* ── V5 Vessel: Carriers & Customers ── */}
+      <Route path={"/vessel/carriers"} component={guard(VESL, <VesselFleet />)} />
+      <Route path={"/vessel/customers"} component={guard(VESL, <VesselBookings />)} />
+      {/* ── V5 Vessel: Role Dashboards ── */}
+      <Route path={"/vessel/operator/dashboard"} component={guard(VESL, <VesselDashboard />)} />
+      <Route path={"/vessel/captain/dashboard"} component={guard(VESL, <VesselDashboard />)} />
+      <Route path={"/vessel/broker/dashboard"} component={guard(VESL, <VesselDashboard />)} />
+      {/* ── V5 Vessel: Containers ── */}
+      <Route path={"/vessel/containers"} component={guard(VESL, <ContainerTracking />)} />
+      <Route path={"/vessel/containers/tracking"} component={guard(VESL, <ContainerTracking />)} />
+      <Route path={"/vessel/containers/demurrage"} component={guard(VESL, <VesselFinancial />)} />
+      <Route path={"/vessel/containers/returns"} component={guard(VESL, <ContainerTracking />)} />
+      {/* ── V5 Vessel: Customs ── */}
+      <Route path={"/vessel/customs/isf"} component={guard(VESL, <CustomsDashboard />)} />
+      <Route path={"/vessel/customs/duties"} component={guard(VESL, <VesselFinancial />)} />
+      <Route path={"/vessel/customs/hts"} component={guard(VESL, <CustomsDashboard />)} />
+      {/* ── V5 Vessel: Bookings sub-pages ── */}
+      <Route path={"/vessel/bookings/history"} component={guard(VESL, <VesselBookings />)} />
+      <Route path={"/vessel/bookings/templates"} component={guard(VESL, <VesselBookings />)} />
+      {/* ── V5 Vessel: Ports sub-pages ── */}
+      <Route path={"/vessel/ports/schedules"} component={guard(VESL, <PortDirectory />)} />
+      <Route path={"/vessel/ports/terminals"} component={guard(VESL, <PortDirectory />)} />
+      <Route path={"/vessel/ports/gate-hours"} component={guard(VESL, <PortDirectory />)} />
+      {/* ── V5 Vessel: Fleet sub-pages ── */}
+      <Route path={"/vessel/fleet/vessels"} component={guard(VESL, <VesselFleet />)} />
+      <Route path={"/vessel/fleet/specs"} component={guard(VESL, <VesselFleet />)} />
+      <Route path={"/vessel/fleet/maintenance"} component={guard(VESL, <VesselFleet />)} />
+
+      {/* ============================================ */}
+      {/* V5 PORT ROUTES */}
+      {/* ============================================ */}
+      <Route path={"/port/dashboard"} component={guard(PORT, <VesselDashboard />)} />
+      <Route path={"/port/terminal"} component={guard(PORT, <VesselFleet />)} />
+      <Route path={"/port/terminal/berths"} component={guard(PORT, <VesselFleet />)} />
+      <Route path={"/port/terminal/yard"} component={guard(PORT, <VesselFleet />)} />
+      <Route path={"/port/terminal/equipment"} component={guard(PORT, <VesselFleet />)} />
+      <Route path={"/port/gate"} component={guard(PORT, <GateOperations />)} />
+      <Route path={"/port/gate/operations"} component={guard(PORT, <GateOperations />)} />
+      <Route path={"/port/gate/appointments"} component={guard(PORT, <TerminalScheduling />)} />
+      <Route path={"/port/gate/queue"} component={guard(PORT, <GateOperations />)} />
+      <Route path={"/port/vessel-ops"} component={guard(PORT, <VesselFleet />)} />
+      <Route path={"/port/vessel-ops/schedule"} component={guard(PORT, <VesselFleet />)} />
+      <Route path={"/port/vessel-ops/pilots"} component={guard(PORT, <VesselFleet />)} />
+      <Route path={"/port/vessel-ops/tugs"} component={guard(PORT, <VesselFleet />)} />
+      <Route path={"/port/containers"} component={guard(PORT, <ContainerTracking />)} />
+      <Route path={"/port/containers/stacks"} component={guard(PORT, <ContainerTracking />)} />
+      <Route path={"/port/containers/reefer"} component={guard(PORT, <ContainerTracking />)} />
+      <Route path={"/port/containers/hazmat"} component={guard(PORT, <ContainerTracking />)} />
+      <Route path={"/port/security"} component={guard(PORT, <VesselCompliance />)} />
+      <Route path={"/port/security/isps"} component={guard(PORT, <VesselCompliance />)} />
+      <Route path={"/port/security/twic"} component={guard(PORT, <VesselCompliance />)} />
+      <Route path={"/port/safety"} component={guard(PORT, <VesselSafety />)} />
+      <Route path={"/port/financial"} component={guard(PORT, <VesselFinancial />)} />
+
+      {/* ============================================ */}
+      {/* V5 CUSTOMS ROUTES */}
+      {/* ============================================ */}
+      <Route path={"/customs/dashboard"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/entries"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/entries/create"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/entries/history"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/isf"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/isf/manage"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/isf/deadlines"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/hts"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/hts/lookup"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/hts/rulings"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/compliance"} component={guard(CUST, <VesselCompliance />)} />
+      <Route path={"/customs/compliance/ftz"} component={guard(CUST, <VesselCompliance />)} />
+      <Route path={"/customs/compliance/drawback"} component={guard(CUST, <VesselCompliance />)} />
+      <Route path={"/customs/compliance/ctpat"} component={guard(CUST, <VesselCompliance />)} />
+      <Route path={"/customs/trade"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/trade/usmca"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/trade/preferential"} component={guard(CUST, <CustomsDashboard />)} />
+      <Route path={"/customs/financial"} component={guard(CUST, <VesselFinancial />)} />
+      <Route path={"/customs/documents"} component={guard(CUST, <DocumentCenter />)} />
+      <Route path={"/customs/reports"} component={guard(CUST, <Analytics />)} />
 
       {/* ============================================ */}
       {/* V5 INTERMODAL ROUTES */}

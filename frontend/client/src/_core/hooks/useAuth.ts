@@ -130,7 +130,13 @@ export function useAuth(options?: UseAuthOptions) {
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
 
-    window.location.href = redirectPath
+    // Deep linking: save current URL so we can return after login
+    const currentPath = window.location.pathname + window.location.search;
+    if (currentPath !== '/login' && currentPath !== '/home' && currentPath !== '/') {
+      sessionStorage.setItem('eusotrip_returnTo', currentPath);
+    }
+
+    window.location.href = redirectPath;
   }, [
     redirectOnUnauthenticated,
     redirectPath,
@@ -138,6 +144,16 @@ export function useAuth(options?: UseAuthOptions) {
     meQuery.isLoading,
     state.user,
   ]);
+
+  // Deep linking: restore returnTo URL after successful login
+  useEffect(() => {
+    if (!state.user) return;
+    const returnTo = sessionStorage.getItem('eusotrip_returnTo');
+    if (returnTo) {
+      sessionStorage.removeItem('eusotrip_returnTo');
+      window.location.href = returnTo;
+    }
+  }, [state.user]);
 
   return {
     ...state,

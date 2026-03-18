@@ -8,6 +8,14 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte, lte, inArray, count } from "drizzle-orm";
 import { railProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { railincService } from "../services/integrations/RailincService";
+import { fraService } from "../services/integrations/FRAService";
+import { classIRailroadService } from "../services/integrations/ClassIRailroadService";
+import { vizionRailService } from "../services/integrations/VizionRailService";
+import { cloudMoyoCrewService } from "../services/integrations/CloudMoyoCrewService";
+import { railRateService } from "../services/integrations/RailRateService";
+import { logger } from "../_core/logger";
+import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 import {
   railShipments,
   railCarriers,
@@ -492,5 +500,170 @@ export const railShipmentsRouter = router({
         totalInspections: inspections.length,
         failedCount: failedInspections.length,
       };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // INTEGRATION-POWERED PROCEDURES — Live External API Data
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Railinc RailSight — Live railcar position tracking
+   */
+  liveTrackRailcar: railProcedure
+    .input(z.object({ railcarNumber: z.string() }))
+    .query(async ({ input }) => {
+      const cacheKey = `rail:track:${input.railcarNumber}`;
+      try {
+        return await lsCacheThrough("WARM", cacheKey, async () => {
+          return await railincService.trackRailcar(input.railcarNumber);
+        }, 300);
+      } catch (e) { logger.error("[Rail] liveTrackRailcar error:", e); return null; }
+    }),
+
+  /**
+   * Railinc UMLER — Equipment specifications
+   */
+  getEquipmentSpecs: railProcedure
+    .input(z.object({ railcarNumber: z.string() }))
+    .query(async ({ input }) => {
+      const cacheKey = `rail:umler:${input.railcarNumber}`;
+      try {
+        return await lsCacheThrough("WARM", cacheKey, async () => {
+          return await railincService.getEquipmentSpecs(input.railcarNumber);
+        }, 900);
+      } catch (e) { logger.error("[Rail] getEquipmentSpecs error:", e); return null; }
+    }),
+
+  /**
+   * Railinc Asset Health — Mechanical condition & maintenance alerts
+   */
+  getAssetHealth: railProcedure
+    .input(z.object({ railcarNumber: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        return await railincService.getAssetHealth(input.railcarNumber);
+      } catch (e) { logger.error("[Rail] getAssetHealth error:", e); return null; }
+    }),
+
+  /**
+   * FRA Safety Data — Accident reports (free government API)
+   */
+  getFRAAccidentReports: railProcedure
+    .input(z.object({
+      state: z.string().optional(),
+      railroad: z.string().optional(),
+      year: z.number().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      try {
+        return await fraService.getAccidentReports(input || {});
+      } catch (e) { logger.error("[Rail] getFRAAccidentReports error:", e); return null; }
+    }),
+
+  /**
+   * FRA — Safety compliance metrics
+   */
+  getFRASafetyCompliance: railProcedure
+    .input(z.object({ railroadCode: z.string() }))
+    .query(async ({ input }) => {
+      const cacheKey = `rail:fra:safety:${input.railroadCode}`;
+      try {
+        return await lsCacheThrough("AGGREGATE", cacheKey, async () => {
+          return await fraService.getSafetyCompliance(input.railroadCode);
+        }, 3600);
+      } catch (e) { logger.error("[Rail] getFRASafetyCompliance error:", e); return null; }
+    }),
+
+  /**
+   * Class I Railroad — Live shipment tracking (BNSF, UP, NS, CSX, CPKC, CN)
+   */
+  liveTrackShipment: railProcedure
+    .input(z.object({ railroad: z.string(), shipmentId: z.string() }))
+    .query(async ({ input }) => {
+      const cacheKey = `rail:classI:${input.railroad}:${input.shipmentId}`;
+      try {
+        return await lsCacheThrough("WARM", cacheKey, async () => {
+          return await classIRailroadService.trackShipment(input.railroad, input.shipmentId);
+        }, 300);
+      } catch (e) { logger.error("[Rail] liveTrackShipment error:", e); return null; }
+    }),
+
+  /**
+   * Class I Railroad — Facility/yard status
+   */
+  getFacilityStatus: railProcedure
+    .input(z.object({ railroad: z.string(), facilityCode: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        return await classIRailroadService.getFacilityStatus(input.railroad, input.facilityCode);
+      } catch (e) { logger.error("[Rail] getFacilityStatus error:", e); return null; }
+    }),
+
+  /**
+   * Class I Railroad — Live demurrage charges
+   */
+  getLiveDemurrage: railProcedure
+    .input(z.object({ railroad: z.string(), equipmentId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        return await classIRailroadService.getDemurrageCharges(input.railroad, input.equipmentId);
+      } catch (e) { logger.error("[Rail] getLiveDemurrage error:", e); return null; }
+    }),
+
+  /**
+   * Vizion — Unified intermodal container tracking (ocean→rail seamless)
+   */
+  trackIntermodalContainer: railProcedure
+    .input(z.object({ containerNumber: z.string() }))
+    .query(async ({ input }) => {
+      const cacheKey = `rail:vizion:${input.containerNumber}`;
+      try {
+        return await lsCacheThrough("WARM", cacheKey, async () => {
+          return await vizionRailService.trackContainer(input.containerNumber);
+        }, 300);
+      } catch (e) { logger.error("[Rail] trackIntermodalContainer error:", e); return null; }
+    }),
+
+  /**
+   * CloudMoyo — Crew HOS compliance (FRA 49 CFR Part 228)
+   */
+  getCrewHOS: railProcedure
+    .input(z.object({ crewMemberId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        return await cloudMoyoCrewService.getCrewHOS(input.crewMemberId);
+      } catch (e) { logger.error("[Rail] getCrewHOS error:", e); return null; }
+    }),
+
+  /**
+   * CloudMoyo — Crew availability by yard
+   */
+  getCrewAvailability: railProcedure
+    .input(z.object({ yardId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        return await cloudMoyoCrewService.getCrewAvailability(input.yardId);
+      } catch (e) { logger.error("[Rail] getCrewAvailability error:", e); return null; }
+    }),
+
+  /**
+   * Rail Rate Service — Tariff rate quotes
+   */
+  getTariffRate: railProcedure
+    .input(z.object({
+      originStation: z.string(),
+      destStation: z.string(),
+      carType: z.string(),
+      commodity: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const cacheKey = `rail:rate:${input.originStation}:${input.destStation}:${input.carType}:${input.commodity}`;
+      try {
+        return await lsCacheThrough("WARM", cacheKey, async () => {
+          return await railRateService.getTariffRate(input.originStation, input.destStation, input.carType, input.commodity);
+        }, 900);
+      } catch (e) { logger.error("[Rail] getTariffRate error:", e); return null; }
     }),
 });

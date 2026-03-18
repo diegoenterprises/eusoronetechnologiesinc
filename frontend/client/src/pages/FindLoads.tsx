@@ -355,6 +355,9 @@ export default function FindLoads() {
                 {/* Rate Column */}
                 <div className="text-right flex-shrink-0">
                   <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(load.rate || 0).toLocaleString()}</p>
+                  <p className="text-xs text-slate-400">
+                    Net after fee: ~${(Number(load.rate) * 0.92).toLocaleString(undefined, {maximumFractionDigits: 0})}
+                  </p>
                   <div className="flex items-center gap-2 justify-end">
                     {rpm && <span className="text-[10px] font-semibold text-emerald-500">${rpm}/mi</span>}
                     {est > 0 && <span className="text-[10px] text-slate-400">~${est.toLocaleString()} net</span>}
@@ -507,6 +510,9 @@ export default function FindLoads() {
                     <div className="grid grid-cols-3 gap-3">
                       <div className="text-center">
                         <p className="text-2xl font-extrabold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(load.rate || 0).toLocaleString()}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Net after fee: ~${(Number(load.rate) * 0.92).toLocaleString(undefined, {maximumFractionDigits: 0})}
+                        </p>
                         <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">Total Rate</p>
                       </div>
                       <div className={cn("text-center border-x", L ? "border-slate-200/60" : "border-slate-700/40")}>

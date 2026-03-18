@@ -46,7 +46,7 @@ export type UserRole =
   | 'SUPER_ADMIN'
   // V5 Rail roles
   | 'RAIL_SHIPPER'
-  | 'RAIL_CARRIER'
+  | 'RAIL_CATALYST'
   | 'RAIL_DISPATCHER'
   | 'RAIL_ENGINEER'
   | 'RAIL_CONDUCTOR'
@@ -1626,7 +1626,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Trophy", label: "Bid Review", path: "/bid-review", badge: 0, description: "Compare bids, negotiate counter-offers, and award lanes" },
         { icon: "Target", label: "Mission Balancer", path: "/mission-balancer", badge: 0, description: "AI-optimized load distribution & fleet workload balancing" },
         { icon: "Combine", label: "Load Consolidation", path: "/load-consolidation", badge: 0, description: "Multi-shipper shipment consolidation for cost savings" },
-        { icon: "Users", label: "Customer Portal", path: "/customer-portal", badge: 0, description: "Self-service customer portal for tracking, booking & communication" },
         { icon: "LayoutGrid", label: "Capacity Planning", path: "/capacity-planning", badge: 0, description: "Fleet capacity forecasting, demand planning & resource allocation" },
         { icon: "Store", label: "Vendor Management", path: "/vendor-management", badge: 0, description: "Vendor relationships, contracts & procurement management" },
       ],
@@ -1642,12 +1641,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety analytics, risk scoring & incident tracking" },
         { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "HAZMAT spill, accident, weather & disaster routing" },
         { icon: "Globe", label: "Cross-Border", path: "/cross-border", badge: 0, description: "Customs, multi-jurisdiction & international compliance" },
-        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-logs", badge: 0, description: "Deep compliance auditing & regulatory tracking" },
+        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
         { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
         { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
-        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
       ],
     },
     {
@@ -1866,12 +1864,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety analytics & risk scoring" },
         { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "HAZMAT, accident & disaster routing" },
         { icon: "Globe", label: "Cross-Border", path: "/cross-border", badge: 0, description: "Customs & international compliance" },
-        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-logs", badge: 0, description: "Deep compliance auditing & regulatory tracking" },
+        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
         { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
         { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
-        { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
       ],
     },
     {
@@ -1917,16 +1914,29 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "Warehouse", label: "Rail Yards", path: "/rail/yards", badge: 0, description: "Intermodal yards & terminals", modes: ["RAIL"] },
     { icon: "MapPin", label: "Tracking", path: "/rail/tracking", badge: 0, description: "Real-time railcar tracking", modes: ["RAIL"] },
     { icon: "FileText", label: "Documents", path: "/rail/documents", badge: 0, description: "Waybills, BOLs & compliance docs", modes: ["RAIL"] },
-    { icon: "DollarSign", label: "Financial", path: "/rail/financial", badge: 0, description: "Rates, settlements & demurrage", modes: ["RAIL"], children: [
+    { icon: "DollarSign", label: "Rail Billing", path: "/rail/financial", badge: 0, description: "Rates, settlements & demurrage", modes: ["RAIL"], children: [
       { icon: "DollarSign", label: "Rate Quotes", path: "/rail/rates", badge: 0, description: "Rail freight rate quotes" },
       { icon: "Receipt", label: "Settlements", path: "/rail/settlements", badge: 0, description: "Rail settlement statements" },
       { icon: "Clock", label: "Demurrage", path: "/rail/demurrage", badge: 0, description: "Demurrage & detention charges" },
       { icon: "FileText", label: "Invoices", path: "/rail/invoices", badge: 0, description: "Rail freight invoices" },
     ]},
     { icon: "BarChart3", label: "Reports", path: "/rail/reports", badge: 0, description: "Rail analytics & reporting", modes: ["RAIL"] },
+    { icon: "GraduationCap", label: "Training", path: "/training-lms", badge: 0, description: "Rail safety courses, certifications & FRA compliance training", modes: ["RAIL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows" },
+    ]},
   ],
 
-  RAIL_CARRIER: [
+  RAIL_CATALYST: [
     { icon: "LayoutDashboard", label: "Dashboard", path: "/rail/carrier/dashboard", badge: 0, description: "Railroad operations dashboard", modes: ["RAIL"] },
     { icon: "Settings", label: "Operations", path: "/rail/operations", badge: 0, description: "Train operations management", modes: ["RAIL"], children: [
       { icon: "TrainFront", label: "Train Consists", path: "/rail/consists", badge: 0, description: "Build & manage train consists" },
@@ -1957,13 +1967,25 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       { icon: "FileWarning", label: "Incidents", path: "/rail/incidents", badge: 0 },
       { icon: "FlaskConical", label: "Drug/Alcohol", path: "/rail/drug-testing", badge: 0 },
     ]},
-    { icon: "DollarSign", label: "Financial", path: "/rail/financial", badge: 0, description: "Tariffs, settlements & revenue", modes: ["RAIL"], children: [
+    { icon: "DollarSign", label: "Rail Billing", path: "/rail/financial", badge: 0, description: "Tariffs, settlements & revenue", modes: ["RAIL"], children: [
       { icon: "DollarSign", label: "Tariffs", path: "/rail/tariffs", badge: 0 },
       { icon: "Receipt", label: "Settlements", path: "/rail/settlements", badge: 0 },
       { icon: "Clock", label: "Demurrage", path: "/rail/demurrage", badge: 0 },
       { icon: "TrendingUp", label: "Revenue", path: "/rail/revenue", badge: 0 },
     ]},
     { icon: "GraduationCap", label: "Training", path: "/rail/training", badge: 0, description: "Rail operations training", modes: ["RAIL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows" },
+    ]},
   ],
 
   RAIL_DISPATCHER: [
@@ -1990,6 +2012,19 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     ]},
     { icon: "Bell", label: "Alerts", path: "/rail/alerts", badge: 0, description: "Operational alerts", modes: ["RAIL"] },
     { icon: "Shield", label: "Compliance", path: "/rail/compliance", badge: 0, description: "FRA compliance", modes: ["RAIL"] },
+    { icon: "GraduationCap", label: "Training", path: "/training-lms", badge: 0, description: "Rail safety courses, certifications & FRA compliance training", modes: ["RAIL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows" },
+    ]},
   ],
 
   RAIL_ENGINEER: [
@@ -2000,6 +2035,18 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "GraduationCap", label: "Training", path: "/rail/training", badge: 0, description: "Required certifications & courses", modes: ["RAIL"] },
     { icon: "AlertTriangle", label: "Safety", path: "/rail/safety", badge: 0, description: "Safety reports & alerts", modes: ["RAIL"] },
     { icon: "Wallet", label: "Earnings", path: "/rail/earnings", badge: 0, description: "Pay & earnings tracking", modes: ["RAIL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows" },
+    ]},
   ],
 
   RAIL_CONDUCTOR: [
@@ -2012,6 +2059,18 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "GraduationCap", label: "Training", path: "/rail/training", badge: 0, description: "Required certifications", modes: ["RAIL"] },
     { icon: "AlertTriangle", label: "Safety", path: "/rail/safety", badge: 0, description: "Safety reports", modes: ["RAIL"] },
     { icon: "Wallet", label: "Earnings", path: "/rail/earnings", badge: 0, description: "Pay & earnings", modes: ["RAIL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows" },
+    ]},
   ],
 
   RAIL_BROKER: [
@@ -2020,8 +2079,21 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "Package", label: "Shipments", path: "/rail/shipments", badge: 0, description: "Brokered rail shipments", modes: ["RAIL"] },
     { icon: "Building2", label: "Carriers", path: "/rail/carriers", badge: 0, description: "Railroad carrier management", modes: ["RAIL"] },
     { icon: "ArrowLeftRight", label: "Intermodal", path: "/intermodal", badge: 0, description: "Intermodal coordination", modes: ["RAIL"] },
-    { icon: "DollarSign", label: "Financial", path: "/rail/financial", badge: 0, description: "Commissions, margins & billing", modes: ["RAIL"] },
+    { icon: "DollarSign", label: "Rail Billing", path: "/rail/financial", badge: 0, description: "Commissions, margins & billing", modes: ["RAIL"] },
     { icon: "BarChart3", label: "Reports", path: "/rail/reports", badge: 0, description: "Analytics & reporting", modes: ["RAIL"] },
+    { icon: "GraduationCap", label: "Training", path: "/training-lms", badge: 0, description: "Rail safety courses, certifications & FRA compliance training", modes: ["RAIL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows" },
+    ]},
   ],
 
   // ═══════════════════════════════════════════════════════════════
@@ -2055,12 +2127,25 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       { icon: "DollarSign", label: "Duty Estimates", path: "/vessel/customs/duties", badge: 0 },
       { icon: "Search", label: "HTS Lookup", path: "/vessel/customs/hts", badge: 0 },
     ]},
-    { icon: "DollarSign", label: "Financial", path: "/vessel/financial", badge: 0, description: "Rates, invoices & demurrage", modes: ["VESSEL"], children: [
+    { icon: "DollarSign", label: "Maritime Billing", path: "/vessel/financial", badge: 0, description: "Rates, invoices & demurrage", modes: ["VESSEL"], children: [
       { icon: "DollarSign", label: "Rate Quotes", path: "/vessel/rates", badge: 0 },
       { icon: "FileText", label: "Invoices", path: "/vessel/invoices", badge: 0 },
       { icon: "Clock", label: "Demurrage", path: "/vessel/demurrage", badge: 0 },
     ]},
     { icon: "BarChart3", label: "Reports", path: "/vessel/reports", badge: 0, description: "Vessel analytics", modes: ["VESSEL"] },
+    { icon: "GraduationCap", label: "Training", path: "/training-lms", badge: 0, description: "Maritime courses, STCW certifications & safety training", modes: ["VESSEL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance & documentation" },
+    ]},
   ],
 
   VESSEL_OPERATOR: [
@@ -2094,8 +2179,21 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       { icon: "CloudRain", label: "Emissions", path: "/vessel/environmental/emissions", badge: 0 },
       { icon: "Droplets", label: "Ballast Water", path: "/vessel/environmental/ballast", badge: 0 },
     ]},
-    { icon: "DollarSign", label: "Financial", path: "/vessel/financial", badge: 0, description: "Revenue & costs", modes: ["VESSEL"] },
+    { icon: "DollarSign", label: "Maritime Billing", path: "/vessel/financial", badge: 0, description: "Revenue & costs", modes: ["VESSEL"] },
     { icon: "ClipboardCheck", label: "Compliance", path: "/vessel/compliance", badge: 0, description: "ISM/ISPS/Class surveys", modes: ["VESSEL"] },
+    { icon: "GraduationCap", label: "Training", path: "/training-lms", badge: 0, description: "Maritime courses, STCW certifications & safety training", modes: ["VESSEL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance & documentation" },
+    ]},
   ],
 
   PORT_MASTER: [
@@ -2125,7 +2223,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       { icon: "CreditCard", label: "TWIC", path: "/port/security/twic", badge: 0 },
     ]},
     { icon: "AlertTriangle", label: "Safety", path: "/port/safety", badge: 0, description: "Port safety management", modes: ["VESSEL"] },
-    { icon: "DollarSign", label: "Financial", path: "/port/financial", badge: 0, description: "Port charges & billing", modes: ["VESSEL"] },
+    { icon: "DollarSign", label: "Maritime Billing", path: "/port/financial", badge: 0, description: "Port charges & billing", modes: ["VESSEL"] },
+    { icon: "GraduationCap", label: "Training", path: "/training-lms", badge: 0, description: "Maritime courses, STCW certifications & safety training", modes: ["VESSEL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance & documentation" },
+    ]},
   ],
 
   SHIP_CAPTAIN: [
@@ -2156,6 +2267,19 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       { icon: "Droplets", label: "Oil Record", path: "/vessel/logs/oil", badge: 0 },
       { icon: "Trash2", label: "Garbage Record", path: "/vessel/logs/garbage", badge: 0 },
     ]},
+    { icon: "GraduationCap", label: "Training", path: "/training-lms", badge: 0, description: "Maritime courses, STCW certifications & safety training", modes: ["VESSEL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance & documentation" },
+    ]},
   ],
 
   VESSEL_BROKER: [
@@ -2169,8 +2293,21 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "Building2", label: "Carriers", path: "/vessel/carriers", badge: 0, description: "Shipping line management", modes: ["VESSEL"] },
     { icon: "Users", label: "Customers", path: "/vessel/customers", badge: 0, description: "Customer management", modes: ["VESSEL"] },
     { icon: "FileText", label: "Documents", path: "/vessel/documents", badge: 0, description: "BOLs & documentation", modes: ["VESSEL"] },
-    { icon: "DollarSign", label: "Financial", path: "/vessel/financial", badge: 0, description: "Commissions & margins", modes: ["VESSEL"] },
+    { icon: "DollarSign", label: "Maritime Billing", path: "/vessel/financial", badge: 0, description: "Commissions & margins", modes: ["VESSEL"] },
     { icon: "BarChart3", label: "Reports", path: "/vessel/reports", badge: 0, description: "Analytics & reporting", modes: ["VESSEL"] },
+    { icon: "GraduationCap", label: "Training", path: "/training-lms", badge: 0, description: "Maritime courses, STCW certifications & safety training", modes: ["VESSEL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance & documentation" },
+    ]},
   ],
 
   CUSTOMS_BROKER: [
@@ -2197,9 +2334,22 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       { icon: "Globe", label: "USMCA", path: "/customs/trade/usmca", badge: 0 },
       { icon: "Award", label: "Preferential", path: "/customs/trade/preferential", badge: 0 },
     ]},
-    { icon: "DollarSign", label: "Financial", path: "/customs/financial", badge: 0, description: "Duties, fees & billing", modes: ["VESSEL"] },
+    { icon: "DollarSign", label: "Maritime Billing", path: "/customs/financial", badge: 0, description: "Duties, fees & billing", modes: ["VESSEL"] },
     { icon: "FileText", label: "Documents", path: "/customs/documents", badge: 0, description: "Customs documentation", modes: ["VESSEL"] },
     { icon: "BarChart3", label: "Reports", path: "/customs/reports", badge: 0, description: "Customs analytics", modes: ["VESSEL"] },
+    { icon: "GraduationCap", label: "Training", path: "/training-lms", badge: 0, description: "Maritime courses, STCW certifications & customs compliance training", modes: ["VESSEL"] },
+    { icon: "Truck", label: "The Haul", path: "/the-haul", badge: 0, description: "Digital truck stop — lobby, missions, rewards", children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital community — live chat, active users & community" },
+      { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
+      { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
+      { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
+    ]},
+    { icon: "MoreHorizontal", label: "More", path: "/support", badge: 0, description: "Additional tools & support", children: [
+      { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
+      { icon: "BarChart3", label: "Competitive Intelligence", path: "/competitive-intelligence", badge: 0, description: "Market benchmarking & strategic insights" },
+      { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder & data exports" },
+      { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance & documentation" },
+    ]},
   ],
 
   // Default/fallback menu
@@ -2351,7 +2501,7 @@ export function getRoleDisplayName(role: string | UserRole): string {
     SUPER_ADMIN: 'Super Administrator',
     // V5 Rail roles
     RAIL_SHIPPER: 'Rail Shipper',
-    RAIL_CARRIER: 'Railroad Carrier',
+    RAIL_CATALYST: 'Railroad Carrier',
     RAIL_DISPATCHER: 'Rail Dispatcher',
     RAIL_ENGINEER: 'Rail Engineer',
     RAIL_CONDUCTOR: 'Rail Conductor',

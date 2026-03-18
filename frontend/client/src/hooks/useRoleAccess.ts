@@ -1,39 +1,60 @@
 /**
- * USEROLACCESS HOOK - 12-ROLE SYSTEM
+ * USEROLACCESS HOOK - 24-ROLE SYSTEM
  * TRILLION DOLLAR CODE STANDARD - NO PLACEHOLDERS
- * 
- * Provides role-based access control for all 12 user types:
- * - SHIPPER, CATALYST, BROKER, DRIVER, DISPATCH, ESCORT, TERMINAL_MANAGER,
+ *
+ * Provides role-based access control for all 24 user types:
+ * - Truck: SHIPPER, CATALYST, BROKER, DRIVER, DISPATCH, ESCORT, TERMINAL_MANAGER,
  *   FACTORING, COMPLIANCE_OFFICER, SAFETY_MANAGER, ADMIN, SUPER_ADMIN
+ * - Rail: RAIL_SHIPPER, RAIL_CATALYST, RAIL_DISPATCHER, RAIL_ENGINEER, RAIL_CONDUCTOR, RAIL_BROKER
+ * - Vessel: VESSEL_SHIPPER, VESSEL_OPERATOR, PORT_MASTER, SHIP_CAPTAIN, VESSEL_BROKER, CUSTOMS_BROKER
  */
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
 
-export type UserRole = 
-  | "SHIPPER" 
-  | "CATALYST" 
-  | "BROKER" 
-  | "DRIVER" 
-  | "DISPATCH" 
-  | "ESCORT" 
-  | "TERMINAL_MANAGER" 
+export type UserRole =
+  | "SHIPPER"
+  | "CATALYST"
+  | "BROKER"
+  | "DRIVER"
+  | "DISPATCH"
+  | "ESCORT"
+  | "TERMINAL_MANAGER"
   | "FACTORING"
   | "COMPLIANCE_OFFICER"
   | "SAFETY_MANAGER"
-  | "ADMIN" 
+  | "ADMIN"
   | "SUPER_ADMIN"
+  // V5 Rail roles
+  | "RAIL_SHIPPER"
+  | "RAIL_CATALYST"
+  | "RAIL_DISPATCHER"
+  | "RAIL_ENGINEER"
+  | "RAIL_CONDUCTOR"
+  | "RAIL_BROKER"
+  // V5 Vessel roles
+  | "VESSEL_SHIPPER"
+  | "VESSEL_OPERATOR"
+  | "PORT_MASTER"
+  | "SHIP_CAPTAIN"
+  | "VESSEL_BROKER"
+  | "CUSTOMS_BROKER"
   | "USER"; // Default fallback
 
 interface RoleAccessConfig {
   [page: string]: UserRole[];
 }
 
-// Comprehensive page access configuration for all 12 roles
+// All 24 roles shorthand
+const ALL_ROLES: UserRole[] = ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN", "RAIL_SHIPPER", "RAIL_CATALYST", "RAIL_DISPATCHER", "RAIL_ENGINEER", "RAIL_CONDUCTOR", "RAIL_BROKER", "VESSEL_SHIPPER", "VESSEL_OPERATOR", "PORT_MASTER", "SHIP_CAPTAIN", "VESSEL_BROKER", "CUSTOMS_BROKER"];
+const RAIL_ROLES: UserRole[] = ["RAIL_SHIPPER", "RAIL_CATALYST", "RAIL_DISPATCHER", "RAIL_ENGINEER", "RAIL_CONDUCTOR", "RAIL_BROKER"];
+const VESSEL_ROLES: UserRole[] = ["VESSEL_SHIPPER", "VESSEL_OPERATOR", "PORT_MASTER", "SHIP_CAPTAIN", "VESSEL_BROKER", "CUSTOMS_BROKER"];
+
+// Comprehensive page access configuration for all 24 roles
 const PAGE_ACCESS: RoleAccessConfig = {
-  // Dashboard
-  "/": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  // Dashboard — all roles
+  "/": ALL_ROLES,
   
   // Shipper-specific pages
   "/loads": ["SHIPPER", "CATALYST", "BROKER", "ADMIN", "SUPER_ADMIN"],
@@ -127,14 +148,55 @@ const PAGE_ACCESS: RoleAccessConfig = {
   "/incidents": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/accident-report": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
 
-  // Shared pages
-  "/messages": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
-  "/payments": ["SHIPPER", "CATALYST", "BROKER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/wallet": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
-  "/company": ["SHIPPER", "CATALYST", "BROKER", "ESCORT", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
-  "/profile": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
-  "/settings": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
-  "/support": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  // V5 Rail pages — all rail roles + admin
+  "/rail/dashboard": [...RAIL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/rail/shipments": [...RAIL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/rail/shipments/create": ["RAIL_SHIPPER", "RAIL_CATALYST", "RAIL_BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/rail/consists": ["RAIL_CATALYST", "RAIL_DISPATCHER", "ADMIN", "SUPER_ADMIN"],
+  "/rail/yards": [...RAIL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/rail/tracking": [...RAIL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/rail/crew": ["RAIL_CATALYST", "RAIL_DISPATCHER", "ADMIN", "SUPER_ADMIN"],
+  "/rail/compliance": [...RAIL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/rail/financial": [...RAIL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/rail/reports": [...RAIL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/rail/assignments": ["RAIL_ENGINEER", "RAIL_CONDUCTOR", "ADMIN", "SUPER_ADMIN"],
+  "/rail/hos": ["RAIL_ENGINEER", "RAIL_CONDUCTOR", "ADMIN", "SUPER_ADMIN"],
+  "/rail/inspections": [...RAIL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/rail/safety": [...RAIL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/rail/marketplace": ["RAIL_BROKER", "ADMIN", "SUPER_ADMIN"],
+
+  // V5 Vessel pages — all vessel roles + admin
+  "/vessel/dashboard": [...VESSEL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/vessel/bookings": [...VESSEL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/vessel/bookings/create": ["VESSEL_SHIPPER", "VESSEL_OPERATOR", "VESSEL_BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/vessel/containers": [...VESSEL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/vessel/ports": [...VESSEL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/vessel/documents": [...VESSEL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/vessel/customs": ["VESSEL_SHIPPER", "CUSTOMS_BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/vessel/financial": [...VESSEL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/vessel/reports": [...VESSEL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/vessel/fleet": ["VESSEL_OPERATOR", "ADMIN", "SUPER_ADMIN"],
+  "/vessel/voyages": ["VESSEL_OPERATOR", "SHIP_CAPTAIN", "ADMIN", "SUPER_ADMIN"],
+  "/vessel/crew": ["VESSEL_OPERATOR", "SHIP_CAPTAIN", "ADMIN", "SUPER_ADMIN"],
+  "/vessel/safety": ["VESSEL_OPERATOR", "SHIP_CAPTAIN", "PORT_MASTER", "ADMIN", "SUPER_ADMIN"],
+  "/vessel/marketplace": ["VESSEL_BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/port/dashboard": ["PORT_MASTER", "ADMIN", "SUPER_ADMIN"],
+  "/port/terminal": ["PORT_MASTER", "ADMIN", "SUPER_ADMIN"],
+  "/port/gate": ["PORT_MASTER", "ADMIN", "SUPER_ADMIN"],
+  "/customs/dashboard": ["CUSTOMS_BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/customs/entries": ["CUSTOMS_BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/customs/isf": ["CUSTOMS_BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/customs/hts": ["CUSTOMS_BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/customs/compliance": ["CUSTOMS_BROKER", "ADMIN", "SUPER_ADMIN"],
+
+  // Shared pages — all 24 roles
+  "/messages": ALL_ROLES,
+  "/payments": ["SHIPPER", "CATALYST", "BROKER", "FACTORING", ...RAIL_ROLES, ...VESSEL_ROLES, "ADMIN", "SUPER_ADMIN"],
+  "/wallet": ALL_ROLES,
+  "/company": ALL_ROLES,
+  "/profile": ALL_ROLES,
+  "/settings": ALL_ROLES,
+  "/support": ALL_ROLES,
   
   // Admin pages
   "/admin": ["ADMIN", "SUPER_ADMIN"],
@@ -255,6 +317,20 @@ export function getRoleHierarchy(role: UserRole): number {
     SHIPPER: 8,
     CATALYST: 9,
     BROKER: 10,
+    // V5 Rail roles
+    RAIL_ENGINEER: 1,
+    RAIL_CONDUCTOR: 2,
+    RAIL_DISPATCHER: 3,
+    RAIL_SHIPPER: 8,
+    RAIL_CATALYST: 9,
+    RAIL_BROKER: 10,
+    // V5 Vessel roles
+    SHIP_CAPTAIN: 2,
+    PORT_MASTER: 4,
+    VESSEL_SHIPPER: 8,
+    VESSEL_OPERATOR: 9,
+    VESSEL_BROKER: 10,
+    CUSTOMS_BROKER: 6,
     ADMIN: 11,
     SUPER_ADMIN: 12,
   };

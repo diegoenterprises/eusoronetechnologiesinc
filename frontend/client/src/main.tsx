@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
+import { toast } from "sonner";
 import App from "./App";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { getLoginUrl } from "./const";
@@ -35,6 +36,7 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
+  toast.error("Session expired. Redirecting to login...");
   window.location.href = getLoginUrl();
 };
 

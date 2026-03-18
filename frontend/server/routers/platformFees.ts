@@ -17,6 +17,7 @@ import {
   promoCodes,
   promoCodeUsage,
   users,
+  settlements,
 } from "../../drizzle/schema";
 
 const feeTypeSchema = z.enum(["percentage", "flat", "tiered", "hybrid"]);
@@ -716,6 +717,87 @@ export const platformFeesRouter = router({
           overrideApplied: override?.overrideType || null,
           discountAmount: totalDiscounts,
         },
+      };
+    }),
+
+  /**
+   * Settlement Reconciliation Report (Investor-Ready)
+   */
+  getReconciliation: protectedProcedure
+    .input(z.object({ startDate: z.string(), endDate: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return null;
+
+      const start = new Date(input.startDate);
+      const end = new Date(input.endDate);
+
+      const [paidIn] = await db.select({
+        total: sql<number>`COALESCE(SUM(CAST(totalShipperCharge AS DECIMAL)),0)`
+      }).from(settlements).where(and(gte(settlements.createdAt, start), lte(settlements.createdAt, end)));
+
+      const [paidOut] = await db.select({
+        total: sql<number>`COALESCE(SUM(CAST(carrierPayment AS DECIMAL)),0)`
+      }).from(settlements).where(and(gte(settlements.createdAt, start), lte(settlements.createdAt, end)));
+
+      const [fees] = await db.select({
+        total: sql<number>`COALESCE(SUM(CAST(feeAmount AS DECIMAL)),0)`,
+        count: sql<number>`COUNT(*)`
+      }).from(platformRevenue).where(and(gte(platformRevenue.processedAt, start), lte(platformRevenue.processedAt, end)));
+
+      const grossMargin = Number(fees?.total || 0);
+      const stripeEstimate = Number(paidIn?.total || 0) * 0.029 + (Number(fees?.count || 0) * 0.30);
+      const variance = grossMargin - (Number(paidIn?.total || 0) - Number(paidOut?.total || 0));
+
+      return {
+        period: { start: input.startDate, end: input.endDate },
+        paidIn: Number(paidIn?.total || 0),
+        paidOut: Number(paidOut?.total || 0),
+        platformFees: grossMargin,
+        stripeEstimate: Math.round(stripeEstimate * 100) / 100,
+        netMargin: Math.round((grossMargin - stripeEstimate) * 100) / 100,
+        marginPercent: Number(paidIn?.total) > 0 ? Math.round(grossMargin / Number(paidIn.total) * 10000) / 100 : 0,
+        transactionCount: Number(fees?.count || 0),
+        variance: Math.round(variance * 100) / 100,
+        varianceAlert: Math.abs(variance) > 1,
+      };
+    }),
+
+  /**
+   * Revenue by Fee Type + Monthly Breakdown (Investor-Ready)
+   */
+  getRevenueByType: protectedProcedure
+    .input(z.object({ months: z.number().default(12) }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const since = new Date(Date.now() - (input?.months || 12) * 30 * 86400000);
+
+      const byType = await db.select({
+        transactionType: platformRevenue.transactionType,
+        totalFees: sql<number>`COALESCE(SUM(CAST(feeAmount AS DECIMAL)),0)`,
+        count: sql<number>`COUNT(*)`,
+      }).from(platformRevenue).where(gte(platformRevenue.processedAt, since))
+        .groupBy(platformRevenue.transactionType);
+
+      const byMonth = await db.select({
+        month: sql<string>`DATE_FORMAT(processedAt, '%Y-%m')`,
+        totalFees: sql<number>`COALESCE(SUM(CAST(feeAmount AS DECIMAL)),0)`,
+        count: sql<number>`COUNT(*)`,
+      }).from(platformRevenue).where(gte(platformRevenue.processedAt, since))
+        .groupBy(sql`DATE_FORMAT(processedAt, '%Y-%m')`)
+        .orderBy(sql`DATE_FORMAT(processedAt, '%Y-%m')`);
+
+      const [grand] = await db.select({
+        fees: sql<number>`COALESCE(SUM(CAST(feeAmount AS DECIMAL)),0)`,
+        gross: sql<number>`COALESCE(SUM(CAST(grossAmount AS DECIMAL)),0)`,
+      }).from(platformRevenue).where(gte(platformRevenue.processedAt, since));
+
+      return {
+        byType, byMonth,
+        grandTotal: Number(grand?.fees || 0),
+        totalGrossVolume: Number(grand?.gross || 0),
+        effectiveFeeRate: Number(grand?.gross) > 0 ? Math.round(Number(grand.fees) / Number(grand.gross) * 10000) / 100 : 0,
       };
     }),
 

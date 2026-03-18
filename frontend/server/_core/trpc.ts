@@ -27,7 +27,7 @@ export const ROLES = {
   SAFETY_MANAGER: 'SAFETY_MANAGER',
   // RAIL (6)
   RAIL_SHIPPER: 'RAIL_SHIPPER',
-  RAIL_CARRIER: 'RAIL_CARRIER',
+  RAIL_CATALYST: 'RAIL_CATALYST',
   RAIL_DISPATCHER: 'RAIL_DISPATCHER',
   RAIL_ENGINEER: 'RAIL_ENGINEER',
   RAIL_CONDUCTOR: 'RAIL_CONDUCTOR',
@@ -164,7 +164,7 @@ export const complianceSafetyProcedure = roleProcedure(ROLES.COMPLIANCE_OFFICER,
 
 // RAIL role procedures
 export const railShipperProcedure = roleProcedure(ROLES.RAIL_SHIPPER);
-export const railCarrierProcedure = roleProcedure(ROLES.RAIL_CARRIER);
+export const railCarrierProcedure = roleProcedure(ROLES.RAIL_CATALYST);
 export const railDispatcherProcedure = roleProcedure(ROLES.RAIL_DISPATCHER);
 export const railEngineerProcedure = roleProcedure(ROLES.RAIL_ENGINEER);
 export const railConductorProcedure = roleProcedure(ROLES.RAIL_CONDUCTOR);

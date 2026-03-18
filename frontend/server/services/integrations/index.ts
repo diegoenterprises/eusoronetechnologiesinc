@@ -15,6 +15,12 @@ import { GenscapeService } from "./GenscapeService";
 import { BuckeyeTASService } from "./BuckeyeTASService";
 import { FMCSAService } from "./FMCSAService";
 import { DearmanService } from "./DearmanService";
+import { RailincService } from "./RailincService";
+import { FRAService } from "./FRAService";
+import { ClassIRailroadService } from "./ClassIRailroadService";
+import { VizionRailService } from "./VizionRailService";
+import { CloudMoyoCrewService } from "./CloudMoyoCrewService";
+import { RailRateService } from "./RailRateService";
 
 const serviceRegistry: Record<string, new () => BaseIntegrationService> = {
   canopy_connect: CanopyConnectService,
@@ -31,6 +37,16 @@ const serviceRegistry: Record<string, new () => BaseIntegrationService> = {
   dearman: DearmanService,
 };
 
+// Standalone rail integration services (not BaseIntegrationService subclasses)
+const railServiceRegistry: Record<string, { getInstance: () => any }> = {
+  railinc:           { getInstance: () => new RailincService() },
+  fra:               { getInstance: () => new FRAService() },
+  class_i_railroad:  { getInstance: () => new ClassIRailroadService() },
+  vizion_rail:       { getInstance: () => new VizionRailService() },
+  cloudmoyo_crew:    { getInstance: () => new CloudMoyoCrewService() },
+  rail_rates:        { getInstance: () => new RailRateService() },
+};
+
 /**
  * Get integration service by provider slug
  */
@@ -44,17 +60,29 @@ export function getIntegrationService(providerSlug: string): BaseIntegrationServ
 }
 
 /**
+ * Get standalone rail integration service by provider slug
+ */
+export function getRailIntegrationService(providerSlug: string): any | null {
+  const entry = railServiceRegistry[providerSlug];
+  if (!entry) {
+    logger.warn(`[Integrations] No rail service implementation for provider: ${providerSlug}`);
+    return null;
+  }
+  return entry.getInstance();
+}
+
+/**
  * Check if a provider has a service implementation
  */
 export function hasServiceImplementation(providerSlug: string): boolean {
-  return providerSlug in serviceRegistry;
+  return providerSlug in serviceRegistry || providerSlug in railServiceRegistry;
 }
 
 /**
  * Get list of implemented provider slugs
  */
 export function getImplementedProviders(): string[] {
-  return Object.keys(serviceRegistry);
+  return [...Object.keys(serviceRegistry), ...Object.keys(railServiceRegistry)];
 }
 
 export { BaseIntegrationService } from "./BaseIntegrationService";
@@ -68,3 +96,9 @@ export { GenscapeService, genscapeService, GENSCAPE_ENDPOINTS } from "./Genscape
 export { BuckeyeTASService, buckeyeTASService, BUCKEYE_ENDPOINTS } from "./BuckeyeTASService";
 export { FMCSAService, fmcsaService, FMCSA_ENDPOINTS } from "./FMCSAService";
 export { DearmanService, dearmanService, DEARMAN_ENDPOINTS } from "./DearmanService";
+export { RailincService, railincService, RAILINC_ENDPOINTS } from "./RailincService";
+export { FRAService, fraService, FRA_ENDPOINTS } from "./FRAService";
+export { ClassIRailroadService, classIRailroadService, CLASS_I_ENDPOINTS } from "./ClassIRailroadService";
+export { VizionRailService, vizionRailService, VIZION_ENDPOINTS } from "./VizionRailService";
+export { CloudMoyoCrewService, cloudMoyoCrewService, CLOUDMOYO_ENDPOINTS } from "./CloudMoyoCrewService";
+export { RailRateService, railRateService, RAIL_RATE_ENDPOINTS } from "./RailRateService";

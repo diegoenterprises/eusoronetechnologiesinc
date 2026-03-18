@@ -60,7 +60,7 @@ export const users = mysqlTable(
       "SUPER_ADMIN",
       // RAIL ROLES (6)
       "RAIL_SHIPPER",
-      "RAIL_CARRIER",
+      "RAIL_CATALYST",
       "RAIL_DISPATCHER",
       "RAIL_ENGINEER",
       "RAIL_CONDUCTOR",
@@ -239,6 +239,10 @@ export const vehicles = mysqlTable(
       .notNull(),
     nextMaintenanceDate: timestamp("nextMaintenanceDate"),
     nextInspectionDate: timestamp("nextInspectionDate"),
+    annualDotInspectionDate: timestamp("annualDotInspectionDate"),
+    annualDotInspectionExpiry: timestamp("annualDotInspectionExpiry"),
+    outOfService: boolean("outOfService").default(false),
+    outOfServiceReason: varchar("outOfServiceReason", { length: 500 }),
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -368,9 +372,14 @@ export const loads = mysqlTable(
     previousState: varchar("previous_state", { length: 30 }),
     requiresEscort: boolean("requiresEscort").default(false).notNull(),
     escortCount: int("escortCount").default(0).notNull(),
+    // V8: Denormalized state columns for indexed filtering (avoids JSON parsing on load board queries)
+    originState: varchar("originState", { length: 2 }),
+    destState: varchar("destState", { length: 2 }),
     // WS-P0-020R: Double-brokering prevention
     originalShipperId: int("originalShipperId"),
     brokerChainDepth: int("brokerChainDepth").default(0).notNull(),
+    // V9: Optimistic locking for concurrent driver assignment
+    version: int("version").default(1).notNull(),
   },
   (table) => ({
     shipperIdx: index("load_shipper_idx").on(table.shipperId),
@@ -381,6 +390,10 @@ export const loads = mysqlTable(
     pickupDateIdx: index("pickup_date_idx").on(table.pickupDate),
     originTerminalIdx: index("load_origin_terminal_idx").on(table.originTerminalId),
     destTerminalIdx: index("load_dest_terminal_idx").on(table.destinationTerminalId),
+    shipperStatusIdx: index("load_shipper_status_idx").on(table.shipperId, table.status),
+    createdAtIdx: index("load_created_at_idx").on(table.createdAt),
+    originStateIdx: index("load_origin_state_idx").on(table.originState),
+    destStateIdx: index("load_dest_state_idx").on(table.destState),
   })
 );
 
@@ -691,6 +704,7 @@ export const settlements = mysqlTable(
     loadIdx: unique("idx_settlement_load").on(table.loadId),
     carrierIdx: index("idx_settlement_carrier").on(table.carrierId),
     statusIdx: index("idx_settlement_status").on(table.status),
+    createdAtIdx: index("settlement_created_at_idx").on(table.createdAt),
   })
 );
 
@@ -1682,6 +1696,7 @@ export const wallets = mysqlTable(
     lastWithdrawalAt: timestamp("lastWithdrawalAt"),
     totalReceived: decimal("totalReceived", { precision: 14, scale: 2 }).default("0"),
     totalSpent: decimal("totalSpent", { precision: 14, scale: 2 }).default("0"),
+    carrierDebt: decimal("carrierDebt", { precision: 12, scale: 2 }).default("0"),
     isDefault: boolean("isDefault").default(false),
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1722,6 +1737,7 @@ export const walletTransactions = mysqlTable(
     typeIdx: index("wallet_transaction_type_idx").on(table.type),
     statusIdx: index("wallet_transaction_status_idx").on(table.status),
     createdAtIdx: index("wallet_transaction_created_idx").on(table.createdAt),
+    walletCreatedIdx: index("wallet_tx_wallet_created_idx").on(table.walletId, table.createdAt),
   })
 );
 
@@ -5513,6 +5529,7 @@ export const locationBreadcrumbs = mysqlTable(
     driverTsIdx: index("breadcrumb_driver_ts_idx").on(table.driverId, table.serverTimestamp),
     vehicleTsIdx: index("breadcrumb_vehicle_ts_idx").on(table.vehicleId, table.serverTimestamp),
     loadStateIdx: index("breadcrumb_state_idx").on(table.loadState),
+    driverTimestampIdx: index("loc_driver_timestamp_idx").on(table.driverId, table.deviceTimestamp),
   })
 );
 
@@ -9329,19 +9346,19 @@ export const railClaims = mysqlTable("rail_claims", {
 
 export const ports = mysqlTable("ports", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
   unlocode: varchar("unlocode", { length: 10 }).unique(),
-  city: varchar("city", { length: 100 }),
-  state: varchar("state", { length: 50 }),
-  country: mysqlEnum("country", ["US", "CA", "MX"]).default("US"),
+  city: varchar("city", { length: 128 }),
+  state: varchar("state", { length: 64 }),
+  country: varchar("country", { length: 3 }).default("US"),
   coordinates: json("coordinates").$type<{ lat: number; lng: number }>(),
   portType: mysqlEnum("portType", ["seaport", "river_port", "lake_port", "inland_port", "container_terminal"]),
   maxDraft: decimal("maxDraft", { precision: 6, scale: 2 }),
   totalBerths: int("totalBerths"),
   containerCapacityTEU: int("containerCapacityTEU"),
-  hasCranes: boolean("hasCranes").default(true),
+  hasCranes: boolean("hasCranes").default(false),
   hasRailAccess: boolean("hasRailAccess").default(false),
-  customsOffice: boolean("customsOffice").default(true),
+  customsOffice: varchar("customsOffice", { length: 255 }),
   ftzNumber: varchar("ftzNumber", { length: 20 }),
   operatingAuthority: varchar("operatingAuthority", { length: 100 }),
   website: varchar("website", { length: 255 }),
@@ -9872,6 +9889,62 @@ export const intermodalContainers = mysqlTable("intermodal_containers", {
   statusIdx: index("imc_status_idx").on(table.status),
 }));
 
+// ═══ Developer Portal Tables ═══
+export const developerApiKeys = mysqlTable("developer_api_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  visibleId: varchar("visibleId", { length: 50 }).notNull(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  keyHash: varchar("keyHash", { length: 255 }).notNull(),
+  keyPrefix: varchar("keyPrefix", { length: 12 }).notNull(),
+  keySuffix: varchar("keySuffix", { length: 8 }).notNull(),
+  scopes: json("scopes").$type<string[]>().notNull(),
+  status: mysqlEnum("status", ["active", "revoked", "expired"]).default("active").notNull(),
+  expiresAt: timestamp("expiresAt"),
+  lastUsedAt: timestamp("lastUsedAt"),
+  requestCount: int("requestCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  userIdx: index("dak_user_idx").on(table.userId),
+  statusIdx: index("dak_status_idx").on(table.status),
+  visibleIdx: uniqueIndex("dak_visible_idx").on(table.visibleId),
+}));
+
+export const developerWebhooks = mysqlTable("developer_webhooks", {
+  id: int("id").autoincrement().primaryKey(),
+  visibleId: varchar("visibleId", { length: 50 }).notNull(),
+  userId: int("userId").notNull(),
+  url: varchar("url", { length: 2048 }).notNull(),
+  events: json("events").$type<string[]>().notNull(),
+  secretHash: varchar("secretHash", { length: 255 }),
+  status: mysqlEnum("status", ["active", "paused", "disabled"]).default("active").notNull(),
+  deliveryRate: int("deliveryRate").default(100),
+  lastDeliveryAt: timestamp("lastDeliveryAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  userIdx: index("dwh_user_idx").on(table.userId),
+  statusIdx: index("dwh_status_idx").on(table.status),
+  visibleIdx: uniqueIndex("dwh_visible_idx").on(table.visibleId),
+}));
+
+// ============================================================================
+// V8: PRE-AGGREGATED DASHBOARD STATS CACHE
+// Reduces dashboard query load from O(8n) to O(1) per user
+// ============================================================================
+
+export const dashboardStatsCache = mysqlTable("dashboard_stats_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  role: varchar("role", { length: 30 }).notNull(),
+  statsJson: json("statsJson").$type<Record<string, any>>().notNull(),
+  computedAt: timestamp("computedAt").defaultNow().notNull(),
+}, (table) => ({
+  userRoleIdx: uniqueIndex("stats_cache_user_role").on(table.userId, table.role),
+  computedIdx: index("stats_cache_computed").on(table.computedAt),
+}));
+
 export const intermodalChassisTracking = mysqlTable("intermodal_chassis_tracking", {
   id: int("id").autoincrement().primaryKey(),
   chassisNumber: varchar("chassisNumber", { length: 20 }).notNull(),
@@ -9888,4 +9961,27 @@ export const intermodalChassisTracking = mysqlTable("intermodal_chassis_tracking
   chassisIdx: index("ict_chassis_idx").on(table.chassisNumber),
   statusIdx: index("ict_status_idx").on(table.status),
   poolIdx: index("ict_pool_idx").on(table.chassisPool),
+}));
+
+// ============================================================================
+// V9: PAYMENT QUEUE — Stripe outage resilience with exponential backoff
+// ============================================================================
+
+export const paymentQueue = mysqlTable("payment_queue", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  shipperId: int("shipperId").notNull(),
+  carrierId: int("carrierId").notNull(),
+  description: varchar("description", { length: 500 }),
+  status: mysqlEnum("status", ["queued", "processing", "completed", "failed"]).default("queued").notNull(),
+  attempts: int("attempts").default(0).notNull(),
+  maxAttempts: int("maxAttempts").default(5).notNull(),
+  nextRetryAt: timestamp("nextRetryAt"),
+  lastError: text("lastError"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow(),
+}, (table) => ({
+  statusRetryIdx: index("pq_status_retry").on(table.status, table.nextRetryAt),
+  loadIdx: index("pq_load").on(table.loadId),
 }));

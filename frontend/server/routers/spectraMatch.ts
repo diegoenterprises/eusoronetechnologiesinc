@@ -27,6 +27,7 @@ import {
   type CrudeOilSpec, type MatchResult, type MatchInput,
 } from "../_core/crudeOilSpecsDB";
 import { unsafeCast } from "../_core/types/unsafe";
+import { getDestinationIntelligence, findOptimalDestinations, type ProductSpec } from "../services/spectraDestinationIntelligence";
 
 export const spectraMatchRouter = router({
   // Identify crude oil origin based on parameters — HYBRID: Static + ESANG AI
@@ -661,6 +662,180 @@ export const spectraMatchRouter = router({
       } catch (error) {
         logger.error("[SpectraMatch] getProductMarketContext error:", error);
         return null;
+      }
+    }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // SPECTRA-MATCH™ DESTINATION INTELLIGENCE
+  // "Where Should My Product Go?" Engine
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * Find optimal destinations for an identified product.
+   * Returns ranked refineries, terminals, ports, and pipeline routes
+   * that can accept, process, or blend the product.
+   *
+   * Used by: ALL qualifying roles — SHIPPER, CATALYST, VESSEL_SHIPPER,
+   * VESSEL_OPERATOR, RAIL_SHIPPER, RAIL_CATALYST, TERMINAL_MANAGER,
+   * BROKER, VESSEL_BROKER, RAIL_BROKER, CUSTOMS_BROKER
+   */
+  getDestinationIntelligence: protectedProcedure
+    .input(z.object({
+      productName: z.string(),
+      category: z.enum(['crude', 'refined', 'lpg', 'chemical']).default('crude'),
+      apiGravity: z.number().optional(),
+      sulfurContent: z.number().optional(),
+      bsw: z.number().optional(),
+      rvp: z.number().optional(),
+      viscosity: z.number().optional(),
+      tan: z.number().optional(),
+      pourPoint: z.number().optional(),
+      flashPoint: z.number().optional(),
+      hazmatClass: z.string().optional(),
+      sourceBasin: z.string().optional(),
+      country: z.string().optional(),
+      // Options
+      maxResults: z.number().default(25),
+      regionFilter: z.string().optional(), // 'US', 'GLOBAL', country code
+      facilityTypes: z.array(z.string()).optional(),
+      transportModes: z.array(z.string()).optional(),
+      originLat: z.number().optional(),
+      originLng: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const spec: ProductSpec = {
+          productName: input.productName,
+          category: input.category,
+          apiGravity: input.apiGravity,
+          sulfurContent: input.sulfurContent,
+          bsw: input.bsw,
+          rvp: input.rvp,
+          viscosity: input.viscosity,
+          tan: input.tan,
+          pourPoint: input.pourPoint,
+          flashPoint: input.flashPoint,
+          hazmatClass: input.hazmatClass,
+          sourceBasin: input.sourceBasin,
+          country: input.country,
+        };
+
+        return await getDestinationIntelligence(spec, {
+          maxResults: input.maxResults,
+          regionFilter: input.regionFilter,
+          facilityTypes: input.facilityTypes,
+          transportModes: input.transportModes,
+          originLat: input.originLat,
+          originLng: input.originLng,
+        });
+      } catch (error) {
+        logger.error("[SpectraMatch] getDestinationIntelligence error:", error);
+        return {
+          product: { productName: input.productName, category: input.category },
+          totalMatches: 0,
+          topDestinations: [],
+          byRegion: {},
+          blendingInsights: [],
+          pipelineRoutes: [],
+          arbitrageOpportunities: [],
+          generatedAt: new Date().toISOString(),
+        };
+      }
+    }),
+
+  /**
+   * Quick destination check — after SPECTRA-MATCH identification,
+   * immediately suggest top 5 destinations for the identified product.
+   * Called automatically after a successful identify() call.
+   */
+  quickDestinationMatch: protectedProcedure
+    .input(z.object({
+      productName: z.string(),
+      apiGravity: z.number().optional(),
+      sulfurContent: z.number().optional(),
+      hazmatClass: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const result = await findOptimalDestinations({
+          productName: input.productName,
+          category: 'crude',
+          apiGravity: input.apiGravity,
+          sulfurContent: input.sulfurContent,
+          hazmatClass: input.hazmatClass,
+        }, { maxResults: 5 });
+
+        return {
+          topDestinations: result.topDestinations,
+          pipelineRoutes: result.pipelineRoutes.filter(p => p.acceptsProduct).slice(0, 3),
+          blendingInsights: result.blendingInsights.slice(0, 2),
+          totalMatches: result.totalMatches,
+        };
+      } catch (error) {
+        logger.error("[SpectraMatch] quickDestinationMatch error:", error);
+        return { topDestinations: [], pipelineRoutes: [], blendingInsights: [], totalMatches: 0 };
+      }
+    }),
+
+  /**
+   * Get pipeline compatibility for a product.
+   * Shows which major pipelines can transport this product and which can't.
+   */
+  getPipelineCompatibility: protectedProcedure
+    .input(z.object({
+      apiGravity: z.number(),
+      sulfurContent: z.number(),
+      bsw: z.number().optional(),
+      rvp: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const result = await findOptimalDestinations({
+          productName: '',
+          category: 'crude',
+          apiGravity: input.apiGravity,
+          sulfurContent: input.sulfurContent,
+          bsw: input.bsw,
+          rvp: input.rvp,
+        }, { maxResults: 0 });
+
+        return {
+          compatible: result.pipelineRoutes.filter(p => p.acceptsProduct),
+          incompatible: result.pipelineRoutes.filter(p => !p.acceptsProduct),
+          total: result.pipelineRoutes.length,
+        };
+      } catch (error) {
+        logger.error("[SpectraMatch] getPipelineCompatibility error:", error);
+        return { compatible: [], incompatible: [], total: 0 };
+      }
+    }),
+
+  /**
+   * Get blending recommendations for a product.
+   * Shows which other crudes can be blended with this product and why.
+   */
+  getBlendingRecommendations: protectedProcedure
+    .input(z.object({
+      productName: z.string(),
+      apiGravity: z.number().optional(),
+      sulfurContent: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const result = await findOptimalDestinations({
+          productName: input.productName,
+          category: 'crude',
+          apiGravity: input.apiGravity,
+          sulfurContent: input.sulfurContent,
+        }, { maxResults: 0 });
+
+        return {
+          recommendations: result.blendingInsights,
+          crudeType: input.apiGravity && input.apiGravity >= 35 ? 'light' : input.apiGravity && input.apiGravity < 25 ? 'heavy' : 'medium',
+        };
+      } catch (error) {
+        logger.error("[SpectraMatch] getBlendingRecommendations error:", error);
+        return { recommendations: [], crudeType: 'unknown' };
       }
     }),
 });

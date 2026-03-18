@@ -17,6 +17,8 @@ import { recordAuditEvent, AuditCategory, AuditAction } from "./auditService";
 import { apiRateLimiter, authRateLimiter } from "./rateLimiting";
 import { logger } from "./logger";
 
+process.env.TZ = 'UTC';
+
 // FMCSA risk level calculator for AccessValidation carrier safety
 function getRiskLevel(cached: any): "low" | "moderate" | "elevated" | "high" | "unknown" {
   const scores = [
@@ -98,6 +100,36 @@ async function startServer() {
       return res.redirect(301, `https://eusotrip.com${req.originalUrl}`);
     }
     next();
+  });
+
+  // =========================================================================
+  // HEALTH CHECK — no auth required, used by Azure / load balancer
+  // =========================================================================
+  app.get('/health', async (_req, res) => {
+    const checks: Record<string, string> = {};
+
+    // Database
+    try {
+      const { getDb } = await import("../db");
+      const { sql } = await import("drizzle-orm");
+      const db = await getDb();
+      if (db) { await db.execute(sql`SELECT 1`); checks.database = 'ok'; }
+      else checks.database = 'unavailable';
+    } catch { checks.database = 'error'; }
+
+    // Memory
+    const mem = process.memoryUsage();
+    checks.heapMB = String(Math.round(mem.heapUsed / 1048576));
+    checks.rssMB = String(Math.round(mem.rss / 1048576));
+
+    const healthy = checks.database === 'ok';
+    res.status(healthy ? 200 : 503).json({
+      status: healthy ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      uptime: Math.round(process.uptime()),
+      version: process.env.npm_package_version || '1.0.0',
+      checks,
+    });
   });
 
   // Cookie parser — required for session cookie auth (app_session_id)
@@ -317,7 +349,7 @@ async function startServer() {
                   amount: piAmount / 100,
                   loadId: loadIdNum,
                 });
-                if (feeResult.finalFee > 0 && paymentRecordId) {
+                if (paymentRecordId) {
                   await feeCalculator.recordFeeCollection(paymentRecordId, "load_completion", payerIdNum, piAmount / 100, feeResult);
                   logger.info(`[Stripe Webhook] Platform fee recorded: $${feeResult.finalFee.toFixed(2)} (load ${loadIdNum})`);
                 }
@@ -535,6 +567,33 @@ async function startServer() {
           }
           break;
         }
+        case "charge.dispute.created": {
+          const dispute = event.data.object;
+          const disputeAmount = dispute.amount / 100;
+          const paymentIntentId = typeof dispute.payment_intent === 'string' ? dispute.payment_intent : dispute.payment_intent?.id;
+
+          if (paymentIntentId) {
+            try {
+              const _dbDispute = await _getDb();
+              if (_dbDispute) {
+                const { payments: _paymentsDispute, settlements: _settlementsDispute } = await import("../../drizzle/schema");
+                const [payment] = await _dbDispute.select().from(_paymentsDispute).where(_eq(_paymentsDispute.stripePaymentIntentId, paymentIntentId)).limit(1);
+                if (payment?.loadId) {
+                  await _dbDispute.execute(_sql`UPDATE settlements SET status = 'disputed' WHERE loadId = ${payment.loadId}`);
+                  logger.error(`[Chargeback] Dispute ${dispute.id} on load ${payment.loadId} for $${disputeAmount}`);
+                }
+              }
+            } catch (e: any) { logger.error("[Stripe Webhook] Dispute processing error:", e?.message); }
+          }
+          break;
+        }
+
+        case "charge.dispute.closed": {
+          const dispute = event.data.object;
+          logger.info(`[Chargeback] Dispute ${dispute.id} closed with status: ${dispute.status}`);
+          break;
+        }
+
         case "charge.refunded": {
           // Refund issued — debit wallet, reverse platform_revenue, update payment record
           const charge = event.data.object;
@@ -1082,6 +1141,29 @@ async function startServer() {
     });
   }
 
+  // Global error handler — MUST be after all routes
+  app.use((err: any, req: any, res: any, next: any) => {
+    logger.error(`[GlobalError] ${req.method} ${req.path}:`, err.message, err.stack?.slice(0, 500));
+
+    const statusCode = err.statusCode || err.status || 500;
+    res.status(statusCode).json({
+      error: process.env.NODE_ENV === 'production'
+        ? 'An unexpected error occurred. Please try again.'
+        : err.message,
+    });
+  });
+
+  // Catch unhandled promise rejections
+  process.on('unhandledRejection', (reason: any) => {
+    logger.error('[UnhandledRejection]', reason?.message || reason);
+  });
+
+  process.on('uncaughtException', (err: Error) => {
+    logger.error('[UncaughtException]', err.message, err.stack?.slice(0, 500));
+    // Give time for logs to flush, then exit
+    setTimeout(() => process.exit(1), 1000);
+  });
+
   const preferredPort = parseInt(process.env.PORT || "3000");
   // In production (Azure), bind directly to PORT — skip availability check for fast startup
   const port = process.env.NODE_ENV === "production"
@@ -1167,7 +1249,11 @@ async function startServer() {
       try {
         const { cleanOrphanedWalletsOnStartup } = await import("../routers/wallet");
         await cleanOrphanedWalletsOnStartup();
-      } catch (e: any) { logger.warn("[Wallet] Orphan cleanup error:", e?.message); }
+      } catch (e: any) {
+        logger.warn("[Wallet] Orphan cleanup error:", e?.message);
+        const { notifyCronFailure } = await import("../services/cronAlerts");
+        notifyCronFailure("WalletOrphanCleanup", e?.message || String(e)).catch(() => {});
+      }
     }, 12000);
 
     // Auto-seed test accounts for all 11 roles (WS-P0-011)
@@ -1427,10 +1513,81 @@ async function startServer() {
       try {
         const { autoSeedIfEmpty } = await import("../services/facilities/facilityService");
         await autoSeedIfEmpty();
-      } catch (err) {
+      } catch (err: any) {
         logger.error("[FacilityService] Auto-seed startup error:", err);
+        const { notifyCronFailure } = await import("../services/cronAlerts");
+        notifyCronFailure("FacilityAutoSeed", err?.message || String(err)).catch(() => {});
       }
     }, 20000);
+
+    // Auto-seed World Ports database (542 global ports with coordinates + UNLOCODEs)
+    setTimeout(async () => {
+      try {
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (db) {
+          const { ports: _ports } = await import("../../drizzle/schema");
+          const { sql: _sql } = await import("drizzle-orm");
+          const [existing] = await db.select({ count: _sql<number>`count(*)` }).from(_ports);
+          if ((existing?.count || 0) < 100) {
+            logger.info("[WorldPorts] Seeding 542 global ports...");
+            const { seedWorldPorts } = await import("../seeds/worldPorts");
+            const result = await seedWorldPorts();
+            logger.info(`[WorldPorts] Seeded ${result.inserted} ports`);
+          } else {
+            logger.info(`[WorldPorts] ${existing?.count} ports already in database — skipping seed`);
+          }
+        }
+      } catch (err) {
+        logger.warn("[WorldPorts] Auto-seed error:", (err as any)?.message);
+      }
+    }, 22000);
+
+    // Auto-seed Rail Demo Data (7 Class I railroads, 50 yards, 200 railcars, 10 shipments)
+    setTimeout(async () => {
+      try {
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (db) {
+          const { railCarriers: _rc } = await import("../../drizzle/schema");
+          const { sql: _sql } = await import("drizzle-orm");
+          const [existing] = await db.select({ count: _sql<number>`count(*)` }).from(_rc);
+          if ((existing?.count || 0) < 5) {
+            logger.info("[RailSeed] Seeding 7 carriers, 50 yards, 200 railcars, 10 shipments...");
+            const { seedRailDemoData } = await import("../seeds/railDemoData");
+            const result = await seedRailDemoData();
+            logger.info(`[RailSeed] Seeded ${result.carriers} carriers, ${result.yards} yards, ${result.railcars} railcars, ${result.shipments} shipments`);
+          } else {
+            logger.info(`[RailSeed] ${existing?.count} rail carriers already in database — skipping seed`);
+          }
+        }
+      } catch (err) {
+        logger.warn("[RailSeed] Auto-seed error:", (err as any)?.message);
+      }
+    }, 25000);
+
+    // Auto-seed Vessel Demo Data (5 vessels, 50 containers, 10 bookings, 5 BOLs)
+    setTimeout(async () => {
+      try {
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (db) {
+          const { vessels: _v } = await import("../../drizzle/schema");
+          const { sql: _sql } = await import("drizzle-orm");
+          const [existing] = await db.select({ count: _sql<number>`count(*)` }).from(_v);
+          if ((existing?.count || 0) < 3) {
+            logger.info("[VesselSeed] Seeding 5 vessels, 50 containers, 10 bookings, 5 BOLs...");
+            const { seedVesselDemoData } = await import("../seeds/vesselDemoData");
+            const result = await seedVesselDemoData();
+            logger.info(`[VesselSeed] Seeded ${result.vessels} vessels, ${result.containers} containers, ${result.bookings} bookings, ${result.bols} BOLs`);
+          } else {
+            logger.info(`[VesselSeed] ${existing?.count} vessels already in database — skipping seed`);
+          }
+        }
+      } catch (err) {
+        logger.warn("[VesselSeed] Auto-seed error:", (err as any)?.message);
+      }
+    }, 27000);
 
     // AI TURBOCHARGE — Seed knowledge base for RAG + warm embedding candidate cache
     setTimeout(async () => {
@@ -1438,7 +1595,11 @@ async function startServer() {
         const { seedKnowledgeBase } = await import("../services/embeddings/ragRetriever");
         const result = await seedKnowledgeBase();
         logger.info(`[AITurbo] Knowledge base seeded: ${result.indexed} indexed, ${result.errors} errors`);
-      } catch (err) { logger.warn("[AITurbo] Knowledge seeding deferred:", (err as any)?.message?.slice(0, 80)); }
+      } catch (err: any) {
+        logger.warn("[AITurbo] Knowledge seeding deferred:", err?.message?.slice(0, 80));
+        const { notifyCronFailure } = await import("../services/cronAlerts");
+        notifyCronFailure("KnowledgeBaseSeeding", err?.message || String(err)).catch(() => {});
+      }
     }, 25000);
 
     // WS-P1-011: Validate FMCSA API key on startup
@@ -1559,6 +1720,86 @@ async function startServer() {
         logger.error("[HotZones] Failed to start data sync:", err);
       }
     }, 15000);
+
+    // Insurance expiry monitoring — runs daily
+    setTimeout(async () => {
+      try {
+        const { checkExpiringInsurance } = await import("../services/insuranceMonitor");
+        await checkExpiringInsurance();
+        logger.info("[InsuranceMonitor] Initial scan complete, scheduling daily interval");
+        // Run daily
+        setInterval(async () => {
+          try { await checkExpiringInsurance(); } catch {}
+        }, 24 * 60 * 60 * 1000);
+      } catch (err: any) {
+        logger.warn("[InsuranceMonitor] Startup error:", err?.message);
+        const { notifyCronFailure } = await import("../services/cronAlerts");
+        notifyCronFailure("InsuranceMonitor", err?.message || String(err)).catch(() => {});
+      }
+    }, 35000);
+
+    // Data retention — runs daily (federal record retention: 49 CFR 395/396/382/390/391)
+    setTimeout(async () => {
+      try {
+        const { enforceRetentionPolicies } = await import("../services/dataRetention");
+        await enforceRetentionPolicies();
+        logger.info("[DataRetention] Initial sweep complete, scheduling daily interval");
+        setInterval(async () => {
+          try { await enforceRetentionPolicies(); } catch {}
+        }, 24 * 60 * 60 * 1000);
+      } catch (err: any) {
+        logger.warn("[DataRetention] Startup error:", err?.message);
+        const { notifyCronFailure } = await import("../services/cronAlerts");
+        notifyCronFailure("DataRetention", err?.message || String(err)).catch(() => {});
+      }
+    }, 45000);
+
+    // V8: Stats aggregator — refreshes dashboard stats every 5 minutes
+    setTimeout(async () => {
+      try {
+        const { refreshAllStats } = await import("../services/statsAggregator");
+        await refreshAllStats();
+        setInterval(async () => {
+          try { await refreshAllStats(); } catch {}
+        }, 5 * 60 * 1000);
+      } catch (err: any) {
+        logger.warn("[StatsAggregator] Startup error:", err?.message);
+        const { notifyCronFailure } = await import("../services/cronAlerts");
+        notifyCronFailure("StatsAggregator", err?.message || String(err)).catch(() => {});
+      }
+    }, 40000);
+
+    // V9: Stale data cleanup — runs daily
+    setTimeout(async () => {
+      try {
+        const { cleanupStaleData } = await import("../services/staleDataCleanup");
+        await cleanupStaleData();
+        setInterval(async () => {
+          try { await cleanupStaleData(); } catch {}
+        }, 24 * 60 * 60 * 1000);
+      } catch (err) { logger.warn("[StaleCleanup] Startup error:", (err as any)?.message); }
+    }, 50000);
+
+    // V9: Database maintenance — runs weekly
+    setTimeout(async () => {
+      try {
+        const { runDatabaseMaintenance } = await import("../services/dbMaintenance");
+        // Run weekly (every 7 days)
+        setInterval(async () => {
+          try { await runDatabaseMaintenance(); } catch {}
+        }, 7 * 24 * 60 * 60 * 1000);
+      } catch (err) { logger.warn("[DBMaintenance] Startup error:", (err as any)?.message); }
+    }, 55000);
+
+    // V9: Payment queue processor — runs every 60 seconds
+    setTimeout(async () => {
+      try {
+        const { processPaymentQueue } = await import("../services/paymentQueue");
+        setInterval(async () => {
+          try { await processPaymentQueue(); } catch {}
+        }, 60 * 1000);
+      } catch (err) { logger.warn("[PaymentQueue] Startup error:", (err as any)?.message); }
+    }, 60000);
   });
 }
 

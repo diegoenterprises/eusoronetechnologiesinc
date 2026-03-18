@@ -195,7 +195,7 @@ async function seedRailCourses(db: any) {
       moduleCount: 3,
       isMandatory: true,
       mandatoryForRoles: [
-        "RAIL_SHIPPER", "RAIL_CARRIER", "RAIL_DISPATCHER",
+        "RAIL_SHIPPER", "RAIL_CATALYST", "RAIL_DISPATCHER",
         "RAIL_ENGINEER", "RAIL_CONDUCTOR", "RAIL_BROKER",
       ],
       renewalIntervalMonths: 24,

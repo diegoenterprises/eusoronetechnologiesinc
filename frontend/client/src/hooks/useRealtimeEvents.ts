@@ -8,6 +8,9 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
   WS_EVENTS,
   WS_CHANNELS,
+  RAIL_EVENTS,
+  VESSEL_EVENTS,
+  INTERMODAL_EVENTS,
   WSEventType,
   WSMessage,
   LoadStatusPayload,
@@ -23,6 +26,14 @@ import {
   DispatchPayload,
   FinancialPayload,
   ZeunPayload,
+  RailShipmentPayload,
+  RailAlertPayload,
+  RailConsistPayload,
+  VesselBookingPayload,
+  VesselPositionPayload,
+  VesselAlertPayload,
+  VesselPortPayload,
+  IntermodalPayload,
 } from '@shared/websocket-events';
 
 // ============================================================================
@@ -286,6 +297,26 @@ class WebSocketManager {
       case 'ADMIN':
       case 'SUPER_ADMIN':
         this.subscribe(WS_CHANNELS.ADMIN_ALERTS);
+        break;
+      case 'RAIL_SHIPPER':
+      case 'RAIL_CATALYST':
+      case 'RAIL_DISPATCHER':
+      case 'RAIL_ENGINEER':
+      case 'RAIL_CONDUCTOR':
+      case 'RAIL_BROKER':
+        this.subscribe(WS_CHANNELS.RAIL_DISPATCH);
+        this.subscribe(WS_CHANNELS.RAIL_ALERTS);
+        this.subscribe(WS_CHANNELS.RAIL_TRACKING);
+        break;
+      case 'VESSEL_SHIPPER':
+      case 'VESSEL_OPERATOR':
+      case 'PORT_MASTER':
+      case 'SHIP_CAPTAIN':
+      case 'VESSEL_BROKER':
+      case 'CUSTOMS_BROKER':
+        this.subscribe(WS_CHANNELS.VESSEL_FLEET);
+        this.subscribe(WS_CHANNELS.VESSEL_CUSTOMS);
+        this.subscribe(WS_CHANNELS.VESSEL_ALERTS);
         break;
     }
 
@@ -857,6 +888,343 @@ export function useSystemAnnouncements() {
   );
 
   return { announcements };
+}
+
+// ============================================================================
+// RAIL OPERATIONS HOOKS (18 events)
+// ============================================================================
+
+export function useRailShipmentTracking(shipmentId: string | null) {
+  const [shipment, setShipment] = useState<RailShipmentPayload | null>(null);
+  const [statusHistory, setStatusHistory] = useState<RailShipmentPayload[]>([]);
+
+  useEffect(() => {
+    if (!shipmentId) return;
+
+    const channel = WS_CHANNELS.RAIL_SHIPMENT(shipmentId);
+    wsManager.subscribe(channel);
+
+    const statusEvents: WSEventType[] = [
+      RAIL_EVENTS.RAIL_SHIPMENT_CREATED,
+      RAIL_EVENTS.RAIL_CAR_ORDERED,
+      RAIL_EVENTS.RAIL_CAR_PLACED,
+      RAIL_EVENTS.RAIL_LOADING_STARTED,
+      RAIL_EVENTS.RAIL_LOADED,
+      RAIL_EVENTS.RAIL_IN_CONSIST,
+      RAIL_EVENTS.RAIL_DEPARTED,
+      RAIL_EVENTS.RAIL_AT_INTERCHANGE,
+      RAIL_EVENTS.RAIL_IN_YARD,
+      RAIL_EVENTS.RAIL_SPOTTED,
+      RAIL_EVENTS.RAIL_UNLOADING,
+      RAIL_EVENTS.RAIL_DELIVERED,
+    ];
+
+    const unsubs = statusEvents.map(evt =>
+      wsManager.on<RailShipmentPayload>(evt, (data) => {
+        if (data.shipmentId === shipmentId) {
+          setShipment(data);
+          setStatusHistory((prev) => [data, ...prev.slice(0, 49)]);
+        }
+      })
+    );
+
+    return () => {
+      unsubs.forEach(u => u());
+      wsManager.unsubscribe(channel);
+    };
+  }, [shipmentId]);
+
+  return { shipment, statusHistory };
+}
+
+export function useRailAlerts() {
+  const [alerts, setAlerts] = useState<RailAlertPayload[]>([]);
+  const [criticalCount, setCriticalCount] = useState(0);
+
+  const alertEvents: WSEventType[] = [
+    RAIL_EVENTS.RAIL_DERAILMENT_ALERT,
+    RAIL_EVENTS.RAIL_HAZMAT_ALERT,
+    RAIL_EVENTS.RAIL_CREW_HOS_WARNING,
+    RAIL_EVENTS.RAIL_DEMURRAGE_START,
+  ];
+
+  alertEvents.forEach(evt => {
+    useWebSocketEvent<RailAlertPayload>(
+      evt,
+      useCallback((data) => {
+        setAlerts((prev) => [data, ...prev.slice(0, 49)]);
+        if (data.severity === 'critical' || data.severity === 'emergency') {
+          setCriticalCount((prev) => prev + 1);
+        }
+      }, [])
+    );
+  });
+
+  return { alerts, criticalCount };
+}
+
+export function useRailConsistTracking() {
+  const [consists, setConsists] = useState<Map<string, RailConsistPayload>>(new Map());
+
+  useWebSocketEvent<RailConsistPayload>(
+    RAIL_EVENTS.RAIL_CONSIST_UPDATE,
+    useCallback((data) => {
+      setConsists((prev) => {
+        const next = new Map(prev);
+        next.set(data.consistId, data);
+        return next;
+      });
+    }, [])
+  );
+
+  return { consists: Array.from(consists.values()) };
+}
+
+export function useRailTrackingUpdates() {
+  const [positions, setPositions] = useState<Map<string, RailShipmentPayload>>(new Map());
+
+  useWebSocketEvent<RailShipmentPayload>(
+    RAIL_EVENTS.RAIL_TRACKING_UPDATE,
+    useCallback((data) => {
+      setPositions((prev) => {
+        const next = new Map(prev);
+        next.set(data.shipmentId, data);
+        return next;
+      });
+    }, [])
+  );
+
+  return { positions: Array.from(positions.values()) };
+}
+
+export function useRailYardEvents(yardId: string | null) {
+  const [events, setEvents] = useState<RailShipmentPayload[]>([]);
+
+  useEffect(() => {
+    if (!yardId) return;
+
+    const channel = WS_CHANNELS.RAIL_YARD(yardId);
+    wsManager.subscribe(channel);
+
+    const yardEvents: WSEventType[] = [
+      RAIL_EVENTS.RAIL_IN_YARD,
+      RAIL_EVENTS.RAIL_SPOTTED,
+      RAIL_EVENTS.RAIL_CAR_PLACED,
+    ];
+
+    const unsubs = yardEvents.map(evt =>
+      wsManager.on<RailShipmentPayload>(evt, (data) => {
+        setEvents((prev) => [data, ...prev.slice(0, 49)]);
+      })
+    );
+
+    return () => {
+      unsubs.forEach(u => u());
+      wsManager.unsubscribe(channel);
+    };
+  }, [yardId]);
+
+  return { events };
+}
+
+// ============================================================================
+// VESSEL / MARITIME OPERATIONS HOOKS (20 events)
+// ============================================================================
+
+export function useVesselBookingTracking(bookingId: string | null) {
+  const [booking, setBooking] = useState<VesselBookingPayload | null>(null);
+  const [statusHistory, setStatusHistory] = useState<VesselBookingPayload[]>([]);
+
+  useEffect(() => {
+    if (!bookingId) return;
+
+    const channel = WS_CHANNELS.VESSEL_BOOKING(bookingId);
+    wsManager.subscribe(channel);
+
+    const statusEvents: WSEventType[] = [
+      VESSEL_EVENTS.VESSEL_BOOKED,
+      VESSEL_EVENTS.VESSEL_CONTAINER_RELEASED,
+      VESSEL_EVENTS.VESSEL_GATE_IN_CONFIRMED,
+      VESSEL_EVENTS.VESSEL_LOADED,
+      VESSEL_EVENTS.VESSEL_DEPARTED,
+      VESSEL_EVENTS.VESSEL_ARRIVED,
+      VESSEL_EVENTS.VESSEL_DISCHARGED,
+      VESSEL_EVENTS.VESSEL_CUSTOMS_CLEARED,
+      VESSEL_EVENTS.VESSEL_GATE_OUT_CONFIRMED,
+      VESSEL_EVENTS.VESSEL_DELIVERED,
+    ];
+
+    const unsubs = statusEvents.map(evt =>
+      wsManager.on<VesselBookingPayload>(evt, (data) => {
+        if (data.bookingId === bookingId) {
+          setBooking(data);
+          setStatusHistory((prev) => [data, ...prev.slice(0, 49)]);
+        }
+      })
+    );
+
+    return () => {
+      unsubs.forEach(u => u());
+      wsManager.unsubscribe(channel);
+    };
+  }, [bookingId]);
+
+  return { booking, statusHistory };
+}
+
+export function useVesselPositionTracking() {
+  const [vessels, setVessels] = useState<Map<string, VesselPositionPayload>>(new Map());
+
+  useWebSocketEvent<VesselPositionPayload>(
+    VESSEL_EVENTS.VESSEL_POSITION_UPDATE,
+    useCallback((data) => {
+      setVessels((prev) => {
+        const next = new Map(prev);
+        next.set(data.vesselId, data);
+        return next;
+      });
+    }, [])
+  );
+
+  return { vessels: Array.from(vessels.values()) };
+}
+
+export function useVesselAlerts() {
+  const [alerts, setAlerts] = useState<VesselAlertPayload[]>([]);
+  const [criticalCount, setCriticalCount] = useState(0);
+
+  const alertEvents: WSEventType[] = [
+    VESSEL_EVENTS.VESSEL_CUSTOMS_HOLD_ALERT,
+    VESSEL_EVENTS.VESSEL_WEATHER_ALERT,
+    VESSEL_EVENTS.VESSEL_DEMURRAGE_START,
+    VESSEL_EVENTS.VESSEL_DETENTION_START,
+    VESSEL_EVENTS.VESSEL_ISF_DEADLINE_WARNING,
+    VESSEL_EVENTS.VESSEL_COMPLIANCE_ALERT,
+  ];
+
+  alertEvents.forEach(evt => {
+    useWebSocketEvent<VesselAlertPayload>(
+      evt,
+      useCallback((data) => {
+        setAlerts((prev) => [data, ...prev.slice(0, 49)]);
+        if (data.severity === 'critical') {
+          setCriticalCount((prev) => prev + 1);
+        }
+      }, [])
+    );
+  });
+
+  return { alerts, criticalCount };
+}
+
+export function useVesselPortEvents(portId: string | null) {
+  const [events, setEvents] = useState<VesselPortPayload[]>([]);
+
+  useEffect(() => {
+    if (!portId) return;
+
+    const channel = WS_CHANNELS.VESSEL_PORT(portId);
+    wsManager.subscribe(channel);
+
+    const portEvents: WSEventType[] = [
+      VESSEL_EVENTS.VESSEL_BERTH_ASSIGNED,
+      VESSEL_EVENTS.VESSEL_PILOT_DISPATCHED,
+      VESSEL_EVENTS.VESSEL_TUG_DISPATCHED,
+      VESSEL_EVENTS.VESSEL_GATE_IN_CONFIRMED,
+      VESSEL_EVENTS.VESSEL_GATE_OUT_CONFIRMED,
+    ];
+
+    const unsubs = portEvents.map(evt =>
+      wsManager.on<VesselPortPayload>(evt, (data) => {
+        if (data.portId === portId) {
+          setEvents((prev) => [data, ...prev.slice(0, 49)]);
+        }
+      })
+    );
+
+    return () => {
+      unsubs.forEach(u => u());
+      wsManager.unsubscribe(channel);
+    };
+  }, [portId]);
+
+  return { events };
+}
+
+export function useVesselContainerTracking(containerId: string | null) {
+  const [status, setStatus] = useState<VesselBookingPayload | null>(null);
+
+  useEffect(() => {
+    if (!containerId) return;
+
+    const channel = WS_CHANNELS.VESSEL_CONTAINER(containerId);
+    wsManager.subscribe(channel);
+
+    const unsub = wsManager.onChannel<VesselBookingPayload>(channel, (data) => {
+      setStatus(data);
+    });
+
+    return () => {
+      unsub();
+      wsManager.unsubscribe(channel);
+    };
+  }, [containerId]);
+
+  return { status };
+}
+
+// ============================================================================
+// INTERMODAL HOOKS (6 events)
+// ============================================================================
+
+export function useIntermodalShipmentTracking(shipmentId: string | null) {
+  const [shipment, setShipment] = useState<IntermodalPayload | null>(null);
+  const [eventLog, setEventLog] = useState<IntermodalPayload[]>([]);
+
+  useEffect(() => {
+    if (!shipmentId) return;
+
+    const channel = WS_CHANNELS.INTERMODAL_SHIPMENT(shipmentId);
+    wsManager.subscribe(channel);
+
+    const allEvents: WSEventType[] = [
+      INTERMODAL_EVENTS.INTERMODAL_SEGMENT_STARTED,
+      INTERMODAL_EVENTS.INTERMODAL_TRANSFER_INITIATED,
+      INTERMODAL_EVENTS.INTERMODAL_TRANSFER_COMPLETED,
+      INTERMODAL_EVENTS.INTERMODAL_MODE_CHANGE,
+      INTERMODAL_EVENTS.INTERMODAL_DELAY_ALERT,
+      INTERMODAL_EVENTS.INTERMODAL_DELIVERED,
+    ];
+
+    const unsubs = allEvents.map(evt =>
+      wsManager.on<IntermodalPayload>(evt, (data) => {
+        if (data.shipmentId === shipmentId) {
+          setShipment(data);
+          setEventLog((prev) => [data, ...prev.slice(0, 49)]);
+        }
+      })
+    );
+
+    return () => {
+      unsubs.forEach(u => u());
+      wsManager.unsubscribe(channel);
+    };
+  }, [shipmentId]);
+
+  return { shipment, eventLog };
+}
+
+export function useIntermodalAlerts() {
+  const [alerts, setAlerts] = useState<IntermodalPayload[]>([]);
+
+  useWebSocketEvent<IntermodalPayload>(
+    INTERMODAL_EVENTS.INTERMODAL_DELAY_ALERT,
+    useCallback((data) => {
+      setAlerts((prev) => [data, ...prev.slice(0, 49)]);
+    }, [])
+  );
+
+  return { alerts };
 }
 
 // Export manager for direct access if needed

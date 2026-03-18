@@ -342,34 +342,56 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
     }
 
     // ── Carrier insurance minimum guard (at AWARDED→ACCEPTED) ──
+    // FMCSA minimums: Standard $750K liability + $100K cargo; Hazmat $5M liability + $1M cargo
+    case "carrier_insurance_verified":
     case "carrier_insurance_minimum": {
       const insCarrierId = ctx.load?.catalystId || (ctx.data?.carrierId as number | undefined);
       if (!insCarrierId) return guard.errorMessage;
       try {
         const db = await getDb();
         if (!db) return guard.errorMessage;
-        // Check for active liability + cargo insurance
+        // Determine load type to set FMCSA insurance minimums
         const isHazmat = !!ctx.load?.hazmatClass || ctx.load?.cargoType === "hazmat";
         const minLiability = isHazmat ? 5000000 : 750000;
         const minCargo = isHazmat ? 1000000 : 100000;
+        // Query active, non-expired insurance policies for the carrier's company
         const [policies] = await db.execute(sql`
-          SELECT policyType, coverageAmount, expirationDate
+          SELECT policyType, combinedSingleLimit, perOccurrenceLimit, aggregateLimit, cargoLimit, expirationDate
           FROM insurance_policies
           WHERE companyId IN (SELECT companyId FROM users WHERE id = ${insCarrierId})
             AND status = 'active'
             AND expirationDate > NOW()
         `) as unknown as RawQueryResult;
         const rows = policies || [];
-        const liabilityOk = unsafeCast(rows).some((p: RawRow) =>
-          (p.policyType === 'auto_liability' || p.policyType === 'general_liability')
-          && parseFloat(String(p.coverageAmount || "0")) >= minLiability
+        // Check liability coverage — use combinedSingleLimit, fall back to perOccurrenceLimit or aggregateLimit
+        const liabilityOk = unsafeCast(rows).some((p: RawRow) => {
+          if (p.policyType !== 'auto_liability' && p.policyType !== 'general_liability') return false;
+          const coverage = Math.max(
+            parseFloat(String(p.combinedSingleLimit || "0")),
+            parseFloat(String(p.perOccurrenceLimit || "0")),
+            parseFloat(String(p.aggregateLimit || "0"))
+          );
+          return coverage >= minLiability;
+        });
+        // Check cargo coverage — use cargoLimit, fall back to combinedSingleLimit or perOccurrenceLimit
+        const cargoOk = unsafeCast(rows).some((p: RawRow) => {
+          if (p.policyType !== 'cargo' && p.policyType !== 'motor_truck_cargo') return false;
+          const coverage = Math.max(
+            parseFloat(String(p.cargoLimit || "0")),
+            parseFloat(String(p.combinedSingleLimit || "0")),
+            parseFloat(String(p.perOccurrenceLimit || "0"))
+          );
+          return coverage >= minCargo;
+        });
+        // Verify expiration dates are in the future
+        const expiredPolicies = unsafeCast(rows).filter((p: RawRow) =>
+          p.expirationDate && new Date(String(p.expirationDate)) < new Date()
         );
-        const cargoOk = unsafeCast(rows).some((p: RawRow) =>
-          p.policyType === 'cargo'
-          && parseFloat(String(p.coverageAmount || "0")) >= minCargo
-        );
-        if (!liabilityOk) return `Carrier liability insurance below $${minLiability.toLocaleString()} minimum for this load type`;
-        if (!cargoOk) return `Carrier cargo insurance below $${minCargo.toLocaleString()} minimum for this load type`;
+        if (expiredPolicies.length > 0 && rows.length === expiredPolicies.length) {
+          return 'All carrier insurance policies have expired. Active coverage required for load acceptance.';
+        }
+        if (!liabilityOk) return `Carrier liability insurance below $${minLiability.toLocaleString()} FMCSA minimum for ${isHazmat ? 'hazmat' : 'standard'} loads`;
+        if (!cargoOk) return `Carrier cargo insurance below $${minCargo.toLocaleString()} FMCSA minimum for ${isHazmat ? 'hazmat' : 'standard'} loads`;
         return null;
       } catch {
         return guard.errorMessage;
@@ -425,6 +447,30 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
         const endorsements: string = String(driver.cdlEndorsements || "");
         const hasN = endorsements.includes("N") || endorsements.includes("X");
         if (!hasN) return guard.errorMessage;
+        return null;
+      } catch {
+        return guard.errorMessage;
+      }
+    }
+
+    // ── Vehicle DOT inspection + Out-of-Service blocking guard ──
+    case "vehicle_inspection_current": {
+      if (!ctx.load?.vehicleId) return null;
+      try {
+        const db = await getDb();
+        if (!db) return guard.errorMessage;
+        const [vRows] = await db.execute(sql`
+          SELECT outOfService, outOfServiceReason, annualDotInspectionExpiry
+          FROM vehicles WHERE id = ${ctx.load.vehicleId} LIMIT 1
+        `) as unknown as RawQueryResult;
+        const vehicle = (vRows || [])[0];
+        if (!vehicle) return null;
+        if (vehicle.outOfService) {
+          return `Vehicle is out of service: ${vehicle.outOfServiceReason || 'See maintenance records'}`;
+        }
+        if (vehicle.annualDotInspectionExpiry && new Date(String(vehicle.annualDotInspectionExpiry)) < new Date()) {
+          return 'Vehicle annual DOT inspection has expired. Cannot dispatch until renewed.';
+        }
         return null;
       } catch {
         return guard.errorMessage;
@@ -835,6 +881,28 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
         } catch { /* non-critical */ }
       }
       return guard.errorMessage;
+    }
+
+    // ── HOS enforcement at load assignment (Phase 3 — driver_hos_available) ──
+    case "driver_hos_available": {
+      if (!ctx.load?.driverId) return null;
+      try {
+        const { getHOSSummaryWithELD } = await import("../services/hosEngine");
+        const hos = await getHOSSummaryWithELD(ctx.load.driverId);
+        const drivingHoursRemaining = hos?.hoursAvailable?.driving || 0;
+        const estDriveHours = (Number(ctx.load.distance) || 0) / 55; // avg 55 mph
+
+        if (drivingHoursRemaining > 0 && estDriveHours > 0 && drivingHoursRemaining < estDriveHours) {
+          return `Driver has ${Math.floor(drivingHoursRemaining)}h remaining but load requires ~${Math.floor(estDriveHours)}h. HOS violation risk.`;
+        }
+        if (hos?.violations && hos.violations.length > 0) {
+          return `Driver has ${hos.violations.length} active HOS violation(s).`;
+        }
+      } catch {
+        // HOS check failed — allow assignment but log
+        logger.warn(`[Guard] driver_hos_available check failed for driver ${ctx.load.driverId}, allowing assignment`);
+      }
+      return null;
     }
 
     default:
@@ -1479,10 +1547,8 @@ async function executeFinancialEffect(action: string, loadId: number, ctx: any) 
             amount: loadAmount,
             loadId,
           });
-          if (feeResult.finalFee > 0) {
-            await feeCalculator.recordFeeCollection(loadId, "load_completion", load.shipperId || 0, loadAmount, feeResult);
-            logger.info(`[LoadLifecycle] ${action}: $${feeResult.finalFee.toFixed(2)} for load ${loadId}`);
-          }
+          await feeCalculator.recordFeeCollection(loadId, "load_completion", load.shipperId || 0, loadAmount, feeResult);
+          logger.info(`[LoadLifecycle] ${action}: $${feeResult.finalFee.toFixed(2)} for load ${loadId}`);
         }
         break;
       }
@@ -2049,6 +2115,21 @@ export const loadLifecycleRouter = router({
         logger.warn("[LoadLifecycle] Notification dispatch error:", (notifErr as Error).message);
       }
 
+      // Cascade on cancellation
+      if (resolvedTo === 'CANCELLED') {
+        try {
+          // Cancel pending bids
+          await db.execute(sql`UPDATE bids SET status = 'cancelled', updatedAt = NOW() WHERE loadId = ${numericLoadId} AND status IN ('pending','submitted')`);
+          // Deactivate geofences
+          await db.execute(sql`UPDATE geofences SET isActive = false WHERE loadId = ${numericLoadId}`);
+          // Void documents
+          await db.execute(sql`UPDATE documents SET status = 'voided' WHERE loadId = ${numericLoadId} AND type IN ('bol','rate_confirmation')`);
+          logger.info(`[LoadCancel] Cascaded cancellation for load ${numericLoadId}`);
+        } catch (cascadeErr) {
+          logger.warn(`[LoadCancel] Cascade partial failure for load ${numericLoadId}:`, cascadeErr);
+        }
+      }
+
       // If ON_HOLD, save previous state
       if (resolvedTo === "ON_HOLD") {
         try {
@@ -2213,6 +2294,39 @@ export const loadLifecycleRouter = router({
                   },
                 });
               } catch (payErr: any) { logger.warn('[Settlement] Payment record error:', payErr?.message); }
+
+              // ── SHIPPER PAYMENT COLLECTION — Create Stripe PaymentIntent to charge shipper ──
+              try {
+                const { collectShipperPayment } = await import("../stripe/service");
+                // Resolve shipper email and name
+                const [shipperUser] = await _sDb.select({ email: users.email, name: users.name, stripeConnectId: users.stripeConnectId }).from(users).where(eq(users.id, load.shipperId)).limit(1);
+                // Resolve carrier Stripe Connect ID for destination charges
+                let carrierConnectId: string | null = null;
+                if (carrierId) {
+                  const [carrierWallet] = await _sDb.select({ stripeConnectId: wallets.stripeConnectId }).from(wallets).where(eq(wallets.userId, carrierId)).limit(1);
+                  carrierConnectId = carrierWallet?.stripeConnectId || null;
+                }
+                if (shipperUser?.email) {
+                  const piId = await collectShipperPayment({
+                    loadId: numericLoadId,
+                    loadNumber: load.loadNumber || String(numericLoadId),
+                    shipperId: load.shipperId,
+                    shipperEmail: shipperUser.email,
+                    shipperName: shipperUser.name || shipperUser.email,
+                    totalShipperCharge,
+                    platformFee,
+                    carrierStripeConnectId: carrierConnectId,
+                    carrierPayout: carrierPay,
+                  });
+                  if (piId) {
+                    // Update payment record with Stripe PaymentIntent ID
+                    try {
+                      await _sDb.execute(sql`UPDATE payments SET stripePaymentIntentId = ${piId}, status = 'processing' WHERE loadId = ${numericLoadId} AND payerId = ${load.shipperId} AND status = 'pending' ORDER BY id DESC LIMIT 1`);
+                    } catch {}
+                    logger.info(`[Settlement] Stripe PaymentIntent ${piId} created for shipper ${load.shipperId} — Load #${load.loadNumber || numericLoadId}, charge=$${totalShipperCharge.toFixed(2)}`);
+                  }
+                }
+              } catch (stripeErr: any) { logger.warn('[Settlement] Shipper payment collection error (non-blocking):', stripeErr?.message); }
 
               // ── Fix 4: Driver earnings audit record ──
               if (load.driverId) {

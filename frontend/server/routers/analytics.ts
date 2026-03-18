@@ -1012,4 +1012,40 @@ export const analyticsRouter = router({
         }));
       } catch { return []; }
     }),
+
+  /**
+   * User Analytics + Churn Rate (Investor-Ready)
+   */
+  getUserAnalytics: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return null;
+
+    const [total] = await db.select({ count: sql<number>`COUNT(*)` }).from(users);
+    const [active] = await db.select({ count: sql<number>`COUNT(*)` }).from(users)
+      .where(gte(users.updatedAt, new Date(Date.now() - 30 * 86400000)));
+    const [churned] = await db.select({ count: sql<number>`COUNT(*)` }).from(users)
+      .where(and(
+        lte(users.createdAt, new Date(Date.now() - 30 * 86400000)),
+        lte(users.updatedAt, new Date(Date.now() - 30 * 86400000)),
+      ));
+
+    const byRole = await db.select({ role: users.role, count: sql<number>`COUNT(*)` })
+      .from(users).groupBy(users.role);
+
+    const signups = await db.select({
+      week: sql<string>`DATE_FORMAT(createdAt, '%Y-%u')`,
+      count: sql<number>`COUNT(*)`,
+    }).from(users)
+      .where(gte(users.createdAt, new Date(Date.now() - 84 * 86400000)))
+      .groupBy(sql`DATE_FORMAT(createdAt, '%Y-%u')`);
+
+    return {
+      totalUsers: total?.count || 0,
+      activeUsers30d: active?.count || 0,
+      churnedUsers: churned?.count || 0,
+      churnRate: (total?.count || 0) > 0 ? Math.round((churned?.count || 0) / total.count * 10000) / 100 : 0,
+      usersByRole: byRole,
+      weeklySignups: signups,
+    };
+  }),
 });

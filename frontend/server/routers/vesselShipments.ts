@@ -8,6 +8,14 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte, lte, inArray, count } from "drizzle-orm";
 import { vesselProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { marineTrafficService } from "../services/integrations/MarineTrafficService";
+import { inttraService } from "../services/integrations/INTTRAService";
+import { descartesABIService } from "../services/integrations/DescartesABIService";
+import { dtnMarineWeatherService } from "../services/integrations/DTNMarineWeatherService";
+import { oilPriceMarineService } from "../services/integrations/OilPriceMarineService";
+import { avalaraHTSService } from "../services/integrations/AvalaraHTSService";
+import { logger } from "../_core/logger";
+import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 import {
   vesselShipments,
   vessels,
@@ -614,5 +622,325 @@ export const vesselShipmentsRouter = router({
         entries: customs,
         deadline: shipment.etd ? new Date(new Date(shipment.etd).getTime() - 24 * 60 * 60 * 1000) : null,
       };
+    }),
+
+  // 21. getVesselFleet — vessel registry with current positions for map
+  getVesselFleet: vesselProcedure
+    .input(z.object({
+      vesselType: z.string().optional(),
+      status: z.string().optional(),
+      search: z.string().optional(),
+      limit: z.number().default(50),
+      offset: z.number().default(0),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { vessels: [], total: 0 };
+
+      let conditions: any[] = [];
+      if (input.vesselType) conditions.push(eq(vessels.vesselType, input.vesselType as any));
+      if (input.status) conditions.push(eq(vessels.status, input.status as any));
+      if (input.search) conditions.push(sql`(${vessels.name} LIKE ${'%' + input.search + '%'} OR ${vessels.imoNumber} LIKE ${'%' + input.search + '%'})`);
+
+      const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+      const fleet = await db.select().from(vessels).where(where)
+        .orderBy(desc(vessels.updatedAt))
+        .limit(input.limit).offset(input.offset);
+      const [totalResult] = await db.select({ count: count() }).from(vessels).where(where);
+
+      return { vessels: fleet, total: totalResult?.count || 0 };
+    }),
+
+  // 22. getContainerPositions — all containers with locations for map
+  getContainerPositions: vesselProcedure
+    .input(z.object({
+      status: z.string().optional(),
+      limit: z.number().default(100),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { containers: [], total: 0 };
+
+      let conditions: any[] = [];
+      if (input.status) conditions.push(eq(shippingContainers.status, input.status as any));
+
+      const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+      const containers = await db.select().from(shippingContainers).where(where)
+        .orderBy(desc(shippingContainers.updatedAt))
+        .limit(input.limit);
+      const [totalResult] = await db.select({ count: count() }).from(shippingContainers).where(where);
+
+      return { containers, total: totalResult?.count || 0 };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // INTEGRATION-POWERED PROCEDURES — Live External API Data
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * MarineTraffic/Kpler — Live AIS vessel position
+   */
+  liveVesselPosition: vesselProcedure
+    .input(z.object({ imoNumber: z.string() }))
+    .query(async ({ input }) => {
+      const cacheKey = `vessel:ais:${input.imoNumber}`;
+      try {
+        return await lsCacheThrough("WARM", cacheKey, async () => {
+          return await marineTrafficService.getVesselPosition(input.imoNumber);
+        }, 120); // 2min — AIS updates frequently
+      } catch (e) { logger.error("[Vessel] liveVesselPosition error:", e); return null; }
+    }),
+
+  /**
+   * MarineTraffic — Vessel particulars & specs
+   */
+  getVesselParticulars: vesselProcedure
+    .input(z.object({ imoNumber: z.string() }))
+    .query(async ({ input }) => {
+      const cacheKey = `vessel:particulars:${input.imoNumber}`;
+      try {
+        return await lsCacheThrough("WARM", cacheKey, async () => {
+          return await marineTrafficService.getVesselParticulars(input.imoNumber);
+        }, 86400); // 24h — specs don't change
+      } catch (e) { logger.error("[Vessel] getVesselParticulars error:", e); return null; }
+    }),
+
+  /**
+   * MarineTraffic — Port call history
+   */
+  getVesselPortCalls: vesselProcedure
+    .input(z.object({ imoNumber: z.string(), days: z.number().default(30) }))
+    .query(async ({ input }) => {
+      try {
+        return await marineTrafficService.getPortCalls(input.imoNumber, input.days);
+      } catch (e) { logger.error("[Vessel] getVesselPortCalls error:", e); return null; }
+    }),
+
+  /**
+   * MarineTraffic — Vessels in/near port
+   */
+  getVesselsAtPort: vesselProcedure
+    .input(z.object({ portId: z.string() }))
+    .query(async ({ input }) => {
+      const cacheKey = `vessel:port:${input.portId}`;
+      try {
+        return await lsCacheThrough("AGGREGATE", cacheKey, async () => {
+          return await marineTrafficService.getVesselsByPort(input.portId);
+        }, 300);
+      } catch (e) { logger.error("[Vessel] getVesselsAtPort error:", e); return null; }
+    }),
+
+  /**
+   * MarineTraffic — Vessel route (historical track for map plotting)
+   */
+  getVesselTrack: vesselProcedure
+    .input(z.object({ imoNumber: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        return await marineTrafficService.getVesselRoute(input.imoNumber);
+      } catch (e) { logger.error("[Vessel] getVesselTrack error:", e); return null; }
+    }),
+
+  /**
+   * INTTRA/E2open — Search carrier schedules
+   */
+  searchCarrierSchedules: vesselProcedure
+    .input(z.object({
+      originPort: z.string(),
+      destPort: z.string(),
+      departureDate: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const cacheKey = `vessel:schedules:${input.originPort}:${input.destPort}:${input.departureDate}`;
+      try {
+        return await lsCacheThrough("WARM", cacheKey, async () => {
+          return await inttraService.searchSchedules(input.originPort, input.destPort, input.departureDate);
+        }, 900);
+      } catch (e) { logger.error("[Vessel] searchCarrierSchedules error:", e); return null; }
+    }),
+
+  /**
+   * INTTRA/E2open — Get carrier rate quotes
+   */
+  getCarrierRates: vesselProcedure
+    .input(z.object({
+      originPort: z.string(),
+      destPort: z.string(),
+      containerSize: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const cacheKey = `vessel:rates:${input.originPort}:${input.destPort}:${input.containerSize}`;
+      try {
+        return await lsCacheThrough("WARM", cacheKey, async () => {
+          return await inttraService.getCarrierRates(input.originPort, input.destPort, input.containerSize);
+        }, 900);
+      } catch (e) { logger.error("[Vessel] getCarrierRates error:", e); return null; }
+    }),
+
+  /**
+   * INTTRA/E2open — Track shipment across carriers
+   */
+  liveTrackOceanShipment: vesselProcedure
+    .input(z.object({ referenceNumber: z.string() }))
+    .query(async ({ input }) => {
+      const cacheKey = `vessel:inttra:track:${input.referenceNumber}`;
+      try {
+        return await lsCacheThrough("WARM", cacheKey, async () => {
+          return await inttraService.trackShipment(input.referenceNumber);
+        }, 300);
+      } catch (e) { logger.error("[Vessel] liveTrackOceanShipment error:", e); return null; }
+    }),
+
+  /**
+   * Descartes ABI — File ISF (Importer Security Filing 10+2)
+   */
+  fileISF: vesselProcedure
+    .input(z.object({
+      importer: z.string(),
+      seller: z.string(),
+      buyer: z.string(),
+      shipTo: z.string(),
+      containerStuffing: z.string(),
+      consolidator: z.string(),
+      htsNumbers: z.array(z.string()),
+      manufacturer: z.string(),
+      countryOfOrigin: z.string(),
+      vessel: z.string(),
+      voyageNumber: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        return await descartesABIService.fileISF(input);
+      } catch (e) { logger.error("[Vessel] fileISF error:", e); return null; }
+    }),
+
+  /**
+   * Descartes ABI — Get CBP entry status
+   */
+  getCBPEntryStatus: vesselProcedure
+    .input(z.object({ entryNumber: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        return await descartesABIService.getEntryStatus(input.entryNumber);
+      } catch (e) { logger.error("[Vessel] getCBPEntryStatus error:", e); return null; }
+    }),
+
+  /**
+   * Descartes ABI — Get CBP holds & alerts
+   */
+  getCBPAlerts: vesselProcedure
+    .input(z.object({ importerId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        return await descartesABIService.getCBPAlerts(input.importerId);
+      } catch (e) { logger.error("[Vessel] getCBPAlerts error:", e); return null; }
+    }),
+
+  /**
+   * DTN — Marine weather forecast
+   */
+  getMarineWeather: vesselProcedure
+    .input(z.object({ lat: z.number(), lng: z.number() }))
+    .query(async ({ input }) => {
+      const cacheKey = `vessel:weather:${input.lat.toFixed(1)}:${input.lng.toFixed(1)}`;
+      try {
+        return await lsCacheThrough("AGGREGATE", cacheKey, async () => {
+          return await dtnMarineWeatherService.getMarineForecast(input.lat, input.lng);
+        }, 600);
+      } catch (e) { logger.error("[Vessel] getMarineWeather error:", e); return null; }
+    }),
+
+  /**
+   * DTN — Weather along route (for voyage planning)
+   */
+  getRouteWeather: vesselProcedure
+    .input(z.object({ waypoints: z.array(z.object({ lat: z.number(), lng: z.number() })) }))
+    .query(async ({ input }) => {
+      try {
+        return await dtnMarineWeatherService.getRouteWeather(input.waypoints);
+      } catch (e) { logger.error("[Vessel] getRouteWeather error:", e); return null; }
+    }),
+
+  /**
+   * DTN — Port conditions (wind, tide, visibility)
+   */
+  getPortWeather: vesselProcedure
+    .input(z.object({ portId: z.string() }))
+    .query(async ({ input }) => {
+      const cacheKey = `vessel:portweather:${input.portId}`;
+      try {
+        return await lsCacheThrough("AGGREGATE", cacheKey, async () => {
+          return await dtnMarineWeatherService.getPortConditions(input.portId);
+        }, 600);
+      } catch (e) { logger.error("[Vessel] getPortWeather error:", e); return null; }
+    }),
+
+  /**
+   * OilPriceAPI — Bunker fuel prices at port
+   */
+  getBunkerPrices: vesselProcedure
+    .input(z.object({ port: z.string(), fuelTypes: z.array(z.string()).optional() }))
+    .query(async ({ input }) => {
+      const cacheKey = `vessel:bunker:${input.port}`;
+      try {
+        return await lsCacheThrough("AGGREGATE", cacheKey, async () => {
+          return await oilPriceMarineService.getBunkerPrices(input.port, input.fuelTypes);
+        }, 900); // 15min — fuel prices update periodically
+      } catch (e) { logger.error("[Vessel] getBunkerPrices error:", e); return null; }
+    }),
+
+  /**
+   * OilPriceAPI — Global bunker prices (major hubs)
+   */
+  getGlobalBunkerPrices: vesselProcedure
+    .query(async () => {
+      try {
+        return await lsCacheThrough("AGGREGATE", "vessel:bunker:global", async () => {
+          return await oilPriceMarineService.getGlobalBunkerPrices();
+        }, 900);
+      } catch (e) { logger.error("[Vessel] getGlobalBunkerPrices error:", e); return null; }
+    }),
+
+  /**
+   * Avalara — HTS tariff code classification
+   */
+  classifyHTS: vesselProcedure
+    .input(z.object({
+      description: z.string(),
+      countryOfOrigin: z.string().optional(),
+      destinationCountry: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      try {
+        return await avalaraHTSService.classifyProduct(input.description, input.countryOfOrigin, input.destinationCountry);
+      } catch (e) { logger.error("[Vessel] classifyHTS error:", e); return null; }
+    }),
+
+  /**
+   * Avalara — Duty estimate calculator
+   */
+  getDutyEstimate: vesselProcedure
+    .input(z.object({
+      htsCode: z.string(),
+      declaredValue: z.number(),
+      countryOfOrigin: z.string(),
+    }))
+    .query(async ({ input }) => {
+      try {
+        return await avalaraHTSService.getDutyEstimate(input.htsCode, input.declaredValue, input.countryOfOrigin);
+      } catch (e) { logger.error("[Vessel] getDutyEstimate error:", e); return null; }
+    }),
+
+  /**
+   * Avalara — Trade agreement lookup
+   */
+  getTradeAgreements: vesselProcedure
+    .input(z.object({ htsCode: z.string(), originCountry: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        return await avalaraHTSService.getTradeAgreements(input.htsCode, input.originCountry);
+      } catch (e) { logger.error("[Vessel] getTradeAgreements error:", e); return null; }
     }),
 });

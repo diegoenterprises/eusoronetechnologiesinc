@@ -1,13 +1,21 @@
 /**
  * DEVELOPER PORTAL ROUTER (Phase 4 — Task 2.1.1 + 2.1.2)
  * MCP Write Tools, API Key Management, Usage Analytics, Webhook Config
+ * 
+ * API keys and webhooks are persisted to MySQL via Drizzle ORM.
+ * Keys are stored as SHA-256 hashes; the raw key is only shown once on creation.
  */
 import { z } from "zod";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
+import { eq, and } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { developerApiKeys, developerWebhooks } from "../../drizzle/schema";
+import { logger } from "../_core/logger";
 
-const apiKeys: any[] = [];
-const webhooks: any[] = [];
+function hashKey(key: string): string {
+  return createHash("sha256").update(key).digest("hex");
+}
 
 const mcpWriteToolsRouter = router({
   getTools: protectedProcedure.query(() => ([
@@ -41,25 +49,60 @@ const mcpWriteToolsRouter = router({
 });
 
 const apiKeyRouter = router({
-  list: protectedProcedure.query(() => apiKeys.map(k => ({ ...k, key: k.key.slice(0, 8) + "..." + k.key.slice(-4) }))),
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const userId = ctx.user?.id || 0;
+    const rows = await db.select().from(developerApiKeys).where(eq(developerApiKeys.userId, userId));
+    return rows.map(k => ({
+      id: k.visibleId,
+      name: k.name,
+      key: k.keyPrefix + "..." + k.keySuffix,
+      scopes: k.scopes,
+      status: k.status,
+      createdAt: k.createdAt?.toISOString() || "",
+      expiresAt: k.expiresAt?.toISOString() || null,
+      lastUsed: k.lastUsedAt?.toISOString() || null,
+      requestCount: k.requestCount,
+    }));
+  }),
   create: protectedProcedure
     .input(z.object({ name: z.string(), scopes: z.array(z.string()), expiresInDays: z.number().default(365) }))
-    .mutation(({ input }) => {
-      const key = `euso_${randomBytes(16).toString('hex')}`;
-      const entry = { id: `AK-${Date.now()}`, name: input.name, key, scopes: input.scopes, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + input.expiresInDays * 86400000).toISOString(), lastUsed: null, requestCount: 0, status: "active" };
-      apiKeys.push(entry);
-      return { success: true, apiKey: key, id: entry.id, expiresAt: entry.expiresAt, warning: "Store this key securely — it will not be shown again." };
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable" };
+      const userId = ctx.user?.id || 0;
+      const rawKey = `euso_${randomBytes(24).toString('hex')}`;
+      const visibleId = `AK-${Date.now()}`;
+      const expiresAt = new Date(Date.now() + input.expiresInDays * 86400000);
+      await db.insert(developerApiKeys).values({
+        visibleId,
+        userId,
+        name: input.name,
+        keyHash: hashKey(rawKey),
+        keyPrefix: rawKey.slice(0, 12),
+        keySuffix: rawKey.slice(-4),
+        scopes: input.scopes,
+        status: "active",
+        expiresAt,
+      });
+      logger.info(`[DevPortal] API key created: ${visibleId} for user ${userId}`);
+      return { success: true, apiKey: rawKey, id: visibleId, expiresAt: expiresAt.toISOString(), warning: "Store this key securely — it will not be shown again." };
     }),
   revoke: protectedProcedure
     .input(z.object({ keyId: z.string() }))
-    .mutation(({ input }) => {
-      const idx = apiKeys.findIndex(k => k.id === input.keyId);
-      if (idx >= 0) { apiKeys[idx].status = "revoked"; return { success: true }; }
-      return { success: false, error: "Key not found" };
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable" };
+      const userId = ctx.user?.id || 0;
+      const result = await db.update(developerApiKeys)
+        .set({ status: "revoked" })
+        .where(and(eq(developerApiKeys.visibleId, input.keyId), eq(developerApiKeys.userId, userId)));
+      return { success: true };
     }),
   getUsage: protectedProcedure
     .input(z.object({ keyId: z.string(), days: z.number().default(30) }))
-    .query(({ input }) => {
+    .query(async ({ input }) => {
       const trend = [];
       for (let i = input.days; i >= 0; i--) {
         trend.push({ date: new Date(Date.now() - i * 86400000).toISOString().slice(0, 10), requests: 0, errors: 0, latencyP50: 0, latencyP99: 0 });
@@ -69,18 +112,46 @@ const apiKeyRouter = router({
 });
 
 const webhookRouter = router({
-  list: protectedProcedure.query(() => webhooks),
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const userId = ctx.user?.id || 0;
+    const rows = await db.select().from(developerWebhooks).where(eq(developerWebhooks.userId, userId));
+    return rows.map(w => ({
+      id: w.visibleId,
+      url: w.url,
+      events: w.events,
+      secret: w.secretHash ? "***" : null,
+      status: w.status,
+      deliveryRate: w.deliveryRate,
+      lastDelivery: w.lastDeliveryAt?.toISOString() || null,
+      createdAt: w.createdAt?.toISOString() || "",
+    }));
+  }),
   create: protectedProcedure
     .input(z.object({ url: z.string().url(), events: z.array(z.string()), secret: z.string().optional() }))
-    .mutation(({ input }) => {
-      const wh = { id: `WH-${Date.now()}`, url: input.url, events: input.events, secret: input.secret ? "***" : null, createdAt: new Date().toISOString(), status: "active", deliveryRate: 100, lastDelivery: null };
-      webhooks.push(wh);
-      return { success: true, ...wh };
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable" };
+      const userId = ctx.user?.id || 0;
+      const visibleId = `WH-${Date.now()}`;
+      await db.insert(developerWebhooks).values({
+        visibleId,
+        userId,
+        url: input.url,
+        events: input.events,
+        secretHash: input.secret ? hashKey(input.secret) : null,
+        status: "active",
+      });
+      logger.info(`[DevPortal] Webhook created: ${visibleId} for user ${userId}`);
+      return { success: true, id: visibleId, url: input.url, events: input.events, secret: input.secret ? "***" : null, status: "active", deliveryRate: 100, lastDelivery: null, createdAt: new Date().toISOString() };
     }),
-  delete: protectedProcedure.input(z.object({ webhookId: z.string() })).mutation(({ input }) => {
-    const idx = webhooks.findIndex(w => w.id === input.webhookId);
-    if (idx >= 0) { webhooks.splice(idx, 1); return { success: true }; }
-    return { success: false };
+  delete: protectedProcedure.input(z.object({ webhookId: z.string() })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) return { success: false };
+    const userId = ctx.user?.id || 0;
+    await db.delete(developerWebhooks).where(and(eq(developerWebhooks.visibleId, input.webhookId), eq(developerWebhooks.userId, userId)));
+    return { success: true };
   }),
   getEvents: protectedProcedure.query(() => ([
     { event: "load.created", description: "New load posted" },

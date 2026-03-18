@@ -113,8 +113,45 @@ export const appointmentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+
+      // Check for overlapping appointments at same dock
+      const scheduledTime = new Date(`${input.scheduledDate}T${input.scheduledTime}`);
+      const terminalId = parseInt(input.facilityId, 10);
+
+      // Query existing appointments in a ±30 min window at the same terminal
+      const windowStart = new Date(scheduledTime.getTime() - 30 * 60000); // 30 min before
+      const windowEnd = new Date(scheduledTime.getTime() + 30 * 60000);   // 30 min after
+
+      try {
+        const conflicts = await db.select({ id: appointments.id, dockNumber: appointments.dockNumber })
+          .from(appointments)
+          .where(and(
+            eq(appointments.terminalId, terminalId),
+            sql`${appointments.scheduledAt} BETWEEN ${windowStart} AND ${windowEnd}`,
+            sql`${appointments.status} NOT IN ('cancelled', 'completed', 'no_show')`,
+          ))
+          .limit(5);
+
+        if (conflicts.length > 0) {
+          // If the new appointment has no dock number, just warn about general conflicts
+          // If it has a dock number, only block if same dock is taken
+          const conflictingDock = conflicts.find(c => c.dockNumber && c.dockNumber === (input as any).dockNumber);
+          if (conflictingDock) {
+            throw new Error(`Dock ${conflictingDock.dockNumber} is already booked within 30 minutes of this time slot.`);
+          }
+          // If all docks are taken (more than 2 appointments in window), block
+          if (conflicts.length >= 2) {
+            logger.warn(`[appointments.create] High density: ${conflicts.length} appointments within 30 min at terminal ${terminalId}`);
+          }
+        }
+      } catch (err: any) {
+        // Re-throw dock conflict errors, swallow query errors
+        if (err?.message?.includes("already booked")) throw err;
+        logger.warn("[appointments.create] Conflict check failed:", err);
+      }
+
       const result = await db.insert(appointments).values({
-        terminalId: parseInt(input.facilityId, 10),
+        terminalId,
         loadId: parseInt(input.loadId, 10) || null,
         driverId: input.driverId ? parseInt(input.driverId, 10) : null,
         type: unsafeCast(input.type),

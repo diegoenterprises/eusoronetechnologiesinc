@@ -44,7 +44,7 @@ function getModesForRole(role: string): TransportMode[] {
 
     // Rail roles
     case "RAIL_SHIPPER":
-    case "RAIL_CARRIER":
+    case "RAIL_CATALYST":
     case "RAIL_DISPATCHER":
     case "RAIL_ENGINEER":
     case "RAIL_CONDUCTOR":

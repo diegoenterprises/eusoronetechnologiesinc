@@ -130,18 +130,12 @@ export const multiModalRouter = router({
 
       return {
         summary,
-        recentActivity: [
-          { id: "act_001", type: "booking_confirmed", mode: "intermodal", ref: "IMB-20260310-001", timestamp: new Date().toISOString(), detail: "BNSF Chicago to LA confirmed" },
-          { id: "act_002", type: "container_gated_in", mode: "drayage", ref: "DRY-001", timestamp: new Date(Date.now() - 3600000).toISOString(), detail: "MSCU1234567 gated in at Port of LA" },
-          { id: "act_003", type: "last_free_day_alert", mode: "ocean", ref: "CNT-003", timestamp: new Date(Date.now() - 7200000).toISOString(), detail: "CMAU7654321 LFD tomorrow at Long Beach" },
-          { id: "act_004", type: "rail_departed", mode: "rail", ref: "RAIL-012", timestamp: new Date(Date.now() - 10800000).toISOString(), detail: "Train BNSF Q-LACHG departed Los Angeles" },
-          { id: "act_005", type: "chassis_returned", mode: "chassis", ref: "CHS-045", timestamp: new Date(Date.now() - 14400000).toISOString(), detail: "DCLI chassis returned to LBCT pool" },
-        ],
+        recentActivity: [],
         kpis: {
-          avgTransitDays: { truck: 2.3, rail: 4.8, ocean: 18.5, intermodal: 5.1 },
-          costPerMile: { truck: 2.85, rail: 0.95, ocean: 0.12, intermodal: 1.45 },
-          onTimeRate: { truck: 94.2, rail: 87.5, ocean: 82.1, intermodal: 89.3 },
-          avgDwellHours: { port: 48.2, ramp: 12.4, terminal: 6.8 },
+          avgTransitDays: { truck: 0, rail: 0, ocean: 0, intermodal: 0 },
+          costPerMile: { truck: 0, rail: 0, ocean: 0, intermodal: 0 },
+          onTimeRate: { truck: 0, rail: 0, ocean: 0, intermodal: 0 },
+          avgDwellHours: { port: 0, ramp: 0, terminal: 0 },
         },
       };
     }),
@@ -238,8 +232,8 @@ export const multiModalRouter = router({
         logger.warn("[MultiModal] getIntermodalBooking DB query failed, using fallback:", e);
       }
 
-      // Fallback: seeded data only when DB returns nothing
-      if (bookings.length === 0) {
+      // No fallback mock data — empty when DB has no intermodal loads
+      if (false) {
         const statuses: Array<z.infer<typeof bookingStatusSchema>> = ["confirmed", "in_transit", "pending", "draft", "completed"];
         bookings = Array.from({ length: 18 }, (_, i) => ({
           id: seededId("IMB", i + 1),
@@ -403,8 +397,8 @@ export const multiModalRouter = router({
         logger.warn("[MultiModal] getRailOperations DB query failed, using fallback:", e);
       }
 
-      // Fallback: seeded data only when DB returns nothing
-      if (trains.length === 0) {
+      // No fallback mock data — empty when DB has no rail data
+      if (false) {
         trains = Array.from({ length: 24 }, (_, i) => {
           const rr = (["BNSF", "UP", "NS", "CSX"] as const)[i % 4];
           const status = railStatuses[i % railStatuses.length];
@@ -463,39 +457,8 @@ export const multiModalRouter = router({
       date: z.string().optional(),
     }))
     .query(async ({ input }) => {
-      const railroads: Array<z.infer<typeof railCarrierSchema>> = ["BNSF", "UP", "NS", "CSX"];
-      const schedules = [];
-      for (const rr of (input.railroad ? [input.railroad] : railroads)) {
-        for (let i = 0; i < 6; i++) {
-          const origin = RAMPS[i % RAMPS.length];
-          const dest = RAMPS[(i + 2) % RAMPS.length];
-          schedules.push({
-            id: `SCH-${rr}-${i}`,
-            railroad: rr,
-            serviceCode: `${rr}-${String.fromCharCode(65 + i % 4)}${100 + i}`,
-            origin,
-            destination: dest,
-            frequency: (["Daily", "Mon-Fri", "Tue/Thu/Sat", "Mon/Wed/Fri"] as const)[i % 4],
-            departureTime: `${6 + (i * 3) % 18}:00`,
-            transitDays: 3 + i % 4,
-            cutoffHours: 12 + i % 12,
-            capacity: { available: 40 + i * 5, total: 200 },
-            reliabilityScore: 85 + i % 12,
-          });
-        }
-      }
-
-      let filtered = schedules;
-      if (input.originRamp) {
-        const q = input.originRamp.toLowerCase();
-        filtered = filtered.filter(s => s.origin.city.toLowerCase().includes(q) || s.origin.code.toLowerCase().includes(q));
-      }
-      if (input.destinationRamp) {
-        const q = input.destinationRamp.toLowerCase();
-        filtered = filtered.filter(s => s.destination.city.toLowerCase().includes(q) || s.destination.code.toLowerCase().includes(q));
-      }
-
-      return { schedules: filtered, total: filtered.length };
+      // No mock data — return empty until real rail schedule data is available
+      return { schedules: [] as any[], total: 0 };
     }),
 
   // ────────────────────────────────────────────────────────────────────
@@ -505,6 +468,8 @@ export const multiModalRouter = router({
   getPortOperations: protectedProcedure
     .input(z.object({ portCode: z.string().optional() }))
     .query(async ({ input }) => {
+      // No mock data — return empty until real port data is available
+      if (true) return { ports: [] as any[], total: 0, alerts: [] as any[] };
       const ports = (input.portCode ? PORTS.filter(p => p.code === input.portCode) : PORTS).map((p, i) => ({
         ...p,
         status: i % 6 === 0 ? "congested" as const : "operational" as const,
@@ -537,6 +502,8 @@ export const multiModalRouter = router({
       dateRange: dateRangeInput.optional(),
     }))
     .query(async ({ input }) => {
+      // No mock data — return empty until real vessel schedule data is available
+      if (true) return { vessels: [] as any[], total: 0, shippingLines: SHIPPING_LINES };
       const vessels = Array.from({ length: 20 }, (_, i) => {
         const port = PORTS[i % PORTS.length];
         const line = SHIPPING_LINES[i % SHIPPING_LINES.length];
@@ -660,8 +627,8 @@ export const multiModalRouter = router({
         logger.warn("[MultiModal] getDrayageManagement DB query failed, using fallback:", e);
       }
 
-      // Fallback: seeded data only when DB returns nothing
-      if (orders.length === 0) {
+      // No fallback mock data — empty when DB has no drayage data
+      if (false) {
         orders = Array.from({ length: 30 }, (_, i) => {
           const port = PORTS[i % PORTS.length];
           return {
@@ -754,6 +721,8 @@ export const multiModalRouter = router({
       status: z.enum(["scheduled", "in_progress", "completed", "cancelled"]).optional(),
     })))
     .query(async ({ input }) => {
+      // No mock data — return empty until real transloading data is available
+      if (true) return { orders: [] as any[], total: 0, page: input.page, totalPages: 0 };
       const tlStatuses = ["scheduled", "in_progress", "completed", "cancelled"] as const;
       const orders = Array.from({ length: 14 }, (_, i) => ({
         id: seededId("TL", i + 1),
@@ -898,9 +867,9 @@ export const multiModalRouter = router({
         logger.warn("[MultiModal] Container DB query failed, using fallback:", e);
       }
 
-      // Fallback: seeded data
+      // No fallback mock data — empty when DB has no container data
       const cStatuses = ["in_transit", "at_port", "at_ramp", "at_customer", "empty", "returned"] as const;
-      const containers = dbContainers ?? Array.from({ length: 40 }, (_, i) => {
+      const containers = dbContainers ?? (false ? Array.from({ length: 40 }, (_, i) => {
         const prefix = ["MSCU", "CMAU", "HLXU", "OOLU", "TEMU", "EGLV"][i % 6];
         const line = SHIPPING_LINES[i % SHIPPING_LINES.length];
         const status = cStatuses[i % cStatuses.length];
@@ -919,7 +888,7 @@ export const multiModalRouter = router({
           weight: status === "empty" ? 4500 : 35000 + i * 300,
           lastEvent: { type: ["gate_in", "gate_out", "loaded", "discharged", "returned"][i % 5], timestamp: new Date(Date.now() - i * 3600000 * 3).toISOString() },
         };
-      });
+      }) : []);
 
       let filtered = containers;
       if (input.status) filtered = filtered.filter(c => c.status === input.status);
@@ -957,6 +926,8 @@ export const multiModalRouter = router({
       portCode: z.string().optional(),
     }))
     .query(async ({ input }) => {
+      // No mock data — return empty until real container booking data is available
+      if (true) return { availability: [] as any[], shippingLines: SHIPPING_LINES, ports: PORTS };
       const availability = SHIPPING_LINES.map((line, i) => ({
         shippingLine: line,
         allocations: [
@@ -1049,8 +1020,8 @@ export const multiModalRouter = router({
         logger.warn("[MultiModal] getChassisManagement DB query failed, using fallback:", e);
       }
 
-      // Fallback: seeded data only when DB returns nothing
-      if (chassis.length === 0) {
+      // No fallback mock data — empty when DB has no chassis data
+      if (false) {
         chassis = Array.from({ length: 50 }, (_, i) => {
           const pool = pools[i % pools.length];
           const status = chStatuses[i % chStatuses.length];
@@ -1110,6 +1081,8 @@ export const multiModalRouter = router({
       size: containerSizeSchema.optional(),
     }))
     .query(async () => {
+      // No mock data — return empty until real chassis availability data is available
+      if (true) return { locations: [] as any[] };
       const locations = [...PORTS.slice(0, 5), ...RAMPS.slice(0, 4)];
       return {
         locations: locations.map((loc, i) => ({
@@ -1196,8 +1169,8 @@ export const multiModalRouter = router({
         logger.warn("[MultiModal] getPerDiemTracking DB query failed, using fallback:", e);
       }
 
-      // Fallback: seeded data only when DB returns nothing
-      if (records.length === 0) {
+      // No fallback mock data — empty when DB has no per diem data
+      if (false) {
         records = Array.from({ length: 22 }, (_, i) => ({
         id: seededId("PD", i + 1),
         containerNumber: `${["MSCU", "CMAU", "HLXU"][i % 3]}${String(3000000 + i * 99)}`,
@@ -1317,9 +1290,9 @@ export const multiModalRouter = router({
         logger.warn("[MultiModal] Detention DB query failed, using fallback:", e);
       }
 
-      // Fallback seeded data
+      // No fallback mock data — empty when DB has no detention data
       const types = ["demurrage", "detention"] as const;
-      const records = dbRecords ?? Array.from({ length: 18 }, (_, i) => {
+      const records = dbRecords ?? (false ? Array.from({ length: 18 }, (_, i) => {
         const port = PORTS[i % PORTS.length];
         const type = types[i % 2];
         const freeTimeDays = type === "demurrage" ? 4 : 5;
@@ -1343,11 +1316,11 @@ export const multiModalRouter = router({
           lastFreeDay: new Date(Date.now() - (6 + i) * 86400000).toISOString().split("T")[0],
           returnDate: i % 3 === 0 ? new Date(Date.now() - i * 86400000).toISOString().split("T")[0] : null,
         };
-      });
+      }) : [] as any[]);
 
       let filtered = records;
       if (input.type) filtered = filtered.filter(r => r.type === input.type);
-      if (input.portCode) filtered = filtered.filter(r => r.port.code === input.portCode);
+      if (input.portCode) filtered = filtered.filter(r => r.port?.code === input.portCode);
       if (input.search) {
         const q = input.search.toLowerCase();
         filtered = filtered.filter(r => r.containerNumber.toLowerCase().includes(q));
@@ -1370,6 +1343,8 @@ export const multiModalRouter = router({
   getFreeTimeManagement: protectedProcedure
     .input(z.object({ portCode: z.string().optional(), shippingLine: z.string().optional() }))
     .query(async () => {
+      // No mock data — return empty until real free time data is available
+      if (true) return { freeTimeSchedules: [] as any[], portSpecific: [] as any[] };
       return {
         freeTimeSchedules: SHIPPING_LINES.slice(0, 6).map((line, i) => ({
           shippingLine: line,
@@ -1455,8 +1430,8 @@ export const multiModalRouter = router({
         logger.warn("[MultiModal] getLastFreeDayAlerts DB query failed, using fallback:", e);
       }
 
-      // Fallback: seeded data only when DB returns nothing
-      if (alerts.length === 0) {
+      // No fallback mock data — empty when DB has no LFD alert data
+      if (false) {
         alerts = Array.from({ length: 12 }, (_, i) => {
         const daysUntilLFD = -1 + i % (input.daysAhead + 2);
         return {
@@ -1493,6 +1468,8 @@ export const multiModalRouter = router({
       status: customsStatusSchema.optional(),
     })))
     .query(async ({ input }) => {
+      // No mock data — return empty until real customs clearance data is available
+      if (true) return { entries: [] as any[], total: 0, page: input.page, totalPages: 0, stats: { cleared: 0, pending: 0, onHold: 0, avgClearanceHours: 0 } };
       const cStatuses: Array<z.infer<typeof customsStatusSchema>> = ["not_filed", "filed", "under_review", "cleared", "hold", "rejected"];
       const entries = Array.from({ length: 20 }, (_, i) => ({
         id: seededId("CUST", i + 1),
@@ -1550,6 +1527,8 @@ export const multiModalRouter = router({
       urgency: z.enum(["standard", "expedited", "critical"]).default("standard"),
     }))
     .query(async ({ input }) => {
+      // No mock data — return empty until real mode optimization data is available
+      if (true) return { recommendations: [] as any[], laneData: { distance: 0, historicalVolume: 0, seasonalFactor: 1 } };
       const distance = 800 + Math.abs(input.weight % 2000);
       return {
         recommendations: [
@@ -1605,10 +1584,10 @@ export const multiModalRouter = router({
     .query(async () => {
       // ── Real DB: derive cost comparison from loads ──
       let costComparison = [
-        { mode: "truck", avgCostPerMile: 2.85, avgTotalCost: 4275, volume: 142, trend: +2.1 },
-        { mode: "rail", avgCostPerMile: 0.95, avgTotalCost: 2400, volume: 58, trend: -0.8 },
-        { mode: "intermodal", avgCostPerMile: 1.45, avgTotalCost: 3200, volume: 15, trend: +0.5 },
-        { mode: "ocean", avgCostPerMile: 0.12, avgTotalCost: 3800, volume: 32, trend: -1.2 },
+        { mode: "truck", avgCostPerMile: 0, avgTotalCost: 0, volume: 0, trend: 0 },
+        { mode: "rail", avgCostPerMile: 0, avgTotalCost: 0, volume: 0, trend: 0 },
+        { mode: "intermodal", avgCostPerMile: 0, avgTotalCost: 0, volume: 0, trend: 0 },
+        { mode: "ocean", avgCostPerMile: 0, avgTotalCost: 0, volume: 0, trend: 0 },
       ];
 
       try {
@@ -1637,10 +1616,10 @@ export const multiModalRouter = router({
 
           if (tc > 0 || ic > 0) {
             costComparison = [
-              { mode: "truck", avgCostPerMile: td > 0 ? Math.round((tr / td) * 100) / 100 : 2.85, avgTotalCost: tc > 0 ? Math.round(tr / tc) : 4275, volume: tc, trend: +2.1 },
-              { mode: "rail", avgCostPerMile: 0.95, avgTotalCost: 2400, volume: 0, trend: -0.8 },
-              { mode: "intermodal", avgCostPerMile: id > 0 ? Math.round((ir / id) * 100) / 100 : 1.45, avgTotalCost: ic > 0 ? Math.round(ir / ic) : 3200, volume: ic, trend: +0.5 },
-              { mode: "ocean", avgCostPerMile: 0.12, avgTotalCost: 3800, volume: 0, trend: -1.2 },
+              { mode: "truck", avgCostPerMile: td > 0 ? Math.round((tr / td) * 100) / 100 : 0, avgTotalCost: tc > 0 ? Math.round(tr / tc) : 0, volume: tc, trend: 0 },
+              { mode: "rail", avgCostPerMile: 0, avgTotalCost: 0, volume: 0, trend: 0 },
+              { mode: "intermodal", avgCostPerMile: id > 0 ? Math.round((ir / id) * 100) / 100 : 0, avgTotalCost: ic > 0 ? Math.round(ir / ic) : 0, volume: ic, trend: 0 },
+              { mode: "ocean", avgCostPerMile: 0, avgTotalCost: 0, volume: 0, trend: 0 },
             ];
           }
         }
@@ -1650,13 +1629,7 @@ export const multiModalRouter = router({
 
       return {
         costComparison,
-        monthlyCosts: Array.from({ length: 6 }, (_, i) => ({
-          month: new Date(2026, 9 - i, 1).toISOString().split("T")[0],
-          truck: 285000 + i * 12000,
-          rail: 95000 + i * 5000,
-          intermodal: 48000 + i * 3000,
-          ocean: 120000 + i * 8000,
-        })).reverse(),
+        monthlyCosts: [] as any[],
       };
     }),
 
@@ -1668,19 +1641,13 @@ export const multiModalRouter = router({
     .query(async () => {
       // ── Real DB: derive transit time from delivered loads ──
       let comparison = [
-        { mode: "truck", avgDays: 2.3, minDays: 1, maxDays: 4, reliability: 94.2, samples: 142 },
-        { mode: "rail", avgDays: 4.8, minDays: 3, maxDays: 8, reliability: 87.5, samples: 58 },
-        { mode: "intermodal", avgDays: 5.1, minDays: 4, maxDays: 8, reliability: 89.3, samples: 15 },
-        { mode: "ocean", avgDays: 18.5, minDays: 14, maxDays: 28, reliability: 82.1, samples: 32 },
+        { mode: "truck", avgDays: 0, minDays: 0, maxDays: 0, reliability: 0, samples: 0 },
+        { mode: "rail", avgDays: 0, minDays: 0, maxDays: 0, reliability: 0, samples: 0 },
+        { mode: "intermodal", avgDays: 0, minDays: 0, maxDays: 0, reliability: 0, samples: 0 },
+        { mode: "ocean", avgDays: 0, minDays: 0, maxDays: 0, reliability: 0, samples: 0 },
       ];
 
-      let topLanes = [
-        { origin: "Los Angeles, CA", destination: "Chicago, IL", truck: 2.5, rail: 4.2, intermodal: 4.8 },
-        { origin: "Savannah, GA", destination: "Atlanta, GA", truck: 0.5, rail: 1.5, intermodal: 1.8 },
-        { origin: "Newark, NJ", destination: "Chicago, IL", truck: 1.8, rail: 3.5, intermodal: 4.0 },
-        { origin: "Houston, TX", destination: "Dallas, TX", truck: 0.5, rail: 2.0, intermodal: 2.2 },
-        { origin: "Seattle, WA", destination: "Chicago, IL", truck: 3.0, rail: 5.5, intermodal: 5.8 },
-      ];
+      let topLanes: Array<{ origin: string; destination: string; truck: number; rail: number; intermodal: number }> = [];
 
       try {
         const db = await getDb();
@@ -1699,10 +1666,10 @@ export const multiModalRouter = router({
             const tDelivered = Number(truckTransit?.delivered ?? 0);
             comparison[0] = {
               mode: "truck",
-              avgDays: Math.round(Number(truckTransit?.avgDays ?? 2.3) * 10) / 10,
-              minDays: Math.max(1, Number(truckTransit?.minDays ?? 1)),
-              maxDays: Number(truckTransit?.maxDays ?? 4),
-              reliability: tCnt > 0 ? Math.round((tDelivered / tCnt) * 1000) / 10 : 94.2,
+              avgDays: Math.round(Number(truckTransit?.avgDays ?? 0) * 10) / 10,
+              minDays: Math.max(0, Number(truckTransit?.minDays ?? 0)),
+              maxDays: Number(truckTransit?.maxDays ?? 0),
+              reliability: tCnt > 0 ? Math.round((tDelivered / tCnt) * 1000) / 10 : 0,
               samples: tCnt,
             };
           }
@@ -1798,10 +1765,10 @@ export const multiModalRouter = router({
             // Update mode breakdown with real intermodal data
             const truckCount = totalCount - intermodalCount;
             modeBreakdown = [
-              { mode: "truck", shipments: truckCount, revenue: totalRev - intermodalRev, avgCost: truckCount > 0 ? Math.round((totalRev - intermodalRev) / truckCount) : 0, onTime: 94.2, co2PerShipment: 2450 },
-              { mode: "rail", shipments: 0, revenue: 0, avgCost: 0, onTime: 87.5, co2PerShipment: 620 },
-              { mode: "ocean", shipments: 0, revenue: 0, avgCost: 0, onTime: 82.1, co2PerShipment: 180 },
-              { mode: "intermodal", shipments: intermodalCount, revenue: intermodalRev, avgCost: intermodalCount > 0 ? Math.round(intermodalRev / intermodalCount) : 0, onTime: 89.3, co2PerShipment: 940 },
+              { mode: "truck", shipments: truckCount, revenue: totalRev - intermodalRev, avgCost: truckCount > 0 ? Math.round((totalRev - intermodalRev) / truckCount) : 0, onTime: 0, co2PerShipment: 0 },
+              { mode: "rail", shipments: 0, revenue: 0, avgCost: 0, onTime: 0, co2PerShipment: 0 },
+              { mode: "ocean", shipments: 0, revenue: 0, avgCost: 0, onTime: 0, co2PerShipment: 0 },
+              { mode: "intermodal", shipments: intermodalCount, revenue: intermodalRev, avgCost: intermodalCount > 0 ? Math.round(intermodalRev / intermodalCount) : 0, onTime: 0, co2PerShipment: 0 },
             ];
           }
         }

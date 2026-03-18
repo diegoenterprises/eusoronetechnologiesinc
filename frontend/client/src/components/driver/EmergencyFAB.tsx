@@ -40,7 +40,6 @@ export default function EmergencyFAB() {
 
   // Only show for DRIVER role (and CATALYST who may drive)
   const isDriver = user?.role === "DRIVER" || user?.role === "CATALYST";
-  if (!isDriver) return null;
 
   // Fetch company emergency contacts (dispatch + safety officer)
   const companyQuery = (trpc as any).companies?.getMyCompany?.useQuery(undefined, {
@@ -172,6 +171,9 @@ export default function EmergencyFAB() {
     return () => clearTimeout(t);
   }, []);
 
+  // Role gate AFTER all hooks (React rules of hooks)
+  if (!isDriver) return null;
+
   return (
     <>
       {/* Backdrop when expanded */}
@@ -190,7 +192,7 @@ export default function EmergencyFAB() {
       {/* Emergency options fan-out */}
       <AnimatePresence>
         {expanded && (
-          <div className="fixed bottom-24 right-5 z-[9999] flex flex-col-reverse gap-3">
+          <div className="fixed bottom-24 left-[17.5rem] z-[9999] flex flex-col-reverse gap-3">
             {emergencyOptions.map((option, index) => (
               <motion.button
                 key={option.id}
@@ -220,7 +222,7 @@ export default function EmergencyFAB() {
         onClick={() => setExpanded(!expanded)}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        className={`fixed bottom-5 right-5 z-[9999] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors ${
+        className={`fixed bottom-5 left-[17.5rem] z-[9999] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-colors ${
           expanded
             ? "bg-slate-800 ring-2 ring-slate-600"
             : "bg-red-600 ring-2 ring-red-400/50"

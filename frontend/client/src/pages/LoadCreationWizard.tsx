@@ -2777,6 +2777,11 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   {formData.distance && formData.rate && (
                     <p className="text-sm text-slate-500 mt-2">= <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${(Number(formData.rate) / formData.distance).toFixed(2)}/mi</span> over {formData.distance} miles</p>
                   )}
+                  {formData.rate && Number(formData.rate) > 0 && (
+                    <p className="text-sm text-slate-400 mt-2">
+                      Platform fee (8%): ${(Number(formData.rate) * 0.08).toFixed(0)} &bull; Carrier receives: ${(Number(formData.rate) * 0.92).toFixed(0)}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div>

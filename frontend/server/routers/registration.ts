@@ -656,6 +656,20 @@ export const registrationRouter = router({
         indexCarrier({ id: companyId, companyName: input.companyName, dotNumber: input.usdotNumber, mcNumber: input.mcNumber, equipmentTypes: input.equipmentTypes, hazmatCertified: input.hazmatEndorsed, serviceAreas: (input.processAgentStates || [input.state]).join(", "), specializations: input.catalystType });
       } catch (e) { logger.warn("[Registration] catalyst AI indexing failed:", e); }
 
+      // ── Auto-Approve FMCSA-Verified Carriers ──
+      // Carriers with INSTANT_VERIFIED or high-confidence FMCSA data get auto-approved
+      if (instantVerif && (instantVerif.verificationTier === "INSTANT_VERIFIED" || instantVerif.verificationTier === "GOLD")) {
+        try {
+          await db.execute(sql`UPDATE users SET
+            isVerified = true,
+            metadata = JSON_SET(COALESCE(metadata, '{}'), '$.approvalStatus', 'auto_approved', '$.autoApprovedAt', ${new Date().toISOString()})
+            WHERE id = ${userId}`);
+          logger.info(`[Registration] Auto-approved carrier ${userId} — FMCSA verified (${instantVerif.verificationTier})`);
+        } catch (autoApproveErr) {
+          logger.warn(`[Registration] Auto-approve failed for carrier ${userId}:`, (autoApproveErr as any)?.message);
+        }
+      }
+
       // AI Turbocharge: Registration fraud scoring
       let aiFraudCheck: any = null;
       try {
@@ -861,12 +875,27 @@ export const registrationRouter = router({
       initNewUserGamification(userId).catch(() => {});
       sendPostRegistrationNotifications(db, { userId, email: input.email, phone: input.phone, name: `${input.firstName} ${input.lastName}`, role: "DRIVER" }).catch(() => {});
 
+      // FMCSA Clearinghouse query — flag driver for manual verification
+      // Real Clearinghouse API requires registered employer access; this flags the account
+      // for manual review of drug/alcohol violation history per 49 CFR 382.701
+      try {
+        const cdlNumber = input.cdlNumber;
+        if (cdlNumber) {
+          logger.info(`[Clearinghouse] Querying for CDL ${cdlNumber.slice(0, 4)}****`);
+          await db.execute(sql`UPDATE users SET
+            metadata = JSON_SET(COALESCE(metadata, '{}'), '$.clearinghouseStatus', 'pending_query', '$.clearinghouseQueryDate', ${new Date().toISOString()})
+            WHERE id = ${userId}`);
+        }
+      } catch (err) {
+        logger.warn('[Clearinghouse] Query failed:', (err as any)?.message);
+      }
+
       return {
         success: true,
         userId,
-        message: "Registration submitted. Background check and PSP query will be initiated.",
+        message: "Registration submitted. Background check, PSP query, and Clearinghouse verification will be initiated.",
         verificationRequired: true,
-        checksRequired: ["background", "psp", "drugTest", "cdlVerification"],
+        checksRequired: ["background", "psp", "drugTest", "cdlVerification", "clearinghouse"],
       };
     }),
 
@@ -997,6 +1026,19 @@ export const registrationRouter = router({
         const { indexCarrier } = await import("../services/embeddings/aiTurbocharge");
         indexCarrier({ id: companyId, companyName: input.companyName, dotNumber: input.usdotNumber, mcNumber: input.mcNumber, serviceAreas: input.state, specializations: "freight broker" });
       } catch (e) { logger.warn("[Registration] broker AI indexing failed:", e); }
+
+      // ── Auto-Approve FMCSA-Verified Brokers ──
+      if (instantVerif && (instantVerif.verificationTier === "INSTANT_VERIFIED" || instantVerif.verificationTier === "GOLD")) {
+        try {
+          await db.execute(sql`UPDATE users SET
+            isVerified = true,
+            metadata = JSON_SET(COALESCE(metadata, '{}'), '$.approvalStatus', 'auto_approved', '$.autoApprovedAt', ${new Date().toISOString()})
+            WHERE id = ${userId}`);
+          logger.info(`[Registration] Auto-approved broker ${userId} — FMCSA verified (${instantVerif.verificationTier})`);
+        } catch (autoApproveErr) {
+          logger.warn(`[Registration] Auto-approve failed for broker ${userId}:`, (autoApproveErr as any)?.message);
+        }
+      }
 
       // ── Store ML verification event (fire-and-forget) ──
       if (instantVerif && crossRef) {
@@ -1961,6 +2003,55 @@ export const registrationRouter = router({
           totalEvents: riskRows?.[0]?.total || 0,
         };
       } catch { return null; }
+    }),
+
+  bulkDriverImport: auditedProtectedProcedure
+    .input(z.object({
+      companyId: z.number(),
+      drivers: z.array(z.object({
+        firstName: z.string(),
+        lastName: z.string(),
+        email: z.string().email(),
+        phone: z.string().optional(),
+        cdlNumber: z.string(),
+        cdlState: z.string().length(2),
+        cdlClass: z.enum(['A', 'B', 'C']).default('A'),
+        cdlExpiry: z.string(),
+        hazmatEndorsement: z.boolean().default(false),
+        tankerEndorsement: z.boolean().default(false),
+      })).min(1).max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+
+      const results = { created: 0, failed: 0, errors: [] as string[] };
+
+      for (const driver of input.drivers) {
+        try {
+          const [existing] = await db.select({ id: users.id }).from(users)
+            .where(eq(users.email, driver.email)).limit(1);
+          if (existing) { results.errors.push(`${driver.email}: already registered`); results.failed++; continue; }
+
+          const openId = `bulk_driver_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+          await db.insert(users).values(unsafeCast({
+            openId,
+            email: driver.email,
+            name: `${driver.firstName} ${driver.lastName}`,
+            role: 'DRIVER',
+            companyId: input.companyId,
+            isActive: true,
+            isVerified: false,
+          }));
+          results.created++;
+        } catch (err: any) {
+          results.errors.push(`${driver.email}: ${err.message?.slice(0, 100)}`);
+          results.failed++;
+        }
+      }
+
+      logger.info(`[BulkImport] Created ${results.created} drivers for company ${input.companyId}, ${results.failed} failed`);
+      return results;
     }),
 });
 

@@ -28,19 +28,22 @@ function createPool() {
 
   const pool = mysql2.createPool({
     uri: dbUrl,
-    connectionLimit: 150,
+    connectionLimit: 250,
     waitForConnections: true,
-    queueLimit: 200,
-    idleTimeout: 60000,
+    queueLimit: 500,
+    idleTimeout: 30000,
     enableKeepAlive: true,
     keepAliveInitialDelay: 15000,
-    maxIdle: 10,
+    maxIdle: 30,
     connectTimeout: 15000,
   });
 
   // Pool event listeners for observability and auto-recovery
-  pool.on("connection", () => {
+  pool.on("connection", (conn) => {
     _poolStats.totalCreated++;
+    // 30-second query timeout prevents runaway queries from filling the pool
+    conn.query("SET SESSION max_execution_time=30000");
+    conn.query("SET time_zone = '+00:00'");
   });
   pool.on("release", () => {
     _poolStats.totalReleased++;
@@ -49,6 +52,9 @@ function createPool() {
     _poolStats.totalQueued++;
     if (_poolStats.totalQueued % 50 === 0) {
       logger.warn(`[Database] Pool queue pressure: ${_poolStats.totalQueued} queued requests`);
+    }
+    if (_poolStats.totalQueued > 200) {
+      logger.error(`[Database] CRITICAL pool exhaustion: ${_poolStats.totalQueued} queued. Consider scaling.`);
     }
   });
 

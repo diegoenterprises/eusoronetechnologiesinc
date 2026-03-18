@@ -12,7 +12,7 @@ import { eq, and, desc, sql, gte, lte, like, count } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { loads, companies, detentionClaims, platformFeeConfigs } from "../../drizzle/schema";
+import { loads, companies, detentionClaims, platformFeeConfigs, settlements } from "../../drizzle/schema";
 
 /** Row shape returned by raw `db.execute(sql\`...\`)` — all values are primitives or null. */
 type RawSqlRow = Record<string, string | number | null>;
@@ -1416,5 +1416,44 @@ export const detentionAccessorialsRouter = router({
           pendingCharges: [], batchSummary: { totalItems: 0, totalAmount: 0, byType: [], readyToInvoice: 0 },
         };
       }
+    }),
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // INVOICE DETENTION CHARGE — Mark approved claim as invoiced, add to settlement
+  // ════════════════════════════════════════════════════════════════════════════
+  invoiceDetentionCharge: protectedProcedure
+    .input(z.object({ claimId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const [claim] = await db.select().from(detentionClaims)
+        .where(and(eq(detentionClaims.id, input.claimId), eq(detentionClaims.status, 'approved')))
+        .limit(1);
+      if (!claim) throw new Error('Approved detention claim not found');
+
+      const [load] = await db.select().from(loads).where(eq(loads.id, claim.loadId)).limit(1);
+      if (!load) throw new Error('Associated load not found');
+
+      const claimAmount = Number(claim.totalAmount || 0);
+
+      // Add to settlement if one exists for this load
+      const [settlement] = await db.select().from(settlements).where(eq(settlements.loadId, load.id)).limit(1);
+      if (settlement) {
+        const newAccessorial = Number(settlement.accessorialTotal || 0) + claimAmount;
+        const newTotal = Number(settlement.totalShipperCharge || 0) + claimAmount;
+        await db.execute(sql`UPDATE settlements SET
+          accessorialTotal = ${String(newAccessorial)},
+          totalShipperCharge = ${String(newTotal)}
+          WHERE id = ${settlement.id}`);
+        logger.info(`[Detention] Updated settlement ${settlement.id}: accessorial +$${claimAmount}`);
+      }
+
+      await db.update(detentionClaims)
+        .set({ status: 'invoiced' })
+        .where(eq(detentionClaims.id, input.claimId));
+
+      logger.info(`[Detention] Invoiced claim ${input.claimId}: $${claimAmount} on load ${load.loadNumber}`);
+      return { success: true, invoicedAmount: claimAmount };
     }),
 });

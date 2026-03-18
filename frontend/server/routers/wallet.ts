@@ -28,6 +28,7 @@ import {
 import { feeCalculator } from "../services/feeCalculator";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { stripe } from "../stripe/service";
+import { withTimeout } from "../services/apiUtils";
 
 // Safe Stripe call — returns null if Stripe not configured or API not available
 async function safeStripeCall<T>(fn: () => Promise<T>): Promise<T | null> {
@@ -544,6 +545,11 @@ export const walletRouter = router({
 
       // Verify wallet balance
       const wallet = await ensureWallet(db, userId);
+
+      if (Number(wallet.carrierDebt || 0) > 0) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: `Payouts suspended — outstanding balance of $${wallet.carrierDebt}. Contact support.` });
+      }
+
       const availableBalance = parseFloat(wallet.availableBalance || "0");
       if (availableBalance < input.amount) throw new Error("Insufficient balance");
 
@@ -556,53 +562,82 @@ export const walletRouter = router({
           transactionType: "wallet_withdrawal",
           amount: input.amount,
         });
-        if (feeResult.finalFee > 0) {
-          fee = feeResult.finalFee;
-          logger.info(`[Wallet] Withdrawal fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
-          await feeCalculator.recordFeeCollection(0, "wallet_withdrawal", userId, input.amount, feeResult);
-        }
+        fee = feeResult.finalFee;
+        logger.info(`[Wallet] Withdrawal fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+        await feeCalculator.recordFeeCollection(0, "wallet_withdrawal", userId, input.amount, feeResult);
       } catch (feeErr) {
         logger.warn("[Wallet] Withdrawal fee calculator fallback:", (feeErr as Error).message);
       }
       const netAmount = input.amount - fee;
 
-      // Execute real Stripe payout — requires Stripe Connect account
-      let stripePayoutId: string | null = null;
-      const [userRow] = await db.select({ stripeConnectId: users.stripeConnectId }).from(users).where(eq(users.id, userId)).limit(1);
-      if (!userRow?.stripeConnectId) {
-        throw new Error("Please connect your bank account via Stripe Connect before requesting a payout.");
-      }
-      if (userRow.stripeConnectId) {
-        // Verify payouts are enabled on the Connect account before attempting
-        const account = await safeStripeCall(() => stripe.accounts.retrieve(userRow.stripeConnectId!));
-        if (account && !account.payouts_enabled) {
-          throw new Error("Payouts are not yet enabled on your Stripe account. Please complete onboarding in your Wallet settings.");
-        }
-        const idempotencyKey = `payout_${wallet.id}_${Math.round(netAmount * 100)}_${Date.now()}`;
-        const payout = await safeStripeCall(() => stripe.payouts.create({
-          amount: Math.round(netAmount * 100),
-          currency: "usd",
-          description: input.instant ? "EusoWallet instant payout" : "EusoWallet standard payout",
-          method: input.instant ? "instant" : "standard",
-          metadata: { userId: String(userId), walletId: String(wallet.id), idempotencyKey },
-        }, { stripeAccount: userRow.stripeConnectId!, idempotencyKey }));
-        if (payout) {
-          stripePayoutId = payout.id;
-          logger.info(`[Wallet] Stripe payout ${payout.id}: $${netAmount} → ${userRow.stripeConnectId} (${input.instant ? 'instant' : 'standard'})`);
-        }
-      }
-
-      // Create payout transaction and debit wallet
+      // Create payout transaction record as 'processing' BEFORE Stripe call
       const [txn] = await db.insert(walletTransactions).values({
         walletId: wallet.id,
         type: "payout",
         amount: String(-input.amount),
         fee: String(fee),
         netAmount: String(-netAmount),
-        status: stripePayoutId ? "processing" : (input.instant ? "processing" : "pending"),
-        stripeTransferId: stripePayoutId,
-        description: `${input.instant ? "Instant payout" : "Standard payout"}${stripePayoutId ? ` (${stripePayoutId})` : ''}`,
+        status: "processing",
+        description: `${input.instant ? "Instant payout" : "Standard payout"} (pending Stripe)`,
       }).$returningId();
+
+      // Execute real Stripe payout — requires Stripe Connect account
+      let stripePayoutId: string | null = null;
+      const [userRow] = await db.select({ stripeConnectId: users.stripeConnectId }).from(users).where(eq(users.id, userId)).limit(1);
+      if (!userRow?.stripeConnectId) {
+        // Mark transaction as failed — no wallet debit
+        await db.update(walletTransactions).set({ status: "failed", description: "Failed: No Stripe Connect account" }).where(eq(walletTransactions.id, txn.id));
+        throw new Error("Please connect your bank account via Stripe Connect before requesting a payout.");
+      }
+
+      try {
+        // Verify payouts are enabled on the Connect account before attempting
+        const account = await withTimeout(
+          safeStripeCall(() => stripe.accounts.retrieve(userRow.stripeConnectId!)),
+          15000
+        );
+        if (account && !account.payouts_enabled) {
+          await db.update(walletTransactions).set({ status: "failed", description: "Failed: Payouts not enabled on Stripe account" }).where(eq(walletTransactions.id, txn.id));
+          throw new Error("Payouts are not yet enabled on your Stripe account. Please complete onboarding in your Wallet settings.");
+        }
+
+        const idempotencyKey = `payout_${wallet.id}_${Math.round(netAmount * 100)}_${Date.now()}`;
+        const payout = await withTimeout(
+          safeStripeCall(() => stripe.payouts.create({
+            amount: Math.round(netAmount * 100),
+            currency: "usd",
+            description: input.instant ? "EusoWallet instant payout" : "EusoWallet standard payout",
+            method: input.instant ? "instant" : "standard",
+            metadata: { userId: String(userId), walletId: String(wallet.id), idempotencyKey },
+          }, { stripeAccount: userRow.stripeConnectId!, idempotencyKey })),
+          30000
+        );
+
+        if (!payout) {
+          // Stripe returned null (not configured or unavailable) — mark failed, no wallet debit
+          await db.update(walletTransactions).set({ status: "failed", description: "Failed: Stripe payout returned null" }).where(eq(walletTransactions.id, txn.id));
+          throw new Error("Stripe payout failed. Your wallet balance has NOT been debited. Please try again.");
+        }
+
+        stripePayoutId = payout.id;
+        logger.info(`[Wallet] Stripe payout ${payout.id}: $${netAmount} → ${userRow.stripeConnectId} (${input.instant ? 'instant' : 'standard'})`);
+      } catch (stripeErr: any) {
+        // If this is our own re-thrown error, just propagate
+        if (stripeErr?.message?.includes("NOT been debited") || stripeErr?.message?.includes("Please connect") || stripeErr?.message?.includes("not yet enabled")) {
+          throw stripeErr;
+        }
+        // Stripe API failure — mark transaction as failed, do NOT debit wallet
+        await db.update(walletTransactions).set({ status: "failed", description: `Failed: ${stripeErr?.message || 'Stripe error'}` }).where(eq(walletTransactions.id, txn.id));
+        logger.error(`[Wallet] Stripe payout failed for user ${userId}: ${stripeErr?.message}. Wallet NOT debited.`);
+        throw new Error("Stripe payout failed. Your wallet balance has NOT been debited. Please try again.");
+      }
+
+      // Stripe succeeded — NOW debit the wallet and update the transaction
+      await db.update(walletTransactions).set({
+        status: "processing",
+        stripeTransferId: stripePayoutId,
+        description: `${input.instant ? "Instant payout" : "Standard payout"} (${stripePayoutId})`,
+      }).where(eq(walletTransactions.id, txn.id));
 
       await db.update(wallets).set({
         availableBalance: String(availableBalance - input.amount),
@@ -827,10 +862,8 @@ export const walletRouter = router({
           transactionType: "p2p_transfer",
           amount: input.amount,
         });
-        if (feeResult.finalFee > 0) {
-          fee = feeResult.finalFee;
-          logger.info(`[Wallet] P2P transfer fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
-        }
+        fee = feeResult.finalFee;
+        logger.info(`[Wallet] P2P transfer fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
       } catch (feeErr) {
         logger.warn("[Wallet] P2P fee calculator fallback:", (feeErr as Error).message);
       }
@@ -1038,11 +1071,9 @@ export const walletRouter = router({
           transactionType: "cash_advance",
           amount: input.amount,
         });
-        if (feeResult.finalFee > 0) {
-          fee = feeResult.finalFee;
-          feePercent = feeResult.breakdown.baseRate ?? feePercent;
-          logger.info(`[Wallet] Cash advance fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
-        }
+        fee = feeResult.finalFee;
+        feePercent = feeResult.breakdown.baseRate ?? feePercent;
+        logger.info(`[Wallet] Cash advance fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
       } catch (feeErr) {
         logger.warn("[Wallet] Cash advance fee calculator fallback:", (feeErr as Error).message);
       }
@@ -1178,11 +1209,9 @@ export const walletRouter = router({
           transactionType: "instant_pay",
           amount: input.amount,
         });
-        if (feeResult.finalFee > 0) {
-          fee = feeResult.finalFee;
-          feePercent = feeResult.breakdown.baseRate ?? feePercent;
-          logger.info(`[Wallet] Instant pay fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
-        }
+        fee = feeResult.finalFee;
+        feePercent = feeResult.breakdown.baseRate ?? feePercent;
+        logger.info(`[Wallet] Instant pay fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
       } catch (feeErr) {
         logger.warn("[Wallet] Instant pay fee calculator fallback:", (feeErr as Error).message);
       }

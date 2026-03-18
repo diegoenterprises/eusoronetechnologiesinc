@@ -35,6 +35,25 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
     pingTimeout: 20000,
   });
 
+  // V8: Redis adapter for multi-instance WebSocket broadcasting (Scale Readiness)
+  const redisUrl = process.env.REDIS_URL || process.env.AZURE_REDIS_URL;
+  if (redisUrl) {
+    try {
+      const { createAdapter } = require("@socket.io/redis-adapter");
+      const { createClient } = require("redis");
+      const pubClient = createClient({ url: redisUrl });
+      const subClient = pubClient.duplicate();
+      Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+        io!.adapter(createAdapter(pubClient, subClient));
+        logger.info("[WebSocket] Redis adapter connected — multi-instance broadcasting enabled");
+      }).catch((err: any) => {
+        logger.warn("[WebSocket] Redis adapter failed, running single-instance:", err.message);
+      });
+    } catch (err) {
+      logger.warn("[WebSocket] Redis adapter not available:", (err as any)?.message);
+    }
+  }
+
   io.on("connection", (socket) => {
     const userId = socket.handshake.auth?.userId;
     const userRole = socket.handshake.auth?.role;

@@ -827,6 +827,9 @@ export const loadsRouter = router({
         marketplace: z.boolean().optional(),
         limit: z.number().min(1).max(100).default(20),
         offset: z.number().min(0).default(0),
+        cursor: z.number().optional(), // V8: cursor-based pagination (last load ID)
+        originState: z.string().optional(), // V8: indexed state filter
+        destState: z.string().optional(), // V8: indexed state filter
       })
     )
     .query(async ({ input, ctx }) => {
@@ -875,15 +878,29 @@ export const loadsRouter = router({
         )`);
       }
 
+      // V8: Cursor-based pagination — use cursor when provided, fall back to offset
+      if (input.cursor) {
+        filters.push(sql`${loads.id} < ${input.cursor}`);
+      }
+      // V8: Indexed state filters (denormalized columns)
+      if (input.originState) {
+        filters.push(sql`${loads.originState} = ${input.originState.toUpperCase()}`);
+      }
+      if (input.destState) {
+        filters.push(sql`${loads.destState} = ${input.destState.toUpperCase()}`);
+      }
+
       logger.info(`[loads.list] filters=${filters.length} date=${input.date || 'none'} marketplace=${!!input.marketplace}`);
 
-      const results = await db
+      let query = db
         .select()
         .from(loads)
         .where(filters.length > 0 ? and(...filters) : undefined)
-        .orderBy(desc(loads.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
+        .orderBy(input.cursor ? desc(loads.id) : desc(loads.createdAt))
+        .limit(input.limit);
+
+      // V8: Use cursor-based pagination when cursor is provided, otherwise fall back to offset
+      const results = input.cursor ? await query : await query.offset(input.offset);
 
       logger.info(`[loads.list] Returned ${results.length} rows`);
 
@@ -1378,19 +1395,30 @@ export const loadsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const loadId = parseInt(input.loadId, 10);
-      const [load] = await db.select({ id: loads.id, status: loads.status, loadNumber: loads.loadNumber })
+      const [load] = await db.select({ id: loads.id, status: loads.status, loadNumber: loads.loadNumber, version: loads.version })
         .from(loads).where(eq(loads.id, loadId)).limit(1);
       if (!load) throw new Error("Load not found");
 
-      const updateData: Partial<InsertLoad> = {
-        catalystId: input.catalystId,
-        status: 'assigned',
-        updatedAt: new Date(),
-      };
-      if (input.driverId) updateData.driverId = input.driverId;
-      if (input.vehicleId) updateData.vehicleId = input.vehicleId;
+      // V9: Optimistic locking — prevent concurrent driver assignment race conditions
+      const result = await db.execute(sql`
+        UPDATE loads SET
+          catalystId = ${input.catalystId},
+          driverId = ${input.driverId || null},
+          vehicleId = ${input.vehicleId || null},
+          status = 'assigned',
+          version = version + 1,
+          updatedAt = NOW()
+        WHERE id = ${loadId} AND version = ${load.version}
+      `);
 
-      await db.update(loads).set(updateData).where(eq(loads.id, loadId));
+      const affected = (result as any)?.[0]?.affectedRows || 0;
+      if (affected === 0) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'This load was just updated by another user. Please refresh and try again.',
+        });
+      }
+
       emitLoadStatusChange({
         loadId: String(loadId), loadNumber: load.loadNumber || '',
         previousStatus: load.status, newStatus: 'assigned',
@@ -2692,10 +2720,8 @@ export const bidsRouter = router({
             amount: loadRate,
             loadId: loadIdNum,
           });
-          if (feeResult.finalFee > 0) {
-            await feeCalculator.recordFeeCollection(loadIdNum, 'load_completion', load.shipperId || userId, loadRate, feeResult);
-            logger.info(`[Loads] Completion fee: $${feeResult.finalFee.toFixed(2)} for load ${load.loadNumber}`);
-          }
+          await feeCalculator.recordFeeCollection(loadIdNum, 'load_completion', load.shipperId || userId, loadRate, feeResult);
+          logger.info(`[Loads] Completion fee: $${feeResult.finalFee.toFixed(2)} for load ${load.loadNumber}`);
         }
       } catch (feeErr) {
         logger.warn('[Loads] Load completion fee error:', (feeErr as Error).message);
@@ -2714,17 +2740,32 @@ export const bidsRouter = router({
       type: z.string().optional(),
       sortBy: z.string().optional(),
       limit: z.number().optional().default(50),
+      cursor: z.number().optional(), // V8: cursor-based pagination (last load ID)
+      originState: z.string().optional(), // V8: indexed state filter
+      destState: z.string().optional(), // V8: indexed state filter
     }))
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return [];
 
       try {
+        // V8: Build filter conditions with cursor-based pagination
+        const conditions = [sql`${loads.status} IN ('posted', 'bidding', 'open')`];
+        if (input.cursor) {
+          conditions.push(sql`${loads.id} < ${input.cursor}`);
+        }
+        if (input.originState) {
+          conditions.push(sql`${loads.originState} = ${input.originState.toUpperCase()}`);
+        }
+        if (input.destState) {
+          conditions.push(sql`${loads.destState} = ${input.destState.toUpperCase()}`);
+        }
+
         let loadList = await db
           .select()
           .from(loads)
-          .where(sql`${loads.status} IN ('posted', 'bidding', 'open')`)
-          .orderBy(desc(loads.createdAt))
+          .where(and(...conditions))
+          .orderBy(desc(loads.id))
           .limit(input.limit || 50);
 
         return loadList.map(l => {

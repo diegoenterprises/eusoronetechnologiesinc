@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq, and, desc, sql, or, gte, lte } from "drizzle-orm";
+import { eq, and, desc, sql, or, gte, lte, inArray } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
@@ -56,18 +56,27 @@ export const loadBiddingRouter = router({
           .where(and(...conditions))
           .orderBy(desc(loadBids.createdAt));
 
-        // Enrich with bidder info
-        const enriched = await Promise.all(bids.map(async (bid) => {
-          const [bidder] = await db.select({ id: users.id, name: users.name, role: users.role })
-            .from(users).where(eq(users.id, bid.bidderUserId));
-          let company = null;
-          if (bid.bidderCompanyId) {
-            const [c] = await db.select({ id: companies.id, name: companies.name, dotNumber: companies.dotNumber })
-              .from(companies).where(eq(companies.id, bid.bidderCompanyId));
-            company = c || null;
-          }
-          return { ...bid, bidder: bidder || null, company };
-        }));
+        // Enrich with bidder info — batch queries to avoid N+1
+        const bidderUserIds = [...new Set(bids.map(b => b.bidderUserId))];
+        const bidderCompanyIds = [...new Set(bids.map(b => b.bidderCompanyId).filter((id): id is number => id != null))];
+
+        const bidderUsers = bidderUserIds.length > 0
+          ? await db.select({ id: users.id, name: users.name, role: users.role })
+              .from(users).where(inArray(users.id, bidderUserIds))
+          : [];
+        const bidderCompanies = bidderCompanyIds.length > 0
+          ? await db.select({ id: companies.id, name: companies.name, dotNumber: companies.dotNumber })
+              .from(companies).where(inArray(companies.id, bidderCompanyIds))
+          : [];
+
+        const userMap = new Map(bidderUsers.map(u => [u.id, u]));
+        const companyMap = new Map(bidderCompanies.map(c => [c.id, c]));
+
+        const enriched = bids.map((bid) => {
+          const bidder = userMap.get(bid.bidderUserId) || null;
+          const company = bid.bidderCompanyId ? companyMap.get(bid.bidderCompanyId) || null : null;
+          return { ...bid, bidder, company };
+        });
 
         return enriched;
       } catch (e) { return []; }
