@@ -224,6 +224,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
+        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "Platform training, compliance courses & certifications" },
       ],
     },
     {
@@ -474,6 +475,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Authority docs, surety bond & compliance" },
         { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
+        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "Compliance training, certifications & courses" },
       ],
     },
     // ─── PLATFORM FOOTER ───
@@ -1041,6 +1043,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Funding disbursements & payments" },
       ],
     },
+    { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "Factoring compliance training & certifications" },
     { icon: "Settings", label: "Settings", path: "/settings", badge: 0, description: "Account settings" },
     { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
   ],
@@ -1122,6 +1125,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Database", label: "Gate Carrier Verification", path: "/carrier-intelligence", badge: 0, description: "Verify carrier authority and insurance at gate check-in" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
         { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "EusoTicket™ centralized document storage, versioning & digital signatures" },
+        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "Terminal operations training & safety certifications" },
       ],
     },
     {
@@ -1331,7 +1335,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "AlertTriangle", label: "Incidents", path: "/safety/incident-management", badge: 0, description: "Incident reports, accidents & investigations" },
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
-        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
         { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
         { icon: "Brain", label: "Anomaly Monitor", path: "/anomaly-monitor", badge: 0, description: "AI-powered anomaly detection across all operations" },
@@ -1347,7 +1350,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "BarChart3", label: "Safety Scores", path: "/safety/scores", badge: 0, description: "CSA scores & safety metrics" },
         { icon: "TestTube", label: "Drug & Alcohol", path: "/compliance/driver-qualification", badge: 0, description: "CDL, drug/alcohol testing & background checks" },
-        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Fleet ELD safety monitoring, HOS violations & road condition risks" },
         { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
       ],
     },
@@ -1577,7 +1579,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
     {
       icon: "Globe",
-      label: "Intelligence",
+      label: "Market Intelligence",
       path: "/competitive-intelligence",
       badge: 0,
       category: "Intelligence",
