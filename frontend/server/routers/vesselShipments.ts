@@ -225,6 +225,27 @@ export const vesselShipmentsRouter = router({
         location: input.location as any,
       });
 
+      // Auto-create settlement for vessel bookings transitioning to 'settled'
+      if (input.newStatus === 'settled' || input.newStatus === 'delivered') {
+        try {
+          const [booking] = await db.select().from(vesselShipments).where(eq(vesselShipments.id, input.id)).limit(1);
+          if (booking && input.newStatus === 'settled') {
+            const rate = Number(booking.rate || 0);
+            const platformFeePercent = 5;
+            const platformFee = Math.round(rate * platformFeePercent / 100 * 100) / 100;
+            const carrierPayment = rate - platformFee;
+
+            await db.execute(sql`INSERT IGNORE INTO settlements
+              (loadId, shipperId, carrierId, loadRate, platformFeePercent, platformFeeAmount, carrierPayment, totalShipperCharge, status, createdAt)
+              VALUES (${booking.id}, ${booking.shipperId}, ${booking.operatorId || 0}, ${String(rate)}, '${platformFeePercent}.00', ${String(platformFee)}, ${String(carrierPayment)}, ${String(rate)}, 'pending', NOW())`);
+
+            logger.info(`[VesselSettlement] Created settlement for booking ${booking.bookingNumber}: $${rate}`);
+          }
+        } catch (settleErr) {
+          logger.warn('[VesselSettlement] Settlement creation failed:', settleErr);
+        }
+      }
+
       return { success: true, newStatus: input.newStatus };
     }),
 

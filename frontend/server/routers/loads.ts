@@ -2538,6 +2538,30 @@ export const bidsRouter = router({
       if ((gateErr as Error).message?.includes('FMCSA Safety Gate BLOCKED')) throw gateErr;
     }
 
+    // ── Insurance Gate ──
+    try {
+      const bidderCompanyId = bid.bidderCompanyId || bid.catalystId;
+      if (bidderCompanyId) {
+        const isHazmat = !!(load?.hazmatClass || load?.cargoType === 'hazmat');
+        const minLiability = isHazmat ? 5000000 : 750000;
+
+        // Check company insurance expiry
+        const [company] = await db.select({
+          insuranceExpiry: companies.insuranceExpiry,
+        }).from(companies).where(eq(companies.id, bidderCompanyId)).limit(1);
+
+        if (company?.insuranceExpiry && new Date(company.insuranceExpiry) < new Date()) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `Bid rejected: Carrier insurance expired on ${new Date(company.insuranceExpiry).toLocaleDateString()}. Please update your insurance documentation.`,
+          });
+        }
+      }
+    } catch (insErr: any) {
+      if (insErr?.code === 'FORBIDDEN') throw insErr;
+      logger.warn('[BidAccept] Insurance check failed (non-blocking):', insErr?.message);
+    }
+
     await db.update(bids).set({ status: 'accepted' }).where(eq(bids.id, bidIdNum));
     // Reject all other pending bids on this load
     await db.update(bids).set({ status: 'rejected' }).where(and(eq(bids.loadId, bid.loadId), sql`${bids.id} != ${bidIdNum}`, eq(bids.status, 'pending')));
@@ -2564,6 +2588,21 @@ export const bidsRouter = router({
     emitBidAwarded({ bidId: input.bidId, loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', catalystId: String(bid.catalystId), catalystName: 'Catalyst', amount: Number(bid.amount), status: 'accepted', timestamp: new Date().toISOString() });
     emitLoadStatusChange({ loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', previousStatus: load?.status || '', newStatus: 'assigned', timestamp: new Date().toISOString() });
     emitNotification(String(bid.catalystId), { id: `notif_${Date.now()}`, type: 'bid_accepted', title: 'Bid Accepted!', message: `Your bid of $${Number(bid.amount).toLocaleString()} for load ${load?.loadNumber} has been accepted`, priority: 'high', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/loads/${bid.loadId}`, timestamp: new Date().toISOString() });
+    // Notify the DRIVER directly
+    if (driverId) {
+      try {
+        emitNotification(String(driverId), {
+          id: `notif_${Date.now()}_driver`,
+          type: 'load_assigned',
+          title: 'New Load Assigned',
+          message: `Load #${load?.loadNumber || bid.loadId} has been assigned to you`,
+          priority: 'high',
+          data: { loadId: String(bid.loadId), loadNumber: load?.loadNumber },
+          actionUrl: `/loads/${bid.loadId}`,
+          timestamp: new Date().toISOString(),
+        });
+      } catch {}
+    }
     fireGamificationEvent({ userId: bid.catalystId, type: "bid_accepted", value: 1 });
     // Email + SMS: notify catalyst their bid was accepted
     lookupAndNotify(bid.catalystId, { type: "bid_accepted", loadNumber: load?.loadNumber || '', bidAmount: Number(bid.amount) });

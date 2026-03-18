@@ -936,6 +936,26 @@ export async function processGeofenceEvent(event: GeofenceEventData): Promise<Tr
             { type: "detention_billing", target: "system", data: { loadId: event.loadId, location: "delivery", dwellMinutes } },
             { type: "notification", target: "all", data: { event: "DETENTION_STARTED", loadId: event.loadId, location: "delivery" } },
           );
+          // Auto-create detention claim when dwell exceeds free time
+          try {
+            const { getDb } = await import("../db");
+            const { sql } = await import("drizzle-orm");
+            const _db = await getDb();
+            if (_db && event.loadId) {
+              const freeTimeMinutes = 120;
+              const chargeableMinutes = Math.max(0, dwellMinutes - freeTimeMinutes);
+              if (chargeableMinutes > 0) {
+                const ratePerHour = 75; // Standard detention rate
+                const totalCharge = Math.round(chargeableMinutes / 60 * ratePerHour * 100) / 100;
+                await _db.execute(sql`INSERT IGNORE INTO detention_claims
+                  (loadId, type, startTime, endTime, freeTimeMinutes, chargeableMinutes, ratePerHour, totalAmount, status, createdAt)
+                  VALUES (${event.loadId}, 'delivery_detention', ${event.enteredAt || new Date()}, NOW(), ${freeTimeMinutes}, ${chargeableMinutes}, ${ratePerHour}, ${totalCharge}, 'accruing', NOW())
+                  ON DUPLICATE KEY UPDATE chargeableMinutes = ${chargeableMinutes}, totalAmount = ${totalCharge}`);
+              }
+            }
+          } catch (detErr) {
+            // Don't block geofence processing on detention claim failure
+          }
         }
       }
       break;

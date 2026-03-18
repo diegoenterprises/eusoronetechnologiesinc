@@ -205,6 +205,27 @@ export const railShipmentsRouter = router({
         location: input.location as any,
       });
 
+      // Auto-create settlement for rail shipments transitioning to 'settled'
+      if (input.newStatus === 'settled' || input.newStatus === 'invoiced') {
+        try {
+          const [shipment] = await db.select().from(railShipments).where(eq(railShipments.id, input.id)).limit(1);
+          if (shipment && input.newStatus === 'settled') {
+            const rate = Number(shipment.rate || 0);
+            const platformFeePercent = 5;
+            const platformFee = Math.round(rate * platformFeePercent / 100 * 100) / 100;
+            const carrierPayment = rate - platformFee;
+
+            await db.execute(sql`INSERT IGNORE INTO settlements
+              (loadId, shipperId, carrierId, loadRate, platformFeePercent, platformFeeAmount, carrierPayment, totalShipperCharge, status, createdAt)
+              VALUES (${shipment.id}, ${shipment.shipperId}, ${shipment.carrierId || 0}, ${String(rate)}, '${platformFeePercent}.00', ${String(platformFee)}, ${String(carrierPayment)}, ${String(rate)}, 'pending', NOW())`);
+
+            logger.info(`[RailSettlement] Created settlement for rail shipment ${shipment.shipmentNumber}: $${rate}`);
+          }
+        } catch (settleErr) {
+          logger.warn('[RailSettlement] Settlement creation failed:', settleErr);
+        }
+      }
+
       return { success: true, newStatus: input.newStatus };
     }),
 
