@@ -163,7 +163,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Partners, catalysts & staff",
       children: [
         { icon: "Handshake", label: "My Partners", path: "/partners", badge: 0, description: "Partners, agreements & supply chain connections" },
-        { icon: "Users", label: "Catalysts", path: "/catalysts", badge: 0, description: "Bid management" },
+        { icon: "Users", label: "Find Carriers", path: "/catalysts", badge: 0, description: "Bid management" },
         { icon: "Shield", label: "Staff", path: "/staff", badge: 0, description: "Pickup location access controllers" },
       ],
     },
@@ -215,19 +215,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     {
-      icon: "Truck",
-      label: "The Haul",
-      path: "/the-haul",
-      badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards",
-      children: [
-        { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital truck stop — live chat, active users & community" },
-        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
-        { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
-        { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
-      ],
-    },
-    {
       icon: "Shield",
       label: "Compliance",
       path: "/carrier-intelligence",
@@ -235,7 +222,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Carrier vetting, ELD & cross-border",
       children: [
-        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Carrier ELD tracking, fleet health & road intelligence on your shipments" },
         { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
       ],
@@ -297,7 +283,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Scale", label: "My Bids", path: "/bids", badge: 0, description: "Active and pending bids" },
         { icon: "CheckCircle", label: "Assigned Loads", path: "/loads", badge: 0, description: "Accepted loads" },
         { icon: "ArrowRightLeft", label: "Relay Mode", path: "/relay", badge: 0, description: "Multi-driver load handoff & relay legs" },
-        { icon: "Target", label: "Mission Balancer", path: "/mission-balancer", badge: 0, description: "AI-optimized load distribution & fleet workload balancing" },
         { icon: "Combine", label: "Load Consolidation", path: "/load-consolidation", badge: 0, description: "Multi-shipper shipment consolidation for cost savings" },
       ],
     },
@@ -334,13 +319,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Authority, facilities, inspections & documentation",
       children: [
         { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "MC/DOT authority, lease-ons & trip leases" },
-        { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs & compliance docs" },
         { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
-        { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
-        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
-        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
+        { icon: "Shield", label: "Compliance Monitoring", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
+        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
         { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "EusoTicket™ centralized document storage, versioning & digital signatures" },
@@ -434,7 +417,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows for petroleum, pharma, agriculture & more" },
         { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "Emergency response plans, SOS procedures & incident workflows" },
         { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
-        { icon: "UserCog", label: "HR & Workforce", path: "/hr-workforce", badge: 0, description: "Driver onboarding, workforce management & HR compliance" },
         { icon: "Store", label: "Vendor Management", path: "/vendor-management", badge: 0, description: "Vendor relationships, contracts & procurement management" },
       ],
     },
@@ -490,7 +472,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Shield", label: "Authority Verify", path: "/authority", badge: 0, description: "Verify carrier authority & lease status" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Authority docs, surety bond & compliance" },
-        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Carrier ELD monitoring, fleet GPS & road condition alerts" },
         { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
       ],
@@ -526,19 +507,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Landmark", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "EusoWallet™ advanced financial management & reporting" },
         { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
         { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
-      ],
-    },
-    {
-      icon: "Truck",
-      label: "The Haul",
-      path: "/the-haul",
-      badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards",
-      children: [
-        { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital truck stop — live chat, active users & community" },
-        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
-        { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
-        { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
       ],
     },
     {
@@ -601,6 +569,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "HOS compliance, driving & on-duty clocks, violations"
     },
+    { icon: "AlertTriangle", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "SOS, hazmat spill response, incident procedures & CHEMTREC" },
     {
       icon: "Package",
       label: "Loads",
@@ -623,10 +592,8 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Vehicle info, hazmat safety, spill & fire response",
       children: [
         { icon: "Wrench", label: "ZEUN Mechanics", path: "/zeun-breakdown", badge: 0, mobileOnly: true, description: "Breakdown reporting and diagnostics" },
-        { icon: "ShieldCheck", label: "Insurance Verification", path: "/insurance/verification", badge: 0, description: "AI document scanning & FMCSA cross-verification" },
         { icon: "Navigation", label: "Live Tracking", path: "/live-tracking", badge: 0, description: "GPS navigation, route compliance & tracking" },
         { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Your ELD status, HOS clocks, road conditions & LiDAR intelligence" },
-        { icon: "Route", label: "Route Optimization", path: "/route-optimization", badge: 0, description: "AI-powered route planning, fuel optimization & multi-stop routing" },
       ],
     },
     {
@@ -634,14 +601,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Compliance",
       path: "/authority",
       badge: 0,
-      description: "Authority, documents & rates",
+      description: "Documents & rates",
       children: [
-        { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "Authority & lease status" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs, license & permits" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
-        { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
-        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
-        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
+        { icon: "Camera", label: "DVIR Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
+        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
       ],
     },
     {
@@ -709,7 +674,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, vehicle, or roadside incident" },
         { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
-        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "Emergency response plans, SOS procedures & incident workflows" },
       ],
     },
   ],
@@ -799,8 +763,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities nationwide" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Run tickets, BOLs, compliance docs & certifications" },
         { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
-        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
-        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
+        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
         { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "EusoTicket™ centralized document storage, versioning & digital signatures" },
@@ -894,7 +857,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "Emergency response plans, SOS procedures & incident workflows" },
         { icon: "Warehouse", label: "Yard Management", path: "/yard-management", badge: 0, description: "Yard operations, trailer tracking & dock scheduling" },
         { icon: "Ship", label: "Multi-Modal Transport", path: "/multi-modal", badge: 0, description: "Intermodal shipping — truck, rail, ocean & air coordination" },
-        { icon: "UserCog", label: "HR & Workforce", path: "/hr-workforce", badge: 0, description: "Driver onboarding, workforce management & HR compliance" },
       ],
     },
   ],
@@ -925,6 +887,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0,
       description: "Live convoy status, proximity geofence, route restrictions, SOS & HOS"
     },
+    { icon: "AlertTriangle", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "SOS, hazmat spill response, incident procedures & CHEMTREC" },
     {
       icon: "User",
       label: "My Profile",
@@ -967,14 +930,10 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       category: "Intelligence",
       description: "Authority, tracking, safety & documents",
       children: [
-        { icon: "Shield", label: "Operating Authority", path: "/authority", badge: 0, description: "Verify carrier authority for oversized loads" },
         { icon: "Navigation", label: "Live Tracking", path: "/live-tracking", badge: 0, description: "Real-time convoy tracking & GPS position" },
         { icon: "ShieldAlert", label: "Safety & Reports", path: "/escort/incidents", badge: 0, description: "Incidents, safety reports & convoy documentation" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "License, certifications & insurance docs" },
-        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Convoy ELD tracking, driver HOS & road condition alerts" },
-        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
-        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
-        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
+        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
       ],
     },
     // ─── PLATFORM FOOTER ───
@@ -1004,19 +963,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     {
-      icon: "Truck",
-      label: "The Haul",
-      path: "/the-haul",
-      badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards",
-      children: [
-        { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital truck stop — live chat, active users & community" },
-        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
-        { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
-        { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
-      ],
-    },
-    {
       icon: "Settings",
       label: "Settings",
       path: "/settings",
@@ -1033,7 +979,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety or roadside incident" },
         { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
-        { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "Emergency response plans, SOS procedures & incident workflows" },
       ],
     },
   ],
@@ -1173,8 +1118,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Database", label: "Facility Intelligence", path: "/facility-search", badge: 0, description: "Search 1,400+ petroleum facilities" },
         { icon: "FileText", label: "Documents", path: "/documents", badge: 0, description: "Permits, compliance docs & certifications" },
         { icon: "Plug2", label: "Integrations", path: "/integrations", badge: 0, description: "Connect DTN, Enverus, OPIS & third-party systems" },
-        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Inbound fleet ELD status, HOS compliance & road intelligence" },
-        { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
+        { icon: "Database", label: "Gate Carrier Verification", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
         { icon: "FileStack", label: "Document Management", path: "/document-management", badge: 0, description: "EusoTicket™ centralized document storage, versioning & digital signatures" },
       ],
@@ -1215,19 +1159,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       ],
     },
     {
-      icon: "Truck",
-      label: "The Haul",
-      path: "/the-haul",
-      badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards",
-      children: [
-        { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital truck stop — live chat, active users & community" },
-        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
-        { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
-        { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
-      ],
-    },
-    {
       icon: "Settings",
       label: "Settings",
       path: "/settings",
@@ -1246,7 +1177,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
         { icon: "FileBarChart", label: "Reporting Engine", path: "/reporting-engine", badge: 0, description: "Custom report builder, scheduled reports & data exports" },
         { icon: "Radio", label: "Asset Tracking", path: "/asset-tracking", badge: 0, description: "Real-time asset tracking, IoT sensor data & geofence alerts" },
-        { icon: "Factory", label: "Industry Verticals", path: "/industry-verticals", badge: 0, description: "Vertical-specific workflows for petroleum, pharma, agriculture & more" },
         { icon: "Siren", label: "Emergency Protocols", path: "/emergency-protocols", badge: 0, description: "Emergency response plans, SOS procedures & incident workflows" },
         { icon: "Store", label: "Vendor Management", path: "/vendor-management", badge: 0, description: "Vendor relationships, contracts & procurement management" },
       ],
@@ -1276,8 +1206,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "CheckCircle", label: "Audits", path: "/audits", badge: 0, description: "Compliance audits" },
         { icon: "CalendarDays", label: "Compliance Calendar", path: "/compliance/calendar", badge: 0, description: "Expiration tracking & renewal deadlines" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
-        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
-        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
+        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
         { icon: "Globe", label: "Cross-Border Shipping", path: "/cross-border", badge: 0, description: "International shipping compliance, customs & cross-border documentation" },
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
         { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
@@ -1297,9 +1226,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Users", label: "Driver Compliance", path: "/driver-compliance", badge: 0, description: "Driver certifications" },
         { icon: "FolderOpen", label: "DQ Files", path: "/compliance/dq-files", badge: 0, description: "Driver qualification file management" },
         { icon: "Activity", label: "ELD Logs", path: "/compliance/eld", badge: 0, description: "Electronic logging device compliance" },
-        { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "ELD compliance dashboard, HOS violations & fleet health" },
         { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
-        { icon: "Gauge", label: "Carrier Capacity", path: "/carrier-capacity", badge: 0, description: "Capacity calendar, availability search & find similar carriers AI" },
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
       ],
     },
@@ -1334,19 +1261,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/compliance/reports",
       badge: 0,
       description: "Compliance reports & audit summaries"
-    },
-    {
-      icon: "Truck",
-      label: "The Haul",
-      path: "/the-haul",
-      badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards",
-      children: [
-        { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital truck stop — live chat, active users & community" },
-        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
-        { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
-        { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
-      ],
     },
     // ─── PLATFORM FOOTER ───
     {
@@ -1416,8 +1330,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "AlertTriangle", label: "Incidents", path: "/safety/incident-management", badge: 0, description: "Incident reports, accidents & investigations" },
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
-        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
-        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
+        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "Training programs, certifications & compliance coursework" },
         { icon: "ShieldAlert", label: "Safety & Risk", path: "/safety-risk", badge: 0, description: "Safety scoring, risk assessment & mitigation strategies" },
         { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
         { icon: "Brain", label: "Anomaly Monitor", path: "/anomaly-monitor", badge: 0, description: "AI-powered anomaly detection across all operations" },
@@ -1435,7 +1348,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "TestTube", label: "Drug & Alcohol", path: "/compliance/driver-qualification", badge: 0, description: "CDL, drug/alcohol testing & background checks" },
         { icon: "Activity", label: "ELD Intelligence", path: "/eld", badge: 0, description: "Fleet ELD safety monitoring, HOS violations & road condition risks" },
         { icon: "Database", label: "Carrier Intelligence", path: "/carrier-intelligence", badge: 0, description: "FMCSA carrier vetting — authority, insurance, safety scores & monitoring" },
-        { icon: "Gauge", label: "Carrier Capacity", path: "/carrier-capacity", badge: 0, description: "Capacity calendar, availability search & find similar carriers AI" },
       ],
     },
     {
@@ -1465,19 +1377,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/safety/reports",
       badge: 0,
       description: "Safety reports & analytics"
-    },
-    {
-      icon: "Truck",
-      label: "The Haul",
-      path: "/the-haul",
-      badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards",
-      children: [
-        { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "The Haul™ digital truck stop — live chat, active users & community" },
-        { icon: "Trophy", label: "Advanced Gamification", path: "/advanced-gamification", badge: 0, description: "The Haul™ achievements, seasons, tournaments & rewards" },
-        { icon: "Heart", label: "Wellness & Retention", path: "/driver-wellness", badge: 0, description: "The Haul™ wellness programs, health tracking & retention" },
-        { icon: "Smartphone", label: "Mobile Hub", path: "/driver-mobile", badge: 0, description: "The Haul™ mobile-first experience & on-the-road tools" },
-      ],
     },
     // ─── PLATFORM FOOTER ───
     {
@@ -1644,8 +1543,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
-        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
-        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
+        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
       ],
     },
     {
@@ -1867,8 +1765,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "ClipboardCheck", label: "Audit & Compliance", path: "/audit-compliance", badge: 0, description: "Audit trails, compliance checklists & regulatory reporting" },
         { icon: "Camera", label: "AI Photo Inspection", path: "/photo-inspection", badge: 0, description: "AI-powered pre-trip vehicle inspection with photo analysis" },
         { icon: "Shield", label: "Compliance Rules", path: "/compliance-rules", badge: 0, description: "Top 5 FMCSA rules — real-time monitoring & auto-enforcement" },
-        { icon: "GraduationCap", label: "Training & Compliance", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
-        { icon: "BookOpen", label: "Training LMS", path: "/training-lms", badge: 0, description: "Course catalog, quizzes, certifications & progress tracking" },
+        { icon: "GraduationCap", label: "Training", path: "/training-compliance", badge: 0, description: "LMS, certifications, permits & CSA scores" },
       ],
     },
     {
