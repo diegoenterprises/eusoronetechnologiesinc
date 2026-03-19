@@ -21,78 +21,10 @@ import {
   Calendar,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 
-// Mock customs data
-const MOCK_ENTRIES = [
-  {
-    id: 1,
-    entryNumber: "ENT-2026-00451",
-    bookingRef: "VB-2026-0034",
-    importerName: "Pacific Electronics Inc",
-    htsCode: "8471.30.0100",
-    entryType: "Consumption (01)",
-    value: 245000,
-    duty: 0,
-    status: "cleared",
-    filedDate: "2026-03-12",
-  },
-  {
-    id: 2,
-    entryNumber: "ENT-2026-00452",
-    bookingRef: "VB-2026-0038",
-    importerName: "Midwest Auto Parts LLC",
-    htsCode: "8708.99.8180",
-    entryType: "Consumption (01)",
-    value: 182000,
-    duty: 4550,
-    status: "hold",
-    filedDate: "2026-03-14",
-  },
-  {
-    id: 3,
-    entryNumber: "ENT-2026-00453",
-    bookingRef: "VB-2026-0041",
-    importerName: "Fashion Forward Imports",
-    htsCode: "6104.63.2011",
-    entryType: "Consumption (01)",
-    value: 98000,
-    duty: 15680,
-    status: "pending",
-    filedDate: "2026-03-15",
-  },
-  {
-    id: 4,
-    entryNumber: "ENT-2026-00454",
-    bookingRef: "VB-2026-0042",
-    importerName: "GlobalTech Semiconductors",
-    htsCode: "8542.31.0000",
-    entryType: "FTZ (06)",
-    value: 520000,
-    duty: 0,
-    status: "cleared",
-    filedDate: "2026-03-15",
-  },
-  {
-    id: 5,
-    entryNumber: "ENT-2026-00455",
-    bookingRef: "VB-2026-0045",
-    importerName: "GreenLeaf Organics",
-    htsCode: "0804.50.6045",
-    entryType: "Consumption (01)",
-    value: 67000,
-    duty: 3685,
-    status: "pending",
-    filedDate: "2026-03-16",
-  },
-];
-
-const ISF_DEADLINES = [
-  { bookingRef: "VB-2026-0048", vessel: "MSC FLORA", deadline: "2026-03-18T12:00:00", status: "on_track" },
-  { bookingRef: "VB-2026-0050", vessel: "MAERSK EDMONTON", deadline: "2026-03-17T08:00:00", status: "urgent" },
-  { bookingRef: "VB-2026-0052", vessel: "CMA CGM SAADE", deadline: "2026-03-20T12:00:00", status: "on_track" },
-];
 
 function statusBadge(status: string) {
   if (status === "cleared" || status === "on_track")
@@ -107,6 +39,8 @@ export default function CustomsDashboard() {
   const isLight = theme === "light";
   const [tab, setTab] = useState("entries");
   const [search, setSearch] = useState("");
+  const customsQuery = (trpc as any).vesselShipments.getCustomsEntries.useQuery();
+  const allEntries: any[] = customsQuery.data || [];
 
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = cn(
@@ -116,17 +50,16 @@ export default function CustomsDashboard() {
       : "bg-slate-800/60 border-slate-700/50"
   );
 
-  const clearedToday = MOCK_ENTRIES.filter((e) => e.status === "cleared").length;
-  const holds = MOCK_ENTRIES.filter((e) => e.status === "hold").length;
-  const pending = MOCK_ENTRIES.filter((e) => e.status === "pending").length;
-  const totalDuty = MOCK_ENTRIES.reduce((s, e) => s + e.duty, 0);
+  const clearedToday = allEntries.filter((e: any) => e.status === "cleared").length;
+  const holds = allEntries.filter((e: any) => e.status === "hold").length;
+  const pending = allEntries.filter((e: any) => e.status === "pending").length;
+  const totalDuty = allEntries.reduce((s: number, e: any) => s + parseFloat(e.dutyAmount || 0), 0);
 
-  const filteredEntries = MOCK_ENTRIES.filter(
-    (e) =>
+  const filteredEntries = allEntries.filter(
+    (e: any) =>
       !search ||
-      e.entryNumber.toLowerCase().includes(search.toLowerCase()) ||
-      e.importerName.toLowerCase().includes(search.toLowerCase()) ||
-      e.htsCode.includes(search)
+      (e.entryNumber || "").toLowerCase().includes(search.toLowerCase()) ||
+      (e.htsCode || "").includes(search)
   );
 
   return (
@@ -230,96 +163,37 @@ export default function CustomsDashboard() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="space-y-3">
-            {filteredEntries.map((e) => (
-              <Card key={e.id} className={cardBg}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <FileText
-                        className={cn(
-                          "w-4 h-4",
-                          e.status === "cleared"
-                            ? "text-emerald-400"
-                            : e.status === "hold"
-                              ? "text-red-400"
-                              : "text-amber-400"
-                        )}
-                      />
-                      <div>
-                        <div
-                          className={cn(
-                            "font-medium text-sm",
-                            isLight ? "text-slate-900" : "text-white"
-                          )}
-                        >
-                          {e.entryNumber}
-                        </div>
-                        <div
-                          className={cn(
-                            "text-xs",
-                            isLight ? "text-slate-500" : "text-slate-400"
-                          )}
-                        >
-                          {e.importerName} — Booking: {e.bookingRef}
+          {filteredEntries.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">
+              <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p className="text-lg font-medium">No customs entries yet</p>
+              <p className="text-sm">Data will appear as customs declarations are filed.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredEntries.map((e: any) => (
+                <Card key={e.id} className={cardBg}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <FileText className={cn("w-4 h-4", e.status === "cleared" ? "text-emerald-400" : e.status === "hold" ? "text-red-400" : "text-amber-400")} />
+                        <div>
+                          <div className={cn("font-medium text-sm", isLight ? "text-slate-900" : "text-white")}>{e.entryNumber || `Entry #${e.id}`}</div>
+                          <div className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>{e.declarationType} • HTS: {e.htsCode || "—"}</div>
                         </div>
                       </div>
+                      <Badge className={statusBadge(e.status)}>{e.status}</Badge>
                     </div>
-                    <Badge className={statusBadge(e.status)}>
-                      {e.status}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-4 gap-2 text-xs">
-                    <div>
-                      <span className="text-slate-500">HTS: </span>
-                      <span
-                        className={cn(
-                          "font-mono",
-                          isLight ? "text-slate-700" : "text-slate-300"
-                        )}
-                      >
-                        {e.htsCode}
-                      </span>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div><span className="text-slate-500">Value: </span><span className={isLight ? "text-slate-700" : "text-slate-300"}>${parseFloat(e.declaredValue || 0).toLocaleString()}</span></div>
+                      <div><span className="text-slate-500">Duty: </span><span className={parseFloat(e.dutyAmount || 0) > 0 ? "text-amber-400" : isLight ? "text-slate-700" : "text-slate-300"}>${parseFloat(e.dutyAmount || 0).toLocaleString()}</span></div>
+                      <div><span className="text-slate-500">Origin: </span><span className={isLight ? "text-slate-700" : "text-slate-300"}>{e.originCountry || "—"}</span></div>
                     </div>
-                    <div>
-                      <span className="text-slate-500">Type: </span>
-                      <span
-                        className={
-                          isLight ? "text-slate-700" : "text-slate-300"
-                        }
-                      >
-                        {e.entryType}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Value: </span>
-                      <span
-                        className={
-                          isLight ? "text-slate-700" : "text-slate-300"
-                        }
-                      >
-                        ${e.value.toLocaleString()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Duty: </span>
-                      <span
-                        className={
-                          e.duty > 0
-                            ? "text-amber-400"
-                            : isLight
-                              ? "text-slate-700"
-                              : "text-slate-300"
-                        }
-                      >
-                        ${e.duty.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* ISF Deadlines Tab */}
@@ -346,39 +220,10 @@ export default function CustomsDashboard() {
                 <AlertTriangle className="w-4 h-4 text-amber-400 inline mr-2" />
                 ISF must be filed 24 hours before vessel loading at foreign port
               </div>
-              <div className="space-y-3">
-                {ISF_DEADLINES.map((isf, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "flex items-center justify-between p-3 rounded-lg",
-                      isLight ? "bg-slate-50" : "bg-slate-700/20"
-                    )}
-                  >
-                    <div>
-                      <div
-                        className={cn(
-                          "font-medium text-sm",
-                          isLight ? "text-slate-900" : "text-white"
-                        )}
-                      >
-                        {isf.bookingRef}
-                      </div>
-                      <div
-                        className={cn(
-                          "text-xs",
-                          isLight ? "text-slate-500" : "text-slate-400"
-                        )}
-                      >
-                        Vessel: {isf.vessel} — Due:{" "}
-                        {new Date(isf.deadline).toLocaleString()}
-                      </div>
-                    </div>
-                    <Badge className={statusBadge(isf.status)}>
-                      {isf.status.replace(/_/g, " ")}
-                    </Badge>
-                  </div>
-                ))}
+              <div className="text-center py-12 text-slate-400">
+                <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-lg font-medium">No ISF deadlines yet</p>
+                <p className="text-sm">Data will appear as ISF filings are created.</p>
               </div>
             </CardContent>
           </Card>

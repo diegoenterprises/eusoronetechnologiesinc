@@ -18,27 +18,11 @@ import {
   AlertTriangle,
   CheckCircle,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const MOCK_FREIGHT_RATES = [
-  { id: "FR-901", route: "Shanghai → Long Beach", type: "20ft Dry", rate: 2850, currency: "USD", validUntil: "2026-04-30", status: "active" },
-  { id: "FR-902", route: "Rotterdam → New York", type: "40ft HC", rate: 4200, currency: "USD", validUntil: "2026-05-15", status: "active" },
-  { id: "FR-903", route: "Singapore → Los Angeles", type: "40ft Reefer", rate: 5600, currency: "USD", validUntil: "2026-03-20", status: "expiring_soon" },
-  { id: "FR-904", route: "Hamburg → Savannah", type: "20ft Dry", rate: 2100, currency: "USD", validUntil: "2026-06-01", status: "active" },
-];
 
-const MOCK_INVOICES = [
-  { id: "INV-3001", booking: "VB-2001", customer: "Pacific Trade Co", amount: 28500, status: "paid", date: "2026-03-08" },
-  { id: "INV-3002", booking: "VB-2005", customer: "Atlantic Imports LLC", amount: 42000, status: "pending", date: "2026-03-12" },
-  { id: "INV-3003", booking: "VB-2009", customer: "Global Freight Inc", amount: 15800, status: "overdue", date: "2026-02-25" },
-];
-
-const MOCK_DEMURRAGE = [
-  { id: "DEM-V01", container: "MSCU 4421987", port: "Long Beach", daysFree: 5, daysUsed: 8, dailyRate: 150, total: 450, status: "accruing" },
-  { id: "DEM-V02", container: "CMAU 7719234", port: "New York/NJ", daysFree: 4, daysUsed: 4, dailyRate: 175, total: 0, status: "within_free" },
-  { id: "DEM-V03", container: "HLCU 2203891", port: "Savannah", daysFree: 5, daysUsed: 10, dailyRate: 150, total: 750, status: "billed" },
-];
 
 const STATUS_MAP: Record<string, string> = {
   active: "bg-emerald-500/20 text-emerald-400",
@@ -56,6 +40,9 @@ export default function VesselFinancial() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [tab, setTab] = useState("rates");
+  const finQuery = (trpc as any).vesselShipments.getVesselFinancialSummary.useQuery();
+  const settlementsData: any[] = finQuery.data?.settlements || [];
+  const demurrageData: any[] = finQuery.data?.demurrage || [];
 
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50";
@@ -76,10 +63,10 @@ export default function VesselFinancial() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { icon: <TrendingUp className="w-5 h-5" />, label: "Active Rates", value: "3" },
-          { icon: <Receipt className="w-5 h-5" />, label: "Open Invoices", value: "$57,800" },
-          { icon: <AlertTriangle className="w-5 h-5" />, label: "Demurrage Accruing", value: "$1,200" },
-          { icon: <CheckCircle className="w-5 h-5" />, label: "Collected (MTD)", value: "$128,400" },
+          { icon: <TrendingUp className="w-5 h-5" />, label: "Settlements", value: settlementsData.length },
+          { icon: <Receipt className="w-5 h-5" />, label: "Demurrage Records", value: demurrageData.length },
+          { icon: <AlertTriangle className="w-5 h-5" />, label: "Demurrage Accruing", value: "$0" },
+          { icon: <CheckCircle className="w-5 h-5" />, label: "Collected (MTD)", value: "$0" },
         ].map((kpi) => (
           <Card key={kpi.label} className={cn("border", cardBg)}>
             <CardContent className="p-4">
@@ -102,20 +89,25 @@ export default function VesselFinancial() {
           <Card className={cn("border", cardBg)}>
             <CardHeader><CardTitle className={text}>Freight Rates</CardTitle></CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {MOCK_FREIGHT_RATES.map((r) => (
-                  <div key={r.id} className={cn("flex items-center justify-between p-3 rounded-lg border", isLight ? "border-slate-200" : "border-slate-700/50")}>
-                    <div>
-                      <span className={cn("font-mono text-sm font-semibold", text)}>{r.id}</span>
-                      <p className={cn("text-xs", muted)}>{r.route} • {r.type}</p>
+              {settlementsData.length === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p className="text-lg font-medium">No freight rate records yet</p>
+                  <p className="text-sm">Data will appear as vessel operations begin.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {settlementsData.map((s: any, i: number) => (
+                    <div key={s.id || i} className={cn("flex items-center justify-between p-3 rounded-lg border", isLight ? "border-slate-200" : "border-slate-700/50")}>
+                      <div>
+                        <span className={cn("font-mono text-sm font-semibold", text)}>Settlement #{s.id}</span>
+                        <p className={cn("text-xs", muted)}>Status: {s.status || "pending"}</p>
+                      </div>
+                      <span className={cn("font-bold", text)}>${parseFloat(s.loadRate || 0).toLocaleString()}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={cn("font-bold", text)}>${r.rate.toLocaleString()}</span>
-                      <Badge className={STATUS_MAP[r.status]}>{r.status.replace("_", " ")}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -124,19 +116,10 @@ export default function VesselFinancial() {
           <Card className={cn("border", cardBg)}>
             <CardHeader><CardTitle className={text}>Invoices</CardTitle></CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {MOCK_INVOICES.map((inv) => (
-                  <div key={inv.id} className={cn("flex items-center justify-between p-3 rounded-lg border", isLight ? "border-slate-200" : "border-slate-700/50")}>
-                    <div>
-                      <span className={cn("font-mono text-sm font-semibold", text)}>{inv.id}</span>
-                      <p className={cn("text-xs", muted)}>{inv.customer} • Booking {inv.booking} • {inv.date}</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={cn("font-bold", text)}>${inv.amount.toLocaleString()}</span>
-                      <Badge className={STATUS_MAP[inv.status]}>{inv.status}</Badge>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-center py-12 text-slate-400">
+                <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-lg font-medium">No invoices yet</p>
+                <p className="text-sm">Data will appear as vessel operations begin.</p>
               </div>
             </CardContent>
           </Card>
@@ -146,20 +129,25 @@ export default function VesselFinancial() {
           <Card className={cn("border", cardBg)}>
             <CardHeader><CardTitle className={text}>Demurrage & Detention</CardTitle></CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {MOCK_DEMURRAGE.map((d) => (
-                  <div key={d.id} className={cn("flex items-center justify-between p-3 rounded-lg border", isLight ? "border-slate-200" : "border-slate-700/50")}>
-                    <div>
-                      <span className={cn("font-mono text-sm font-semibold", text)}>{d.container}</span>
-                      <p className={cn("text-xs", muted)}>{d.port} • {d.daysUsed}/{d.daysFree} free days used • ${d.dailyRate}/day</p>
+              {demurrageData.length === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p className="text-lg font-medium">No demurrage records yet</p>
+                  <p className="text-sm">Data will appear as vessel operations begin.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {demurrageData.map((d: any, i: number) => (
+                    <div key={d.id || i} className={cn("flex items-center justify-between p-3 rounded-lg border", isLight ? "border-slate-200" : "border-slate-700/50")}>
+                      <div>
+                        <span className={cn("font-mono text-sm font-semibold", text)}>Demurrage #{d.id}</span>
+                        <p className={cn("text-xs", muted)}>{d.chargeType || "demurrage"} • {d.chargeableDays || 0} days</p>
+                      </div>
+                      <span className={cn("font-bold", text)}>${parseFloat(d.totalCharge || 0).toLocaleString()}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className={cn("font-bold", text)}>${d.total.toLocaleString()}</span>
-                      <Badge className={STATUS_MAP[d.status]}>{d.status.replace("_", " ")}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -19,38 +19,10 @@ import {
   AlertTriangle,
   Ship,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const MOCK_MANIFEST = [
-  { id: 1, name: "Capt. Robert Hayes", rank: "Master", cert: "STCW II/2", nationality: "US", embarkDate: "2026-01-15", status: "on_board" },
-  { id: 2, name: "Chen Wei", rank: "Chief Officer", cert: "STCW II/2", nationality: "SG", embarkDate: "2026-01-15", status: "on_board" },
-  { id: 3, name: "Maria Santos", rank: "Chief Engineer", cert: "STCW III/2", nationality: "PH", embarkDate: "2026-02-01", status: "on_board" },
-  { id: 4, name: "Erik Johansson", rank: "2nd Officer", cert: "STCW II/1", nationality: "SE", embarkDate: "2026-01-15", status: "on_board" },
-  { id: 5, name: "Raj Patel", rank: "3rd Engineer", cert: "STCW III/1", nationality: "IN", embarkDate: "2026-02-01", status: "on_shore_leave" },
-];
-
-const MOCK_CERTS = [
-  { name: "STCW Basic Safety Training", holder: "All Crew", validUntil: "2027-12-31", status: "valid" },
-  { name: "Advanced Firefighting", holder: "Capt. Hayes", validUntil: "2026-06-15", status: "valid" },
-  { name: "Medical First Aid", holder: "M. Santos", validUntil: "2026-04-01", status: "expiring_soon" },
-  { name: "GMDSS Operator", holder: "E. Johansson", validUntil: "2027-09-30", status: "valid" },
-  { name: "Proficiency in Survival Craft", holder: "Chen Wei", validUntil: "2027-05-15", status: "valid" },
-];
-
-const MOCK_WATCHES = [
-  { watch: "0000-0400", officer: "E. Johansson (2/O)", engineer: "R. Patel (3/E)", status: "completed" },
-  { watch: "0400-0800", officer: "Chen Wei (C/O)", engineer: "M. Santos (C/E)", status: "active" },
-  { watch: "0800-1200", officer: "Capt. Hayes", engineer: "—", status: "upcoming" },
-  { watch: "1200-1600", officer: "E. Johansson (2/O)", engineer: "R. Patel (3/E)", status: "upcoming" },
-];
-
-const MOCK_DRILLS = [
-  { type: "Fire Drill", lastDate: "2026-03-10", nextDue: "2026-04-10", status: "completed" },
-  { type: "Abandon Ship", lastDate: "2026-03-01", nextDue: "2026-04-01", status: "completed" },
-  { type: "Man Overboard", lastDate: "2026-02-15", nextDue: "2026-03-15", status: "due" },
-  { type: "Oil Spill Response", lastDate: "2026-01-20", nextDue: "2026-04-20", status: "completed" },
-];
 
 const STATUS_MAP: Record<string, string> = {
   on_board: "bg-emerald-500/20 text-emerald-400",
@@ -69,6 +41,9 @@ export default function VesselCrew() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [tab, setTab] = useState("manifest");
+  const complianceQuery = (trpc as any).vesselShipments.getVesselCompliance.useQuery({ vesselId: undefined });
+  const crewData: any[] = complianceQuery.data?.crew || [];
+  const inspections: any[] = complianceQuery.data?.inspections || [];
 
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50";
@@ -89,10 +64,10 @@ export default function VesselCrew() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { icon: <Users className="w-5 h-5" />, label: "Crew On Board", value: MOCK_MANIFEST.filter(m => m.status === "on_board").length },
-          { icon: <Award className="w-5 h-5" />, label: "Valid Certs", value: MOCK_CERTS.filter(c => c.status === "valid").length },
-          { icon: <AlertTriangle className="w-5 h-5" />, label: "Certs Expiring", value: MOCK_CERTS.filter(c => c.status === "expiring_soon").length },
-          { icon: <Shield className="w-5 h-5" />, label: "Drills Due", value: MOCK_DRILLS.filter(d => d.status === "due").length },
+          { icon: <Users className="w-5 h-5" />, label: "Crew Records", value: crewData.length },
+          { icon: <Award className="w-5 h-5" />, label: "Inspections", value: inspections.length },
+          { icon: <AlertTriangle className="w-5 h-5" />, label: "Certs Expiring", value: 0 },
+          { icon: <Shield className="w-5 h-5" />, label: "Drills Due", value: 0 },
         ].map((kpi) => (
           <Card key={kpi.label} className={cn("border", cardBg)}>
             <CardContent className="p-4">
@@ -116,18 +91,10 @@ export default function VesselCrew() {
           <Card className={cn("border", cardBg)}>
             <CardHeader><CardTitle className={text}>Crew Manifest</CardTitle></CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {MOCK_MANIFEST.map((m) => (
-                  <div key={m.id} className={cn("flex items-center justify-between p-3 rounded-lg border", isLight ? "border-slate-200" : "border-slate-700/50")}>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className={cn("font-semibold", text)}>{m.name}</span>
-                        <Badge className={STATUS_MAP[m.status]}>{m.status.replace("_", " ")}</Badge>
-                      </div>
-                      <p className={cn("text-xs mt-1", muted)}>{m.rank} • {m.cert} • {m.nationality} • Embarked {m.embarkDate}</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-center py-12 text-slate-400">
+                <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-lg font-medium">No crew manifest records yet</p>
+                <p className="text-sm">Data will appear as vessel operations begin.</p>
               </div>
             </CardContent>
           </Card>
@@ -137,16 +104,10 @@ export default function VesselCrew() {
           <Card className={cn("border", cardBg)}>
             <CardHeader><CardTitle className={text}>STCW Certifications</CardTitle></CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {MOCK_CERTS.map((c, i) => (
-                  <div key={i} className={cn("flex items-center justify-between p-3 rounded-lg border", isLight ? "border-slate-200" : "border-slate-700/50")}>
-                    <div>
-                      <span className={cn("font-semibold text-sm", text)}>{c.name}</span>
-                      <p className={cn("text-xs", muted)}>{c.holder} • Valid until {c.validUntil}</p>
-                    </div>
-                    <Badge className={STATUS_MAP[c.status]}>{c.status.replace("_", " ")}</Badge>
-                  </div>
-                ))}
+              <div className="text-center py-12 text-slate-400">
+                <Award className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-lg font-medium">No certifications recorded yet</p>
+                <p className="text-sm">Data will appear as vessel operations begin.</p>
               </div>
             </CardContent>
           </Card>
@@ -156,16 +117,10 @@ export default function VesselCrew() {
           <Card className={cn("border", cardBg)}>
             <CardHeader><CardTitle className={text}>Watch Schedule</CardTitle></CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {MOCK_WATCHES.map((w, i) => (
-                  <div key={i} className={cn("flex items-center justify-between p-3 rounded-lg border", isLight ? "border-slate-200" : "border-slate-700/50")}>
-                    <div>
-                      <span className={cn("font-mono font-semibold", text)}>{w.watch}</span>
-                      <p className={cn("text-xs mt-1", muted)}>OOW: {w.officer} • Engineer: {w.engineer}</p>
-                    </div>
-                    <Badge className={STATUS_MAP[w.status]}>{w.status}</Badge>
-                  </div>
-                ))}
+              <div className="text-center py-12 text-slate-400">
+                <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-lg font-medium">No watch schedule records yet</p>
+                <p className="text-sm">Data will appear as vessel operations begin.</p>
               </div>
             </CardContent>
           </Card>
@@ -175,16 +130,10 @@ export default function VesselCrew() {
           <Card className={cn("border", cardBg)}>
             <CardHeader><CardTitle className={text}>Safety Drills</CardTitle></CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {MOCK_DRILLS.map((d, i) => (
-                  <div key={i} className={cn("flex items-center justify-between p-3 rounded-lg border", isLight ? "border-slate-200" : "border-slate-700/50")}>
-                    <div>
-                      <span className={cn("font-semibold text-sm", text)}>{d.type}</span>
-                      <p className={cn("text-xs", muted)}>Last: {d.lastDate} • Next due: {d.nextDue}</p>
-                    </div>
-                    <Badge className={STATUS_MAP[d.status]}>{d.status}</Badge>
-                  </div>
-                ))}
+              <div className="text-center py-12 text-slate-400">
+                <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-lg font-medium">No drill records yet</p>
+                <p className="text-sm">Data will appear as vessel operations begin.</p>
               </div>
             </CardContent>
           </Card>

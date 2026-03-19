@@ -372,4 +372,14 @@ export const intermodalRouter = router({
         totalRevenue: parseFloat(revenueResult?.total || "0"),
       };
     }),
+
+  getTransfers: protectedProcedure
+    .input(z.object({ limit: z.number().default(50) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        return await db.select().from(intermodalTransfers).orderBy(desc(intermodalTransfers.id)).limit(input.limit);
+      } catch { return []; }
+    }),
 });

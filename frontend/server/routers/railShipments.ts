@@ -28,8 +28,10 @@ import {
   railShipmentEvents,
   railInspections,
   railHazmatPermits,
+  railCrewAssignments,
   users,
   wallets,
+  settlements,
 } from "../../drizzle/schema";
 
 function generateShipmentNumber(): string {
@@ -785,5 +787,35 @@ export const railShipmentsRouter = router({
           return await railRateService.getTariffRate(input.originStation, input.destStation, input.carType, input.commodity);
         }, 900);
       } catch (e) { logger.error("[Rail] getTariffRate error:", e); return null; }
+    }),
+
+  getRailCrew: railProcedure
+    .input(z.object({ limit: z.number().default(50) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        return await db.select().from(railCrewAssignments).limit(input.limit);
+      } catch { return []; }
+    }),
+
+  getRailCrewHOS: railProcedure
+    .query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        return await db.select().from(railCrewAssignments).limit(50);
+      } catch { return []; }
+    }),
+
+  getRailFinancialSummary: railProcedure
+    .query(async () => {
+      const db = await getDb();
+      if (!db) return { settlements: [], demurrage: [] };
+      try {
+        const s = await db.select().from(settlements).limit(20);
+        const d = await db.select().from(railDemurrage).limit(20);
+        return { settlements: s, demurrage: d };
+      } catch { return { settlements: [], demurrage: [] }; }
     }),
 });

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { trpc } from "@/lib/trpc";
 import {
   Users,
   HardHat,
@@ -22,26 +23,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
-
-const MOCK_ENGINEERS = [
-  { id: 1, name: "James Mitchell", license: "ENG-2024-4421", status: "on_duty", hoursToday: 6.5, maxHours: 12, territory: "Chicago Sub" },
-  { id: 2, name: "Sarah Williams", license: "ENG-2024-4455", status: "resting", hoursToday: 0, maxHours: 12, territory: "Kansas City Sub" },
-  { id: 3, name: "Michael Torres", license: "ENG-2023-3901", status: "on_duty", hoursToday: 10.1, maxHours: 12, territory: "Houston Sub" },
-];
-
-const MOCK_CONDUCTORS = [
-  { id: 1, name: "Robert Chen", license: "CON-2024-7802", status: "on_duty", hoursToday: 9.2, maxHours: 12, territory: "Chicago Sub" },
-  { id: 2, name: "Diana Reyes", license: "CON-2024-7815", status: "available", hoursToday: 0, maxHours: 12, territory: "Memphis Sub" },
-  { id: 3, name: "Kevin Park", license: "CON-2023-6901", status: "on_duty", hoursToday: 3.8, maxHours: 12, territory: "Houston Sub" },
-];
-
-const MOCK_CERTS = [
-  { name: "Operating Rules Qualification", holder: "James Mitchell", validUntil: "2027-06-15", status: "valid" },
-  { name: "Air Brake Proficiency", holder: "Robert Chen", validUntil: "2026-04-01", status: "expiring_soon" },
-  { name: "Hazmat Transportation", holder: "Sarah Williams", validUntil: "2027-12-31", status: "valid" },
-  { name: "Physical Fitness (FRA)", holder: "Michael Torres", validUntil: "2026-09-30", status: "valid" },
-  { name: "Operating Rules Qualification", holder: "Diana Reyes", validUntil: "2026-03-20", status: "expiring_soon" },
-];
 
 const STATUS_MAP: Record<string, string> = {
   on_duty: "bg-emerald-500/20 text-emerald-400",
@@ -56,20 +37,24 @@ export default function RailCrew() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [tab, setTab] = useState("engineers");
+  const crewQuery = (trpc as any).railShipments.getRailCrew.useQuery({ limit: 50 });
+  const allCrew: any[] = crewQuery.data || [];
+  const engineers = allCrew.filter((c: any) => c.role === "engineer");
+  const conductors = allCrew.filter((c: any) => c.role === "conductor");
 
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50";
   const text = isLight ? "text-slate-900" : "text-white";
   const muted = isLight ? "text-slate-500" : "text-slate-400";
 
-  const renderCrewRow = (member: typeof MOCK_ENGINEERS[0]) => (
+  const renderCrewRow = (member: any) => (
     <div key={member.id} className={cn("flex items-center justify-between p-3 rounded-lg border", isLight ? "border-slate-200" : "border-slate-700/50")}>
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <span className={cn("font-semibold", text)}>{member.name}</span>
           <Badge className={STATUS_MAP[member.status]}>{member.status.replace("_", " ")}</Badge>
         </div>
-        <p className={cn("text-xs mt-1", muted)}>License: {member.license} • {member.territory}</p>
+        <div className={cn("text-xs mt-1", muted)}>Role: {member.role} • {member.hoursOfServiceCompliant ? "HOS Compliant" : "Non-compliant"}</div>
       </div>
       <div className="w-32">
         <div className="flex justify-between text-xs mb-1">
@@ -95,10 +80,10 @@ export default function RailCrew() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { icon: <HardHat className="w-5 h-5" />, label: "Engineers", value: MOCK_ENGINEERS.length },
-          { icon: <UserCheck className="w-5 h-5" />, label: "Conductors", value: MOCK_CONDUCTORS.length },
-          { icon: <Award className="w-5 h-5" />, label: "Valid Certs", value: MOCK_CERTS.filter(c => c.status === "valid").length },
-          { icon: <AlertTriangle className="w-5 h-5" />, label: "Expiring Soon", value: MOCK_CERTS.filter(c => c.status === "expiring_soon").length },
+          { icon: <HardHat className="w-5 h-5" />, label: "Engineers", value: engineers.length },
+          { icon: <UserCheck className="w-5 h-5" />, label: "Conductors", value: conductors.length },
+          { icon: <Award className="w-5 h-5" />, label: "Total Crew", value: allCrew.length },
+          { icon: <AlertTriangle className="w-5 h-5" />, label: "Non-Compliant", value: allCrew.filter((c: any) => !c.hoursOfServiceCompliant).length },
         ].map((kpi) => (
           <Card key={kpi.label} className={cn("border", cardBg)}>
             <CardContent className="p-4">
@@ -121,14 +106,26 @@ export default function RailCrew() {
         <TabsContent value="engineers">
           <Card className={cn("border", cardBg)}>
             <CardHeader><CardTitle className={text}>Locomotive Engineers</CardTitle></CardHeader>
-            <CardContent><div className="space-y-3">{MOCK_ENGINEERS.map(renderCrewRow)}</div></CardContent>
+            <CardContent>
+              {engineers.length === 0 ? (
+                <div className="text-center py-12 text-slate-400"><AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-50" /><p className="text-lg font-medium">No records yet</p><p className="text-sm">Data will appear as operations begin.</p></div>
+              ) : (
+                <div className="space-y-3">{engineers.map(renderCrewRow)}</div>
+              )}
+            </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="conductors">
           <Card className={cn("border", cardBg)}>
             <CardHeader><CardTitle className={text}>Conductors</CardTitle></CardHeader>
-            <CardContent><div className="space-y-3">{MOCK_CONDUCTORS.map(renderCrewRow)}</div></CardContent>
+            <CardContent>
+              {conductors.length === 0 ? (
+                <div className="text-center py-12 text-slate-400"><AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-50" /><p className="text-lg font-medium">No records yet</p><p className="text-sm">Data will appear as operations begin.</p></div>
+              ) : (
+                <div className="space-y-3">{conductors.map(renderCrewRow)}</div>
+              )}
+            </CardContent>
           </Card>
         </TabsContent>
 
@@ -136,16 +133,10 @@ export default function RailCrew() {
           <Card className={cn("border", cardBg)}>
             <CardHeader><CardTitle className={text}>Crew Certifications</CardTitle></CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {MOCK_CERTS.map((cert, i) => (
-                  <div key={i} className={cn("flex items-center justify-between p-3 rounded-lg border", isLight ? "border-slate-200" : "border-slate-700/50")}>
-                    <div>
-                      <span className={cn("font-semibold text-sm", text)}>{cert.name}</span>
-                      <p className={cn("text-xs", muted)}>{cert.holder} • Valid until {cert.validUntil}</p>
-                    </div>
-                    <Badge className={STATUS_MAP[cert.status]}>{cert.status.replace("_", " ")}</Badge>
-                  </div>
-                ))}
+              <div className="text-center py-12 text-slate-400">
+                <Award className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-lg font-medium">No certification records yet</p>
+                <p className="text-sm">Certifications will appear as crew records are added.</p>
               </div>
             </CardContent>
           </Card>
@@ -156,9 +147,11 @@ export default function RailCrew() {
             <CardHeader><CardTitle className={text}>Hours of Service Summary</CardTitle></CardHeader>
             <CardContent>
               <p className={cn("text-sm mb-4", muted)}>49 CFR Part 228 — 12-hour on-duty limit, 10-hour undisturbed rest</p>
-              <div className="space-y-3">
-                {[...MOCK_ENGINEERS, ...MOCK_CONDUCTORS].map((m) => renderCrewRow(m))}
-              </div>
+              {allCrew.length === 0 ? (
+                <div className="text-center py-12 text-slate-400"><Clock className="h-12 w-12 mx-auto mb-3 opacity-50" /><p className="text-lg font-medium">No HOS records yet</p><p className="text-sm">Data will appear as crew operations begin.</p></div>
+              ) : (
+                <div className="space-y-3">{allCrew.map(renderCrewRow)}</div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

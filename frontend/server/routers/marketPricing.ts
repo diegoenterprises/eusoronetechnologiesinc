@@ -631,7 +631,7 @@ export const marketPricingRouter = router({
       let baseRate = baseIndex.national.current;
 
       // Apply modifiers
-      if (input.hazmat) baseRate *= 1.35;
+      if (input.hazmat) baseRate *= 1.15;
       if (input.oversizePermit) baseRate *= 1.55;
       if (input.expedited) baseRate *= 1.40;
       if (input.teamRequired) baseRate *= 1.25;

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { MapPin, Search, TrainFront, Map as MapIcon, List, RefreshCw } from "lucide-react";
+import { MapPin, Search, TrainFront, Map as MapIcon, List, RefreshCw, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -32,10 +32,16 @@ export default function RailTracking() {
   const [selectedCar, setSelectedCar] = useState<any>(null);
   const [mapsReady, setMapsReady] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
+  const [selectedShipmentId, setSelectedShipmentId] = useState<number | null>(null);
   const railcarsQuery = (trpc as any).railShipments.getRailcars.useQuery(
     { status: "in_transit", limit: 100 },
     { refetchInterval: 30000 }
   );
+  const trackingQuery = (trpc as any).railShipments.getRailTracking.useQuery(
+    { shipmentId: selectedShipmentId! },
+    { enabled: !!selectedShipmentId, refetchInterval: 30000 }
+  );
+  const trackingEvents: any[] = trackingQuery.data?.events || [];
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = cn("border rounded-2xl", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50");
   const allCars: any[] = railcarsQuery.data?.railcars || [];
@@ -127,7 +133,7 @@ export default function RailTracking() {
               <p className="text-sm text-center py-12 text-slate-500">No railcars currently in transit</p>
             ) : (
               <div className="space-y-2">{items.map((t: any) => (
-                <div key={t.id} className={cn("flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors", isLight ? "bg-slate-50 hover:bg-slate-100" : "bg-slate-700/20 hover:bg-slate-700/30")} onClick={() => { setSelectedCar(t); if (t.currentLocation?.lat) setView("map"); }}>
+                <div key={t.id} className={cn("flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors", isLight ? "bg-slate-50 hover:bg-slate-100" : "bg-slate-700/20 hover:bg-slate-700/30")} onClick={() => { setSelectedCar(t); setSelectedShipmentId(t.shipmentId || t.id); if (t.currentLocation?.lat) setView("map"); }}>
                   <div className="flex items-center gap-3">
                     <TrainFront className="w-4 h-4 text-blue-400" />
                     <div>
@@ -139,6 +145,52 @@ export default function RailTracking() {
                 </div>
               ))}</div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedShipmentId && trackingEvents.length > 0 && (
+        <Card className={cardBg}>
+          <CardHeader>
+            <CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-900" : "text-white")}>
+              <Clock className="w-4 h-4" /> Shipment Events ({trackingEvents.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="relative">
+              <div className={cn("absolute left-[19px] top-0 bottom-0 w-0.5", isLight ? "bg-slate-200" : "bg-slate-700")} />
+              <div className="space-y-4">
+                {trackingEvents.map((ev: any, i: number) => (
+                  <div key={ev.id || i} className="relative flex items-start gap-4">
+                    <div className={cn(
+                      "relative z-10 w-10 h-10 rounded-full border-2 flex items-center justify-center flex-shrink-0",
+                      i === 0 ? "border-blue-400 bg-blue-500/20 animate-pulse" : "border-slate-600 bg-slate-700/30"
+                    )}>
+                      <TrainFront className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className={cn("flex-1 p-3 rounded-lg", isLight ? "bg-slate-50" : "bg-slate-700/20")}>
+                      <span className={cn("font-medium text-sm", isLight ? "text-slate-900" : "text-white")}>
+                        {ev.eventType?.replace(/_/g, " ") || "Event"}
+                      </span>
+                      {ev.description && (
+                        <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>{ev.description}</p>
+                      )}
+                      {ev.location && (
+                        <div className={cn("flex items-center gap-1 text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>
+                          <MapPin className="w-3 h-3" />
+                          {typeof ev.location === "object" ? ev.location.description || `${ev.location.lat}, ${ev.location.lng}` : ev.location}
+                        </div>
+                      )}
+                      {ev.timestamp && (
+                        <div className={cn("text-[10px] mt-1", isLight ? "text-slate-400" : "text-slate-500")}>
+                          {new Date(ev.timestamp).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

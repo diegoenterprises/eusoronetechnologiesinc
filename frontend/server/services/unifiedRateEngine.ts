@@ -18,6 +18,10 @@ export interface RateRequest {
   hazmatClass?: string;
   weight?: number;
   urgency?: 'normal' | 'urgent' | 'critical';
+  transportMode?: 'TRUCK' | 'RAIL' | 'VESSEL';
+  numberOfCars?: number;
+  numberOfContainers?: number;
+  containerSize?: '20ft' | '40ft' | '40hc' | '45ft';
 }
 
 export interface RateResult {
@@ -36,8 +40,38 @@ const BASE_RATES: Record<string, number> = {
   hopper: 2.60, tanker: 3.30, intermodal: 2.15,
 };
 
+const RAIL_RATES: Record<string, number> = {
+  boxcar: 1.60, gondola: 1.45, hopper: 1.30, tank_car: 1.85,
+  flat_car: 1.50, refrigerated: 2.10, autorack: 1.70,
+  intermodal_well: 1.40, centerbeam: 1.55, covered_hopper: 1.35,
+};
+
+const VESSEL_RATES: Record<string, number> = {
+  '20ft': 1800, '40ft': 2800, '40hc': 3100, '45ft': 3400,
+  container: 2800, bulk_dry: 0.08, bulk_liquid: 0.12,
+  breakbulk: 0.15, ro_ro: 3500, reefer: 4200, project_cargo: 0.20,
+};
+
+function computeModeBaseRate(mode: string, req: RateRequest): number {
+  if (mode === 'RAIL') {
+    const perMile = RAIL_RATES[req.equipmentType || 'boxcar'] || 1.50;
+    const cars = req.numberOfCars || 1;
+    return perMile * req.distance * cars;
+  }
+  if (mode === 'VESSEL') {
+    const key = req.containerSize || req.equipmentType || 'container';
+    const rateVal = VESSEL_RATES[key];
+    if (rateVal !== undefined && rateVal < 1) {
+      return rateVal * (req.weight || 20000) * (req.numberOfContainers || 1);
+    }
+    return (rateVal || 2800) * (req.numberOfContainers || 1);
+  }
+  return (BASE_RATES[req.equipmentType || 'dry_van'] || 2.50) * req.distance;
+}
+
 export async function calculateRate(req: RateRequest): Promise<RateResult> {
-  const cacheKey = `rate:${req.originState}:${req.destState}:${req.equipmentType || 'any'}`;
+  const mode = req.transportMode || 'TRUCK';
+  const cacheKey = `rate:${mode}:${req.originState}:${req.destState}:${req.equipmentType || 'any'}`;
 
   return cacheThrough("WARM", cacheKey, async () => {
     const db = await getDb();
@@ -63,13 +97,13 @@ export async function calculateRate(req: RateRequest): Promise<RateResult> {
           source = 'lane_history';
           confidence = Math.min(95, 60 + history.cnt);
         } else {
-          baseRate = (BASE_RATES[req.equipmentType || 'dry_van'] || 2.50) * req.distance;
+          baseRate = computeModeBaseRate(mode, req);
         }
       } catch {
-        baseRate = (BASE_RATES[req.equipmentType || 'dry_van'] || 2.50) * req.distance;
+        baseRate = computeModeBaseRate(mode, req);
       }
     } else {
-      baseRate = (BASE_RATES[req.equipmentType || 'dry_van'] || 2.50) * req.distance;
+      baseRate = computeModeBaseRate(mode, req);
     }
 
     // 2. Adjustments

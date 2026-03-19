@@ -20,6 +20,7 @@ import {
   MapPin,
   Timer,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
@@ -30,64 +31,6 @@ const MODE_ICON: Record<string, React.ReactNode> = {
   VESSEL: <Ship className="w-4 h-4 text-cyan-400" />,
 };
 
-// Mock transfers
-const MOCK_TRANSFERS = [
-  {
-    id: 1,
-    shipmentNumber: "IM-2026-0001",
-    containerNumber: "MSCU1234567",
-    fromMode: "TRUCK",
-    toMode: "RAIL",
-    location: "Chicago Intermodal Terminal",
-    scheduledTime: "2026-03-17T14:00:00",
-    status: "pending",
-    dwellHours: 0,
-  },
-  {
-    id: 2,
-    shipmentNumber: "IM-2026-0002",
-    containerNumber: "TCLU9876543",
-    fromMode: "VESSEL",
-    toMode: "RAIL",
-    location: "Long Beach Intermodal",
-    scheduledTime: "2026-03-22T08:00:00",
-    status: "scheduled",
-    dwellHours: 0,
-  },
-  {
-    id: 3,
-    shipmentNumber: "IM-2026-0004",
-    containerNumber: "CMAU5566778",
-    fromMode: "RAIL",
-    toMode: "TRUCK",
-    location: "Dallas Rail Yard",
-    scheduledTime: "2026-03-16T06:00:00",
-    status: "in_progress",
-    dwellHours: 4.5,
-  },
-  {
-    id: 4,
-    shipmentNumber: "IM-2026-0003",
-    containerNumber: "HLBU4455667",
-    fromMode: "RAIL",
-    toMode: "TRUCK",
-    location: "Memphis Rail Yard",
-    scheduledTime: "2026-03-14T08:00:00",
-    status: "completed",
-    dwellHours: 2.1,
-  },
-  {
-    id: 5,
-    shipmentNumber: "IM-2026-0005",
-    containerNumber: "OOLU3344556",
-    fromMode: "TRUCK",
-    toMode: "VESSEL",
-    location: "Port of Savannah Gate 4",
-    scheduledTime: "2026-03-16T10:00:00",
-    status: "delayed",
-    dwellHours: 12.3,
-  },
-];
 
 function statusBadge(status: string) {
   if (status === "completed") return "bg-emerald-500/20 text-emerald-400";
@@ -101,6 +44,8 @@ export default function IntermodalTransfers() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [tab, setTab] = useState("all");
+  const transfersQuery = (trpc as any).intermodal.getTransfers.useQuery({ limit: 50 });
+  const allTransfers: any[] = transfersQuery.data || [];
 
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = cn(
@@ -110,12 +55,13 @@ export default function IntermodalTransfers() {
       : "bg-slate-800/60 border-slate-700/50"
   );
 
-  const pending = MOCK_TRANSFERS.filter((t) => t.status === "pending" || t.status === "scheduled").length;
-  const active = MOCK_TRANSFERS.filter((t) => t.status === "in_progress").length;
-  const delayed = MOCK_TRANSFERS.filter((t) => t.status === "delayed").length;
-  const avgDwell = MOCK_TRANSFERS.filter((t) => t.dwellHours > 0).reduce((s, t) => s + t.dwellHours, 0) / Math.max(MOCK_TRANSFERS.filter((t) => t.dwellHours > 0).length, 1);
+  const pending = allTransfers.filter((t: any) => t.status === "pending" || t.status === "scheduled").length;
+  const active = allTransfers.filter((t: any) => t.status === "in_progress").length;
+  const delayed = allTransfers.filter((t: any) => t.status === "delayed").length;
+  const dwellItems = allTransfers.filter((t: any) => parseFloat(t.dwellHours || 0) > 0);
+  const avgDwell = dwellItems.length > 0 ? dwellItems.reduce((s: number, t: any) => s + parseFloat(t.dwellHours || 0), 0) / dwellItems.length : 0;
 
-  const filtered = MOCK_TRANSFERS.filter((t) => {
+  const filtered = allTransfers.filter((t: any) => {
     if (tab === "pending") return t.status === "pending" || t.status === "scheduled";
     if (tab === "active") return t.status === "in_progress";
     if (tab === "delayed") return t.status === "delayed";
@@ -168,84 +114,75 @@ export default function IntermodalTransfers() {
       </Tabs>
 
       {/* Transfer Cards */}
-      <div className="space-y-3">
-        {filtered.map((t) => (
-          <Card key={t.id} className={cardBg}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  {/* Mode Transfer Visual */}
-                  <div className="flex items-center gap-2">
-                    <div className={cn("p-2 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/30 border-slate-600/30")}>
-                      {MODE_ICON[t.fromMode]}
+      {filtered.length === 0 ? (
+        <div className="text-center py-12 text-slate-400">
+          <ArrowLeftRight className="h-12 w-12 mx-auto mb-3 opacity-50" />
+          <p className="text-lg font-medium">No intermodal transfers yet</p>
+          <p className="text-sm">Data will appear as intermodal operations begin.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((t: any) => {
+            const fromMode = (t.fromMode || "TRUCK").toUpperCase();
+            const toMode = (t.toMode || "RAIL").toUpperCase();
+            const dwell = parseFloat(t.dwellHours || 0);
+            return (
+              <Card key={t.id} className={cardBg}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className={cn("p-2 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/30 border-slate-600/30")}>
+                          {MODE_ICON[fromMode] || <Truck className="w-4 h-4" />}
+                        </div>
+                        <ArrowLeftRight className={cn("w-4 h-4", t.status === "delayed" ? "text-red-400" : "text-violet-400")} />
+                        <div className={cn("p-2 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/30 border-slate-600/30")}>
+                          {MODE_ICON[toMode] || <TrainFront className="w-4 h-4" />}
+                        </div>
+                      </div>
+                      <div>
+                        <div className={cn("font-medium text-sm", isLight ? "text-slate-900" : "text-white")}>Transfer #{t.id}</div>
+                        <div className={cn("text-xs font-mono", isLight ? "text-slate-500" : "text-slate-400")}>{t.transferLocation || "—"}</div>
+                      </div>
                     </div>
-                    <ArrowLeftRight className={cn("w-4 h-4", t.status === "delayed" ? "text-red-400" : "text-violet-400")} />
-                    <div className={cn("p-2 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/30 border-slate-600/30")}>
-                      {MODE_ICON[t.toMode]}
+                    <Badge className={statusBadge(t.status || "pending")}>{(t.status || "pending").replace(/_/g, " ")}</Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-xs">
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-slate-400" />
+                      <span className={isLight ? "text-slate-600" : "text-slate-300"}>{t.transferLocation || "—"}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-400" />
+                      <span className={isLight ? "text-slate-600" : "text-slate-300"}>{t.scheduledTime ? new Date(t.scheduledTime).toLocaleString() : "—"}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Timer className="w-3 h-3 text-slate-400" />
+                      <span className={cn(dwell > 8 ? "text-red-400" : dwell > 4 ? "text-amber-400" : isLight ? "text-slate-600" : "text-slate-300")}>
+                        Dwell: {dwell > 0 ? `${dwell.toFixed(1)}h` : "—"}
+                      </span>
                     </div>
                   </div>
-                  <div>
-                    <div className={cn("font-medium text-sm", isLight ? "text-slate-900" : "text-white")}>
-                      {t.shipmentNumber}
+                  {(t.status === "pending" || t.status === "scheduled") && (
+                    <div className="mt-3">
+                      <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-xs" onClick={() => toast.success(`Transfer #${t.id} started`)}>
+                        <CheckCircle className="w-3 h-3 mr-1" /> Begin Transfer
+                      </Button>
                     </div>
-                    <div className={cn("text-xs font-mono", isLight ? "text-slate-500" : "text-slate-400")}>
-                      {t.containerNumber}
+                  )}
+                  {t.status === "in_progress" && (
+                    <div className="mt-3">
+                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs" onClick={() => toast.success(`Transfer #${t.id} completed`)}>
+                        <CheckCircle className="w-3 h-3 mr-1" /> Complete Transfer
+                      </Button>
                     </div>
-                  </div>
-                </div>
-                <Badge className={statusBadge(t.status)}>
-                  {t.status.replace(/_/g, " ")}
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 text-xs">
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-slate-400" />
-                  <span className={isLight ? "text-slate-600" : "text-slate-300"}>{t.location}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-slate-400" />
-                  <span className={isLight ? "text-slate-600" : "text-slate-300"}>
-                    {new Date(t.scheduledTime).toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Timer className="w-3 h-3 text-slate-400" />
-                  <span className={cn(t.dwellHours > 8 ? "text-red-400" : t.dwellHours > 4 ? "text-amber-400" : isLight ? "text-slate-600" : "text-slate-300")}>
-                    Dwell: {t.dwellHours > 0 ? `${t.dwellHours.toFixed(1)}h` : "—"}
-                  </span>
-                </div>
-              </div>
-
-              {(t.status === "pending" || t.status === "scheduled") && (
-                <div className="mt-3">
-                  <Button
-                    size="sm"
-                    className="bg-violet-600 hover:bg-violet-700 text-xs"
-                    onClick={() => toast.success(`Transfer ${t.shipmentNumber} started`)}
-                  >
-                    <CheckCircle className="w-3 h-3 mr-1" /> Begin Transfer
-                  </Button>
-                </div>
-              )}
-              {t.status === "in_progress" && (
-                <div className="mt-3">
-                  <Button
-                    size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-xs"
-                    onClick={() => toast.success(`Transfer ${t.shipmentNumber} completed`)}
-                  >
-                    <CheckCircle className="w-3 h-3 mr-1" /> Complete Transfer
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-        {filtered.length === 0 && (
-          <p className="text-center py-12 text-slate-500 text-sm">No transfers found</p>
-        )}
-      </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

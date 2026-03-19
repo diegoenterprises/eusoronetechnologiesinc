@@ -36,6 +36,7 @@ import {
   vesselPortCharges,
   users,
   wallets,
+  settlements,
 } from "../../drizzle/schema";
 
 function generateBookingNumber(): string {
@@ -1038,5 +1039,25 @@ export const vesselShipmentsRouter = router({
       try {
         return await avalaraHTSService.getTradeAgreements(input.htsCode, input.originCountry);
       } catch (e) { logger.error("[Vessel] getTradeAgreements error:", e); return null; }
+    }),
+
+  getCustomsEntries: vesselProcedure
+    .query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        return await db.select().from(customsDeclarations).orderBy(desc(customsDeclarations.id)).limit(50);
+      } catch { return []; }
+    }),
+
+  getVesselFinancialSummary: vesselProcedure
+    .query(async () => {
+      const db = await getDb();
+      if (!db) return { settlements: [], demurrage: [] };
+      try {
+        const s = await db.select().from(settlements).limit(20);
+        const d = await db.select().from(vesselDemurrage).limit(20);
+        return { settlements: s, demurrage: d };
+      } catch { return { settlements: [], demurrage: [] }; }
     }),
 });

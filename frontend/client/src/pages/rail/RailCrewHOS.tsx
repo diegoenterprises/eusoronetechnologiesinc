@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { trpc } from "@/lib/trpc";
 import {
   Clock,
   Users,
@@ -22,53 +23,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 
-// Mock crew data — will be replaced with tRPC calls when crew tables are wired
-const MOCK_CREW = [
-  {
-    id: 1,
-    name: "James Mitchell",
-    role: "Engineer",
-    hoursOnDuty: 6.5,
-    maxOnDuty: 12,
-    lastRestStart: "2026-03-16T02:00:00",
-    restHours: 10,
-    limboHours: 0,
-    status: "on_duty",
-  },
-  {
-    id: 2,
-    name: "Robert Chen",
-    role: "Conductor",
-    hoursOnDuty: 9.2,
-    maxOnDuty: 12,
-    lastRestStart: "2026-03-15T22:00:00",
-    restHours: 10,
-    limboHours: 1.5,
-    status: "on_duty",
-  },
-  {
-    id: 3,
-    name: "Sarah Williams",
-    role: "Engineer",
-    hoursOnDuty: 0,
-    maxOnDuty: 12,
-    lastRestStart: "2026-03-16T10:00:00",
-    restHours: 4,
-    limboHours: 0,
-    status: "resting",
-  },
-  {
-    id: 4,
-    name: "David Thompson",
-    role: "Conductor",
-    hoursOnDuty: 11.3,
-    maxOnDuty: 12,
-    lastRestStart: "2026-03-15T18:00:00",
-    restHours: 10,
-    limboHours: 3.0,
-    status: "approaching_limit",
-  },
-];
 
 function HoursBar({
   current,
@@ -128,13 +82,17 @@ export default function RailCrewHOS() {
       : "bg-slate-800/60 border-slate-700/50"
   );
 
-  const onDuty = MOCK_CREW.filter(
-    (c) => c.status === "on_duty" || c.status === "approaching_limit"
-  );
-  const resting = MOCK_CREW.filter((c) => c.status === "resting");
-  const approaching = MOCK_CREW.filter(
-    (c) => c.status === "approaching_limit"
-  );
+  const hosQuery = (trpc as any).railShipments.getRailCrewHOS.useQuery();
+  const rawCrew: any[] = hosQuery.data || [];
+  const crewData = rawCrew.map((c: any) => {
+    const hrs = Number(c.hoursOnDuty) || 0;
+    const status = !c.relievedAt ? (hrs > 11 ? "approaching_limit" : "on_duty") : "resting";
+    const restHrs = c.relievedAt ? (Date.now() - new Date(c.relievedAt).getTime()) / 3600000 : 0;
+    return { ...c, hoursOnDuty: hrs, maxOnDuty: 12, status, restHours: Math.round(restHrs * 10) / 10, limboHours: 0, name: c.name || `Crew #${c.id}`, role: c.role || "crew" };
+  });
+  const onDuty = crewData.filter((c: any) => c.status === "on_duty" || c.status === "approaching_limit");
+  const resting = crewData.filter((c: any) => c.status === "resting");
+  const approaching = crewData.filter((c: any) => c.status === "approaching_limit");
 
   return (
     <div className={cn("min-h-screen p-6", bg)}>
@@ -225,7 +183,7 @@ export default function RailCrewHOS() {
             <Users className="w-5 h-5 text-emerald-400" />
           </div>
           <div className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>
-            {MOCK_CREW.length}
+            {crewData.length}
           </div>
           <div className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
             Total Crew
@@ -420,7 +378,9 @@ export default function RailCrewHOS() {
 
         <TabsContent value="all">
           <div className="space-y-4">
-            {MOCK_CREW.map((c) => (
+            {crewData.length === 0 ? (
+              <div className="text-center py-12 text-slate-400"><Users className="h-12 w-12 mx-auto mb-3 opacity-50" /><p className="text-lg font-medium">No crew records yet</p><p className="text-sm">Data will appear as crew operations begin.</p></div>
+            ) : crewData.map((c: any) => (
               <Card key={c.id} className={cardBg}>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">

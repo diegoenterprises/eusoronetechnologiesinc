@@ -11,16 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FileText, Search, CheckCircle, Ship } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
 
-const MOCK_BOLS = [
-  { id: 1, bolNumber: "BOL-2026-MSC-00234", bookingRef: "VB-2026-0034", bolType: "master", shipper: "Pacific Electronics Inc", consignee: "TechDist America LLC", vessel: "MSC FLORA", containers: 4, status: "issued", surrendered: false, issuedDate: "2026-03-12" },
-  { id: 2, bolNumber: "BOL-2026-MAE-00118", bookingRef: "VB-2026-0038", bolType: "house", shipper: "AutoParts Global Ltd", consignee: "Midwest Auto Parts LLC", vessel: "MAERSK EDMONTON", containers: 2, status: "surrendered", surrendered: true, issuedDate: "2026-03-10" },
-  { id: 3, bolNumber: "BOL-2026-CMA-00089", bookingRef: "VB-2026-0041", bolType: "straight", shipper: "Fashion House Milano", consignee: "Fashion Forward Imports", vessel: "CMA CGM JACQUES SAADE", containers: 1, status: "draft", surrendered: false, issuedDate: "" },
-  { id: 4, bolNumber: "BOL-2026-EVR-00056", bookingRef: "VB-2026-0042", bolType: "order", shipper: "TSMC Export Division", consignee: "To Order of Bank of America", vessel: "EVER ACE", containers: 6, status: "issued", surrendered: false, issuedDate: "2026-03-14" },
-];
 
 function bolStatusBadge(status: string) {
   if (status === "surrendered") return "bg-emerald-500/20 text-emerald-400";
@@ -42,15 +37,17 @@ export default function BillOfLading() {
   const isLight = theme === "light";
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
+  const bolQuery = (trpc as any).vesselShipments.getBOL.useQuery({});
+  const allBols: any[] = Array.isArray(bolQuery.data) ? bolQuery.data : bolQuery.data ? [bolQuery.data] : [];
 
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = cn("border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50");
 
-  const filteredBols = MOCK_BOLS.filter((b) => {
+  const filteredBols = allBols.filter((b: any) => {
     if (tab === "issued" && b.status !== "issued") return false;
     if (tab === "draft" && b.status !== "draft") return false;
-    if (tab === "surrendered" && !b.surrendered) return false;
-    if (search && !b.bolNumber.toLowerCase().includes(search.toLowerCase()) && !b.shipper.toLowerCase().includes(search.toLowerCase())) return false;
+    if (tab === "surrendered" && b.status !== "surrendered") return false;
+    if (search && !(b.bolNumber || "").toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
@@ -93,41 +90,47 @@ export default function BillOfLading() {
         <Input className="pl-9" placeholder="Search by BOL # or shipper..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      <div className="space-y-3">
-        {filteredBols.map((b) => (
-          <Card key={b.id} className={cardBg}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <FileText className={cn("w-4 h-4", b.status === "surrendered" ? "text-emerald-400" : b.status === "issued" ? "text-blue-400" : "text-amber-400")} />
-                  <div>
-                    <div className={cn("font-medium text-sm", isLight ? "text-slate-900" : "text-white")}>{b.bolNumber}</div>
-                    <div className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>Booking: {b.bookingRef} — Vessel: {b.vessel}</div>
+      {filteredBols.length === 0 ? (
+        <div className="text-center py-12 text-slate-400">
+          <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+          <p className="text-lg font-medium">No bills of lading yet</p>
+          <p className="text-sm">Data will appear as vessel bookings are created.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredBols.map((b: any) => (
+            <Card key={b.id} className={cardBg}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <FileText className={cn("w-4 h-4", b.status === "surrendered" ? "text-emerald-400" : b.status === "issued" ? "text-blue-400" : "text-amber-400")} />
+                    <div>
+                      <div className={cn("font-medium text-sm", isLight ? "text-slate-900" : "text-white")}>{b.bolNumber}</div>
+                      <div className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>Shipment #{b.shipmentId} • {b.bolType || "standard"}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={bolTypeBadge(b.bolType || "")}>{b.bolType || "—"}</Badge>
+                    <Badge className={bolStatusBadge(b.status)}>{b.status}</Badge>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge className={bolTypeBadge(b.bolType)}>{b.bolType}</Badge>
-                  <Badge className={bolStatusBadge(b.status)}>{b.status}</Badge>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div><span className="text-slate-500">Shipper: </span><span className={isLight ? "text-slate-700" : "text-slate-300"}>{b.shipperName || "—"}</span></div>
+                  <div><span className="text-slate-500">Consignee: </span><span className={isLight ? "text-slate-700" : "text-slate-300"}>{b.consigneeName || "—"}</span></div>
+                  <div><span className="text-slate-500">Issued: </span><span className={isLight ? "text-slate-700" : "text-slate-300"}>{b.issuedDate ? new Date(b.issuedDate).toLocaleDateString() : "—"}</span></div>
                 </div>
-              </div>
-              <div className="grid grid-cols-4 gap-2 text-xs">
-                <div><span className="text-slate-500">Shipper: </span><span className={isLight ? "text-slate-700" : "text-slate-300"}>{b.shipper}</span></div>
-                <div><span className="text-slate-500">Consignee: </span><span className={isLight ? "text-slate-700" : "text-slate-300"}>{b.consignee}</span></div>
-                <div><span className="text-slate-500">Containers: </span><span className={isLight ? "text-slate-700" : "text-slate-300"}>{b.containers}</span></div>
-                <div><span className="text-slate-500">Issued: </span><span className={isLight ? "text-slate-700" : "text-slate-300"}>{b.issuedDate || "—"}</span></div>
-              </div>
-              {b.status === "issued" && !b.surrendered && (
-                <div className="mt-3 flex gap-2">
-                  <Button size="sm" variant="outline" className="text-xs" onClick={() => toast.success(`BOL ${b.bolNumber} surrendered`)}>
-                    <CheckCircle className="w-3 h-3 mr-1" /> Surrender
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-        {filteredBols.length === 0 && <p className="text-center py-12 text-slate-500 text-sm">No BOLs found</p>}
-      </div>
+                {b.status === "issued" && (
+                  <div className="mt-3 flex gap-2">
+                    <Button size="sm" variant="outline" className="text-xs" onClick={() => toast.success(`BOL ${b.bolNumber} surrendered`)}>
+                      <CheckCircle className="w-3 h-3 mr-1" /> Surrender
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
