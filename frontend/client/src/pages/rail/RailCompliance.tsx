@@ -1,7 +1,6 @@
 /**
  * RAIL COMPLIANCE — V5 Multi-Modal
- * FRA compliance dashboard: status cards, certification tracker,
- * inspection schedule, incident log
+ * FRA compliance dashboard: live data from tRPC + static regulation reference
  */
 
 import React, { useState } from "react";
@@ -10,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Shield,
   CheckCircle,
@@ -25,87 +25,25 @@ import {
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 
-// Mock compliance data — will connect to real tRPC when compliance tables are wired
+// Static regulation reference (these don't come from DB)
 const COMPLIANCE_AREAS = [
-  {
-    id: 1,
-    name: "Track Safety Standards",
-    regulation: "49 CFR Part 213",
-    status: "compliant",
-    lastAudit: "2026-02-15",
-    nextAudit: "2026-08-15",
-    score: 96,
-  },
-  {
-    id: 2,
-    name: "Freight Car Safety Standards",
-    regulation: "49 CFR Part 215",
-    status: "compliant",
-    lastAudit: "2026-01-20",
-    nextAudit: "2026-07-20",
-    score: 92,
-  },
-  {
-    id: 3,
-    name: "Railroad Communications",
-    regulation: "49 CFR Part 220",
-    status: "compliant",
-    lastAudit: "2026-03-01",
-    nextAudit: "2026-09-01",
-    score: 100,
-  },
-  {
-    id: 4,
-    name: "Hours of Service",
-    regulation: "49 CFR Part 228",
-    status: "warning",
-    lastAudit: "2026-02-28",
-    nextAudit: "2026-05-28",
-    score: 85,
-  },
-  {
-    id: 5,
-    name: "Railroad Operating Rules",
-    regulation: "49 CFR Part 217",
-    status: "compliant",
-    lastAudit: "2026-01-10",
-    nextAudit: "2026-07-10",
-    score: 94,
-  },
-  {
-    id: 6,
-    name: "Hazardous Materials",
-    regulation: "49 CFR Part 174",
-    status: "compliant",
-    lastAudit: "2026-03-05",
-    nextAudit: "2026-06-05",
-    score: 98,
-  },
+  { id: 1, name: "Track Safety Standards", regulation: "49 CFR Part 213" },
+  { id: 2, name: "Freight Car Safety Standards", regulation: "49 CFR Part 215" },
+  { id: 3, name: "Railroad Communications", regulation: "49 CFR Part 220" },
+  { id: 4, name: "Hours of Service", regulation: "49 CFR Part 228" },
+  { id: 5, name: "Railroad Operating Rules", regulation: "49 CFR Part 217" },
+  { id: 6, name: "Hazardous Materials", regulation: "49 CFR Part 174" },
 ];
 
 const CERTIFICATIONS = [
-  { name: "Engineer Certification", regulation: "49 CFR 240", holders: 12, expiringSoon: 1, status: "active" },
-  { name: "Conductor Certification", regulation: "49 CFR 242", holders: 18, expiringSoon: 2, status: "active" },
-  { name: "Signal Employee Cert", regulation: "49 CFR 246", holders: 4, expiringSoon: 0, status: "active" },
-  { name: "Drug & Alcohol Program", regulation: "49 CFR 219", holders: 34, expiringSoon: 0, status: "active" },
-];
-
-const INSPECTIONS = [
-  { id: 1, type: "Blue Signal Protection", date: "2026-03-20", inspector: "FRA Region 4", status: "scheduled" },
-  { id: 2, type: "Brake System Inspection", date: "2026-03-25", inspector: "Internal QA", status: "scheduled" },
-  { id: 3, type: "Track Geometry", date: "2026-02-28", inspector: "FRA Region 4", status: "passed", score: 95 },
-  { id: 4, type: "Hazmat Handling Audit", date: "2026-02-15", inspector: "PHMSA", status: "passed", score: 98 },
-  { id: 5, type: "Operating Practices", date: "2026-01-30", inspector: "FRA Region 4", status: "passed", score: 91 },
-];
-
-const INCIDENTS = [
-  { id: 1, date: "2026-03-10", type: "Derailment (minor)", location: "Bailey Yard, NE", severity: "low", status: "closed", description: "Empty car derailed at low speed during switching" },
-  { id: 2, date: "2026-02-22", type: "Grade Crossing", location: "Milepost 145.2, KS", severity: "medium", status: "under_review", description: "Gate malfunction — no injuries" },
-  { id: 3, date: "2026-01-15", type: "Signal Violation", location: "Roseville Yard, CA", severity: "low", status: "closed", description: "Crew passed restricting signal — retraining completed" },
+  { name: "Engineer Certification", regulation: "49 CFR 240" },
+  { name: "Conductor Certification", regulation: "49 CFR 242" },
+  { name: "Signal Employee Cert", regulation: "49 CFR 246" },
+  { name: "Drug & Alcohol Program", regulation: "49 CFR 219" },
 ];
 
 function StatusIcon({ status }: { status: string }) {
-  if (status === "compliant" || status === "passed" || status === "active")
+  if (status === "compliant" || status === "passed" || status === "active" || status === "pass")
     return <CheckCircle className="w-4 h-4 text-emerald-400" />;
   if (status === "warning")
     return <AlertTriangle className="w-4 h-4 text-amber-400" />;
@@ -113,7 +51,7 @@ function StatusIcon({ status }: { status: string }) {
 }
 
 function statusBadge(status: string) {
-  if (status === "compliant" || status === "passed" || status === "active" || status === "closed")
+  if (status === "compliant" || status === "passed" || status === "active" || status === "closed" || status === "pass")
     return "bg-emerald-500/20 text-emerald-400";
   if (status === "warning" || status === "scheduled" || status === "under_review")
     return "bg-amber-500/20 text-amber-400";
@@ -125,6 +63,9 @@ export default function RailCompliance() {
   const isLight = theme === "light";
   const [tab, setTab] = useState("status");
 
+  // Live data from tRPC
+  const complianceQuery = trpc.railShipments.getRailCompliance.useQuery({});
+
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = cn(
     "border",
@@ -133,13 +74,14 @@ export default function RailCompliance() {
       : "bg-slate-800/60 border-slate-700/50"
   );
 
-  const compliantCount = COMPLIANCE_AREAS.filter(
-    (a) => a.status === "compliant"
-  ).length;
-  const avgScore = Math.round(
-    COMPLIANCE_AREAS.reduce((sum, a) => sum + a.score, 0) /
-      COMPLIANCE_AREAS.length
-  );
+  const inspections: any[] = complianceQuery.data?.inspections || [];
+  const hazmatPermits: any[] = complianceQuery.data?.hazmatPermits || [];
+  const complianceStatus = complianceQuery.data?.status || "unknown";
+  const totalInspections = complianceQuery.data?.totalInspections || 0;
+  const failedCount = complianceQuery.data?.failedCount || 0;
+
+  const passedCount = inspections.filter((i: any) => i.result === "pass" || i.result === "passed").length;
+  const avgScore = totalInspections > 0 ? Math.round(((totalInspections - failedCount) / totalInspections) * 100) : 0;
 
   return (
     <div className={cn("min-h-screen p-6", bg)}>
@@ -175,10 +117,10 @@ export default function RailCompliance() {
             <Shield className="w-5 h-5 text-emerald-400" />
           </div>
           <div className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>
-            {avgScore}%
+            {complianceQuery.isLoading ? <Skeleton className="h-8 w-16" /> : `${avgScore}%`}
           </div>
           <div className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
-            Avg Compliance Score
+            Inspection Pass Rate
           </div>
         </div>
         <div className={cn("rounded-xl border p-4", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
@@ -186,10 +128,10 @@ export default function RailCompliance() {
             <CheckCircle className="w-5 h-5 text-blue-400" />
           </div>
           <div className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>
-            {compliantCount}/{COMPLIANCE_AREAS.length}
+            {complianceQuery.isLoading ? <Skeleton className="h-8 w-16" /> : complianceStatus}
           </div>
           <div className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
-            Areas Compliant
+            Overall Status
           </div>
         </div>
         <div className={cn("rounded-xl border p-4", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
@@ -197,10 +139,10 @@ export default function RailCompliance() {
             <Award className="w-5 h-5 text-amber-400" />
           </div>
           <div className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>
-            {CERTIFICATIONS.reduce((s, c) => s + c.expiringSoon, 0)}
+            {complianceQuery.isLoading ? <Skeleton className="h-8 w-16" /> : hazmatPermits.length}
           </div>
           <div className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
-            Certs Expiring Soon
+            Hazmat Permits
           </div>
         </div>
         <div className={cn("rounded-xl border p-4", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
@@ -208,10 +150,10 @@ export default function RailCompliance() {
             <AlertTriangle className="w-5 h-5 text-red-400" />
           </div>
           <div className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>
-            {INCIDENTS.filter((i) => i.status === "under_review").length}
+            {complianceQuery.isLoading ? <Skeleton className="h-8 w-16" /> : failedCount}
           </div>
           <div className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
-            Open Incidents
+            Failed Inspections
           </div>
         </div>
       </div>
@@ -231,9 +173,9 @@ export default function RailCompliance() {
             <ClipboardCheck className="w-3.5 h-3.5 mr-1" />
             Inspections
           </TabsTrigger>
-          <TabsTrigger value="incidents">
+          <TabsTrigger value="hazmat">
             <AlertTriangle className="w-3.5 h-3.5 mr-1" />
-            Incidents
+            Hazmat Permits
           </TabsTrigger>
         </TabsList>
 
@@ -243,9 +185,9 @@ export default function RailCompliance() {
             {COMPLIANCE_AREAS.map((area) => (
               <Card key={area.id} className={cardBg}>
                 <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <StatusIcon status={area.status} />
+                      <StatusIcon status={complianceStatus} />
                       <div>
                         <div
                           className={cn(
@@ -265,42 +207,9 @@ export default function RailCompliance() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={cn(
-                          "text-sm font-bold",
-                          area.score >= 95
-                            ? "text-emerald-400"
-                            : area.score >= 85
-                              ? "text-amber-400"
-                              : "text-red-400"
-                        )}
-                      >
-                        {area.score}%
-                      </span>
-                      <Badge className={statusBadge(area.status)}>
-                        {area.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Progress
-                    value={area.score}
-                    className={cn(
-                      "h-1.5",
-                      area.score >= 95
-                        ? "[&>div]:bg-emerald-500"
-                        : area.score >= 85
-                          ? "[&>div]:bg-amber-500"
-                          : "[&>div]:bg-red-500"
-                    )}
-                  />
-                  <div className="flex justify-between mt-2 text-xs">
-                    <span className={isLight ? "text-slate-400" : "text-slate-500"}>
-                      Last audit: {area.lastAudit}
-                    </span>
-                    <span className={isLight ? "text-slate-400" : "text-slate-500"}>
-                      Next audit: {area.nextAudit}
-                    </span>
+                    <Badge className={statusBadge(complianceStatus)}>
+                      {complianceStatus}
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -332,20 +241,11 @@ export default function RailCompliance() {
                             isLight ? "text-slate-500" : "text-slate-400"
                           )}
                         >
-                          {cert.regulation} — {cert.holders} active holders
+                          {cert.regulation}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {cert.expiringSoon > 0 && (
-                        <Badge className="bg-amber-500/20 text-amber-400 text-xs">
-                          {cert.expiringSoon} expiring
-                        </Badge>
-                      )}
-                      <Badge className={statusBadge(cert.status)}>
-                        {cert.status}
-                      </Badge>
-                    </div>
+                    <Badge className={statusBadge("active")}>active</Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -353,110 +253,108 @@ export default function RailCompliance() {
           </div>
         </TabsContent>
 
-        {/* Inspections Tab */}
+        {/* Inspections Tab — live from DB */}
         <TabsContent value="inspections">
           <div className="space-y-3">
-            {INSPECTIONS.map((insp) => (
-              <Card key={insp.id} className={cardBg}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <ClipboardCheck
-                        className={cn(
-                          "w-4 h-4",
-                          insp.status === "scheduled"
-                            ? "text-amber-400"
-                            : "text-emerald-400"
-                        )}
-                      />
-                      <div>
-                        <div
-                          className={cn(
-                            "font-medium text-sm",
-                            isLight ? "text-slate-900" : "text-white"
-                          )}
-                        >
-                          {insp.type}
-                        </div>
-                        <div
-                          className={cn(
-                            "text-xs",
-                            isLight ? "text-slate-500" : "text-slate-400"
-                          )}
-                        >
-                          {insp.inspector} — {insp.date}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {(insp as any).score && (
-                        <span className="text-sm font-bold text-emerald-400">
-                          {(insp as any).score}%
-                        </span>
-                      )}
-                      <Badge className={statusBadge(insp.status)}>
-                        {insp.status}
-                      </Badge>
-                    </div>
-                  </div>
+            {complianceQuery.isLoading ? (
+              [1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)
+            ) : inspections.length === 0 ? (
+              <Card className={cardBg}>
+                <CardContent className="p-8 text-center">
+                  <p className={cn("text-sm", isLight ? "text-slate-400" : "text-slate-500")}>No inspection records found</p>
                 </CardContent>
               </Card>
-            ))}
+            ) : (
+              inspections.map((insp: any) => (
+                <Card key={insp.id} className={cardBg}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <ClipboardCheck
+                          className={cn(
+                            "w-4 h-4",
+                            insp.result === "pass"
+                              ? "text-emerald-400"
+                              : insp.result === "fail" || insp.result === "out_of_service"
+                                ? "text-red-400"
+                                : "text-amber-400"
+                          )}
+                        />
+                        <div>
+                          <div
+                            className={cn(
+                              "font-medium text-sm",
+                              isLight ? "text-slate-900" : "text-white"
+                            )}
+                          >
+                            {insp.inspectionType || insp.type || "Inspection"}
+                          </div>
+                          <div
+                            className={cn(
+                              "text-xs",
+                              isLight ? "text-slate-500" : "text-slate-400"
+                            )}
+                          >
+                            {insp.inspector || "Inspector"} — {insp.inspectionDate ? new Date(insp.inspectionDate).toLocaleDateString() : "N/A"}
+                          </div>
+                        </div>
+                      </div>
+                      <Badge className={statusBadge(insp.result || "unknown")}>
+                        {insp.result || "pending"}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
 
-        {/* Incidents Tab */}
-        <TabsContent value="incidents">
+        {/* Hazmat Permits Tab — live from DB */}
+        <TabsContent value="hazmat">
           <div className="space-y-3">
-            {INCIDENTS.map((inc) => (
-              <Card key={inc.id} className={cardBg}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <AlertTriangle
-                        className={cn(
-                          "w-4 h-4",
-                          inc.severity === "high"
-                            ? "text-red-400"
-                            : inc.severity === "medium"
-                              ? "text-amber-400"
-                              : "text-yellow-400"
-                        )}
-                      />
-                      <div>
-                        <div
-                          className={cn(
-                            "font-medium text-sm",
-                            isLight ? "text-slate-900" : "text-white"
-                          )}
-                        >
-                          {inc.type}
-                        </div>
-                        <div
-                          className={cn(
-                            "text-xs",
-                            isLight ? "text-slate-500" : "text-slate-400"
-                          )}
-                        >
-                          {inc.location} — {inc.date}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge className={statusBadge(inc.status)}>
-                      {inc.status.replace(/_/g, " ")}
-                    </Badge>
-                  </div>
-                  <p
-                    className={cn(
-                      "text-xs pl-7",
-                      isLight ? "text-slate-500" : "text-slate-400"
-                    )}
-                  >
-                    {inc.description}
-                  </p>
+            {complianceQuery.isLoading ? (
+              [1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)
+            ) : hazmatPermits.length === 0 ? (
+              <Card className={cardBg}>
+                <CardContent className="p-8 text-center">
+                  <p className={cn("text-sm", isLight ? "text-slate-400" : "text-slate-500")}>No hazmat permits found</p>
                 </CardContent>
               </Card>
-            ))}
+            ) : (
+              hazmatPermits.map((permit: any) => (
+                <Card key={permit.id} className={cardBg}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle className="w-4 h-4 text-amber-400" />
+                        <div>
+                          <div
+                            className={cn(
+                              "font-medium text-sm",
+                              isLight ? "text-slate-900" : "text-white"
+                            )}
+                          >
+                            {permit.permitNumber || `Permit #${permit.id}`}
+                          </div>
+                          <div
+                            className={cn(
+                              "text-xs",
+                              isLight ? "text-slate-500" : "text-slate-400"
+                            )}
+                          >
+                            Class: {permit.hazmatClass || "N/A"} — Expires: {permit.expiresAt ? new Date(permit.expiresAt).toLocaleDateString() : "N/A"}
+                          </div>
+                        </div>
+                      </div>
+                      <Badge className={statusBadge(permit.status || "active")}>
+                        {permit.status || "active"}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
       </Tabs>

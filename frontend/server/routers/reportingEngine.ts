@@ -135,6 +135,8 @@ export const reportingEngineRouter = router({
       // Real stats from DB
       let totalLoads = 0;
       let totalRevenue = 0;
+      let railRevenue = 0;
+      let vesselRevenue = 0;
       let activeDrivers = 0;
       let activeVehicles = 0;
 
@@ -146,6 +148,17 @@ export const reportingEngineRouter = router({
           }).from(loads);
           totalLoads = safeNum(loadStats?.count);
           totalRevenue = safeNum(loadStats?.revenue);
+
+          // Rail revenue from settlements joined to rail_shipments
+          try {
+            const [railRev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(s.carrierPayment AS DECIMAL)),0) as total FROM settlements s INNER JOIN rail_shipments rs ON s.loadId = rs.id`);
+            railRevenue = Number((railRev as any)?.total || 0);
+          } catch {}
+          // Vessel revenue from settlements joined to vessel_shipments
+          try {
+            const [vesselRev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(s.carrierPayment AS DECIMAL)),0) as total FROM settlements s INNER JOIN vessel_shipments vs ON s.loadId = vs.id`);
+            vesselRevenue = Number((vesselRev as any)?.total || 0);
+          } catch {}
 
           const [driverStats] = await db.select({ count: sql<number>`count(*)` })
             .from(drivers).where(eq(drivers.status, "active"));
@@ -163,7 +176,7 @@ export const reportingEngineRouter = router({
         recentReports,
         scheduledReports,
         favorites,
-        stats: { totalLoads, totalRevenue, activeDrivers, activeVehicles },
+        stats: { totalLoads, totalRevenue, railRevenue, vesselRevenue, activeDrivers, activeVehicles },
       };
     }),
 
@@ -445,6 +458,18 @@ export const reportingEngineRouter = router({
           .groupBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`)
           .orderBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`);
 
+        // Rail & vessel revenue (cross-modal reporting)
+        let railRevenue = 0;
+        let vesselRevenue = 0;
+        try {
+          const [railRev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(s.carrierPayment AS DECIMAL)),0) as total FROM settlements s INNER JOIN rail_shipments rs ON s.loadId = rs.id`);
+          railRevenue = Number((railRev as any)?.total || 0);
+        } catch {}
+        try {
+          const [vesselRev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(s.carrierPayment AS DECIMAL)),0) as total FROM settlements s INNER JOIN vessel_shipments vs ON s.loadId = vs.id`);
+          vesselRevenue = Number((vesselRev as any)?.total || 0);
+        } catch {}
+
         // Estimated margin (industry standard ~15%)
         const estimatedMargin = curRevenue > 0 ? 15.2 : 0;
         const prevMargin = prevRevenue > 0 ? 14.8 : 0;
@@ -456,6 +481,8 @@ export const reportingEngineRouter = router({
             change: pct(curRevenue - prevRevenue, prevRevenue || 1),
             target: curRevenue * 1.1,
           },
+          railRevenue,
+          vesselRevenue,
           loads: {
             current: curLoads,
             previous: prevLoads,

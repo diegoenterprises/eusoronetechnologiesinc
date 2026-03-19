@@ -192,6 +192,7 @@ export const rateNegotiationsRouter = router({
         "load_rate", "lane_rate", "contract_terms", "fuel_surcharge",
         "accessorial_rates", "volume_commitment", "payment_terms", "general",
       ]),
+      transportMode: z.enum(['TRUCK', 'RAIL', 'VESSEL']).default('TRUCK'),
       respondentUserId: z.number(),
       respondentCompanyId: z.number().optional(),
       loadId: z.number().optional(),

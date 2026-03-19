@@ -257,6 +257,16 @@ export const vesselShipmentsRouter = router({
         }
       }
 
+      // WebSocket real-time notification
+      try {
+        const io = (global as any).io;
+        if (io) {
+          io.to(`vessel:booking:${input.id}`).emit('vessel:status_changed', {
+            shipmentId: input.id, newStatus: input.newStatus, timestamp: new Date().toISOString(),
+          });
+        }
+      } catch {}
+
       return { success: true, newStatus: input.newStatus };
     }),
 
@@ -705,6 +715,60 @@ export const vesselShipmentsRouter = router({
       const [totalResult] = await db.select({ count: count() }).from(shippingContainers).where(where);
 
       return { containers, total: totalResult?.count || 0 };
+    }),
+
+  // 23. calculateVesselDemurrage — compute container demurrage charges
+  calculateVesselDemurrage: vesselProcedure
+    .input(z.object({ shipmentId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // Check existing demurrage records
+      const existing = await db.select().from(vesselDemurrage).where(eq(vesselDemurrage.shipmentId, input.shipmentId));
+
+      // Query vessel shipment events for discharge and gate_out to compute dwell
+      const events = await db.select()
+        .from(vesselShipmentEvents)
+        .where(eq(vesselShipmentEvents.shipmentId, input.shipmentId))
+        .orderBy(vesselShipmentEvents.timestamp);
+
+      const discharged = events.find((e: any) => e.eventType === "status_discharged" || e.eventType === "discharged");
+      const gateOut = events.find((e: any) => e.eventType === "status_gate_out" || e.eventType === "gate_out");
+
+      if (!discharged) {
+        return { demurrage: 0, dwellDays: 0, freeTimeDays: 4, message: "No discharge event found" };
+      }
+
+      const startTime = new Date(discharged.timestamp!);
+      const endTime = gateOut ? new Date(gateOut.timestamp!) : new Date();
+      const dwellMs = endTime.getTime() - startTime.getTime();
+      const dwellDays = Math.max(0, dwellMs / (1000 * 60 * 60 * 24));
+      const freeTimeDays = 4; // industry standard
+      const chargeableDays = Math.max(0, dwellDays - freeTimeDays);
+      const ratePerDay = 150; // container demurrage rate
+      const [shipment] = await db.select().from(vesselShipments).where(eq(vesselShipments.id, input.shipmentId)).limit(1);
+      const containerCount = shipment?.numberOfContainers || 1;
+      const demurrageAmount = Math.round(chargeableDays * ratePerDay * containerCount * 100) / 100;
+
+      if (demurrageAmount > 0) {
+        await db.insert(vesselDemurrage).values({
+          shipmentId: input.shipmentId,
+          chargeType: "demurrage" as any,
+          startDate: startTime,
+          endDate: endTime,
+          freeTimeDays: String(freeTimeDays),
+          chargeableDays: String(chargeableDays),
+          ratePerDay: String(ratePerDay),
+          totalCharge: String(demurrageAmount),
+          containerCount,
+          status: "pending" as any,
+        });
+
+        logger.info(`[VesselDemurrage] Shipment ${input.shipmentId}: ${chargeableDays.toFixed(1)} days x ${containerCount} containers @ $${ratePerDay}/day = $${demurrageAmount}`);
+      }
+
+      return { demurrage: demurrageAmount, dwellDays: Math.round(dwellDays * 10) / 10, freeTimeDays, chargeableDays: Math.round(chargeableDays * 10) / 10, containerCount };
     }),
 
   // ═══════════════════════════════════════════════════════════════

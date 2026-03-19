@@ -236,6 +236,16 @@ export const railShipmentsRouter = router({
         }
       }
 
+      // WebSocket real-time notification
+      try {
+        const io = (global as any).io;
+        if (io) {
+          io.to(`rail:shipment:${input.id}`).emit('rail:status_changed', {
+            shipmentId: input.id, newStatus: input.newStatus, timestamp: new Date().toISOString(),
+          });
+        }
+      } catch {}
+
       return { success: true, newStatus: input.newStatus };
     }),
 
@@ -533,6 +543,54 @@ export const railShipmentsRouter = router({
       };
     }),
 
+  // 17. calculateRailDemurrage — compute dwell-based demurrage charges
+  calculateRailDemurrage: railProcedure
+    .input(z.object({ shipmentId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // Find car_placed and loading events to compute dwell time
+      const events = await db.select()
+        .from(railShipmentEvents)
+        .where(eq(railShipmentEvents.shipmentId, input.shipmentId))
+        .orderBy(railShipmentEvents.timestamp);
+
+      const carPlaced = events.find((e: any) => e.eventType === "status_car_placed" || e.eventType === "car_placed");
+      const loadingStart = events.find((e: any) => e.eventType === "status_loading" || e.eventType === "loading");
+
+      if (!carPlaced) {
+        return { demurrage: 0, dwellHours: 0, freeTimeHours: 24, message: "No car_placed event found" };
+      }
+
+      const endTime = loadingStart ? new Date(loadingStart.timestamp!) : new Date();
+      const startTime = new Date(carPlaced.timestamp!);
+      const dwellMs = endTime.getTime() - startTime.getTime();
+      const dwellHours = Math.max(0, dwellMs / (1000 * 60 * 60));
+      const freeTimeHours = 24;
+      const chargeableHours = Math.max(0, dwellHours - freeTimeHours);
+      const ratePerHour = 35;
+      const demurrageAmount = Math.round(chargeableHours * ratePerHour * 100) / 100;
+
+      if (demurrageAmount > 0) {
+        await db.insert(railDemurrage).values({
+          shipmentId: input.shipmentId,
+          chargeType: "demurrage" as any,
+          startDate: startTime,
+          endDate: endTime,
+          freeTimeHours: String(freeTimeHours),
+          chargeableHours: String(chargeableHours),
+          ratePerHour: String(ratePerHour),
+          totalCharge: String(demurrageAmount),
+          status: "pending" as any,
+        });
+
+        logger.info(`[RailDemurrage] Shipment ${input.shipmentId}: ${chargeableHours.toFixed(1)}h chargeable @ $${ratePerHour}/hr = $${demurrageAmount}`);
+      }
+
+      return { demurrage: demurrageAmount, dwellHours: Math.round(dwellHours * 10) / 10, freeTimeHours, chargeableHours: Math.round(chargeableHours * 10) / 10 };
+    }),
+
   // ═══════════════════════════════════════════════════════════════
   // INTEGRATION-POWERED PROCEDURES — Live External API Data
   // ═══════════════════════════════════════════════════════════════
@@ -677,6 +735,37 @@ export const railShipmentsRouter = router({
       try {
         return await cloudMoyoCrewService.getCrewAvailability(input.yardId);
       } catch (e) { logger.error("[Rail] getCrewAvailability error:", e); return null; }
+    }),
+
+  /**
+   * Create a rail waybill for a shipment
+   */
+  createRailWaybill: railProcedure
+    .input(z.object({
+      shipmentId: z.number(),
+      waybillNumber: z.string().optional(),
+      commodity: z.string(),
+      weight: z.number().optional(),
+      hazmatClass: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const waybillNum = input.waybillNumber || `WB-${Date.now().toString(36).toUpperCase()}`;
+
+      const [shipment] = await db.select().from(railShipments).where(eq(railShipments.id, input.shipmentId)).limit(1);
+      if (!shipment) throw new Error("Shipment not found");
+
+      await db.insert(railWaybills).values({
+        shipmentId: input.shipmentId,
+        waybillNumber: waybillNum,
+        shipperId: shipment.shipperId,
+        commodity: input.commodity,
+        weightPounds: input.weight || null,
+        hazmatInfo: input.hazmatClass ? { class: input.hazmatClass, un: "", name: "" } : null,
+      });
+
+      return { waybillNumber: waybillNum };
     }),
 
   /**
