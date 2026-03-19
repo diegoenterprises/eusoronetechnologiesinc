@@ -172,7 +172,7 @@ export const railShipmentsRouter = router({
       const [shipment] = await db.select({ status: railShipments.status }).from(railShipments).where(eq(railShipments.id, input.id)).limit(1);
       if (!shipment) throw new Error("Shipment not found");
 
-      const VALID_TRANSITIONS: Record<string, string[]> = {
+      const VALID_RAIL_TRANSITIONS: Record<string, string[]> = {
         requested: ["car_ordered", "cancelled", "on_hold"],
         car_ordered: ["car_placed", "cancelled", "on_hold"],
         car_placed: ["loading", "cancelled", "on_hold"],
@@ -192,7 +192,7 @@ export const railShipmentsRouter = router({
       };
 
       const currentStatus = shipment.status || "requested";
-      const allowed = VALID_TRANSITIONS[currentStatus] || ["cancelled", "on_hold"];
+      const allowed = VALID_RAIL_TRANSITIONS[currentStatus] || ["cancelled", "on_hold"];
       if (!allowed.includes(input.newStatus)) {
         throw new Error(`Cannot transition from '${currentStatus}' to '${input.newStatus}'`);
       }

@@ -192,7 +192,7 @@ export const vesselShipmentsRouter = router({
       const [shipment] = await db.select({ status: vesselShipments.status }).from(vesselShipments).where(eq(vesselShipments.id, input.id)).limit(1);
       if (!shipment) throw new Error("Booking not found");
 
-      const VALID_TRANSITIONS: Record<string, string[]> = {
+      const VALID_VESSEL_TRANSITIONS: Record<string, string[]> = {
         booking_requested: ["booking_confirmed", "cancelled"],
         booking_confirmed: ["documentation", "container_released", "cancelled"],
         documentation: ["container_released", "cancelled"],
@@ -212,7 +212,7 @@ export const vesselShipmentsRouter = router({
       };
 
       const currentStatus = shipment.status || "booking_requested";
-      const allowed = VALID_TRANSITIONS[currentStatus] || ["cancelled"];
+      const allowed = VALID_VESSEL_TRANSITIONS[currentStatus] || ["cancelled"];
       if (!allowed.includes(input.newStatus)) {
         throw new Error(`Cannot transition from '${currentStatus}' to '${input.newStatus}'`);
       }
