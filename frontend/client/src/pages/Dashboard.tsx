@@ -6,10 +6,11 @@
  * - Vessel roles → VesselDashboard (custom maritime KPIs + booking feed)
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { UserRole } from "@/hooks/useRoleAccess";
 import PremiumDashboard from "@/components/PremiumDashboard";
+import OnboardingGuide from "@/components/OnboardingGuide";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
 
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const { user, loading } = useAuth();
   const userRole = (user?.role as UserRole) || "SHIPPER";
   const [, navigate] = useLocation();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -32,6 +34,12 @@ export default function Dashboard() {
       return;
     }
   }, [userRole, loading]);
+
+  useEffect(() => {
+    if (user && !localStorage.getItem(`eusotrip-onboarded-${user.id}`)) {
+      setShowOnboarding(true);
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -47,5 +55,17 @@ export default function Dashboard() {
   }
 
   // Truck + operational roles use PremiumDashboard with widget system
-  return <PremiumDashboard role={userRole} />;
+  return (
+    <>
+      {showOnboarding && (
+        <div className="px-6 pt-6">
+          <OnboardingGuide onDismiss={() => {
+            if (user) localStorage.setItem(`eusotrip-onboarded-${user.id}`, 'true');
+            setShowOnboarding(false);
+          }} />
+        </div>
+      )}
+      <PremiumDashboard role={userRole} />
+    </>
+  );
 }

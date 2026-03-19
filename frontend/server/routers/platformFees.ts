@@ -824,4 +824,18 @@ export const platformFeesRouter = router({
     logger.info("[PlatformFees] Seeded 8 default fee configurations");
     return { seeded: true, count: defaults.length };
   }),
+
+  // CSV Export — revenue data for admin download
+  exportRevenueCSV: protectedProcedure
+    .input(z.object({ startDate: z.string().optional(), endDate: z.string().optional() }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { csv: '', filename: 'empty.csv' };
+      try {
+        const rows = await db.select().from(platformRevenue).orderBy(desc(platformRevenue.processedAt)).limit(10000);
+        const header = 'ID,Type,Gross,Fee,Net,Platform Share,Date\n';
+        const csv = rows.map((r: any) => `${r.id},${r.transactionType},${r.grossAmount},${r.feeAmount},${r.netAmount},${r.platformShare},${r.processedAt}`).join('\n');
+        return { csv: header + csv, filename: `revenue-${new Date().toISOString().slice(0, 10)}.csv` };
+      } catch { return { csv: '', filename: 'empty.csv' }; }
+    }),
 });

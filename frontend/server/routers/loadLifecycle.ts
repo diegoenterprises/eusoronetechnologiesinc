@@ -2182,6 +2182,13 @@ export const loadLifecycleRouter = router({
 
       // Route intelligence on DELIVERED
       if (resolvedTo === "DELIVERED") {
+        // Auto-create custody transfer record on delivery
+        if (load?.driverId) {
+          try {
+            await db.execute(sql`INSERT INTO custody_transfers (loadId, transportMode, sequenceNumber, fromPartyRole, fromPartyUserId, toPartyRole, transferredAt, cargoCondition) VALUES (${numericLoadId}, 'TRUCK', 2, 'DRIVER', ${load.driverId}, 'RECEIVER', NOW(), 'good') ON DUPLICATE KEY UPDATE transferredAt = NOW()`);
+          } catch {}
+        }
+
         await generateRouteReport(numericLoadId, ctx.user?.id || 0);
 
         // ── SETTLEMENT AUTOMATION — with accessorials, hazmat surcharge, and carrier wallet credit ──
