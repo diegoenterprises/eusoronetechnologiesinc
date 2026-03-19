@@ -3232,4 +3232,21 @@ export const loadLifecycleRouter = router({
 
       return { success: true, newStatus };
     }),
+
+  /**
+   * getCustodyChain — Returns the full chain of custody for a load.
+   * Used by the BOL page to display cargo transfer history.
+   */
+  getCustodyChain: protectedProcedure
+    .input(z.object({ loadId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const chain = await db.select().from(custodyTransfers)
+          .where(eq(custodyTransfers.loadId, input.loadId))
+          .orderBy(custodyTransfers.sequenceNumber);
+        return chain;
+      } catch { return []; }
+    }),
 });

@@ -2232,6 +2232,50 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX relay_legs_status_idx (status)
     )`);
 
+    // Chain of Custody — immutable cargo transfer records across modes
+    await ensureTable("custody_transfers", `CREATE TABLE custody_transfers (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      loadId INT NOT NULL,
+      segmentId INT DEFAULT NULL,
+      transportMode ENUM('TRUCK','RAIL','VESSEL') DEFAULT 'TRUCK',
+      sequenceNumber INT NOT NULL DEFAULT 1,
+      fromPartyRole VARCHAR(50) NOT NULL,
+      fromPartyUserId INT DEFAULT NULL,
+      fromPartyName VARCHAR(255) DEFAULT NULL,
+      toPartyRole VARCHAR(50) NOT NULL,
+      toPartyUserId INT DEFAULT NULL,
+      toPartyName VARCHAR(255) DEFAULT NULL,
+      transferredAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      latitude VARCHAR(20) DEFAULT NULL,
+      longitude VARCHAR(20) DEFAULT NULL,
+      locationDescription VARCHAR(500) DEFAULT NULL,
+      cargoCondition ENUM('good','damaged','contaminated','partial','refused') DEFAULT 'good',
+      sealNumbers JSON DEFAULT NULL,
+      sealIntact BOOLEAN DEFAULT TRUE,
+      temperatureF VARCHAR(10) DEFAULT NULL,
+      notes TEXT DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX custody_load_idx (loadId),
+      INDEX custody_seq_idx (loadId, sequenceNumber)
+    )`);
+
+    // Gate Passes — facility access passes tied to appointments
+    await ensureTable("gate_passes", `CREATE TABLE gate_passes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      appointmentId INT NOT NULL,
+      loadId INT DEFAULT NULL,
+      driverId INT NOT NULL,
+      terminalId INT NOT NULL,
+      passCode VARCHAR(12) NOT NULL,
+      validFrom TIMESTAMP NOT NULL,
+      validUntil TIMESTAMP NOT NULL,
+      status ENUM('active','used','expired','revoked') DEFAULT 'active',
+      usedAt TIMESTAMP NULL DEFAULT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY gatepass_code_idx (passCode),
+      INDEX gatepass_driver_idx (driverId)
+    )`);
+
     logger.info("[SchemaSync] Done.");
   } catch (err: any) {
     logger.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));

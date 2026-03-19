@@ -28,6 +28,7 @@ import { getCarrierSafetyIntel, getSafetyScores, getOOSStatus } from "../service
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
 import { feeCalculator } from "../services/feeCalculator";
 import { lookupAndNotify } from "../services/notifications";
+import { calculateRate as unifiedCalculateRate } from "../services/unifiedRateEngine";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { ownershipFilter } from "../services/security/isolation/ownership-verifier";
 import { serverCalcWeight } from "@shared/cargoCalculations";
@@ -1654,29 +1655,69 @@ export const loadsRouter = router({
       cargoType: z.string(),
       hazmatClass: z.string().optional(),
       weight: z.number().optional(),
+      originState: z.string().optional(),
+      destState: z.string().optional(),
+      equipmentType: z.string().optional(),
     }))
     .query(async ({ input }) => {
-      const baseCpm = input.cargoType === 'hazmat' ? 3.85 : input.cargoType === 'petroleum' ? 3.50 : input.cargoType === 'refrigerated' ? 3.20 : 2.75;
-      let adjustedCpm = baseCpm;
-      if (input.hazmatClass) adjustedCpm *= 1.15;
-      if (input.weight && input.weight > 40000) adjustedCpm *= 1.08;
+      // Delegate to unified rate engine for consistent pricing across the platform
+      try {
+        const unified = await unifiedCalculateRate({
+          originState: input.originState || 'TX',
+          destState: input.destState || 'CA',
+          distance: input.distance,
+          cargoType: input.cargoType,
+          equipmentType: input.equipmentType,
+          hazmatClass: input.hazmatClass,
+          weight: input.weight,
+        });
 
-      const linehaul = Math.round(input.distance * adjustedCpm * 100) / 100;
-      const fuelSurcharge = Math.round(linehaul * 0.22 * 100) / 100;
-      const totalRate = linehaul + fuelSurcharge;
+        const linehaul = Math.round(unified.spotRate * 100) / 100;
+        const fuelSurcharge = Math.round(linehaul * 0.22 * 100) / 100;
+        const totalRate = linehaul + fuelSurcharge;
 
-      return {
-        linehaul,
-        fuelSurcharge,
-        totalRate,
-        ratePerMile: adjustedCpm,
-        breakdown: {
-          base: baseCpm,
-          hazmatSurcharge: input.hazmatClass ? baseCpm * 0.15 : 0,
-          weightSurcharge: input.weight && input.weight > 40000 ? baseCpm * 0.08 : 0,
-          fuelPercent: 22,
-        },
-      };
+        return {
+          linehaul,
+          fuelSurcharge,
+          totalRate,
+          ratePerMile: unified.ratePerMile,
+          confidence: unified.confidence,
+          source: unified.source,
+          range: unified.range,
+          breakdown: {
+            base: unified.ratePerMile,
+            hazmatSurcharge: input.hazmatClass ? unified.ratePerMile * 0.15 : 0,
+            weightSurcharge: input.weight && input.weight > 40000 ? unified.ratePerMile * 0.08 : 0,
+            fuelPercent: 22,
+          },
+        };
+      } catch {
+        // Fallback to inline calculation if unified engine fails
+        const baseCpm = input.cargoType === 'hazmat' ? 3.85 : input.cargoType === 'petroleum' ? 3.50 : input.cargoType === 'refrigerated' ? 3.20 : 2.75;
+        let adjustedCpm = baseCpm;
+        if (input.hazmatClass) adjustedCpm *= 1.15;
+        if (input.weight && input.weight > 40000) adjustedCpm *= 1.08;
+
+        const linehaul = Math.round(input.distance * adjustedCpm * 100) / 100;
+        const fuelSurcharge = Math.round(linehaul * 0.22 * 100) / 100;
+        const totalRate = linehaul + fuelSurcharge;
+
+        return {
+          linehaul,
+          fuelSurcharge,
+          totalRate,
+          ratePerMile: adjustedCpm,
+          confidence: 50,
+          source: 'equipment_base' as const,
+          range: { low: totalRate * 0.9, high: totalRate * 1.1 },
+          breakdown: {
+            base: baseCpm,
+            hazmatSurcharge: input.hazmatClass ? baseCpm * 0.15 : 0,
+            weightSurcharge: input.weight && input.weight > 40000 ? baseCpm * 0.08 : 0,
+            fuelPercent: 22,
+          },
+        };
+      }
     }),
 
   /**
