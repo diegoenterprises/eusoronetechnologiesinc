@@ -8,8 +8,16 @@ import { eq, desc, sql, gte, lte, and } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { appointments, loads, users, companies } from "../../drizzle/schema";
+import { appointments, loads, users, companies, gatePasses } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
+
+// Generate gate pass code (no O/0/1/I confusion)
+function generatePassCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = 'GP-';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
 
 const appointmentStatusSchema = z.enum([
   "scheduled", "confirmed", "checked_in", "loading", "unloading", "completed", "cancelled", "no_show"
@@ -188,8 +196,40 @@ export const appointmentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      await db.update(appointments).set({ status: unsafeCast(input.status) }).where(eq(appointments.id, parseInt(input.id, 10)));
-      return { success: true, id: input.id, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
+      const apptId = parseInt(input.id, 10);
+      await db.update(appointments).set({ status: unsafeCast(input.status) }).where(eq(appointments.id, apptId));
+
+      // Generate gate pass when appointment is confirmed or scheduled
+      let gatePassCode: string | null = null;
+      if (input.status === 'confirmed' || input.status === 'scheduled') {
+        try {
+          const [appointment] = await db.select().from(appointments).where(eq(appointments.id, apptId)).limit(1);
+          if (appointment) {
+            const passCode = generatePassCode();
+            const validFrom = appointment.scheduledAt ? new Date(appointment.scheduledAt) : new Date();
+            const validUntil = new Date(validFrom.getTime() + 4 * 60 * 60 * 1000); // 4 hours
+
+            await db.insert(gatePasses).values({
+              appointmentId: appointment.id,
+              loadId: appointment.loadId || null,
+              driverId: appointment.driverId || 0,
+              terminalId: appointment.terminalId,
+              passCode,
+              qrCodeData: JSON.stringify({ passCode, appointmentId: appointment.id, terminal: appointment.terminalId }),
+              validFrom,
+              validUntil,
+              status: 'active',
+            } as any);
+
+            gatePassCode = passCode;
+            logger.info(`[GatePass] Generated ${passCode} for appointment ${appointment.id}`);
+          }
+        } catch (gpErr) {
+          logger.warn('[GatePass] Generation failed:', gpErr);
+        }
+      }
+
+      return { success: true, id: input.id, newStatus: input.status, gatePassCode, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
   /**

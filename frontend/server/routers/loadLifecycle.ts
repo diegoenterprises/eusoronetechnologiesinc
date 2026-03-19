@@ -27,7 +27,7 @@ import { router, isolatedApprovedProcedure as protectedProcedure } from "../_cor
 import { logger } from "../_core/logger";
 import { feeCalculator } from "../services/feeCalculator";
 import { getDb } from "../db";
-import { loads, vehicles, escortAssignments, settlements, settlementDocuments, wallets, walletTransactions, notifications, users, drivers, payments, auditLogs } from "../../drizzle/schema";
+import { loads, vehicles, escortAssignments, settlements, settlementDocuments, wallets, walletTransactions, notifications, users, drivers, payments, auditLogs, custodyTransfers } from "../../drizzle/schema";
 import type { Load, User } from "../../drizzle/schema";
 import { eq, and, ne, sql, inArray } from "drizzle-orm";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
@@ -2113,6 +2113,26 @@ export const loadLifecycleRouter = router({
         await emitLoadNotifications(numericLoadId, newStatusLower, loadData || {});
       } catch (notifErr) {
         logger.warn("[LoadLifecycle] Notification dispatch error:", (notifErr as Error).message);
+      }
+
+      // ── CHAIN OF CUSTODY — record cargo transfer from shipper to driver on LOADED ──
+      if (resolvedTo === 'LOADED') {
+        try {
+          await db.insert(custodyTransfers).values({
+            loadId: numericLoadId,
+            transportMode: 'TRUCK',
+            sequenceNumber: 1,
+            fromPartyRole: 'SHIPPER',
+            fromPartyUserId: load.shipperId,
+            toPartyRole: 'DRIVER',
+            toPartyUserId: load.driverId,
+            transferredAt: new Date(),
+            cargoCondition: 'good',
+            sealIntact: true,
+          });
+        } catch (custodyErr) {
+          logger.warn('[Custody] Failed to record transfer:', custodyErr);
+        }
       }
 
       // Cascade on cancellation

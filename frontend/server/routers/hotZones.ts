@@ -495,9 +495,9 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
   };
   try {
     const db = await getDb(); if (!db) return result;
-    // Active loads by state with average rate
+    // Active loads by state with average rate (uses denormalized originState column from V8)
     const rows = await db.execute(
-      sql`SELECT JSON_EXTRACT(pickupLocation, '$.state') as st, COUNT(*) as cnt, AVG(rate / NULLIF(distance, 0)) as avgRpm FROM loads WHERE status IN ('posted','bidding','assigned','in_transit') AND deletedAt IS NULL GROUP BY st`
+      sql`SELECT ${loads.originState} as st, COUNT(*) as cnt, AVG(rate / NULLIF(distance, 0)) as avgRpm FROM loads WHERE status IN ('posted','bidding','assigned','in_transit') AND deletedAt IS NULL AND ${loads.originState} IS NOT NULL GROUP BY ${loads.originState}`
     );
     (unsafeCast(rows) || []).forEach((r: any) => {
       const st = (r.st || '').replace(/"/g, '');
@@ -509,7 +509,7 @@ async function _fetchDbEnhancement(): Promise<DbEnhancement> {
     });
     // Assigned vehicles (trucks) by state
     const truckRows = await db.execute(
-      sql`SELECT JSON_EXTRACT(pickupLocation, '$.state') as st, COUNT(DISTINCT driverId) as cnt FROM loads WHERE status IN ('assigned','in_transit') AND driverId IS NOT NULL AND deletedAt IS NULL GROUP BY st`
+      sql`SELECT ${loads.originState} as st, COUNT(DISTINCT driverId) as cnt FROM loads WHERE status IN ('assigned','in_transit') AND driverId IS NOT NULL AND deletedAt IS NULL AND ${loads.originState} IS NOT NULL GROUP BY ${loads.originState}`
     );
     (unsafeCast(truckRows) || []).forEach((r: any) => {
       const st = (r.st || '').replace(/"/g, '');
@@ -1044,7 +1044,7 @@ export const hotZonesRouter = router({
               COUNT(DISTINCT driverId) as trucks,
               AVG(rate / NULLIF(distance, 0)) as avgRpm
             FROM loads
-            WHERE JSON_EXTRACT(pickupLocation, '$.state') = ${zone.state}
+            WHERE originState = ${zone.state}
               AND createdAt >= ${since}
               AND deletedAt IS NULL
             GROUP BY hr ORDER BY hr`

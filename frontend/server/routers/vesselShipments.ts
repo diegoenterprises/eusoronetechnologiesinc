@@ -35,6 +35,7 @@ import {
   vesselInsurance,
   vesselPortCharges,
   users,
+  wallets,
 } from "../../drizzle/schema";
 
 function generateBookingNumber(): string {
@@ -200,8 +201,9 @@ export const vesselShipmentsRouter = router({
         departed: ["in_transit", "cancelled"],
         in_transit: ["transshipment", "arrived", "cancelled"],
         transshipment: ["in_transit", "cancelled"],
-        arrived: ["customs_hold", "discharged", "cancelled"],
-        customs_hold: ["discharged", "cancelled"],
+        arrived: ["customs_hold", "customs_cleared", "discharged", "cancelled"],
+        customs_hold: ["customs_cleared", "cancelled"],
+        customs_cleared: ["discharged", "cancelled"],
         discharged: ["gate_out", "cancelled"],
         gate_out: ["delivered", "cancelled"],
         delivered: ["invoiced"],
@@ -240,6 +242,15 @@ export const vesselShipmentsRouter = router({
               VALUES (${booking.id}, ${booking.shipperId}, ${booking.operatorId || 0}, ${String(rate)}, '${platformFeePercent}.00', ${String(platformFee)}, ${String(carrierPayment)}, ${String(rate)}, 'pending', NOW())`);
 
             logger.info(`[VesselSettlement] Created settlement for booking ${booking.bookingNumber}: $${rate}`);
+
+            // Credit carrier/operator wallet
+            try {
+              const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, booking.operatorId || booking.shipperId)).limit(1);
+              if (wallet) {
+                await db.execute(sql`UPDATE wallets SET availableBalance = availableBalance + ${carrierPayment}, totalReceived = totalReceived + ${carrierPayment} WHERE id = ${wallet.id}`);
+                logger.info(`[VesselSettlement] Credited wallet ${wallet.id} with $${carrierPayment}`);
+              }
+            } catch {}
           }
         } catch (settleErr) {
           logger.warn('[VesselSettlement] Settlement creation failed:', settleErr);

@@ -394,6 +394,7 @@ export const loads = mysqlTable(
     createdAtIdx: index("load_created_at_idx").on(table.createdAt),
     originStateIdx: index("load_origin_state_idx").on(table.originState),
     destStateIdx: index("load_dest_state_idx").on(table.destState),
+    rateCalcIdx: index("idx_loads_rate_calc").on(table.cargoType, table.createdAt, table.status),
   })
 );
 
@@ -449,6 +450,41 @@ export const loadStops = mysqlTable(
 
 export type LoadStop = typeof loadStops.$inferSelect;
 export type InsertLoadStop = typeof loadStops.$inferInsert;
+
+// ============================================================================
+// CHAIN OF CUSTODY — Immutable cargo transfer records across modes
+// ============================================================================
+
+export const custodyTransfers = mysqlTable("custody_transfers", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull(),
+  segmentId: int("segmentId"),
+  transportMode: mysqlEnum("transportMode", ["TRUCK", "RAIL", "VESSEL"]).notNull(),
+  sequenceNumber: int("sequenceNumber").notNull(),
+  fromPartyRole: varchar("fromPartyRole", { length: 50 }).notNull(),
+  fromPartyUserId: int("fromPartyUserId"),
+  fromPartyName: varchar("fromPartyName", { length: 255 }),
+  fromSignatureUrl: text("fromSignatureUrl"),
+  toPartyRole: varchar("toPartyRole", { length: 50 }).notNull(),
+  toPartyUserId: int("toPartyUserId"),
+  toPartyName: varchar("toPartyName", { length: 255 }),
+  toSignatureUrl: text("toSignatureUrl"),
+  transferredAt: timestamp("transferredAt").notNull(),
+  latitude: decimal("latitude", { precision: 10, scale: 6 }),
+  longitude: decimal("longitude", { precision: 10, scale: 6 }),
+  locationDescription: varchar("locationDescription", { length: 500 }),
+  cargoCondition: mysqlEnum("cargoCondition", ["good", "damaged", "contaminated", "partial", "refused"]).default("good"),
+  sealNumbers: json("sealNumbers").$type<string[]>(),
+  sealIntact: boolean("sealIntact").default(true),
+  temperatureF: decimal("temperatureF", { precision: 6, scale: 2 }),
+  weightLbs: decimal("weightLbs", { precision: 12, scale: 2 }),
+  photoUrls: json("photoUrls").$type<string[]>(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  loadIdx: index("custody_load_idx").on(table.loadId),
+  sequenceIdx: index("custody_seq_idx").on(table.loadId, table.sequenceNumber),
+}));
 
 // ============================================================================
 // LOAD RELAY LEGS — Multi-Driver Load Handoff / Relay Mode (GAP-128)
@@ -9961,6 +9997,29 @@ export const intermodalChassisTracking = mysqlTable("intermodal_chassis_tracking
   chassisIdx: index("ict_chassis_idx").on(table.chassisNumber),
   statusIdx: index("ict_status_idx").on(table.status),
   poolIdx: index("ict_pool_idx").on(table.chassisPool),
+}));
+
+// ============================================================================
+// V13: GATE PASSES — Terminal access control for appointment check-ins
+// ============================================================================
+
+export const gatePasses = mysqlTable("gate_passes", {
+  id: int("id").autoincrement().primaryKey(),
+  appointmentId: int("appointmentId").notNull(),
+  loadId: int("loadId"),
+  driverId: int("driverId").notNull(),
+  terminalId: int("terminalId").notNull(),
+  passCode: varchar("passCode", { length: 12 }).notNull(),
+  qrCodeData: text("qrCodeData"),
+  validFrom: timestamp("validFrom").notNull(),
+  validUntil: timestamp("validUntil").notNull(),
+  status: mysqlEnum("status", ["active", "used", "expired", "revoked"]).default("active"),
+  usedAt: timestamp("usedAt"),
+  createdAt: timestamp("createdAt").defaultNow(),
+}, (table) => ({
+  codeIdx: uniqueIndex("gatepass_code").on(table.passCode),
+  driverIdx: index("gatepass_driver").on(table.driverId),
+  terminalIdx: index("gatepass_terminal").on(table.terminalId),
 }));
 
 // ============================================================================

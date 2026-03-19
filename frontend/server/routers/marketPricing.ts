@@ -16,7 +16,7 @@ import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
-import { desc, sql, eq, and, gte, lte } from "drizzle-orm";
+import { desc, sql, eq, and, gte, lte, gt } from "drizzle-orm";
 import { fetchMarketSnapshot, type MarketSnapshot, searchCommodityPriceAPI, searchYahooFinance, fetchCommodityPriceAPI, fetchCPAPIHistorical, fetchAllCPAPIQuotes, CPAPI_SYMBOL_MAP } from "../services/marketDataService";
 import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 
@@ -80,8 +80,8 @@ async function getRealFreightRates(): Promise<Record<string, { rate: number; pre
     }).from(loads)
       .where(and(
         gte(loads.createdAt, oneWeekAgo),
-        sql`CAST(${loads.rate} AS DECIMAL(10,2)) > 0`,
-        sql`CAST(${loads.distance} AS DECIMAL(10,2)) > 0`,
+        gt(loads.rate, '0'),
+        gt(loads.distance, '0'),
       ))
       .groupBy(loads.cargoType);
 
@@ -93,8 +93,8 @@ async function getRealFreightRates(): Promise<Record<string, { rate: number; pre
       .where(and(
         gte(loads.createdAt, twoWeeksAgo),
         lte(loads.createdAt, oneWeekAgo),
-        sql`CAST(${loads.rate} AS DECIMAL(10,2)) > 0`,
-        sql`CAST(${loads.distance} AS DECIMAL(10,2)) > 0`,
+        gt(loads.rate, '0'),
+        gt(loads.distance, '0'),
       ))
       .groupBy(loads.cargoType);
 

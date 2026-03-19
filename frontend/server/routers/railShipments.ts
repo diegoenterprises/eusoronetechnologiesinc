@@ -29,6 +29,7 @@ import {
   railInspections,
   railHazmatPermits,
   users,
+  wallets,
 } from "../../drizzle/schema";
 
 function generateShipmentNumber(): string {
@@ -177,9 +178,9 @@ export const railShipmentsRouter = router({
         loaded: ["in_consist", "cancelled", "on_hold"],
         in_consist: ["departed", "cancelled", "on_hold"],
         departed: ["in_transit", "cancelled", "on_hold"],
-        in_transit: ["at_interchange", "in_yard", "cancelled", "on_hold"],
+        in_transit: ["at_interchange", "in_yard", "spotted", "cancelled", "on_hold"],
         at_interchange: ["in_transit", "in_yard", "cancelled", "on_hold"],
-        in_yard: ["spotted", "cancelled", "on_hold"],
+        in_yard: ["spotted", "in_transit", "cancelled", "on_hold"],
         spotted: ["unloading", "cancelled", "on_hold"],
         unloading: ["unloaded", "cancelled", "on_hold"],
         unloaded: ["empty_returned", "cancelled", "on_hold"],
@@ -220,6 +221,15 @@ export const railShipmentsRouter = router({
               VALUES (${shipment.id}, ${shipment.shipperId}, ${shipment.carrierId || 0}, ${String(rate)}, '${platformFeePercent}.00', ${String(platformFee)}, ${String(carrierPayment)}, ${String(rate)}, 'pending', NOW())`);
 
             logger.info(`[RailSettlement] Created settlement for rail shipment ${shipment.shipmentNumber}: $${rate}`);
+
+            // Credit carrier wallet
+            try {
+              const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, shipment.carrierId || shipment.shipperId)).limit(1);
+              if (wallet) {
+                await db.execute(sql`UPDATE wallets SET availableBalance = availableBalance + ${carrierPayment}, totalReceived = totalReceived + ${carrierPayment} WHERE id = ${wallet.id}`);
+                logger.info(`[RailSettlement] Credited wallet ${wallet.id} with $${carrierPayment}`);
+              }
+            } catch {}
           }
         } catch (settleErr) {
           logger.warn('[RailSettlement] Settlement creation failed:', settleErr);
