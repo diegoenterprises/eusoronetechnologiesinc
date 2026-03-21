@@ -21,6 +21,7 @@ import {
   Calendar, Building2, Lock, Landmark, BookOpen, Filter, Flag,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 
 // ─── Tabs ────────────────────────────────────────────────────────────────────
 
@@ -83,6 +84,7 @@ const accentText = "text-teal-400";
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function CrossBorderShipping() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
@@ -100,7 +102,7 @@ export default function CrossBorderShipping() {
             <Globe className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Cross-Border Operations</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{t('crossBorder.title')}</h1>
             <p className={mutedCls}>US - Canada - Mexico international shipping management</p>
           </div>
         </div>

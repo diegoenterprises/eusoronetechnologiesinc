@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/useLocale";
 
 export default function EscortDashboard() {
+  const { t } = useLocale();
   const statsQuery = (trpc as any).escorts.getDashboardStats.useQuery();
   const activeJobsQuery = (trpc as any).escorts.getActiveJobs.useQuery();
   const upcomingQuery = (trpc as any).escorts.getUpcomingJobs.useQuery({ limit: 5 });
@@ -34,7 +36,7 @@ export default function EscortDashboard() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Escort Dashboard</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('escortDashboard.title')}</h1>
           <p className="text-slate-400 text-sm mt-1">Your escort operations</p>
         </div>
         <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">

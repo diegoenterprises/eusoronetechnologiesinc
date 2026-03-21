@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { LIGHTSPEED } from "@/lib/lightspeedQueryConfig";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp, TrendingDown, Flame, BarChart3, RefreshCw,
@@ -65,6 +66,7 @@ function fmtChange(val: number | string | undefined, pct: number | string | unde
 }
 
 export default function MarketPricing() {
+  const { t, formatCurrency } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeView, setActiveView] = useState<"rates" | "hotzones" | "intel2026">("rates");
@@ -167,7 +169,7 @@ export default function MarketPricing() {
                 <BarChart3 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className={`text-xl font-semibold tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>Market Intelligence</h1>
+                <h1 className={`text-xl font-semibold tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>{t('marketPricing.title')}</h1>
                 <div className="flex items-center gap-2 mt-0.5">
                   <div className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
                   <p className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>{source}</p>

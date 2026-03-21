@@ -13,6 +13,7 @@ import { TrainFront, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Link } from "wouter";
+import { useLocale } from "@/hooks/useLocale";
 
 const STATUS_COLORS: Record<string, string> = {
   requested: "bg-yellow-500/20 text-yellow-400", car_ordered: "bg-blue-500/20 text-blue-400",
@@ -25,6 +26,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function RailShipments() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [tab, setTab] = useState("all");
@@ -43,7 +45,7 @@ export default function RailShipments() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-blue-500/10"><TrainFront className="w-6 h-6 text-blue-400" /></div>
-          <h1 className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>Rail Shipments</h1>
+          <h1 className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>{t('rail.shipments')}</h1>
         </div>
         <Link href="/rail/shipments/create"><Button className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-1" />New Shipment</Button></Link>
       </div>

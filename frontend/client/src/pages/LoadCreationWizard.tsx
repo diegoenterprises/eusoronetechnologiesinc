@@ -38,6 +38,7 @@ import RegulatoryCompliancePanel from "@/components/RegulatoryCompliancePanel";
 import { MultiTruckVisualization } from "@/components/TruckVisualization";
 import RouteMap from "@/components/RouteMap";
 import DatePicker from "@/components/DatePicker";
+import { useLocale } from "@/hooks/useLocale";
 import {
   TRAILER_TYPES as TRAILER_TYPES_SHARED,
   HAZMAT_CLASSES, getClassesForTrailer,
@@ -247,6 +248,7 @@ const STATE_RULES: Record<string, { carb?: boolean; weightLimit?: number; hazmat
 // TRAILER_COMMODITY_MAP imported from @/lib/loadConstants
 
 export default function LoadCreationWizard({ quickMode: quickModeProp }: { quickMode?: boolean } = {}) {
+  const { t } = useLocale();
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const userRole = (user?.role as string) || "SHIPPER";

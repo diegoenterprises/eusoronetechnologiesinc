@@ -15,6 +15,7 @@ import { trpc } from "@/lib/trpc";
 import { Ship, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 import { Link } from "wouter";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -38,6 +39,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function VesselBookings() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [tab, setTab] = useState("all");
@@ -79,7 +81,7 @@ export default function VesselBookings() {
             <Ship className="w-6 h-6 text-cyan-400" />
           </div>
           <h1 className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>
-            Vessel Bookings
+            {t('vessel.bookings')}
           </h1>
         </div>
         <Link href="/vessel/bookings/create">

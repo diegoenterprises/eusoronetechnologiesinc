@@ -28,8 +28,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 
 export default function PortDirectory() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [search, setSearch] = useState("");
@@ -76,7 +78,7 @@ export default function PortDirectory() {
               isLight ? "text-slate-900" : "text-white"
             )}
           >
-            Port Directory
+            {t('portDirectory.title')}
           </h1>
           <p
             className={cn(

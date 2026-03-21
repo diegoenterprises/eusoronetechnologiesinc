@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "../contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 
 // ── helpers ──
 
@@ -106,6 +107,7 @@ function LoadingSkeleton() {
 // ═══════════════════════════════════════════
 
 export default function AdvancedFinancials() {
+  const { t, formatCurrency } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const [tab, setTab] = useState<Tab>("overview");
@@ -115,7 +117,7 @@ export default function AdvancedFinancials() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
-          EusoWallet — Advanced Financials
+          {t('advancedFinancials.title')}
         </h1>
         <p className={`${isLight ? "text-slate-500" : "text-slate-400"} text-sm mt-1`}>
           Multi-currency, tax compliance, collections, profitability, and cash flow management

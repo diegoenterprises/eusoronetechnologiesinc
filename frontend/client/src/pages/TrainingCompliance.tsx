@@ -16,6 +16,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 import {
   Shield, BookOpen, Award, FileText, Landmark, Beaker, BarChart3,
   AlertTriangle, ClipboardCheck, Users, Truck, Calendar, ChevronRight,
@@ -66,6 +67,7 @@ const TABS: TabDef[] = [
 // ── Main Component ──
 
 export default function TrainingCompliance() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const L = theme === "light";
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
@@ -85,7 +87,7 @@ export default function TrainingCompliance() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className={cn("text-2xl font-bold", L ? "text-slate-900" : "text-white")}>
-              Compliance Command Center
+              {t('trainingCompliance.title')}
             </h1>
             <p className={subtitleCls}>
               Training, certifications, regulatory compliance, and audit readiness

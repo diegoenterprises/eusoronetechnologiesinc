@@ -16,8 +16,10 @@ import {
   Navigation, User, CheckCircle, Wrench
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/useLocale";
 
 export default function DispatchDashboard() {
+  const { t } = useLocale();
   const statsQuery = (trpc as any).dispatch.getDashboardStats.useQuery();
   const driversQuery = (trpc as any).dispatch.getDriverStatuses.useQuery({ limit: 6 });
   const issuesQuery = (trpc as any).dispatch.getActiveIssues.useQuery();
@@ -39,7 +41,7 @@ export default function DispatchDashboard() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Dispatch Dashboard</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('dispatch.title')}</h1>
           <p className="text-slate-400 text-sm mt-1">Fleet operations center</p>
         </div>
       </div>

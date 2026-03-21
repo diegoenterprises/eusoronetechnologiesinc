@@ -30,6 +30,7 @@ import {
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocale } from "@/hooks/useLocale";
 
 type LoadFilter = "all" | "pending" | "scheduled" | "in_progress" | "past";
 
@@ -58,6 +59,7 @@ function isSameDay(a: Date, b: Date) {
 }
 
 export default function MyLoads() {
+  const { t, formatDate } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [, setLocation] = useLocation();
@@ -177,11 +179,11 @@ export default function MyLoads() {
   const delayedCount = allLoads.filter((l: any) => l.status === "delayed").length;
 
   const filterTabs: { id: LoadFilter; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "pending", label: "Pending" },
-    { id: "scheduled", label: "Scheduled" },
-    { id: "in_progress", label: "In Progress" },
-    { id: "past", label: "Past" },
+    { id: "all", label: t('common.all') },
+    { id: "pending", label: t('common.pending') },
+    { id: "scheduled", label: t('myLoads.scheduled') },
+    { id: "in_progress", label: t('myLoads.inProgress') },
+    { id: "past", label: t('myLoads.past') },
   ];
 
   const getCargoIcon = (cargoType: string) => {
@@ -204,7 +206,7 @@ export default function MyLoads() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-          {isCatalyst ? "Assigned Loads" : "My Loads"}
+          {isCatalyst ? t('myLoads.assigned') : t('loads.myLoads')}
         </h1>
         <div className="flex items-center gap-2">
           {canCreateLoads && (

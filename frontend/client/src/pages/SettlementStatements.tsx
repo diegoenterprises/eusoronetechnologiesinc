@@ -16,8 +16,10 @@ import {
   Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/useLocale";
 
 export default function SettlementStatements() {
+  const { t, formatCurrency, formatDate } = useLocale();
   const [period, setPeriod] = useState("current");
 
   const settlementsQuery = (trpc as any).payroll.getSettlements.useQuery({ period });
@@ -38,7 +40,7 @@ export default function SettlementStatements() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Settlement Statements</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('settlementStatements.title')}</h1>
           <p className="text-slate-400 text-sm mt-1">Driver settlement details</p>
         </div>
       </div>

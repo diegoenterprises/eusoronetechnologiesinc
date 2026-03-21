@@ -691,5 +691,97 @@
     "perMile": "Per Mile",
     "estNet": "Est. Net",
     "fee": "fee"
+  },
+  "myLoads": {
+    "assigned": "Assigned Loads",
+    "scheduled": "Scheduled",
+    "inProgress": "In Progress",
+    "past": "Past"
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "View and manage your account information"
+  },
+  "company": {
+    "title": "Company Profile"
+  },
+  "documents": {
+    "title": "Document Center"
+  },
+  "newsFeed": {
+    "title": "Industry News"
+  },
+  "escortDashboard": {
+    "title": "Escort Dashboard"
+  },
+  "brokerDashboard": {
+    "title": "Broker Dashboard"
+  },
+  "dispatchCommandCenter": {
+    "title": "Dispatch Command Center"
+  },
+  "adminDashboard": {
+    "title": "Admin Dashboard"
+  },
+  "superAdminDashboard": {
+    "title": "Platform Command Center"
+  },
+  "driverHOS": {
+    "myHOS": "My HOS",
+    "fleetHOS": "Fleet HOS"
+  },
+  "activeTrip": {
+    "title": "Active Trip"
+  },
+  "driverEarnings": {
+    "title": "My Earnings"
+  },
+  "settlementStatements": {
+    "title": "Settlement Statements"
+  },
+  "catalystBidSubmission": {
+    "title": "Place Bid"
+  },
+  "factoringDashboard": {
+    "title": "Factoring Dashboard"
+  },
+  "railCommandCenter": {
+    "title": "Rail Command Center"
+  },
+  "portDirectory": {
+    "title": "Port Directory"
+  },
+  "billOfLading": {
+    "title": "Bills of Lading"
+  },
+  "intermodalDashboard": {
+    "title": "Intermodal Dashboard"
+  },
+  "reportingDashboard": {
+    "title": "Investor Reporting"
+  },
+  "spectraMatch": {
+    "title": "SPECTRA-MATCH"
+  },
+  "trainingCompliance": {
+    "title": "Compliance Command Center"
+  },
+  "marketPricing": {
+    "title": "Market Intelligence"
+  },
+  "incidentReport": {
+    "title": "Incident Report"
+  },
+  "erg": {
+    "title": "Emergency Response Guidebook"
+  },
+  "fmcsaCarrierIntelligence": {
+    "title": "FMCSA Carrier Intelligence"
+  },
+  "eldIntegration": {
+    "title": "ELD Integration"
+  },
+  "advancedFinancials": {
+    "title": "Advanced Financials"
   }
 }

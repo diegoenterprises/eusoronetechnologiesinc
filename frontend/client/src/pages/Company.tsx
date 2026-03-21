@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { useLocale } from "@/hooks/useLocale";
 
 interface ComplianceDocument {
   id: string;
@@ -38,6 +39,7 @@ interface FleetVehicle {
 }
 
 export default function CompanyPage() {
+  const { t } = useLocale();
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "compliance" | "fleet" | "certifications" | "performance">("details");
@@ -215,7 +217,7 @@ export default function CompanyPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-2">Company Profile</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-2">{t('company.title')}</h1>
           <p className="text-slate-400">Manage your company information, compliance, and fleet</p>
         </div>
         {!isEditing ? (

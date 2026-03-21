@@ -634,5 +634,97 @@
     "perMile": "Par Mille",
     "estNet": "Net Est.",
     "fee": "frais"
+  },
+  "myLoads": {
+    "assigned": "Chargements Attribués",
+    "scheduled": "Planifiés",
+    "inProgress": "En Cours",
+    "past": "Passés"
+  },
+  "profile": {
+    "title": "Mon Profil",
+    "subtitle": "Voir et gérer les informations de votre compte"
+  },
+  "company": {
+    "title": "Profil de l'Entreprise"
+  },
+  "documents": {
+    "title": "Centre de Documents"
+  },
+  "newsFeed": {
+    "title": "Actualités de l'Industrie"
+  },
+  "escortDashboard": {
+    "title": "Tableau de Bord Escorte"
+  },
+  "brokerDashboard": {
+    "title": "Tableau de Bord Courtier"
+  },
+  "dispatchCommandCenter": {
+    "title": "Centre de Commande Répartition"
+  },
+  "adminDashboard": {
+    "title": "Tableau de Bord Admin"
+  },
+  "superAdminDashboard": {
+    "title": "Centre de Commande Plateforme"
+  },
+  "driverHOS": {
+    "myHOS": "Mes HOS",
+    "fleetHOS": "HOS de la Flotte"
+  },
+  "activeTrip": {
+    "title": "Voyage Actif"
+  },
+  "driverEarnings": {
+    "title": "Mes Revenus"
+  },
+  "settlementStatements": {
+    "title": "Relevés de Règlement"
+  },
+  "catalystBidSubmission": {
+    "title": "Soumettre une Offre"
+  },
+  "factoringDashboard": {
+    "title": "Tableau de Bord Affacturage"
+  },
+  "railCommandCenter": {
+    "title": "Centre de Commande Ferroviaire"
+  },
+  "portDirectory": {
+    "title": "Répertoire des Ports"
+  },
+  "billOfLading": {
+    "title": "Connaissements"
+  },
+  "intermodalDashboard": {
+    "title": "Tableau de Bord Intermodal"
+  },
+  "reportingDashboard": {
+    "title": "Rapports aux Investisseurs"
+  },
+  "spectraMatch": {
+    "title": "SPECTRA-MATCH"
+  },
+  "trainingCompliance": {
+    "title": "Centre de Commande Conformité"
+  },
+  "marketPricing": {
+    "title": "Intelligence de Marché"
+  },
+  "incidentReport": {
+    "title": "Rapport d'Incident"
+  },
+  "erg": {
+    "title": "Guide d'Intervention d'Urgence"
+  },
+  "fmcsaCarrierIntelligence": {
+    "title": "Intelligence Transporteur FMCSA"
+  },
+  "eldIntegration": {
+    "title": "Intégration ELD"
+  },
+  "advancedFinancials": {
+    "title": "Finances Avancées"
   }
 }

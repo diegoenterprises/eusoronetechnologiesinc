@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 
 function KpiCard({
   icon,
@@ -74,6 +75,7 @@ function KpiCard({
 }
 
 export default function RailCommandCenter() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [tab, setTab] = useState("overview");
@@ -108,7 +110,7 @@ export default function RailCommandCenter() {
                 isLight ? "text-slate-900" : "text-white"
               )}
             >
-              Rail Command Center
+              {t('railCommandCenter.title')}
             </h1>
             <p
               className={cn(

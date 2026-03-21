@@ -14,6 +14,7 @@ import { FileText, Search, CheckCircle, Ship } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 import { toast } from "sonner";
 
 
@@ -33,12 +34,13 @@ function bolTypeBadge(type: string) {
 }
 
 export default function BillOfLading() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
-  const bolQuery = (trpc as any).vesselShipments.getBOL.useQuery({});
-  const allBols: any[] = Array.isArray(bolQuery.data) ? bolQuery.data : bolQuery.data ? [bolQuery.data] : [];
+  const bolQuery = (trpc as any).vesselShipments.listBOLs.useQuery({ limit: 50 });
+  const allBols: any[] = Array.isArray(bolQuery.data) ? bolQuery.data : [];
 
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = cn("border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50");
@@ -56,7 +58,7 @@ export default function BillOfLading() {
       <div className="flex items-center gap-3 mb-6">
         <div className="p-2 rounded-lg bg-indigo-500/10"><FileText className="w-6 h-6 text-indigo-400" /></div>
         <div>
-          <h1 className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>Bills of Lading</h1>
+          <h1 className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>{t('billOfLading.title')}</h1>
           <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>BOL issuance, tracking &amp; surrender</p>
         </div>
       </div>

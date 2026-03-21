@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DatePicker from "@/components/DatePicker";
+import { useLocale } from "@/hooks/useLocale";
 
 // ---------------------------------------------------------------------------
 // CATEGORY DEFINITIONS — single source of truth for the whole platform
@@ -390,6 +391,7 @@ function formatBytes(bytes: number) {
 // MAIN COMPONENT
 // ---------------------------------------------------------------------------
 export default function Documents() {
+  const { t } = useLocale();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState<CategoryId>("all");
@@ -538,7 +540,7 @@ export default function Documents() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-            Document Center
+            {t('documents.title')}
           </h1>
           <p className="text-slate-400 text-sm mt-1">
             Securely store, digitize, and manage all your operational and compliance documents

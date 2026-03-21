@@ -16,8 +16,10 @@ import {
   TrendingUp, TrendingDown, CheckCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/useLocale";
 
 export default function SafetyDashboard() {
+  const { t } = useLocale();
   const statsQuery = (trpc as any).safety.getDashboardStats.useQuery();
   const csaQuery = (trpc as any).safety.getCSAOverview.useQuery();
   const incidentsQuery = (trpc as any).safety.getRecentIncidents.useQuery({ limit: 5 });
@@ -35,7 +37,7 @@ export default function SafetyDashboard() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Safety Dashboard</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('safety.title')}</h1>
           <p className="text-slate-400 text-sm mt-1">Fleet safety overview</p>
         </div>
       </div>

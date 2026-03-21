@@ -25,6 +25,7 @@ import { getLoadTitle, getEquipmentLabel } from "@/lib/loadUtils";
 import { toast } from "sonner";
 import { useParams, useLocation } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 import DatePicker from "@/components/DatePicker";
 
 const STEPS = ["Load Review", "Your Bid", "Equipment & Driver", "Schedule & Notes", "Review & Submit"];
@@ -47,6 +48,7 @@ function getCargoIcon(cargoType: string) {
 }
 
 export default function CatalystBidSubmission() {
+  const { t, formatCurrency } = useLocale();
   const params = useParams();
   const [, setLocation] = useLocation();
   const { theme } = useTheme();
@@ -214,7 +216,7 @@ export default function CatalystBidSubmission() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-            Place Bid
+            {t('catalystBidSubmission.title')}
           </h1>
           <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
             {load.loadNumber || `Load #${String(load.id).slice(0, 8)}`} — {originCity} to {destCity}

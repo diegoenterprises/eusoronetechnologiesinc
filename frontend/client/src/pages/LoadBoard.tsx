@@ -26,6 +26,7 @@ import {
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocale } from "@/hooks/useLocale";
 
 type BoardFilter = "all" | "posted" | "bidding" | "in_transit" | "delivered";
 
@@ -151,6 +152,7 @@ function RoleContextPanel({ role, isLight, onNavigate, stats }: { role: string; 
 }
 
 export default function LoadBoard() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [, setLocation] = useLocation();
@@ -234,7 +236,7 @@ export default function LoadBoard() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-          Load Board
+          {t('loads.title')}
         </h1>
         <Button
           variant="outline"

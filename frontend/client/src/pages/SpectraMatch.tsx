@@ -47,8 +47,10 @@ import { EsangIcon } from '@/components/EsangIcon';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLocale } from "@/hooks/useLocale";
 
 export default function SpectraMatch() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
 
@@ -151,7 +153,7 @@ export default function SpectraMatch() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">SPECTRA-MATCH</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('spectraMatch.title')}</h1>
           <p className={subtextCls}>Multi-modal adaptive crude oil identification</p>
         </div>
         <div className="flex items-center gap-2">

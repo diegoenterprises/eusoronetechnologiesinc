@@ -29,8 +29,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ELDConnectionPanel from "@/components/ELDConnectionPanel";
+import { useLocale } from "@/hooks/useLocale";
 
 export default function ELDIntegration() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [filter, setFilter] = useState("all");
@@ -76,7 +78,7 @@ export default function ELDIntegration() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-            ELD Integration
+            {t('eldIntegration.title')}
           </h1>
           <p className={muted}>Symbiotic read connection to your Electronic Logging Device</p>
         </div>

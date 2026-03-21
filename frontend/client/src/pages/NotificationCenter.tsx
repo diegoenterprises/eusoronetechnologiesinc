@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/useLocale";
 
 const CATEGORIES = [
   { id: "all", label: "All", icon: Bell },
@@ -71,6 +72,7 @@ function getCategoryColor(category: string, eventType?: string): { text: string;
 }
 
 export default function NotificationCenter() {
+  const { t, formatDate } = useLocale();
   const { theme } = useTheme();
   const L = theme === "light";
   const [, setLocation] = useLocation();
@@ -115,7 +117,7 @@ export default function NotificationCenter() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Notification Center</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('notifications.title')}</h1>
           <p className={mt}>All activity across loads, bids, payments, messages & more</p>
         </div>
         <div className="flex gap-2">

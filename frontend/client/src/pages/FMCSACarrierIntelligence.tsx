@@ -8,6 +8,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocale } from "@/hooks/useLocale";
 import {
   Search, Shield, ShieldAlert, ShieldCheck, ShieldX, AlertTriangle,
   CheckCircle, XCircle, Truck, FileText, Activity, Eye, Bell, BellOff,
@@ -727,6 +728,7 @@ function VerificationChecklist({ dotNumber }: { dotNumber: string }) {
 // ============================================================================
 
 export default function FMCSACarrierIntelligence() {
+  const { t } = useLocale();
   const { user: ciUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -820,7 +822,7 @@ export default function FMCSACarrierIntelligence() {
                 <Database className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">FMCSA Carrier Intelligence</h1>
+                <h1 className="text-xl font-bold">{t('fmcsaCarrierIntelligence.title')}</h1>
                 <p className="text-xs text-gray-400">
                   {dbStats.data ? (
                     <>

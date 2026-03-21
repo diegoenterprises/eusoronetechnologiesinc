@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ELDConnectionPanel from "@/components/ELDConnectionPanel";
+import { useLocale } from "@/hooks/useLocale";
 
 const FleetHOSTab = lazy(() => import("./HOSCompliance"));
 
@@ -37,6 +38,7 @@ function parseHours(str: string | undefined): number {
 }
 
 export default function DriverHOS() {
+  const { t, formatDate } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeTab, setActiveTab] = useState("my-hos");
@@ -80,7 +82,7 @@ export default function DriverHOS() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-            Hours of Service
+            {t('compliance.hoursOfService')}
           </h1>
           <p className={muted}>FMCSA HOS compliance & clocks</p>
         </div>
@@ -103,8 +105,8 @@ export default function DriverHOS() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="my-hos"><Gauge className="w-4 h-4 mr-1.5" />My HOS</TabsTrigger>
-          <TabsTrigger value="fleet"><Users className="w-4 h-4 mr-1.5" />Fleet HOS</TabsTrigger>
+          <TabsTrigger value="my-hos"><Gauge className="w-4 h-4 mr-1.5" />{t('driverHOS.myHOS')}</TabsTrigger>
+          <TabsTrigger value="fleet"><Users className="w-4 h-4 mr-1.5" />{t('driverHOS.fleetHOS')}</TabsTrigger>
         </TabsList>
 
         {/* ═══════════════════════════════════════════

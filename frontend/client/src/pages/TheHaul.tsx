@@ -22,6 +22,7 @@ import {
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 import { toast } from "sonner";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -207,6 +208,7 @@ function MissionCard({ m, isLight, onStart, onClaim, onCancel, startPending, cla
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function TheHaul() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeTab, setActiveTab] = useState("lobby");
@@ -424,7 +426,7 @@ export default function TheHaul() {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-              The Haul
+              {t('theHaul.title')}
             </h1>
             <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>
               Digital truck stop — chat, missions, rewards

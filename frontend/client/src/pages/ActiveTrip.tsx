@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import ELDConnectionPanel from "@/components/ELDConnectionPanel";
+import { useLocale } from "@/hooks/useLocale";
 
 // ═══════════════════════════════════════════════════════════════
 // SOS BUTTON COMPONENT — The most important UI element
@@ -1568,6 +1569,7 @@ function CheckInCard({ loadId, type, onCheckedIn }: { loadId: number; type: "pic
 }
 
 export default function ActiveTrip() {
+  const { t, formatDate } = useLocale();
   const [, navigate] = useLocation();
 
   // Auto-detect driver's current active load
@@ -1638,7 +1640,7 @@ export default function ActiveTrip() {
       <div className="rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <p className="text-xs text-zinc-500 uppercase tracking-wider">Active Trip</p>
+            <p className="text-xs text-zinc-500 uppercase tracking-wider">{t('activeTrip.title')}</p>
             <p className="text-lg font-bold text-white">{activeLoad.loadNumber}</p>
           </div>
           <div className={`px-3 py-1 rounded-full text-xs font-medium ${

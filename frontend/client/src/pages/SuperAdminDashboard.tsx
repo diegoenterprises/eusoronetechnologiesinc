@@ -17,6 +17,7 @@ import {
   Wallet, Send, Link2, ShieldCheck, Car, LayoutGrid
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useLocale } from "@/hooks/useLocale";
 
 const ROLE_CFG: Record<string, { label: string; color: string; bg: string }> = {
   SHIPPER: { label: "Shippers", color: "text-cyan-400", bg: "bg-cyan-500/20" },
@@ -55,6 +56,7 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
 };
 
 export default function SuperAdminDashboard() {
+  const { t } = useLocale();
   const [, nav] = useLocation();
   const [actFilter, setActFilter] = useState("all");
   const [statsPeriod, setStatsPeriod] = useState<"today" | "week" | "month" | "all">("today");
@@ -88,7 +90,7 @@ export default function SuperAdminDashboard() {
       {/* HEADER */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Platform Command Center</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('superAdminDashboard.title')}</h1>
           <p className="text-slate-400 text-sm mt-1">Full oversight — loads, users, agreements, disputes, support, telemetry</p>
         </div>
         <div className="flex gap-2 items-center">

@@ -17,8 +17,10 @@ import {
   Wallet, CreditCard, Target, Award, AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/useLocale";
 
 export default function DriverEarnings() {
+  const { t, formatCurrency } = useLocale();
   const [period, setPeriod] = useState<"week" | "month" | "quarter" | "year">("week");
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -53,7 +55,7 @@ export default function DriverEarnings() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">My Earnings</h1>
+          <h1 className="text-2xl font-bold text-white">{t('driverEarnings.title')}</h1>
           <p className="text-slate-400 text-sm">Track your compensation and payouts</p>
         </div>
         <div className="flex items-center gap-3">

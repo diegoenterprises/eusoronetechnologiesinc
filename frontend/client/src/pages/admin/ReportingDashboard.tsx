@@ -6,6 +6,7 @@
 
 import React, { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { useLocale } from "@/hooks/useLocale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -88,6 +89,7 @@ function StatCard({
 }
 
 export default function ReportingDashboard() {
+  const { t } = useLocale();
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
   const today = now.toISOString().split("T")[0];
@@ -183,7 +185,7 @@ export default function ReportingDashboard() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-            Investor Reporting
+            {t('reportingDashboard.title')}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             Auditable financial data -- reconciliation, user analytics, and revenue breakdown

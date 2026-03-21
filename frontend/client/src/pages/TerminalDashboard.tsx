@@ -23,8 +23,10 @@ import {
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/useLocale";
 
 export default function TerminalDashboard() {
+  const { t } = useLocale();
   const [activeTab, setActiveTab] = useState("overview");
 
   const summaryQuery = (trpc as any).terminals.getSummary.useQuery();
@@ -65,7 +67,7 @@ export default function TerminalDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-[28px] font-semibold tracking-tight text-slate-800 dark:text-white">
-            Command Center
+            {t('terminal.title')}
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">Terminal operations, market intelligence, and supply chain visibility</p>
         </div>

@@ -24,6 +24,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocale } from "@/hooks/useLocale";
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { toast } from "sonner";
 import { Portal } from "@/components/ui/portal";
@@ -64,6 +65,7 @@ const COMMODITY_ROLES = new Set(["SHIPPER", "CATALYST", "BROKER", "TERMINAL_MANA
 const RACK_ACCESS_TARGET = "TERMINAL_MANAGER";
 
 export default function MyPartners() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const { user } = useAuth();
@@ -233,7 +235,7 @@ export default function MyPartners() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-            {config?.heading || "My Partners"}
+            {config?.heading || t('partners.title')}
           </h1>
           <p className={subtextCls}>{config?.subheading || "Partners, agreements & supply chain connections"}</p>
         </div>

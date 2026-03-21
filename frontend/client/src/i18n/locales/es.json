@@ -634,5 +634,97 @@
     "perMile": "Por Milla",
     "estNet": "Neto Est.",
     "fee": "comisión"
+  },
+  "myLoads": {
+    "assigned": "Cargas Asignadas",
+    "scheduled": "Programadas",
+    "inProgress": "En Progreso",
+    "past": "Pasadas"
+  },
+  "profile": {
+    "title": "Mi Perfil",
+    "subtitle": "Ver y gestionar la información de tu cuenta"
+  },
+  "company": {
+    "title": "Perfil de Empresa"
+  },
+  "documents": {
+    "title": "Centro de Documentos"
+  },
+  "newsFeed": {
+    "title": "Noticias de la Industria"
+  },
+  "escortDashboard": {
+    "title": "Panel de Escolta"
+  },
+  "brokerDashboard": {
+    "title": "Panel de Corredor"
+  },
+  "dispatchCommandCenter": {
+    "title": "Centro de Comando de Despacho"
+  },
+  "adminDashboard": {
+    "title": "Panel de Administración"
+  },
+  "superAdminDashboard": {
+    "title": "Centro de Comando de Plataforma"
+  },
+  "driverHOS": {
+    "myHOS": "Mis HOS",
+    "fleetHOS": "HOS de Flota"
+  },
+  "activeTrip": {
+    "title": "Viaje Activo"
+  },
+  "driverEarnings": {
+    "title": "Mis Ganancias"
+  },
+  "settlementStatements": {
+    "title": "Estados de Liquidación"
+  },
+  "catalystBidSubmission": {
+    "title": "Enviar Oferta"
+  },
+  "factoringDashboard": {
+    "title": "Panel de Factoraje"
+  },
+  "railCommandCenter": {
+    "title": "Centro de Comando Ferroviario"
+  },
+  "portDirectory": {
+    "title": "Directorio de Puertos"
+  },
+  "billOfLading": {
+    "title": "Conocimientos de Embarque"
+  },
+  "intermodalDashboard": {
+    "title": "Panel Intermodal"
+  },
+  "reportingDashboard": {
+    "title": "Reportes para Inversionistas"
+  },
+  "spectraMatch": {
+    "title": "SPECTRA-MATCH"
+  },
+  "trainingCompliance": {
+    "title": "Centro de Comando de Cumplimiento"
+  },
+  "marketPricing": {
+    "title": "Inteligencia de Mercado"
+  },
+  "incidentReport": {
+    "title": "Reporte de Incidente"
+  },
+  "erg": {
+    "title": "Guía de Respuesta a Emergencias"
+  },
+  "fmcsaCarrierIntelligence": {
+    "title": "Inteligencia de Transportistas FMCSA"
+  },
+  "eldIntegration": {
+    "title": "Integración ELD"
+  },
+  "advancedFinancials": {
+    "title": "Finanzas Avanzadas"
   }
 }

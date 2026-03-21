@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useLocale } from "@/hooks/useLocale";
 import { Shield, FileText, CheckCircle, XCircle, AlertTriangle, Plus, Search, Building2, Truck, ArrowRight, Clock, Handshake, Scale, Eye, ChevronRight, Zap, Lock, MapPin, ArrowUpRight, Users, Phone, Globe, Star, Loader2, Leaf, TrendingUp, BarChart3, Calendar, Activity, ShieldAlert, ShieldCheck, Wind, Flame, Heart, Target, Info, ArrowDownRight, Minus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -66,6 +67,7 @@ const ROLE_CONFIG: Record<string, { heading: string; subheading: string; tabs: s
 const DEFAULT_ROLE_CONFIG = { heading: "Operating Authority", subheading: "FMCSR Part 376 · Lease Management", tabs: ["overview", "browse"], canCreateLease: false };
 
 export default function OperatingAuthority() {
+  const { t } = useLocale();
   const { user } = useAuth();
   const userRole = (user as any)?.role?.toUpperCase() || "";
   const rc = ROLE_CONFIG[userRole] || DEFAULT_ROLE_CONFIG;

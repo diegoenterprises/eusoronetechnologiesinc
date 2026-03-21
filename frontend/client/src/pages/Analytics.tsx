@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 
 const ROLE_META: Record<string, { label: string; desc: string }> = {
   catalyst: { label: "Carrier Analytics", desc: "Fleet performance, revenue, and operational KPIs" },
@@ -33,6 +34,7 @@ const ROLE_META: Record<string, { label: string; desc: string }> = {
 };
 
 export default function Analytics() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const L = theme === "light";
   const { user } = useAuth();

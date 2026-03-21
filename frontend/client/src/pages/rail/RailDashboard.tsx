@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Link } from "wouter";
+import { useLocale } from "@/hooks/useLocale";
 
 function KpiCard({ icon, label, value, subtitle, isLight, accent = "blue" }: {
   icon: React.ReactNode; label: string; value: string | number; subtitle?: string; isLight: boolean; accent?: string;
@@ -55,6 +56,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function RailDashboard() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const stats = trpc.railShipments.getRailDashboardStats.useQuery();
@@ -72,7 +74,7 @@ export default function RailDashboard() {
             <TrainFront className="w-7 h-7 text-blue-400" />
           </div>
           <div>
-            <h1 className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>Rail Command Center</h1>
+            <h1 className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>{t('rail.title')}</h1>
             <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>
               Rail freight operations overview • {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>

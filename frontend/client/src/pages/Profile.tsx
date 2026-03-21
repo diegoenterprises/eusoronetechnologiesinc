@@ -17,8 +17,10 @@ import {
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 
 export default function Profile() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [, setLocation] = useLocation();
@@ -35,8 +37,8 @@ export default function Profile() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">My Profile</h1>
-          <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>View and manage your account information</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('profile.title')}</h1>
+          <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>{t('profile.subtitle')}</p>
         </div>
         <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm" onClick={() => setLocation("/settings")}>
           <Edit className="w-4 h-4 mr-2" />Edit Profile

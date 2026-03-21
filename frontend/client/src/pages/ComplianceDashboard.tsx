@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocale } from "@/hooks/useLocale";
 
 const GROUP_ICONS: Record<string, React.ReactNode> = {
   "Federal Authority": <Landmark className="w-4 h-4 text-blue-400" />,
@@ -122,6 +123,7 @@ function IRPComplianceSection() {
 }
 
 export default function ComplianceDashboard() {
+  const { t } = useLocale();
   const { user } = useAuth();
   const isDriver = user?.role === "DRIVER";
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -172,7 +174,7 @@ export default function ComplianceDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Compliance Dashboard</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('compliance.title')}</h1>
           <p className="text-slate-400 text-sm mt-1">
             {data?.registeredState ? (
               <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />Registered State: <strong className="text-white">{data.registeredState}</strong> | Role: <strong className="text-white">{data.role}</strong></span>

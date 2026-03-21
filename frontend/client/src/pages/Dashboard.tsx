@@ -13,11 +13,13 @@ import PremiumDashboard from "@/components/PremiumDashboard";
 import OnboardingGuide from "@/components/OnboardingGuide";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
+import { useLocale } from "@/hooks/useLocale";
 
 const RAIL_ROLES = ['RAIL_SHIPPER', 'RAIL_CATALYST', 'RAIL_DISPATCHER', 'RAIL_ENGINEER', 'RAIL_CONDUCTOR', 'RAIL_BROKER'];
 const VESSEL_ROLES = ['VESSEL_SHIPPER', 'VESSEL_OPERATOR', 'PORT_MASTER', 'SHIP_CAPTAIN', 'VESSEL_BROKER', 'CUSTOMS_BROKER'];
 
 export default function Dashboard() {
+  const { t } = useLocale();
   const { user, loading } = useAuth();
   const userRole = (user?.role as UserRole) || "SHIPPER";
   const [, navigate] = useLocation();

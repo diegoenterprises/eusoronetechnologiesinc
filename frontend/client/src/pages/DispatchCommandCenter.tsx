@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { useLocale } from "@/hooks/useLocale";
 import { useDispatchBoard } from "@/hooks/useRealtimeEvents";
 
 import DriverRoster, { type RosterDriver } from "@/components/dispatch/DriverRoster";
@@ -63,6 +64,7 @@ const HOS_STATUS_CONFIG: Record<string, { label: string; color: string; bg: stri
 };
 
 export default function DispatchCommandCenter() {
+  const { t } = useLocale();
   const [, navigate] = useLocation();
   const [showQuickLoad, setShowQuickLoad] = useState(false);
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
@@ -363,7 +365,7 @@ export default function DispatchCommandCenter() {
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent flex items-center gap-2">
             <LayoutDashboard className="w-5 h-5 text-cyan-400" />
-            Dispatch Command Center
+            {t('dispatchCommandCenter.title')}
           </h1>
           {isConnected ? (
             <Badge className="bg-green-500/20 text-green-400 border-0 text-[10px] gap-1"><Wifi className="w-3 h-3" />Live</Badge>

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 import { Link } from "wouter";
 
 function KpiCard({
@@ -91,6 +92,7 @@ const MODE_ICON_MAP: Record<string, React.ReactNode> = {
 };
 
 export default function IntermodalDashboard() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const dashboard = trpc.intermodal.getIntermodalDashboard.useQuery();
@@ -117,7 +119,7 @@ export default function IntermodalDashboard() {
               isLight ? "text-slate-900" : "text-white"
             )}
           >
-            Intermodal Dashboard
+            {t('intermodalDashboard.title')}
           </h1>
           <p
             className={cn(

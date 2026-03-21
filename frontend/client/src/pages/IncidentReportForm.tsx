@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 import { toast } from "sonner";
 import DatePicker from "@/components/DatePicker";
 import {
@@ -33,6 +34,7 @@ const INCIDENT_TYPES = [
 ];
 
 export default function IncidentReportForm() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [step, setStep] = useState<FormStep>("details");
@@ -120,7 +122,7 @@ export default function IncidentReportForm() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-          Incident Report
+          {t('incidentReport.title')}
         </h1>
         <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
           Hazmat incident documentation — 49 CFR 171.16

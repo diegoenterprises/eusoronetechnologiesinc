@@ -63,6 +63,7 @@ import {
   exchangeRates,
   aceManifests,
   aciManifests,
+  vehicles,
 } from "../../drizzle/schema";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -3473,4 +3474,25 @@ export const crossBorderRouter = router({
       driverHasVisa: z.boolean(),
     }))
     .query(({ input }) => checkMXtoUSCompliance(input)),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CAAT Vehicle Certification — NOM-002-SCT/2011 hazmat in Mexico
+  // ═══════════════════════════════════════════════════════════════════════════
+  validateCAATCertification: protectedProcedure
+    .input(z.object({ vehicleId: z.number(), hazmatClass: z.string(), destinationCountry: z.string() }))
+    .query(async ({ input }) => {
+      const { validateCAATRequirement } = await import("../services/mexicanCAAT");
+      const requirement = validateCAATRequirement(input.hazmatClass, input.destinationCountry);
+      if (!requirement.required) return { required: false, reason: requirement.reason, validation: null };
+
+      const db = await getDb();
+      if (!db) return { required: true, reason: requirement.reason, validation: null };
+
+      const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, input.vehicleId)).limit(1);
+      if (!vehicle) return { required: true, reason: 'Vehicle not found', validation: null };
+
+      const { validateCAAT } = await import("../services/mexicanCAAT");
+      const validation = await validateCAAT((vehicle as any).vin || '', input.hazmatClass);
+      return { required: true, reason: requirement.reason, validation };
+    }),
 });

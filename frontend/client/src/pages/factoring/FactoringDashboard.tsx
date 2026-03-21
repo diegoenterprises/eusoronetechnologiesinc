@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { useLocale } from "@/hooks/useLocale";
 import {
   Banknote, DollarSign, Clock, CheckCircle, TrendingUp,
   FileText, AlertTriangle, Users, BarChart3, CreditCard,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 
 export default function FactoringDashboard() {
+  const { t } = useLocale();
   const [, navigate] = useLocation();
   const overviewQuery = (trpc as any).factoring.getOverview.useQuery();
   const summaryQuery = (trpc as any).factoring.getSummary.useQuery();
@@ -45,7 +47,7 @@ export default function FactoringDashboard() {
     <div className="p-4 md:p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-          Factoring Dashboard
+          {t('factoringDashboard.title')}
         </h1>
         <p className="text-muted-foreground mt-1">Invoice factoring management and funding overview</p>
       </div>

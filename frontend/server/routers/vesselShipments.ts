@@ -5,6 +5,7 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { eq, and, desc, sql, gte, lte, inArray, count } from "drizzle-orm";
 import { vesselProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
@@ -218,6 +219,27 @@ export const vesselShipmentsRouter = router({
         throw new Error(`Cannot transition from '${currentStatus}' to '${input.newStatus}'`);
       }
 
+      // ISF 10+2 Pre-Filing enforcement — block vessel loading without ISF
+      if (input.newStatus === 'loaded_on_vessel' || input.newStatus === 'gate_in') {
+        const [booking] = await db.select().from(vesselShipments).where(eq(vesselShipments.id, input.id)).limit(1);
+        if (booking) {
+          const isfFiled = await db.select().from(customsDeclarations)
+            .where(and(eq(customsDeclarations.shipmentId, input.id), eq(customsDeclarations.declarationType, 'import')))
+            .limit(1);
+
+          if (isfFiled.length === 0) {
+            const etd = booking.etd ? new Date(booking.etd) : null;
+            const deadline = etd ? new Date(etd.getTime() - 24 * 3600000) : null;
+            if (deadline && new Date() > deadline) {
+              throw new TRPCError({
+                code: 'PRECONDITION_FAILED',
+                message: 'ISF 10+2 filing required before vessel loading. Filing deadline was 24 hours before ETD. CBP penalty risk: $5,000 per violation.',
+              });
+            }
+          }
+        }
+      }
+
       await db.update(vesselShipments)
         .set({ status: input.newStatus as any })
         .where(eq(vesselShipments.id, input.id));
@@ -333,6 +355,27 @@ export const vesselShipmentsRouter = router({
         return bol || null;
       }
       return null;
+    }),
+
+  // 6b. listBOLs — list all bills of lading for current user
+  listBOLs: vesselProcedure
+    .input(z.object({ limit: z.number().default(20) }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const userId = ctx.user?.id || 0;
+      return db.select().from(billsOfLading)
+        .where(sql`${billsOfLading.shipperId} = ${userId} OR ${billsOfLading.consigneeId} = ${userId}`)
+        .orderBy(desc(billsOfLading.createdAt))
+        .limit(input?.limit || 20);
+    }),
+
+  // 6c. getUSCGPortEntry — full USCG port entry compliance check (33 CFR Part 160)
+  getUSCGPortEntry: vesselProcedure
+    .input(z.object({ vesselId: z.number() }))
+    .query(async ({ input }) => {
+      const { validateUSCGPortEntry } = await import("../services/uscgPortEntry");
+      return validateUSCGPortEntry(input.vesselId);
     }),
 
   // 7. createCustomsEntry

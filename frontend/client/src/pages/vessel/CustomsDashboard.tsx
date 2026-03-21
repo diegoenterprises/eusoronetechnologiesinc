@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 
 
 function statusBadge(status: string) {
@@ -35,6 +36,7 @@ function statusBadge(status: string) {
 }
 
 export default function CustomsDashboard() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [tab, setTab] = useState("entries");
@@ -76,7 +78,7 @@ export default function CustomsDashboard() {
               isLight ? "text-slate-900" : "text-white"
             )}
           >
-            Customs Dashboard
+            {t('vessel.customs')}
           </h1>
           <p
             className={cn(

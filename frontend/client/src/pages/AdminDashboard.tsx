@@ -16,8 +16,10 @@ import {
   CheckCircle, Clock, Eye, Settings, Shield, TrendingUp
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useLocale } from "@/hooks/useLocale";
 
 export default function AdminDashboard() {
+  const { t } = useLocale();
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -33,7 +35,7 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-            Admin Dashboard
+            {t('adminDashboard.title')}
           </h1>
           <p className="text-slate-400 text-sm mt-1">Platform management and monitoring</p>
         </div>

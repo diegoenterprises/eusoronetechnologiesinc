@@ -21,10 +21,12 @@ import {
   Radio, UserPlus, X, Gauge
 } from "lucide-react";
 import ELDConnectionPanel from "@/components/ELDConnectionPanel";
+import { useLocale } from "@/hooks/useLocale";
 
 type ViewMode = "fleet" | "drivers";
 
 export default function FleetCommandCenter() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const L = theme === "light";
   const [, nav] = useLocation();
@@ -70,7 +72,7 @@ export default function FleetCommandCenter() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Fleet Command Center</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('fleet.title')}</h1>
           <p className={cn("text-sm", L ? "text-slate-500" : "text-slate-400")}>Unified workforce & vehicle operations</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

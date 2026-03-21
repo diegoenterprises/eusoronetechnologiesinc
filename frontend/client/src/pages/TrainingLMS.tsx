@@ -14,6 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 import {
   GraduationCap, BookOpen, Award, Play, CheckCircle, Clock, Search,
   ChevronRight, ChevronLeft, ArrowRight, Shield, AlertTriangle,
@@ -44,6 +45,7 @@ const CATEGORIES: CourseCategory[] = [
 ];
 
 export default function TrainingLMS() {
+  const { t } = useLocale();
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const { user } = useAuth();
@@ -162,7 +164,7 @@ export default function TrainingLMS() {
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className={cn("text-xl font-bold", textPrimary)}>Training & Certification</h1>
+            <h1 className={cn("text-xl font-bold", textPrimary)}>{t('training.title')}</h1>
             <p className={textSecondary}>
               {view === "catalog" && "Browse courses & certifications"}
               {view === "detail" && (courseDetail.data?.title || "Course Details")}
