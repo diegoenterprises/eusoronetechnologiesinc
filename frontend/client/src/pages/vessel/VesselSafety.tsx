@@ -23,7 +23,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const ISM_STATUS = {
+const ISM_DEFAULTS = {
   smsStatus: "Active",
   docNumber: "DOC-2026-0451",
   lastAudit: "2026-01-15",
@@ -55,6 +55,7 @@ export default function VesselSafety() {
   const complianceQuery = (trpc as any).vesselShipments.getVesselCompliance.useQuery({ vesselId: undefined });
   const complianceData = complianceQuery.data || {};
   const inspectionsData: any[] = complianceData.inspections || [];
+  const ISM_STATUS = complianceData.ism || ISM_DEFAULTS;
 
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50";

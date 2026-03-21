@@ -101,7 +101,7 @@ export default function Analytics() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{rm.label}</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('analytics.title', rm.label)}</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
               <Activity className="w-3 h-3 text-blue-500" />
               <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Live</span>

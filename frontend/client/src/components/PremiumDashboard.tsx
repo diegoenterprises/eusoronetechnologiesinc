@@ -88,6 +88,7 @@ import WidgetStore from "./widgets/WidgetStore";
 import Weather from "./Weather";
 import RoleBasedMap from "./RoleBasedMap";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocale } from "@/hooks/useLocale";
 import ReactGridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 
@@ -634,6 +635,7 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
   const role = propRole || (user?.role as UserRole) || 'SHIPPER';
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const { t } = useLocale();
 
   const { displayName } = useDisplayUser();
 
@@ -748,7 +750,7 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
             <span
               className={`relative bg-clip-text text-transparent ${isLight ? 'bg-gradient-to-r from-[#1473FF] to-[#BE01FF]' : 'bg-gradient-to-r from-white via-purple-200 to-cyan-200'}`}
             >
-              Welcome back, {displayName}
+              {t('dashboard.welcome', 'Welcome back')}, {displayName}
             </span>
           </h1>
           <p className={`mt-1 flex items-center gap-2 ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
