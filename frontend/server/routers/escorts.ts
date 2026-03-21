@@ -1686,4 +1686,127 @@ export const escortsRouter = router({
       const rules = getStateRules(input.state);
       return { state: input.state, rules, federalLimits: FEDERAL_LIMITS };
     }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ESCORT AUTO-ASSIGNMENT BY STATE CERTIFICATION
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  findQualifiedEscorts: protectedProcedure
+    .input(z.object({
+      routeStates: z.array(z.string()),
+      position: z.enum(["lead", "chase", "both"]).default("lead"),
+      loadId: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { escorts: [], totalAvailable: 0 };
+      try {
+        // Find escort users with active certs for ALL required states
+        const [rows] = await db.execute(sql`
+          SELECT u.id, u.name, u.email, u.phone,
+            GROUP_CONCAT(DISTINCT ec.issuingState) as certifiedStates,
+            COUNT(DISTINCT ec.issuingState) as stateCount
+          FROM users u
+          JOIN escort_certifications ec ON ec.userId = u.id
+          WHERE u.role = 'ESCORT'
+            AND ec.status = 'active'
+            AND (ec.expirationDate IS NULL OR ec.expirationDate > NOW())
+            AND ec.issuingState IN (${sql.raw(input.routeStates.map(s => `'${s}'`).join(','))})
+          GROUP BY u.id
+          HAVING stateCount >= ${input.routeStates.length}
+          ORDER BY stateCount DESC
+          LIMIT 20
+        `) as any;
+
+        const escorts = (rows || []).map((r: any) => ({
+          userId: r.id,
+          name: r.name,
+          email: r.email,
+          phone: r.phone,
+          certifiedStates: r.certifiedStates?.split(',') || [],
+          statesCovered: r.stateCount,
+        }));
+
+        return { escorts, totalAvailable: escorts.length, routeStates: input.routeStates };
+      } catch { return { escorts: [], totalAvailable: 0 }; }
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ROUTE-TO-STATE MAPPER
+  // Determines which states a route crosses based on origin/destination
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getRouteStates: protectedProcedure
+    .input(z.object({
+      originState: z.string(),
+      destinationState: z.string(),
+    }))
+    .query(({ input }) => {
+      // Interstate routing adjacency map (simplified — major corridors)
+      const ADJACENCY: Record<string, string[]> = {
+        TX: ["NM", "OK", "AR", "LA"],
+        OK: ["TX", "KS", "MO", "AR", "CO", "NM"],
+        NM: ["TX", "OK", "CO", "AZ"],
+        CA: ["AZ", "NV", "OR"],
+        AZ: ["CA", "NM", "NV", "UT", "CO"],
+        CO: ["NM", "OK", "KS", "NE", "WY", "UT", "AZ"],
+        LA: ["TX", "AR", "MS"],
+        AR: ["TX", "OK", "MO", "TN", "MS", "LA"],
+        KS: ["OK", "CO", "NE", "MO"],
+        MO: ["KS", "OK", "AR", "TN", "KY", "IL", "IA", "NE"],
+        IL: ["MO", "IA", "WI", "IN", "KY"],
+        IN: ["IL", "MI", "OH", "KY"],
+        OH: ["IN", "MI", "PA", "WV", "KY"],
+        PA: ["OH", "WV", "NY", "NJ", "MD", "DE"],
+        NY: ["PA", "NJ", "CT", "MA", "VT"],
+        NJ: ["PA", "NY", "DE"],
+        FL: ["GA", "AL"],
+        GA: ["FL", "AL", "TN", "NC", "SC"],
+        AL: ["FL", "GA", "TN", "MS"],
+        MS: ["AL", "TN", "AR", "LA"],
+        TN: ["KY", "VA", "NC", "GA", "AL", "MS", "AR", "MO"],
+        KY: ["OH", "WV", "VA", "TN", "MO", "IL", "IN"],
+        WV: ["OH", "PA", "VA", "KY", "MD"],
+        VA: ["WV", "KY", "TN", "NC", "MD", "DC"],
+        NC: ["VA", "TN", "GA", "SC"],
+        SC: ["NC", "GA"],
+        ND: ["MT", "SD", "MN"],
+        SD: ["ND", "MN", "IA", "NE", "WY", "MT"],
+        NE: ["SD", "IA", "MO", "KS", "CO", "WY"],
+        IA: ["MN", "WI", "IL", "MO", "NE", "SD"],
+        MN: ["ND", "SD", "IA", "WI"],
+        WI: ["MN", "IA", "IL", "MI"],
+        MI: ["WI", "IN", "OH"],
+        NV: ["CA", "AZ", "UT", "OR", "ID"],
+        UT: ["NV", "AZ", "CO", "WY", "ID"],
+        WY: ["MT", "SD", "NE", "CO", "UT", "ID"],
+        MT: ["ND", "SD", "WY", "ID"],
+        ID: ["MT", "WY", "UT", "NV", "OR", "WA"],
+        OR: ["CA", "NV", "ID", "WA"],
+        WA: ["OR", "ID"],
+      };
+
+      const origin = input.originState.toUpperCase();
+      const dest = input.destinationState.toUpperCase();
+      if (origin === dest) return { states: [origin], directRoute: true };
+
+      // BFS shortest path
+      const visited = new Set<string>([origin]);
+      const queue: { state: string; path: string[] }[] = [{ state: origin, path: [origin] }];
+
+      while (queue.length > 0) {
+        const { state, path } = queue.shift()!;
+        if (state === dest) return { states: path, directRoute: false };
+
+        for (const neighbor of (ADJACENCY[state] || [])) {
+          if (!visited.has(neighbor)) {
+            visited.add(neighbor);
+            queue.push({ state: neighbor, path: [...path, neighbor] });
+          }
+        }
+      }
+
+      // Fallback if no path found (non-contiguous or missing data)
+      return { states: [origin, dest], directRoute: false, note: "Route states approximated — verify with mapping service" };
+    }),
 });

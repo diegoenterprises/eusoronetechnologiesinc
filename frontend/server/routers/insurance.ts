@@ -1664,6 +1664,101 @@ export const insuranceRouter = router({
   // COMMODITY-SPECIFIC INSURANCE REQUIREMENTS
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PER-VEHICLE AUTO-LIABILITY CHECK
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  checkVehicleInsurance: protectedProcedure
+    .input(z.object({ vehicleId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { covered: false, errors: ["Database unavailable"], policies: [] };
+      try {
+        // Get vehicle's company
+        const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, input.vehicleId)).limit(1);
+        if (!vehicle) return { covered: false, errors: ["Vehicle not found"], policies: [] };
+
+        const companyId = vehicle.companyId;
+        if (!companyId) return { covered: false, errors: ["Vehicle not associated with a company"], policies: [] };
+
+        // Check active auto-liability policies for this company
+        const policies = await db.select().from(insurancePolicies)
+          .where(and(
+            eq(insurancePolicies.companyId, companyId),
+            eq(insurancePolicies.status, "active"),
+            sql`policyType IN ('auto_liability', 'commercial_auto')`,
+            sql`expirationDate > NOW()`
+          ));
+
+        if (policies.length === 0) {
+          return { covered: false, errors: [`No active auto-liability policy covers vehicle #${input.vehicleId}`], policies: [] };
+        }
+
+        // Check if specific vehicle is listed (if policy has vehicle schedule)
+        const vehicleVIN = (vehicle as any).vin;
+        const warnings: string[] = [];
+        if (vehicleVIN) {
+          const specificCoverage = policies.some(p => {
+            const schedule = (p.metadata as any)?.vehicleSchedule as string[] | undefined;
+            return !schedule || schedule.includes(vehicleVIN);
+          });
+          if (!specificCoverage) {
+            warnings.push(`Vehicle VIN ${vehicleVIN} not found on any policy vehicle schedule — verify coverage with insurer`);
+          }
+        }
+
+        return {
+          covered: true,
+          vehicleId: input.vehicleId,
+          vin: vehicleVIN || "N/A",
+          warnings,
+          policies: policies.map(p => ({
+            id: p.id,
+            type: p.policyType,
+            provider: p.providerName,
+            policyNumber: p.policyNumber,
+            limit: p.combinedSingleLimit || p.perOccurrenceLimit,
+            expirationDate: p.expirationDate?.toISOString().split("T")[0],
+          })),
+        };
+      } catch { return { covered: false, errors: ["Vehicle insurance check failed"], policies: [] }; }
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ENDORSEMENT TRACKING (MCS-90, BMC-91, BMC-82, etc.)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getEndorsements: protectedProcedure
+    .input(z.object({ companyId: z.number().optional() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { endorsements: [], missing: [] };
+      const companyId = input.companyId || ctx.user?.companyId;
+      if (!companyId) return { endorsements: [], missing: [] };
+
+      try {
+        const policies = await db.select().from(insurancePolicies)
+          .where(and(eq(insurancePolicies.companyId, companyId), eq(insurancePolicies.status, "active")));
+
+        const allEndorsements: string[] = [];
+        for (const p of policies) {
+          const ends = (p.endorsements as string[]) || [];
+          allEndorsements.push(...ends);
+        }
+        const unique = [...new Set(allEndorsements)];
+
+        // Check for required endorsements
+        const REQUIRED = [
+          { code: "MCS-90", name: "MCS-90 Endorsement", description: "Required for interstate for-hire motor carriers", regulation: "49 CFR 387.15" },
+          { code: "BMC-91", name: "BMC-91 Form", description: "Motor carrier surety bond or trust fund agreement for bodily injury/property damage", regulation: "49 CFR 387.315" },
+          { code: "BMC-82", name: "BMC-82 Form", description: "Household goods carrier surety bond", regulation: "49 CFR 387.307" },
+        ];
+        const missing = REQUIRED.filter(r => !unique.includes(r.code));
+
+        return { endorsements: unique, missing, policies: policies.length };
+      } catch { return { endorsements: [], missing: [] }; }
+    }),
+
   getCommodityInsuranceRequirements: protectedProcedure
     .input(z.object({ commodityType: z.string(), hazmatClass: z.string().optional() }))
     .query(({ input }) => {
