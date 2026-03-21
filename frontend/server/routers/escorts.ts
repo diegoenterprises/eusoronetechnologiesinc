@@ -1532,4 +1532,158 @@ export const escortsRouter = router({
       const { calculateAxleWeights } = require("../services/oversizeEnforcement");
       return calculateAxleWeights(input.totalWeight, input.axleCount);
     }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BRIDGE CLEARANCE CHECK FOR OS/OW ROUTES
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  checkBridgeClearances: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      vehicleHeightFt: z.number(),
+      routeStates: z.array(z.string()).optional(),
+    }))
+    .query(async ({ input }) => {
+      const { checkBridgeClearances, requiresBridgeCheck } = await import("../services/bridgeClearance");
+      const needsCheck = requiresBridgeCheck("oversized", input.vehicleHeightFt);
+      if (!needsCheck) return { required: false, clearances: [], blockers: [] };
+      const clearances = await checkBridgeClearances(input.loadId, input.vehicleHeightFt, input.routeStates || []);
+      const blockers = clearances.filter((c: any) => !c.cleared);
+      return { required: true, clearances, blockers, allClear: blockers.length === 0 };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ESCORT CERTIFICATION EXPIRY CHECK
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  verifyEscortCertifications: protectedProcedure
+    .input(z.object({
+      escortUserId: z.number(),
+      requiredStates: z.array(z.string()),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { verified: false, errors: ["Database unavailable"], certifications: [] };
+      try {
+        const [certs] = await db.execute(sql`
+          SELECT certType, certNumber, issuingState, expirationDate, status
+          FROM escort_certifications
+          WHERE userId = ${input.escortUserId} AND status = 'active'
+        `) as any;
+        const rows = certs || [];
+        const errors: string[] = [];
+        const now = new Date();
+
+        // Check for expired certs
+        for (const cert of rows) {
+          if (cert.expirationDate && new Date(cert.expirationDate) < now) {
+            errors.push(`${cert.certType} certification for ${cert.issuingState} expired on ${new Date(cert.expirationDate).toLocaleDateString()}`);
+          }
+        }
+
+        // Check for missing state certs
+        const certStates = rows.map((c: any) => c.issuingState?.toUpperCase()).filter(Boolean);
+        for (const state of input.requiredStates) {
+          if (!certStates.includes(state.toUpperCase())) {
+            errors.push(`Missing pilot car certification for state: ${state}`);
+          }
+        }
+
+        return { verified: errors.length === 0, errors, certifications: rows };
+      } catch { return { verified: false, errors: ["Certification check failed"], certifications: [] }; }
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // OS/OW INSURANCE UPLIFT CALCULATION
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  calculateOSInsuranceRequirement: protectedProcedure
+    .input(z.object({
+      widthFt: z.number().optional(),
+      heightFt: z.number().optional(),
+      weightLbs: z.number().optional(),
+      baseInsuranceMinimum: z.number().default(750000),
+    }))
+    .query(({ input }) => {
+      let multiplier = 1.0;
+      const reasons: string[] = [];
+
+      if (input.widthFt && input.widthFt > 12) { multiplier = Math.max(multiplier, 2.0); reasons.push(`Width ${input.widthFt}ft > 12ft — 2x coverage required`); }
+      if (input.widthFt && input.widthFt > 16) { multiplier = Math.max(multiplier, 3.0); reasons.push(`Width ${input.widthFt}ft > 16ft — 3x coverage (superload)`); }
+      if (input.heightFt && input.heightFt > 15) { multiplier = Math.max(multiplier, 2.0); reasons.push(`Height ${input.heightFt}ft > 15ft — 2x coverage required`); }
+      if (input.weightLbs && input.weightLbs > 120000) { multiplier = Math.max(multiplier, 2.5); reasons.push(`Weight ${input.weightLbs.toLocaleString()} lbs > 120K — 2.5x coverage required`); }
+      if (input.weightLbs && input.weightLbs > 200000) { multiplier = Math.max(multiplier, 3.0); reasons.push(`Weight ${input.weightLbs.toLocaleString()} lbs > 200K — 3x coverage (superload)`); }
+
+      const requiredMinimum = Math.round(input.baseInsuranceMinimum * multiplier);
+      return { multiplier, requiredMinimum, baseMinimum: input.baseInsuranceMinimum, reasons, isSuperload: multiplier >= 3.0 };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // OVERSIZE SIGNAGE/FLAGGING PRE-TRIP CHECKLIST
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getOversizeChecklist: protectedProcedure
+    .input(z.object({
+      widthFt: z.number().optional(),
+      heightFt: z.number().optional(),
+      lengthFt: z.number().optional(),
+      weightLbs: z.number().optional(),
+      state: z.string(),
+    }))
+    .query(({ input }) => {
+      const items = [
+        { id: "sign_front", label: 'OVERSIZE LOAD sign on front of vehicle (yellow/black, 7ft x 18in)', required: true, category: "signage" },
+        { id: "sign_rear", label: 'OVERSIZE LOAD sign on rear of vehicle (yellow/black, 7ft x 18in)', required: true, category: "signage" },
+        { id: "flags_corners", label: 'Red/orange flags on all four corners of load extremities', required: true, category: "flagging" },
+        { id: "flags_overhang", label: 'Red flags on any overhang extending beyond vehicle body', required: true, category: "flagging" },
+        { id: "amber_lights", label: 'Amber rotating/strobe warning lights mounted and operational', required: true, category: "lighting" },
+        { id: "height_pole", label: 'Height pole on lead escort vehicle', required: !!(input.heightFt && input.heightFt > 14), category: "escort_equipment" },
+        { id: "two_way_radio", label: 'Two-way radio communication between driver and escort(s)', required: true, category: "communication" },
+        { id: "pilot_sign", label: 'Escort vehicle OVERSIZE LOAD sign (roof-mounted or bumper)', required: true, category: "escort_signage" },
+        { id: "permit_in_cab", label: 'OS/OW permit copy in cab and accessible for inspection', required: true, category: "documentation" },
+        { id: "route_survey", label: 'Route survey completed and documented', required: !!(input.widthFt && input.widthFt > 12), category: "planning" },
+        { id: "dot_notification", label: `State DOT / Highway Patrol notified (${input.state})`, required: !!(input.weightLbs && input.weightLbs > 150000), category: "notification" },
+        { id: "law_enforcement", label: 'Local law enforcement escort arranged (if required by state)', required: !!(input.weightLbs && input.weightLbs > 200000), category: "notification" },
+        { id: "utility_notification", label: 'Utility companies notified for overhead wire lifts (if height > 16ft)', required: !!(input.heightFt && input.heightFt > 16), category: "notification" },
+      ];
+      return { items, state: input.state, totalRequired: items.filter(i => i.required).length };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DOT NOTIFICATION TRACKING
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  recordDOTNotification: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      state: z.string(),
+      notificationType: z.enum(["state_dot", "highway_patrol", "local_police", "utility"]),
+      notifiedAt: z.string(),
+      confirmationNumber: z.string().optional(),
+      contactName: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+      try {
+        await db.execute(sql`
+          INSERT INTO system_alerts (type, severity, title, message, metadata, created_at)
+          VALUES ('dot_notification', 'info',
+            ${`DOT Notification: ${input.state} ${input.notificationType}`},
+            ${`Load #${input.loadId} — ${input.notificationType} notification sent to ${input.state}${input.confirmationNumber ? ` (Conf: ${input.confirmationNumber})` : ''}`},
+            ${JSON.stringify({ ...input, notifiedBy: ctx.user?.id })},
+            NOW())
+        `);
+        return { success: true, recordedAt: new Date().toISOString() };
+      } catch { return { success: false }; }
+    }),
+
+  getStateEscortRules: protectedProcedure
+    .input(z.object({ state: z.string() }))
+    .query(({ input }) => {
+      const { getStateRules, FEDERAL_LIMITS } = require("../services/oversizeEnforcement");
+      const rules = getStateRules(input.state);
+      return { state: input.state, rules, federalLimits: FEDERAL_LIMITS };
+    }),
 });

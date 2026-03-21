@@ -908,6 +908,46 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
       return null;
     }
 
+    // ── Oversize signage/flagging verification guard ──
+    case "oversize_signage_verified": {
+      if (!ctx.load?.requiresEscort && ctx.load?.cargoType !== "oversized") return null;
+      if (ctx.complianceChecks?.signageVerified === true) return null;
+      if (ctx.metadata?.signageChecklist) return null;
+      return IS_PROD ? guard.errorMessage : null;
+    }
+
+    // ── Bridge clearance verification guard ──
+    case "bridge_clearance_verified": {
+      if (!ctx.load?.requiresEscort && ctx.load?.cargoType !== "oversized") return null;
+      if (ctx.complianceChecks?.bridgeClearanceVerified === true) return null;
+      if (ctx.metadata?.bridgeClearanceId) return null;
+      return IS_PROD ? guard.errorMessage : null;
+    }
+
+    // ── Insurance dispatch hard-block guard ──
+    case "insurance_dispatch_gate": {
+      const dispCarrierId = ctx.load?.catalystId;
+      if (!dispCarrierId) return null;
+      try {
+        const db = await getDb();
+        if (!db) return null;
+        // Check for ANY active, non-expired insurance
+        const [result] = await db.execute(sql`
+          SELECT COUNT(*) as cnt FROM insurance_policies
+          WHERE companyId IN (SELECT companyId FROM users WHERE id = ${dispCarrierId})
+            AND status = 'active'
+            AND expirationDate > NOW()
+        `) as unknown as RawQueryResult;
+        const count = ((result || [])[0] as RawRow)?.cnt as number;
+        if (count === 0) {
+          return 'HARD BLOCK: Carrier has no active, non-expired insurance policies. Dispatch prohibited per FMCSA 49 CFR 387.';
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    }
+
     // ── Oversize/Overweight auto-detection guard (at CONFIRMED→EN_ROUTE_PICKUP) ──
     case "oversize_dimensions_check": {
       const weight = parseFloat(String(ctx.load?.weight || 0));

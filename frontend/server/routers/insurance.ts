@@ -1434,4 +1434,273 @@ export const insuranceRouter = router({
         return { compliant: false, errors: [(error as Error)?.message || "Check failed"], warnings: [], stateDetails: [] };
       }
     }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DISPATCH-TIME INSURANCE HARD-BLOCK
+  // Comprehensive check before load can move to IN_TRANSIT
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  preDispatchInsuranceCheck: protectedProcedure
+    .input(z.object({
+      catalystCompanyId: z.number(),
+      isHazmat: z.boolean().default(false),
+      hazmatClass: z.string().optional(),
+      isOversized: z.boolean().default(false),
+      isCrossBorderMX: z.boolean().default(false),
+      loadValue: z.number().optional(),
+      commodityType: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) return { cleared: false, blockers: ["Database unavailable"], warnings: [] };
+
+        const policies = await db.select().from(insurancePolicies)
+          .where(and(eq(insurancePolicies.companyId, input.catalystCompanyId), eq(insurancePolicies.status, "active")));
+
+        const blockers: string[] = [];
+        const warnings: string[] = [];
+        const now = new Date();
+
+        // 1. Check for ANY active policies
+        const nonExpired = policies.filter(p => !p.expirationDate || new Date(p.expirationDate) > now);
+        if (nonExpired.length === 0) {
+          blockers.push("HARD BLOCK: No active, non-expired insurance policies on file. Dispatch prohibited.");
+          return { cleared: false, blockers, warnings };
+        }
+
+        // 2. Auto-liability check
+        const autoLiability = nonExpired.find(p => p.policyType === "auto_liability");
+        if (!autoLiability) {
+          blockers.push("Missing auto liability insurance — required for all CMV operations (49 CFR 387.7)");
+        } else {
+          const limit = parseFloat(String(autoLiability.combinedSingleLimit || autoLiability.perOccurrenceLimit || 0));
+          const minRequired = input.isHazmat ? 5000000 : input.isOversized ? 1500000 : 750000;
+          if (limit < minRequired) {
+            blockers.push(`Auto liability $${limit.toLocaleString()} below $${minRequired.toLocaleString()} minimum for ${input.isHazmat ? 'hazmat' : input.isOversized ? 'oversized' : 'standard'} loads`);
+          }
+        }
+
+        // 3. Cargo insurance check
+        const cargoPolicy = nonExpired.find(p => p.policyType === "cargo" || p.policyType === "motor_truck_cargo");
+        if (!cargoPolicy) {
+          blockers.push("Missing cargo insurance — required per FMCSA (49 CFR 387.303)");
+        } else if (input.loadValue) {
+          const cargoLimit = parseFloat(String(cargoPolicy.cargoLimit || cargoPolicy.perOccurrenceLimit || 0));
+          if (cargoLimit < input.loadValue) {
+            warnings.push(`Cargo coverage $${cargoLimit.toLocaleString()} is below load value $${input.loadValue.toLocaleString()}`);
+          }
+        }
+
+        // 4. MCS-90 endorsement (interstate)
+        const hasMCS90 = nonExpired.some(p => {
+          const endorsements = (p.endorsements as string[]) || [];
+          return endorsements.includes("MCS-90");
+        });
+        if (!hasMCS90) {
+          warnings.push("MCS-90 endorsement not found — required for interstate for-hire carriers");
+        }
+
+        // 5. Hazmat — pollution liability
+        if (input.isHazmat) {
+          const hasPollution = nonExpired.some(p => p.pollutionCoverage || p.policyType === "pollution_liability" || p.policyType === "environmental_impairment");
+          if (!hasPollution) {
+            blockers.push("Hazmat load requires pollution/environmental liability coverage");
+          }
+        }
+
+        // 6. OS/OW — enhanced coverage
+        if (input.isOversized) {
+          const totalCoverage = nonExpired.reduce((sum, p) => sum + parseFloat(String(p.aggregateLimit || p.perOccurrenceLimit || 0)), 0);
+          if (totalCoverage < 1500000) {
+            blockers.push(`Oversized load requires minimum $1.5M combined coverage, current: $${totalCoverage.toLocaleString()}`);
+          }
+        }
+
+        // 7. Mexican insurance (cross-border)
+        if (input.isCrossBorderMX) {
+          const hasMXInsurance = nonExpired.some(p => {
+            const meta = p.metadata as any;
+            return meta?.isMexicanPolicy || p.providerName?.includes("Qualitas") || p.providerName?.includes("GNP");
+          });
+          if (!hasMXInsurance) {
+            blockers.push("Mexico cross-border requires separate Mexican liability insurance from CNSF-authorized insurer");
+          }
+        }
+
+        // 8. Umbrella/excess check — if primary is below load value
+        if (input.loadValue && input.loadValue > 1000000) {
+          const hasUmbrella = nonExpired.some(p => p.policyType === "umbrella_excess");
+          if (!hasUmbrella) {
+            warnings.push("Consider umbrella/excess liability for high-value loads (>$1M)");
+          }
+        }
+
+        // 9. Expiration warnings
+        const thirtyDays = new Date(now.getTime() + 30 * 86400000);
+        for (const p of nonExpired) {
+          if (p.expirationDate && new Date(p.expirationDate) < thirtyDays) {
+            const daysLeft = Math.ceil((new Date(p.expirationDate).getTime() - now.getTime()) / 86400000);
+            warnings.push(`${(p.policyType || 'Policy').replace(/_/g, ' ')} expires in ${daysLeft} days — renew immediately`);
+          }
+        }
+
+        return { cleared: blockers.length === 0, blockers, warnings, totalPolicies: nonExpired.length };
+      } catch (error: unknown) {
+        return { cleared: false, blockers: [(error as Error)?.message || "Insurance check failed"], warnings: [] };
+      }
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // COI (Certificate of Insurance) GENERATION
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  generateCOI: protectedProcedure
+    .input(z.object({
+      holderName: z.string(),
+      holderEmail: z.string().optional(),
+      holderAddress: z.string().optional(),
+      additionalInsured: z.boolean().default(false),
+      waiverOfSubrogation: z.boolean().default(false),
+      loadId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable" };
+      const companyId = ctx.user?.companyId;
+      if (!companyId) return { success: false, error: "No company associated" };
+
+      try {
+        // Get active policies
+        const policies = await db.select().from(insurancePolicies)
+          .where(and(eq(insurancePolicies.companyId, companyId), eq(insurancePolicies.status, "active")));
+
+        if (policies.length === 0) return { success: false, error: "No active policies to generate COI" };
+
+        const certNumber = `COI-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+        // Store COI record
+        const { certificatesOfInsurance } = await import("../../drizzle/schema");
+        await db.insert(certificatesOfInsurance).values({
+          certificateNumber: certNumber,
+          companyId,
+          holderName: input.holderName,
+          holderEmail: input.holderEmail || null,
+          issuedDate: new Date(),
+          additionalInsuredEndorsement: input.additionalInsured,
+          waiverOfSubrogation: input.waiverOfSubrogation,
+          status: "issued",
+          loadId: input.loadId || null,
+          createdBy: ctx.user?.id || 0,
+          policies: JSON.stringify(policies.map(p => ({
+            type: p.policyType,
+            provider: p.providerName,
+            policyNumber: p.policyNumber,
+            effectiveDate: p.effectiveDate?.toISOString().split("T")[0],
+            expirationDate: p.expirationDate?.toISOString().split("T")[0],
+            limit: p.perOccurrenceLimit || p.aggregateLimit || p.combinedSingleLimit,
+          }))),
+        });
+
+        return {
+          success: true,
+          certificateNumber: certNumber,
+          issuedAt: new Date().toISOString(),
+          policiesIncluded: policies.length,
+          holderName: input.holderName,
+        };
+      } catch (error: unknown) {
+        logger.error("[Insurance] COI generation error:", error);
+        return { success: false, error: (error as Error)?.message || "COI generation failed" };
+      }
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BROKER BOND VERIFICATION ($75K BMC-84 / BMC-85)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  verifyBrokerBond: protectedProcedure
+    .input(z.object({ brokerCompanyId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { verified: false, errors: ["Database unavailable"], bondAmount: 0 };
+      try {
+        const bonds = await db.select().from(insurancePolicies)
+          .where(and(
+            eq(insurancePolicies.companyId, input.brokerCompanyId),
+            eq(insurancePolicies.status, "active"),
+            sql`policyType IN ('surety_bond', 'trust_fund')`
+          ));
+
+        const errors: string[] = [];
+        if (bonds.length === 0) {
+          errors.push("No surety bond (BMC-84) or trust fund (BMC-85) on file — required per 49 CFR 387.307");
+          return { verified: false, errors, bondAmount: 0, bondType: null };
+        }
+
+        const activeBond = bonds.find(b => !b.expirationDate || new Date(b.expirationDate) > new Date());
+        if (!activeBond) {
+          errors.push("Surety bond/trust fund has expired — renew immediately per 49 CFR 387.307");
+          return { verified: false, errors, bondAmount: 0, bondType: null };
+        }
+
+        const bondAmount = parseFloat(String(activeBond.aggregateLimit || activeBond.perOccurrenceLimit || 0));
+        if (bondAmount < 75000) {
+          errors.push(`Bond amount $${bondAmount.toLocaleString()} below required $75,000 minimum (49 CFR 387.307)`);
+        }
+
+        return {
+          verified: errors.length === 0,
+          errors,
+          bondAmount,
+          bondType: activeBond.policyType === "surety_bond" ? "BMC-84" : "BMC-85",
+          provider: activeBond.providerName,
+          expirationDate: activeBond.expirationDate?.toISOString().split("T")[0],
+        };
+      } catch { return { verified: false, errors: ["Bond verification failed"], bondAmount: 0 }; }
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // COMMODITY-SPECIFIC INSURANCE REQUIREMENTS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getCommodityInsuranceRequirements: protectedProcedure
+    .input(z.object({ commodityType: z.string(), hazmatClass: z.string().optional() }))
+    .query(({ input }) => {
+      const requirements: Record<string, { minLiability: number; minCargo: number; specialEndorsements: string[]; notes: string }> = {
+        general: { minLiability: 750000, minCargo: 100000, specialEndorsements: ["MCS-90"], notes: "Standard FMCSA minimums" },
+        hazmat_class1: { minLiability: 5000000, minCargo: 1000000, specialEndorsements: ["MCS-90", "Pollution Liability", "HMSP"], notes: "Explosives — highest coverage tier" },
+        hazmat_class2: { minLiability: 5000000, minCargo: 1000000, specialEndorsements: ["MCS-90", "Pollution Liability"], notes: "Compressed/liquefied gas" },
+        hazmat_class3: { minLiability: 5000000, minCargo: 1000000, specialEndorsements: ["MCS-90", "Pollution Liability"], notes: "Flammable liquids (crude oil, gasoline)" },
+        hazmat_class7: { minLiability: 5000000, minCargo: 1000000, specialEndorsements: ["MCS-90", "Pollution Liability", "Nuclear Incident"], notes: "Radioactive materials" },
+        hazmat_other: { minLiability: 1000000, minCargo: 500000, specialEndorsements: ["MCS-90", "Pollution Liability"], notes: "Other hazmat classes (4-6, 8-9)" },
+        oil_gas: { minLiability: 1000000, minCargo: 500000, specialEndorsements: ["MCS-90", "Pollution Liability"], notes: "Crude oil, natural gas, petroleum products" },
+        household_goods: { minLiability: 750000, minCargo: 100000, specialEndorsements: ["MCS-90", "BMC-32"], notes: "Household goods movers" },
+        livestock: { minLiability: 750000, minCargo: 250000, specialEndorsements: ["MCS-90", "Mortality Coverage"], notes: "Live animal transport" },
+        auto_transport: { minLiability: 750000, minCargo: 500000, specialEndorsements: ["MCS-90", "Garagekeepers"], notes: "Vehicle transport/car hauling" },
+        oversized: { minLiability: 1500000, minCargo: 500000, specialEndorsements: ["MCS-90", "Inland Marine"], notes: "OS/OW loads — enhanced coverage" },
+        reefer: { minLiability: 750000, minCargo: 250000, specialEndorsements: ["MCS-90", "Spoilage/Contamination"], notes: "Temperature-controlled cargo" },
+        pharmaceutical: { minLiability: 750000, minCargo: 500000, specialEndorsements: ["MCS-90", "Product Liability"], notes: "Pharmaceutical/medical products" },
+      };
+
+      let key = "general";
+      if (input.hazmatClass) {
+        if (input.hazmatClass.startsWith("1")) key = "hazmat_class1";
+        else if (input.hazmatClass.startsWith("2")) key = "hazmat_class2";
+        else if (input.hazmatClass.startsWith("3")) key = "hazmat_class3";
+        else if (input.hazmatClass.startsWith("7")) key = "hazmat_class7";
+        else key = "hazmat_other";
+      } else if (input.commodityType) {
+        const ct = input.commodityType.toLowerCase();
+        if (ct.includes("oil") || ct.includes("gas") || ct.includes("petroleum") || ct.includes("crude")) key = "oil_gas";
+        else if (ct.includes("household")) key = "household_goods";
+        else if (ct.includes("livestock") || ct.includes("animal") || ct.includes("cattle")) key = "livestock";
+        else if (ct.includes("auto") || ct.includes("vehicle") || ct.includes("car")) key = "auto_transport";
+        else if (ct.includes("oversize") || ct.includes("overweight") || ct.includes("heavy")) key = "oversized";
+        else if (ct.includes("reefer") || ct.includes("frozen") || ct.includes("refriger")) key = "reefer";
+        else if (ct.includes("pharma") || ct.includes("medical")) key = "pharmaceutical";
+      }
+
+      return { commodityType: input.commodityType, category: key, ...requirements[key] };
+    }),
 });

@@ -611,6 +611,9 @@ export const TRANSITIONS: Transition[] = [
       // Flatbed/Oversize-specific guards
       { type: "data", check: "oversize_escort_confirmed", errorMessage: "Escort vehicle positioning required for oversized loads" },
       { type: "data", check: "oversize_travel_window", errorMessage: "OS/OW loads cannot depart during restricted hours/days in this state" },
+      { type: "data", check: "oversize_signage_verified", errorMessage: "OVERSIZE LOAD signage and flagging must be verified before departure" },
+      { type: "data", check: "bridge_clearance_verified", errorMessage: "Bridge clearance check required for oversized loads — route has low-clearance structures" },
+      { type: "data", check: "insurance_dispatch_gate", errorMessage: "Insurance verification required before dispatch — coverage insufficient or expired" },
     ],
     effects: [
       { type: "notification", action: "trip_started", recipients: ["SHIPPER", "CATALYST", "DISPATCH"] },

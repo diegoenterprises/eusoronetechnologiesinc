@@ -3595,4 +3595,289 @@ export const crossBorderRouter = router({
       const { checkNOM012 } = require("../services/mxCrossBorderEnforcement");
       return checkNOM012(input);
     }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CARTA PORTE — Create, validate, list, generate XML
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  createCartaPorte: protectedProcedure
+    .input(z.object({
+      loadId: z.number().optional(),
+      tipo: z.enum(["Ingreso", "Traslado", "Egreso"]).default("Traslado"),
+      emisorRfc: z.string(),
+      emisorNombre: z.string(),
+      receptorRfc: z.string(),
+      receptorNombre: z.string(),
+      vehiculoConfig: z.string(),
+      vehiculoPlaca: z.string(),
+      vehiculoPermisoSCT: z.string(),
+      conductorCurp: z.string(),
+      conductorNombre: z.string(),
+      conductorLicenciaSCT: z.string(),
+      origenRfc: z.string(),
+      origenNombre: z.string(),
+      origenEstado: z.string(),
+      origenFecha: z.string(),
+      destinoRfc: z.string(),
+      destinoNombre: z.string(),
+      destinoEstado: z.string(),
+      destinoFecha: z.string(),
+      distanciaKm: z.number(),
+      mercancias: z.array(z.object({
+        descripcion: z.string(),
+        claveProdServ: z.string(),
+        claveUnidad: z.string(),
+        cantidad: z.number(),
+        pesoKg: z.number(),
+        valorMercancia: z.number(),
+        moneda: z.string().default("MXN"),
+        fraccionArancelaria: z.string().optional(),
+        materialPeligroso: z.boolean().default(false),
+        claseMaterialPeligroso: z.string().optional(),
+        unNumberMaterialPeligroso: z.string().optional(),
+      })),
+      isInternational: z.boolean().default(true),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { createCartaPorte, validateCartaPorte, generateCartaPorteXML } = await import("../services/cartaPorte");
+      const doc = createCartaPorte({
+        tipo: input.tipo,
+        emisor: { rfc: input.emisorRfc, nombre: input.emisorNombre, regimenFiscal: "601" },
+        receptor: { rfc: input.receptorRfc, nombre: input.receptorNombre, usoCFDI: "S01" },
+        vehiculo: { configVehicular: input.vehiculoConfig, placaVM: input.vehiculoPlaca, anioModelo: 2024, permisoSCT: "TPAF09", numPermisoSCT: input.vehiculoPermisoSCT, segurosRespCivil: "", polizaRespCivil: "", segurosAmbiente: "", polizaAmbiente: "" },
+        conductores: [{ curp: input.conductorCurp, nombre: input.conductorNombre, numLicencia: input.conductorLicenciaSCT, tipoLicencia: "C" }],
+        mercancias: input.mercancias.map(m => ({ descripcion: m.descripcion, claveProdServ: m.claveProdServ, claveUnidad: m.claveUnidad, cantidad: m.cantidad, pesoKg: m.pesoKg, valorMercancia: m.valorMercancia, moneda: m.moneda, fraccionArancelaria: m.fraccionArancelaria, materialPeligroso: m.materialPeligroso, claseMaterialPeligroso: m.claseMaterialPeligroso, unNumberMaterialPeligroso: m.unNumberMaterialPeligroso })),
+        ruta: {
+          origen: { rfcRemitente: input.origenRfc, nombreRemitente: input.origenNombre, domicilio: { calle: "", codigoPostal: "", estado: input.origenEstado, pais: "MEX", municipio: "" }, fechaSalida: input.origenFecha },
+          destino: { rfcRemitente: input.destinoRfc, nombreRemitente: input.destinoNombre, domicilio: { calle: "", codigoPostal: "", estado: input.destinoEstado, pais: "MEX", municipio: "" }, fechaLlegada: input.destinoFecha },
+          distanciaKm: input.distanciaKm,
+        },
+        isInternational: input.isInternational,
+        loadId: input.loadId,
+        createdBy: ctx.user?.id || 0,
+      });
+      const validation = validateCartaPorte(doc);
+      const xml = validation.isValid ? generateCartaPorteXML(doc) : null;
+
+      // Persist to DB
+      try {
+        const db = await getDb();
+        if (db) {
+          const { cartaPorte: cpTable } = await import("../../drizzle/schema");
+          await db.insert(cpTable).values({
+            documentId: doc.documentId,
+            version: "3.1",
+            tipo: doc.tipo,
+            emisorRfc: doc.emisor.rfc,
+            emisorNombre: doc.emisor.nombre,
+            receptorRfc: doc.receptor.rfc,
+            receptorNombre: doc.receptor.nombre,
+            loadId: input.loadId || null,
+            status: validation.isValid ? "pending_signature" : "draft",
+            xmlContent: xml || "",
+            mercancias: JSON.stringify(doc.mercancias),
+            ubicaciones: JSON.stringify(doc.ubicaciones),
+            vehiculos: JSON.stringify([doc.vehiculo]),
+            conductores: JSON.stringify(doc.conductores),
+            createdBy: ctx.user?.id || 0,
+          });
+        }
+      } catch (e) { logger.warn("[CartaPorte] DB persist failed:", (e as Error).message); }
+
+      return { documentId: doc.documentId, validation, xml, status: validation.isValid ? "pending_signature" : "draft" };
+    }),
+
+  getCartaPorteList: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const { cartaPorte: cpTable } = await import("../../drizzle/schema");
+      return await db.select().from(cpTable).where(eq(cpTable.createdBy, ctx.user?.id || 0)).orderBy(sql`created_at DESC`).limit(50);
+    } catch { return []; }
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PEDIMENTO — Create, calculate taxes, validate
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  createPedimento: protectedProcedure
+    .input(z.object({
+      tipo: z.enum(["A1", "A4", "G1", "IN", "K1", "V1", "RT"]),
+      loadId: z.number().optional(),
+      importadorRfc: z.string(),
+      importadorNombre: z.string(),
+      agenteAduanalRfc: z.string(),
+      agenteAduanalPatente: z.string(),
+      aduanaEntrada: z.string(),
+      aduanaSalida: z.string().optional(),
+      tipoCambio: z.number().default(17.15),
+      mercancias: z.array(z.object({
+        fraccionArancelaria: z.string(),
+        descripcion: z.string(),
+        cantidad: z.number(),
+        unidadMedida: z.string(),
+        valorAduana: z.number(),
+        paisOrigen: z.string(),
+        arancelAdValorem: z.number().default(0),
+        cuotaCompensatoria: z.number().optional(),
+        usmcaEligible: z.boolean().default(false),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { createPedimento, validatePedimento, calculatePedimentoTaxes, generateVUCEMPayload } = await import("../services/pedimento");
+      const taxes = calculatePedimentoTaxes(input.mercancias as any, input.tipoCambio, input.tipo);
+      const doc = createPedimento({
+        tipo: input.tipo,
+        importadorExportador: { rfc: input.importadorRfc, nombre: input.importadorNombre, domicilio: "" },
+        agenteAduanal: { rfc: input.agenteAduanalRfc, nombre: "", domicilio: "", patente: input.agenteAduanalPatente },
+        mercancias: input.mercancias as any,
+        aduanaEntrada: input.aduanaEntrada,
+        aduanaSalida: input.aduanaSalida,
+        tipoCambio: input.tipoCambio,
+        createdBy: ctx.user?.id || 0,
+        loadId: input.loadId,
+      });
+      const validation = validatePedimento(doc);
+      const vucemPayload = validation.isValid ? generateVUCEMPayload(doc) : null;
+
+      // Persist to DB
+      try {
+        const db = await getDb();
+        if (db) {
+          const { pedimentos: pedTable } = await import("../../drizzle/schema");
+          await db.insert(pedTable).values({
+            pedimentoId: doc.pedimentoId,
+            numeroPedimento: doc.numeroPedimento,
+            tipo: input.tipo,
+            status: "draft",
+            fechaEntrada: new Date(),
+            aduanaEntrada: input.aduanaEntrada,
+            aduanaSalida: input.aduanaSalida || input.aduanaEntrada,
+            importadorRfc: input.importadorRfc,
+            importadorNombre: input.importadorNombre,
+            agenteAduanalRfc: input.agenteAduanalRfc,
+            agenteAduanalPatente: input.agenteAduanalPatente,
+            tipoCambio: String(input.tipoCambio),
+            mercancias: JSON.stringify(input.mercancias),
+            impuestos: JSON.stringify(taxes),
+            loadId: input.loadId || null,
+            createdBy: ctx.user?.id || 0,
+          });
+        }
+      } catch (e) { logger.warn("[Pedimento] DB persist failed:", (e as Error).message); }
+
+      return { pedimentoId: doc.pedimentoId, numeroPedimento: doc.numeroPedimento, taxes, validation, vucemPayload, status: "draft" };
+    }),
+
+  calculatePedimentoTaxes: protectedProcedure
+    .input(z.object({
+      mercancias: z.array(z.object({
+        valorAduana: z.number(),
+        arancelAdValorem: z.number().default(0),
+        cuotaCompensatoria: z.number().optional(),
+      })),
+      tipoCambio: z.number().default(17.15),
+      tipo: z.enum(["A1", "A4", "G1", "IN", "K1", "V1", "RT"]).default("A1"),
+    }))
+    .query(({ input }) => {
+      const { calculatePedimentoTaxes } = require("../services/pedimento");
+      return calculatePedimentoTaxes(input.mercancias, input.tipoCambio, input.tipo);
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CAAT — Vehicle hazmat certification for Mexico
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  validateCAATForLoad: protectedProcedure
+    .input(z.object({
+      vehicleId: z.number(),
+      hazmatClass: z.string(),
+      destinationCountry: z.string().default("MX"),
+    }))
+    .query(async ({ input }) => {
+      const { validateCAATRequirement, validateCAAT } = await import("../services/mexicanCAAT");
+      const requirement = validateCAATRequirement(input.hazmatClass, input.destinationCountry);
+      if (!requirement.required) return { required: false, reason: requirement.reason, validation: null };
+
+      const db = await getDb();
+      if (!db) return { required: true, reason: requirement.reason, validation: null };
+      const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, input.vehicleId)).limit(1);
+      if (!vehicle) return { required: true, reason: "Vehicle not found", validation: null };
+
+      // Check if vehicle has CAAT cert in documents
+      try {
+        const [certDoc] = await db.execute(sql`
+          SELECT id, status, expirationDate, metadata FROM documents
+          WHERE vehicleId = ${input.vehicleId} AND documentType = 'CAAT_CERTIFICATE' AND status = 'approved'
+          ORDER BY expirationDate DESC LIMIT 1
+        `) as unknown as [any[], unknown];
+        const cert = certDoc?.[0];
+        if (cert && cert.expirationDate && new Date(cert.expirationDate) > new Date()) {
+          return { required: true, reason: requirement.reason, validation: { isValid: true, certificateNumber: cert.id, expiryDate: cert.expirationDate, vehicleType: null, hazmatClasses: [input.hazmatClass], issues: [] } };
+        }
+      } catch { /* fallback to service validation */ }
+
+      const validation = await validateCAAT((vehicle as any).vin || '', input.hazmatClass);
+      return { required: true, reason: requirement.reason, validation };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HOS BORDER TRANSITION — Dispatch-time HOS check for MX loads
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  checkHOSBorderTransition: protectedProcedure
+    .input(z.object({
+      driverId: z.number(),
+      fromCountry: z.enum(["US", "MX", "CA"]),
+      toCountry: z.enum(["US", "MX", "CA"]),
+      currentDrivingMinutes: z.number().default(0),
+      currentOnDutyMinutes: z.number().default(0),
+      currentCycleMinutes: z.number().default(0),
+    }))
+    .query(({ input }) => {
+      const { computeTransitionHOS, getHOSRuleSummary } = require("../services/hosBorderTransition");
+      const transition = computeTransitionHOS({
+        fromCountry: input.fromCountry,
+        toCountry: input.toCountry,
+        currentDrivingMinutes: input.currentDrivingMinutes,
+        currentOnDutyMinutes: input.currentOnDutyMinutes,
+        currentCycleMinutes: input.currentCycleMinutes,
+      });
+      const fromRules = getHOSRuleSummary(input.fromCountry);
+      const toRules = getHOSRuleSummary(input.toCountry);
+      return { transition, fromRules, toRules };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FAST / C-TPAT / NEEC — Trusted Trader Programs
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  checkFASTEligibility: protectedProcedure
+    .input(z.object({
+      hasCtpat: z.boolean(),
+      hasPip: z.boolean(),
+      driverHasFastCard: z.boolean(),
+      cleanRecord: z.boolean(),
+    }))
+    .query(({ input }) => {
+      const { checkFASTEligibility, estimateBorderTimeSavings, getTrustedPrograms } = require("../services/crossBorderHardening");
+      const eligibility = checkFASTEligibility(input);
+      const savings = estimateBorderTimeSavings("FAST");
+      const programs = getTrustedPrograms();
+      return { eligibility, savings, programs };
+    }),
+
+  checkUSMCAEligibility: protectedProcedure
+    .input(z.object({
+      rvcPercent: z.number(),
+      originCountries: z.array(z.enum(["US", "MX", "CA"])),
+      hasOriginCert: z.boolean(),
+      htsCovered: z.boolean(),
+    }))
+    .query(({ input }) => {
+      const { checkUSMCAEligibility, getUSMCACertificateRequirements } = require("../services/crossBorderHardening");
+      const eligibility = checkUSMCAEligibility(input);
+      const certRequirements = getUSMCACertificateRequirements();
+      return { eligibility, certRequirements };
+    }),
 });
