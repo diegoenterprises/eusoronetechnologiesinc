@@ -21,20 +21,20 @@ import { toast } from "sonner";
 export default function TwoFactorSetup() {
   const [verificationCode, setVerificationCode] = useState("");
 
-  const statusQuery = (trpc as any).users.get2FAStatus.useQuery();
-  const setupQuery = (trpc as any).users.setup2FA.useQuery(undefined, { enabled: !(statusQuery.data as any)?.enabled });
+  const statusQuery = (trpc as any).auth.get2FAStatus.useQuery();
+  const setupQuery = (trpc as any).auth.setup2FA.useQuery(undefined, { enabled: !(statusQuery.data as any)?.enabled });
 
-  const enableMutation = (trpc as any).users.enable2FA.useMutation({
+  const enableMutation = (trpc as any).auth.enable2FA.useMutation({
     onSuccess: () => { toast.success("2FA enabled successfully"); statusQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const disableMutation = (trpc as any).users.disable2FA.useMutation({
+  const disableMutation = (trpc as any).auth.disable2FA.useMutation({
     onSuccess: () => { toast.success("2FA disabled"); statusQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const regenerateBackupMutation = (trpc as any).users.regenerateBackupCodes.useMutation({
+  const regenerateBackupMutation = (trpc as any).auth.regenerateBackupCodes.useMutation({
     onSuccess: () => { toast.success("Backup codes regenerated"); statusQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -107,7 +107,7 @@ export default function TwoFactorSetup() {
               ) : (
                 <>
                   <div className="bg-slate-800 p-4 rounded-xl w-fit mx-auto">
-                    <img src={setup?.qrCode} alt="2FA QR Code" className="w-40 h-40" />
+                    <img src={setup?.qrDataUrl} alt="2FA QR Code" className="w-40 h-40" />
                   </div>
                   <p className="text-sm text-slate-400 text-center">Scan this QR code with your authenticator app</p>
                   <div className="p-3 rounded-lg bg-slate-700/30">

@@ -235,6 +235,15 @@ export const loadsRouter = router({
       const dbUserId = await resolveUserId(ctx.user);
       if (!dbUserId) throw new Error("Could not resolve user account");
 
+      // ── V17: isVerified gate — block unverified users from posting loads ──
+      try {
+        const [userRow] = await db.select({ isVerified: users.isVerified }).from(users).where(eq(users.id, dbUserId)).limit(1);
+        if (userRow && !userRow.isVerified) {
+          const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(ctx.user?.role || '');
+          if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Your account must be verified by an administrator before you can post loads. Contact support if you believe this is an error.' });
+        }
+      } catch (e: any) { if (e?.code === 'FORBIDDEN') throw e; }
+
       // ── Server-side validation block ──────────────────────────────────
 
       // 1. Weight limit validation by state
@@ -2098,6 +2107,14 @@ export const bidsRouter = router({
 
       const catalystId = await resolveUserId(ctx.user);
       if (!catalystId) throw new Error("Could not resolve user");
+
+      // V17: Stripe Connect check — carriers must have a Connect account to bid
+      try {
+        const [bidder] = await db.select({ stripeConnectId: users.stripeConnectId }).from(users).where(eq(users.id, catalystId)).limit(1);
+        if (!bidder?.stripeConnectId) {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'You must set up your EusoWallet payout account before placing bids. Go to Settings → Payments to connect your account.' });
+        }
+      } catch (e: any) { if (e?.code === 'PRECONDITION_FAILED') throw e; }
 
       // WS-P1-004: Prevent duplicate bids on same load
       const [existingBid] = await db.select({ id: bids.id }).from(bids)

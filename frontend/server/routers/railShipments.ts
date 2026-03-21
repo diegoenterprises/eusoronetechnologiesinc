@@ -8,6 +8,7 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte, lte, inArray, count } from "drizzle-orm";
 import { railProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { getInterchangePoints, getCrewCertRequirements, getDGRailRegulations, getRequiredCrossBorderDocs, checkCrossBorderRailCompliance, estimateRailBorderCrossingTime, type RailBorderCountry } from "../services/crossBorderRail";
 import { railincService } from "../services/integrations/RailincService";
 import { fraService } from "../services/integrations/FRAService";
 import { classIRailroadService } from "../services/integrations/ClassIRailroadService";
@@ -818,4 +819,36 @@ export const railShipmentsRouter = router({
         return { settlements: s, demurrage: d };
       } catch { return { settlements: [], demurrage: [] }; }
     }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CROSS-BORDER RAIL (role-enforced via railProcedure)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getCrossBorderInterchangePoints: railProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']).optional(), railroad: z.string().optional() }).optional())
+    .query(({ input }) => getInterchangePoints({ country: input?.country as RailBorderCountry | undefined, railroad: input?.railroad })),
+
+  getCrossBorderCrewCerts: railProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']).optional() }).optional())
+    .query(({ input }) => getCrewCertRequirements(input?.country as RailBorderCountry | undefined)),
+
+  getCrossBorderDGRailRegs: railProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']).optional() }).optional())
+    .query(({ input }) => getDGRailRegulations(input?.country as RailBorderCountry | undefined)),
+
+  getCrossBorderRailDocs: railProcedure
+    .input(z.object({ direction: z.string(), mode: z.string().default('RAIL'), hasHazmat: z.boolean().default(false), hasOversized: z.boolean().default(false) }))
+    .query(({ input }) => getRequiredCrossBorderDocs(input)),
+
+  checkCrossBorderRailCompliance: railProcedure
+    .input(z.object({
+      direction: z.string(), railroad: z.string(), hasCrewCerts: z.boolean(),
+      hasEManifest: z.boolean(), hasDGCompliance: z.boolean().default(false),
+      hasCustomsDocs: z.boolean(), hasInterchangeAgreement: z.boolean(),
+    }))
+    .query(({ input }) => checkCrossBorderRailCompliance(input)),
+
+  estimateRailBorderCrossingTime: railProcedure
+    .input(z.object({ interchangePointId: z.string(), hasPreClearance: z.boolean().default(false), carCount: z.number().default(1), hasHazmat: z.boolean().default(false) }))
+    .query(({ input }) => estimateRailBorderCrossingTime(input)),
 });

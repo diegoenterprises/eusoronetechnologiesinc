@@ -797,6 +797,15 @@ export const loadBoardRouter = router({
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const profile = await resolveUserProfile(ctx.user);
       if (!LOAD_POSTER_ROLES.includes(profile.role) && !profile.isAdmin) throw new Error(`Role ${profile.role} cannot post loads`);
+
+      // V17: isVerified gate
+      if (!profile.isAdmin) {
+        try {
+          const [uRow] = await db.select({ isVerified: users.isVerified }).from(users).where(eq(users.id, profile.userId)).limit(1);
+          if (uRow && !uRow.isVerified) throw new TRPCError({ code: 'FORBIDDEN', message: 'Account must be verified before posting loads.' });
+        } catch (e: any) { if (e?.code === 'FORBIDDEN') throw e; }
+      }
+
       const isHazmat = input.hazmat || !!input.hazmatClass;
       if (isHazmat && input.hazmatClass) {
         const classReqs = HAZMAT_CLASS_REQUIREMENTS[input.hazmatClass];
@@ -2030,6 +2039,14 @@ export const loadBoardRouter = router({
       const profile = await resolveUserProfile(ctx.user);
       if (!LOAD_BIDDER_ROLES.includes(profile.role) && !profile.isAdmin) throw new Error(`Role ${profile.role} cannot submit bids`);
       const userId = profile.userId;
+
+      // V17: Stripe Connect check — bidders must have a payout account
+      if (!profile.isAdmin) {
+        try {
+          const [bidder] = await db.select({ stripeConnectId: users.stripeConnectId }).from(users).where(eq(users.id, userId)).limit(1);
+          if (!bidder?.stripeConnectId) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Set up your EusoWallet payout account before bidding. Go to Settings → Payments.' });
+        } catch (e: any) { if (e?.code === 'PRECONDITION_FAILED') throw e; }
+      }
 
       // 1. Fetch the load to check hazmat requirements
       const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);

@@ -31,19 +31,23 @@ import {
   Globe,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from 'react-i18next';
+
+// Country flag images — official SVGs in /flags/
+const FLAG_PATHS: Record<string, string> = { US: "/flags/us.svg", CA: "/flags/ca.svg", MX: "/flags/mx.svg" };
 
 // V5 Multi-Modal: Country options
 const COUNTRIES = [
-  { code: "US", flag: "\ud83c\uddfa\ud83c\uddf8", name: "United States", desc: "FMCSA/DOT/FRA/USCG regulated operations" },
-  { code: "CA", flag: "\ud83c\udde8\ud83c\udde6", name: "Canada", desc: "Transport Canada/TDG/Railway Safety Act" },
-  { code: "MX", flag: "\ud83c\uddf2\ud83c\uddfd", name: "Mexico", desc: "SCT/NOM/Ley de Navegaci\u00f3n" },
+  { code: "US", name: "United States", desc: "FMCSA/DOT/FRA/USCG regulated operations" },
+  { code: "CA", name: "Canada", desc: "Transport Canada/TDG/Railway Safety Act" },
+  { code: "MX", name: "Mexico", desc: "SCT/NOM/Ley de Navegaci\u00f3n" },
 ];
 
-// V5 Multi-Modal: Transport mode options
+// V5 Multi-Modal: Transport mode options — brand gradient (blue→purple)
 const TRANSPORT_MODES = [
-  { code: "TRUCK", icon: Truck, name: "Trucking", desc: "Highway freight & hazmat transport", color: "from-[#F97316] to-[#FB923C]" },
-  { code: "RAIL", icon: TrainFront, name: "Rail", desc: "Railroad freight & intermodal operations", color: "from-[#3B82F6] to-[#60A5FA]" },
-  { code: "VESSEL", icon: Ship, name: "Vessel / Maritime", desc: "Ocean, barge & inland waterway freight", color: "from-[#06B6D4] to-[#22D3EE]" },
+  { code: "TRUCK", icon: Truck, name: "Trucking", desc: "Highway freight & hazmat transport", color: "from-[#1473FF] to-[#7C3AED]" },
+  { code: "RAIL", icon: TrainFront, name: "Rail", desc: "Railroad freight & intermodal operations", color: "from-[#1473FF] to-[#BE01FF]" },
+  { code: "VESSEL", icon: Ship, name: "Vessel / Maritime", desc: "Ocean, barge & inland waterway freight", color: "from-[#7C3AED] to-[#BE01FF]" },
 ];
 
 const REGISTRATION_ROLES = [
@@ -321,6 +325,7 @@ export default function Register() {
   const [mounted, setMounted] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const isLight = theme === 'light';
+  const { t } = useTranslation();
   // V5 Multi-Modal: multi-step state
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
@@ -413,7 +418,7 @@ export default function Register() {
           </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" onClick={() => setLocation("/login")} className={isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-300 hover:text-white'}>
-              Already have an account? Sign In
+              {t('auth.alreadyHaveAccount', 'Already have an account? Sign In')}
             </Button>
             <button
               onClick={toggleTheme}
@@ -442,9 +447,9 @@ export default function Register() {
           ))}
         </div>
         <div className="flex justify-center gap-[52px] text-[10px] mb-6">
-          <span className={step >= 1 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>Country</span>
-          <span className={step >= 2 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>Mode</span>
-          <span className={step >= 3 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>Role</span>
+          <span className={step >= 1 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>{t('register.country', 'Country')}</span>
+          <span className={step >= 2 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>{t('register.mode', 'Mode')}</span>
+          <span className={step >= 3 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>{t('register.role', 'Role')}</span>
         </div>
       </div>
 
@@ -456,18 +461,18 @@ export default function Register() {
             className={`text-4xl md:text-5xl font-bold mb-4 ${isLight ? 'text-slate-900' : 'text-white'} ${mounted ? "hero-animate" : "opacity-0"}`}
             style={{ animationDelay: "0.1s" }}
           >
-            Join the Future of{" "}
+            {t('register.joinTheFuture', 'Join the Future of')}{" "}
             <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-              Freight & Energy Logistics
+              {t('register.freightEnergy', 'Freight & Energy Logistics')}
             </span>
           </h1>
           <p
             className={`text-xl max-w-2xl mx-auto ${isLight ? 'text-slate-500' : 'text-slate-400'} ${mounted ? "hero-animate" : "opacity-0"}`}
             style={{ animationDelay: "0.25s" }}
           >
-            {step === 1 && "Select your operating country. Multi-select allowed for cross-border operators."}
-            {step === 2 && "Select your transport mode(s). Multi-select allowed for multi-modal operators."}
-            {step === 3 && "Select your role to begin registration. Each role has specific regulatory requirements."}
+            {step === 1 && t('register.step1Desc', 'Select your operating country. Multi-select allowed for cross-border operators.')}
+            {step === 2 && t('register.step2Desc', 'Select your transport mode(s). Multi-select allowed for multi-modal operators.')}
+            {step === 3 && t('register.step3Desc', 'Select your role to begin registration. Each role has specific regulatory requirements.')}
           </p>
         </div>
 
@@ -492,7 +497,7 @@ export default function Register() {
                     }`}
                   >
                     <CardContent className="p-6 text-center">
-                      <div className="text-5xl mb-3">{c.flag}</div>
+                      <div className="flex justify-center mb-3"><img src={FLAG_PATHS[c.code]} alt={c.name} className="w-16 h-11 rounded-md shadow-sm object-cover" /></div>
                       <CardTitle className={`text-lg mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>{c.name}</CardTitle>
                       <CardDescription className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{c.desc}</CardDescription>
                       {selected && (
@@ -509,7 +514,7 @@ export default function Register() {
                 onClick={() => setStep(2)}
                 className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white px-8"
               >
-                Continue <ArrowRight className="w-4 h-4 ml-2" />
+                {t('common.next', 'Continue')} <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </>
@@ -537,8 +542,8 @@ export default function Register() {
                     }`}
                   >
                     <CardContent className="p-6 text-center">
-                      <div className={`w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center bg-gradient-to-br ${m.color}`}>
-                        <ModeIcon className="w-8 h-8 text-white" />
+                      <div className={`w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center ${isLight ? 'bg-blue-50 border border-blue-100' : `bg-gradient-to-br ${m.color}`}`}>
+                        <ModeIcon className={`w-7 h-7 ${isLight ? 'text-blue-600' : 'text-white'}`} />
                       </div>
                       <CardTitle className={`text-lg mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>{m.name}</CardTitle>
                       <CardDescription className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{m.desc}</CardDescription>
@@ -552,14 +557,14 @@ export default function Register() {
             </div>
             <div className="flex justify-center gap-3">
               <Button variant="outline" onClick={() => setStep(1)}>
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back
+                <ArrowLeft className="w-4 h-4 mr-2" /> {t('common.back', 'Back')}
               </Button>
               <Button
                 disabled={selectedModes.length === 0}
                 onClick={() => setStep(3)}
                 className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white px-8"
               >
-                Continue <ArrowRight className="w-4 h-4 ml-2" />
+                {t('common.next', 'Continue')} <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </>
@@ -590,8 +595,9 @@ export default function Register() {
               {selectedCountries.map((c) => {
                 const country = COUNTRIES.find((x) => x.code === c);
                 return (
-                  <Badge key={c} className={`text-xs ${isLight ? 'bg-blue-100 text-blue-700' : 'bg-blue-500/20 text-blue-400'}`}>
-                    {country?.flag} {country?.name}
+                  <Badge key={c} className={`text-xs flex items-center gap-1.5 ${isLight ? 'bg-blue-100 text-blue-700' : 'bg-blue-500/20 text-blue-400'}`}>
+                    <img src={FLAG_PATHS[c]} alt={c} className="w-5 h-3.5 rounded-sm object-cover" />
+                    {country?.name}
                   </Badge>
                 );
               })}
@@ -679,7 +685,7 @@ export default function Register() {
                     <CardContent className="space-y-4">
                       {/* Requirements */}
                       <div>
-                        <p className={`text-xs font-semibold mb-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Requirements:</p>
+                        <p className={`text-xs font-semibold mb-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>{t('register.requirements', 'Requirements')}:</p>
                         <div className="flex flex-wrap gap-1">
                           {roleData.requirements.slice(0, 3).map((req: any, idx: number) => (
                             <Badge key={idx} variant="secondary" className={`text-xs ${isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-700/50 text-slate-300'}`}>
@@ -696,7 +702,7 @@ export default function Register() {
 
                       {/* Regulations */}
                       <div>
-                        <p className={`text-xs font-semibold mb-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Regulatory Bodies:</p>
+                        <p className={`text-xs font-semibold mb-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>{t('register.regulatoryBodies', 'Regulatory Bodies')}:</p>
                         <div className="flex flex-wrap gap-1">
                           {roleData.regulations.map((reg: any, idx: number) => (
                             <Badge key={idx} variant="outline" className={`text-xs ${isLight ? 'text-blue-600 border-blue-300' : 'text-blue-400 border-blue-500/30'}`}>
@@ -714,7 +720,7 @@ export default function Register() {
             {/* Back button */}
             <div className="flex justify-center mt-8">
               <Button variant="outline" onClick={() => setStep(2)}>
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Mode Selection
+                <ArrowLeft className="w-4 h-4 mr-2" /> {t('register.backToMode', 'Back to Mode Selection')}
               </Button>
             </div>
           </>
@@ -725,12 +731,12 @@ export default function Register() {
           className={`mt-12 text-center text-sm transition-all duration-700 ${isLight ? 'text-slate-400' : 'text-slate-500'} ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           style={{ transitionDelay: "1.6s" }}
         >
-          <p>Need help choosing? Contact support@eusotrip.com</p>
+          <p>{t('register.needHelp', 'Need help choosing? Contact support@eusotrip.com')}</p>
           <p className="mt-2">
-            By registering, you agree to our{" "}
-            <a href="/terms-of-service" className="text-blue-400 hover:underline">Terms of Service</a>
-            {" "}and{" "}
-            <a href="/privacy-policy" className="text-blue-400 hover:underline">Privacy Policy</a>
+            {t('register.byRegistering', 'By registering, you agree to our')}{" "}
+            <a href="/terms-of-service" className="text-blue-400 hover:underline">{t('register.termsOfService', 'Terms of Service')}</a>
+            {" "}{t('register.and', 'and')}{" "}
+            <a href="/privacy-policy" className="text-blue-400 hover:underline">{t('register.privacyPolicy', 'Privacy Policy')}</a>
           </p>
         </div>
       </div>

@@ -26,7 +26,7 @@ import {
   Plug, PlugZap, Zap as Lightning, Flame, Snowflake, Droplet,
   Waves, CloudSnow, CloudDrizzle, CloudLightning, CloudFog,
   Sunrise, Sunset, Gavel, Handshake, Calculator, Bed,
-  LogIn, BookOpen, Beaker as Flask
+  LogIn, BookOpen, Beaker as Flask, Globe
 } from 'lucide-react';
 import { UserRole } from '@/hooks/useRoleAccess';
 

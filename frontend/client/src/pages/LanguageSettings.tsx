@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
+import useLocale from "@/hooks/useLocale";
 import {
   Globe, CheckCircle, Clock, Ruler, DollarSign,
   Calendar, ChevronRight, Settings, Search
@@ -41,7 +42,8 @@ const LANGUAGES: Language[] = [
 export default function LanguageSettings() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const [selectedLang, setSelectedLang] = useState("en");
+  const { lang, changeLanguage, t } = useLocale();
+  const [selectedLang, setSelectedLang] = useState(lang);
   const [dateFormat, setDateFormat] = useState<DateFormat>("MM/DD/YYYY");
   const [timeFormat, setTimeFormat] = useState<TimeFormat>("12h");
   const [measurement, setMeasurement] = useState<MeasurementSystem>("imperial");
@@ -52,7 +54,11 @@ export default function LanguageSettings() {
   );
 
   const handleSave = () => {
-    toast.success("Language and locale preferences saved");
+    changeLanguage(selectedLang);
+    localStorage.setItem('eusotrip_date_format', dateFormat);
+    localStorage.setItem('eusotrip_time_format', timeFormat);
+    localStorage.setItem('eusotrip_measurement', measurement);
+    toast.success(t('common.success', 'Language and locale preferences saved'));
   };
 
   const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");

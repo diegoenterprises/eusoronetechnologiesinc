@@ -106,11 +106,13 @@ export interface HOSSummary {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// In-memory HOS state per user (replaced by DB in production with ELD)
-// This provides real tracking without needing a dedicated HOS table
+// DB-BACKED HOS STATE — persists across server restarts
+// Hot cache in memory; source of truth in hos_state table.
+// Every state change also writes an immutable audit row to hos_logs
+// per 49 CFR 395.8 (6-month retention requirement).
 // ═══════════════════════════════════════════════════════════════
 
-const hosStates = new Map<number, HOSState>();
+const hosCache = new Map<number, HOSState>();
 
 function getDefaultState(userId: number): HOSState {
   return {
@@ -131,11 +133,161 @@ function getDefaultState(userId: number): HOSState {
   };
 }
 
-function getState(userId: number): HOSState {
-  if (!hosStates.has(userId)) {
-    hosStates.set(userId, getDefaultState(userId));
+/**
+ * Load HOS state from DB, falling back to default if no row exists.
+ * Populates the hot cache on first load.
+ */
+async function getStateFromDB(userId: number): Promise<HOSState> {
+  if (hosCache.has(userId)) return hosCache.get(userId)!;
+
+  try {
+    const db = await getDb();
+    if (db) {
+      const rows: any[] = await db.execute(
+        sql`SELECT * FROM hos_state WHERE userId = ${userId} LIMIT 1`
+      ).then((r: any) => (Array.isArray(r) ? (Array.isArray(r[0]) ? r[0] : r) : []));
+
+      if (rows.length > 0) {
+        const row = rows[0];
+        const state: HOSState = {
+          userId,
+          status: row.status || "off_duty",
+          statusStartedAt: row.statusStartedAt ? new Date(row.statusStartedAt).toISOString() : new Date().toISOString(),
+          drivingMinutesToday: row.drivingMinutesToday || 0,
+          onDutyMinutesToday: row.onDutyMinutesToday || 0,
+          drivingMinutesSinceReset: row.drivingMinutesSinceReset || 0,
+          onDutyMinutesSinceReset: row.onDutyMinutesSinceReset || 0,
+          cycleMinutesUsed: row.cycleMinutesUsed || 0,
+          cycleDays: row.cycleDays || 8,
+          drivingMinutesSinceBreak: row.drivingMinutesSinceBreak || 0,
+          lastBreakAt: row.lastBreakAt ? new Date(row.lastBreakAt).toISOString() : null,
+          lastOffDutyAt: row.lastOffDutyAt ? new Date(row.lastOffDutyAt).toISOString() : null,
+          violations: safeJsonParse(row.violations, []),
+          todayLog: safeJsonParse(row.todayLog, []),
+        };
+        hosCache.set(userId, state);
+        return state;
+      }
+    }
+  } catch (e) {
+    logger.warn(`[HOS] DB load failed for user ${userId}, using default:`, (e as any)?.message);
   }
-  return hosStates.get(userId)!;
+
+  const def = getDefaultState(userId);
+  hosCache.set(userId, def);
+  return def;
+}
+
+function safeJsonParse(val: any, fallback: any): any {
+  if (!val) return fallback;
+  if (typeof val === 'object') return val;
+  try { return JSON.parse(val); } catch { return fallback; }
+}
+
+/**
+ * Persist HOS state to DB (upsert) + write immutable audit log entry.
+ */
+async function persistState(state: HOSState, auditEvent?: {
+  eventType: string;
+  fromStatus?: DutyStatus | null;
+  toStatus?: DutyStatus | null;
+  location?: string;
+  source?: string;
+  violationType?: string;
+  violationCfr?: string;
+}): Promise<void> {
+  hosCache.set(state.userId, state);
+
+  try {
+    const db = await getDb();
+    if (!db) return;
+
+    // Upsert hos_state
+    await db.execute(sql`
+      INSERT INTO hos_state (userId, status, statusStartedAt, drivingMinutesToday, onDutyMinutesToday,
+        drivingMinutesSinceReset, onDutyMinutesSinceReset, cycleMinutesUsed, cycleDays,
+        drivingMinutesSinceBreak, lastBreakAt, lastOffDutyAt, violations, todayLog)
+      VALUES (${state.userId}, ${state.status}, ${state.statusStartedAt},
+        ${state.drivingMinutesToday}, ${state.onDutyMinutesToday},
+        ${state.drivingMinutesSinceReset}, ${state.onDutyMinutesSinceReset},
+        ${state.cycleMinutesUsed}, ${state.cycleDays}, ${state.drivingMinutesSinceBreak},
+        ${state.lastBreakAt}, ${state.lastOffDutyAt},
+        ${JSON.stringify(state.violations)}, ${JSON.stringify(state.todayLog)})
+      ON DUPLICATE KEY UPDATE
+        status = VALUES(status), statusStartedAt = VALUES(statusStartedAt),
+        drivingMinutesToday = VALUES(drivingMinutesToday), onDutyMinutesToday = VALUES(onDutyMinutesToday),
+        drivingMinutesSinceReset = VALUES(drivingMinutesSinceReset),
+        onDutyMinutesSinceReset = VALUES(onDutyMinutesSinceReset),
+        cycleMinutesUsed = VALUES(cycleMinutesUsed), cycleDays = VALUES(cycleDays),
+        drivingMinutesSinceBreak = VALUES(drivingMinutesSinceBreak),
+        lastBreakAt = VALUES(lastBreakAt), lastOffDutyAt = VALUES(lastOffDutyAt),
+        violations = VALUES(violations), todayLog = VALUES(todayLog)
+    `);
+
+    // Write immutable audit log entry (49 CFR 395.8)
+    if (auditEvent) {
+      await db.execute(sql`
+        INSERT INTO hos_logs (userId, eventType, fromStatus, toStatus, location, source,
+          violationType, violationCfr, drivingMinutesAtEvent, onDutyMinutesAtEvent, cycleMinutesAtEvent)
+        VALUES (${state.userId}, ${auditEvent.eventType}, ${auditEvent.fromStatus || null},
+          ${auditEvent.toStatus || null}, ${auditEvent.location || null},
+          ${auditEvent.source || 'driver'}, ${auditEvent.violationType || null},
+          ${auditEvent.violationCfr || null}, ${state.drivingMinutesSinceReset},
+          ${state.onDutyMinutesSinceReset}, ${state.cycleMinutesUsed})
+      `);
+    }
+  } catch (e) {
+    logger.error(`[HOS] DB persist failed for user ${state.userId}:`, (e as any)?.message);
+  }
+}
+
+/** Sync wrapper for backward compat — reads from cache only */
+function getState(userId: number): HOSState {
+  if (!hosCache.has(userId)) {
+    hosCache.set(userId, getDefaultState(userId));
+  }
+  return hosCache.get(userId)!;
+}
+
+/**
+ * Resolve a driver's timezone from DB (users.timezone or metadata.preferences.timezone).
+ * Falls back to America/Chicago (FMCSA default home terminal time).
+ * Cached for 5 minutes to avoid repeated DB hits.
+ */
+const tzCache = new Map<number, { tz: string; ts: number }>();
+const TZ_TTL_MS = 300_000; // 5 minutes
+
+async function getDriverTimezone(userId: number): Promise<string> {
+  const cached = tzCache.get(userId);
+  if (cached && Date.now() - cached.ts < TZ_TTL_MS) return cached.tz;
+
+  try {
+    const db = await getDb();
+    if (db) {
+      const rows: any[] = await db.execute(
+        sql`SELECT timezone, metadata FROM users WHERE id = ${userId} LIMIT 1`
+      ).then((r: any) => (Array.isArray(r) ? (Array.isArray(r[0]) ? r[0] : r) : []));
+
+      if (rows.length > 0) {
+        const row = rows[0];
+        // Direct column first, then metadata.preferences.timezone
+        let tz = row.timezone;
+        if (!tz && row.metadata) {
+          try {
+            const meta = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata;
+            tz = meta?.preferences?.timezone || meta?.displayPreferences?.timezone;
+          } catch {}
+        }
+        tz = tz || 'America/Chicago';
+        tzCache.set(userId, { tz, ts: Date.now() });
+        return tz;
+      }
+    }
+  } catch (e) {
+    logger.warn(`[HOS] timezone lookup failed for user ${userId}:`, (e as any)?.message);
+  }
+
+  return 'America/Chicago';
 }
 
 function minutesSince(isoStr: string): number {
@@ -349,10 +501,10 @@ async function tryHydrateFromELD(userId: number): Promise<boolean> {
       location: log.location,
     }));
 
-    hosStates.set(userId, state);
+    hosCache.set(userId, state);
     return true;
   } catch (e) {
-    // ELD fetch failed — fall back to in-memory
+    // ELD fetch failed — fall back to cache
     return false;
   }
 }
@@ -367,13 +519,15 @@ export function getHOSSummary(userId: number): HOSSummary {
 }
 
 /**
- * ELD-aware HOS summary — tries ELD first, falls back to in-memory.
+ * ELD-aware HOS summary — loads persisted state from DB, tries ELD, computes.
  * Use this from all API endpoints that serve HOS data to any user role.
  */
 export async function getHOSSummaryWithELD(userId: number): Promise<HOSSummary> {
-  // Try to hydrate from connected ELD provider
+  // 1. Load persisted state from DB (warm cache or cold start)
+  await getStateFromDB(userId);
+  // 2. Try to overlay with connected ELD provider data
   await tryHydrateFromELD(userId);
-  // Compute from (possibly ELD-hydrated) state
+  // 3. Compute from (possibly ELD-hydrated) state
   return getHOSSummary(userId);
 }
 
@@ -382,7 +536,7 @@ export async function getHOSSummaryWithELD(userId: number): Promise<HOSSummary> 
  */
 export async function changeDutyStatusWithELD(userId: number, newStatus: DutyStatus, location?: string): Promise<HOSSummary> {
   // First change locally
-  const summary = changeDutyStatus(userId, newStatus, location);
+  const summary = await changeDutyStatus(userId, newStatus, location);
 
   // If ELD is connected, attempt to push the status change
   try {
@@ -405,7 +559,7 @@ export async function changeDutyStatusWithELD(userId: number, newStatus: DutySta
   return summary;
 }
 
-export function changeDutyStatus(userId: number, newStatus: DutyStatus, location?: string): HOSSummary {
+export async function changeDutyStatus(userId: number, newStatus: DutyStatus, location?: string): Promise<HOSSummary> {
   const state = getState(userId);
   const elapsed = minutesSince(state.statusStartedAt);
   const now = new Date();
@@ -458,9 +612,12 @@ export function changeDutyStatus(userId: number, newStatus: DutyStatus, location
     state.lastBreakAt = now.toISOString();
   }
 
-  // Reset daily counters at midnight
-  const lastStart = new Date(state.statusStartedAt);
-  if (lastStart.getDate() !== now.getDate()) {
+  // Reset daily counters at midnight in driver's timezone (not server time)
+  // Per 49 CFR 395.8: "24-hour period" is based on home terminal time
+  const driverTZ = await getDriverTimezone(userId);
+  const lastStartLocal = new Date(state.statusStartedAt).toLocaleDateString('en-US', { timeZone: driverTZ });
+  const nowLocal = now.toLocaleDateString('en-US', { timeZone: driverTZ });
+  if (lastStartLocal !== nowLocal) {
     state.drivingMinutesToday = 0;
     state.onDutyMinutesToday = 0;
     state.todayLog = [];
@@ -474,7 +631,17 @@ export function changeDutyStatus(userId: number, newStatus: DutyStatus, location
     state.lastOffDutyAt = now.toISOString();
   }
 
-  hosStates.set(userId, state);
+  hosCache.set(userId, state);
+
+  // Persist to DB + write audit log (non-blocking)
+  persistState(state, {
+    eventType: 'status_change',
+    fromStatus: state.status,
+    toStatus: newStatus,
+    location: location || undefined,
+    source: 'driver',
+  }).catch(e => logger.error('[HOS] persist after changeDutyStatus failed:', (e as any)?.message));
+
   return computeCurrentHOS(state);
 }
 

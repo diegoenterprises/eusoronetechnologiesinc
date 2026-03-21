@@ -35,7 +35,7 @@ export default function PortDirectory() {
   const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState("all");
 
-  const ports = trpc.vesselShipments.getPorts.useQuery({ limit: 100 });
+  const ports = trpc.vesselShipments.getPorts.useQuery({ limit: 600 });
 
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = cn(

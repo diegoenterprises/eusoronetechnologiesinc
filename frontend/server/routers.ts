@@ -320,7 +320,7 @@ export const appRouter = router({
         throw new Error("Invalid credentials");
       }
 
-      // Check if user has 2FA enabled
+      // Check if user has MFA enabled (TOTP first, then legacy SMS fallback)
       const { getDb } = await import("./db");
       const { users } = await import("../drizzle/schema");
       const { eq } = await import("drizzle-orm");
@@ -333,24 +333,32 @@ export const appRouter = router({
           let meta: any = {};
           try { meta = dbUser?.metadata ? JSON.parse(dbUser.metadata as string) : {}; } catch {}
 
-          if (meta.twoFactorEnabled) {
-            // 2FA is enabled — check if code was provided
+          // Check TOTP MFA (mfaTokens table) first
+          const { mfaService } = await import("./services/mfa");
+          const mfaStatus = await mfaService.isEnabled(userId);
+
+          if (mfaStatus.enabled && mfaStatus.method === "totp") {
+            // TOTP-based MFA
             if (!input.twoFactorCode) {
-              // Generate and send 2FA code
+              return { success: false, requiresTwoFactor: true, method: "totp", message: "Enter the 6-digit code from your authenticator app." } as any;
+            }
+            const valid = await mfaService.verifyLogin(userId, input.twoFactorCode);
+            if (!valid) {
+              throw new Error("Invalid verification code. Try again or use a backup code.");
+            }
+          } else if (meta.twoFactorEnabled) {
+            // Legacy SMS-based 2FA fallback
+            if (!input.twoFactorCode) {
               const { randomInt: _ri } = require("crypto");
               const code = String(_ri(100000, 1000000));
               meta.twoFactorCode = code;
-              meta.twoFactorCodeExpiry = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
+              meta.twoFactorCodeExpiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
               meta.twoFactorCodeAttempts = 0;
               await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
-
               const { notify2FACode } = await import("./services/notifications");
               notify2FACode({ email: input.email, phone: dbUser?.phone || undefined, name: dbUser?.name || "", code });
-
-              return { success: false, requiresTwoFactor: true, message: "Verification code sent to your phone and email." } as any;
+              return { success: false, requiresTwoFactor: true, method: "sms", message: "Verification code sent to your phone and email." } as any;
             }
-
-            // Verify the 2FA code
             if ((meta.twoFactorCodeAttempts || 0) >= 5) {
               throw new Error("Too many failed attempts. Please try logging in again.");
             }
@@ -362,8 +370,6 @@ export const appRouter = router({
               await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
               throw new Error("Invalid verification code.");
             }
-
-            // Code valid — clear it
             delete meta.twoFactorCode;
             delete meta.twoFactorCodeExpiry;
             delete meta.twoFactorCodeAttempts;
@@ -393,57 +399,41 @@ export const appRouter = router({
     }),
     // 2FA procedures — real SMS-based implementation
     get: protectedProcedure.query(async ({ ctx }) => {
-      const { getDb } = await import("./db");
-      const { users } = await import("../drizzle/schema");
-      const { eq } = await import("drizzle-orm");
-      const db = await getDb();
       const userId = Number((ctx.user as any)?.id);
-      if (!db || !userId) return { enabled: false, method: "sms" };
-      const [u] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
-      let meta: any = {};
-      try { meta = u?.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
-      return { enabled: !!meta.twoFactorEnabled, method: "sms" };
+      if (!userId) return { enabled: false, method: "none" };
+      const { mfaService } = await import("./services/mfa");
+      const status = await mfaService.isEnabled(userId);
+      return { enabled: status.enabled, method: status.method || "none" };
     }),
     setup: protectedProcedure.query(async ({ ctx }) => {
-      // SMS-based 2FA — no QR code needed, just return method info
-      return { method: "sms", message: "2FA codes will be sent via SMS to your registered phone number." };
-    }),
-    enable: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async ({ ctx }) => {
-      const { getDb } = await import("./db");
-      const { users } = await import("../drizzle/schema");
-      const { eq } = await import("drizzle-orm");
-      const db = await getDb();
       const userId = Number((ctx.user as any)?.id);
-      if (!db || !userId) throw new Error("Database unavailable");
-      const [u] = await db.select({ metadata: users.metadata, email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
-      if (!u?.phone) throw new Error("Add a phone number to your profile before enabling 2FA.");
-      let meta: any = {};
-      try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
-      meta.twoFactorEnabled = true;
-      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
-      const { notify2FAEnabled } = await import("./services/notifications");
-      notify2FAEnabled({ email: u.email || "", phone: u.phone, name: u.name || "" });
+      const email = (ctx.user as any)?.email || "";
+      if (!userId) throw new Error("User not found");
+      const { mfaService } = await import("./services/mfa");
+      const result = await mfaService.setupTOTP(userId, email);
+      return { method: "totp", qrDataUrl: result.qrDataUrl, secret: result.secret, backupCodes: result.backupCodes };
+    }),
+    enable: protectedProcedure.input(z.object({ code: z.string() })).mutation(async ({ ctx, input }) => {
+      const userId = Number((ctx.user as any)?.id);
+      if (!userId) throw new Error("User not found");
+      const { mfaService } = await import("./services/mfa");
+      const result = await mfaService.verifySetup(userId, input.code);
+      if (!result.success) throw new Error(result.message);
       return { success: true };
     }),
     disable: protectedProcedure.input(z.object({ code: z.string().optional() }).optional()).mutation(async ({ ctx }) => {
-      const { getDb } = await import("./db");
-      const { users } = await import("../drizzle/schema");
-      const { eq } = await import("drizzle-orm");
-      const db = await getDb();
       const userId = Number((ctx.user as any)?.id);
-      if (!db || !userId) throw new Error("Database unavailable");
-      const [u] = await db.select({ metadata: users.metadata, email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
-      let meta: any = {};
-      try { meta = u?.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
-      meta.twoFactorEnabled = false;
-      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
-      const { notify2FADisabled } = await import("./services/notifications");
-      notify2FADisabled({ email: u?.email || "", phone: u?.phone || undefined, name: u?.name || "" });
+      if (!userId) throw new Error("User not found");
+      const { mfaService } = await import("./services/mfa");
+      await mfaService.disable(userId);
       return { success: true };
     }),
-    regenerateBackupCodes: protectedProcedure.input(z.object({}).optional()).mutation(async () => {
-      // SMS-based 2FA doesn't use backup codes, but return empty for compat
-      return { success: true, backupCodes: [] };
+    regenerateBackupCodes: protectedProcedure.input(z.object({}).optional()).mutation(async ({ ctx }) => {
+      const userId = Number((ctx.user as any)?.id);
+      if (!userId) throw new Error("User not found");
+      const { mfaService } = await import("./services/mfa");
+      const result = await mfaService.regenerateBackupCodes(userId);
+      return { success: true, backupCodes: result.codes };
     }),
     changePassword: protectedProcedure.input(z.object({ currentPassword: z.string(), newPassword: z.string() })).mutation(async ({ ctx, input }) => {
       const { getDb } = await import("./db");
@@ -473,47 +463,69 @@ export const appRouter = router({
       const { eq } = await import("drizzle-orm");
       const db = await getDb();
       const userId = Number((ctx.user as any)?.id);
-      if (!db || !userId) return { enabled: false, method: "sms", backupCodesRemaining: 0, backupCodes: [] };
+      if (!db || !userId) return { enabled: false, method: "none", backupCodesRemaining: 0, backupCodes: [] };
+      const { mfaService } = await import("./services/mfa");
+      const mfaStatus = await mfaService.isEnabled(userId);
       const [u] = await db.select({ metadata: users.metadata, phone: users.phone }).from(users).where(eq(users.id, userId)).limit(1);
       let meta: any = {};
       try { meta = u?.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
-      return { enabled: !!meta.twoFactorEnabled, method: "sms", hasPhone: !!u?.phone, backupCodesRemaining: 0, backupCodes: [] };
+      return {
+        enabled: mfaStatus.enabled || !!meta.twoFactorEnabled,
+        method: mfaStatus.enabled ? "totp" : (meta.twoFactorEnabled ? "sms" : "none"),
+        hasPhone: !!u?.phone,
+        backupCodesRemaining: 0,
+        backupCodes: [],
+      };
     }),
     setup2FA: protectedProcedure.query(async ({ ctx }) => {
-      return { method: "sms", message: "SMS-based 2FA. Codes sent to your registered phone number on each login." };
-    }),
-    enable2FA: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async ({ ctx }) => {
-      // Delegate to auth.enable
-      const { getDb } = await import("./db");
-      const { users } = await import("../drizzle/schema");
-      const { eq } = await import("drizzle-orm");
-      const db = await getDb();
       const userId = Number((ctx.user as any)?.id);
-      if (!db || !userId) throw new Error("Database unavailable");
-      const [u] = await db.select({ metadata: users.metadata, email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
-      if (!u?.phone) throw new Error("Add a phone number to your profile before enabling 2FA.");
-      let meta: any = {};
-      try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
-      meta.twoFactorEnabled = true;
-      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
-      const { notify2FAEnabled } = await import("./services/notifications");
-      notify2FAEnabled({ email: u.email || "", phone: u.phone, name: u.name || "" });
+      const email = (ctx.user as any)?.email || "";
+      if (!userId) throw new Error("User not found");
+      const { mfaService } = await import("./services/mfa");
+      const result = await mfaService.setupTOTP(userId, email);
+      return { method: "totp", qrDataUrl: result.qrDataUrl, secret: result.secret, backupCodes: result.backupCodes };
+    }),
+    enable2FA: protectedProcedure.input(z.object({ code: z.string() })).mutation(async ({ ctx, input }) => {
+      const userId = Number((ctx.user as any)?.id);
+      if (!userId) throw new Error("User not found");
+      const { mfaService } = await import("./services/mfa");
+      const result = await mfaService.verifySetup(userId, input.code);
+      if (!result.success) throw new Error(result.message);
+      // Send notification
+      try {
+        const { getDb } = await import("./db");
+        const { users } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (db) {
+          const [u] = await db.select({ email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+          if (u) {
+            const { notify2FAEnabled } = await import("./services/notifications");
+            notify2FAEnabled({ email: u.email || "", phone: u.phone || undefined, name: u.name || "" });
+          }
+        }
+      } catch {}
       return { success: true };
     }),
     disable2FA: protectedProcedure.input(z.object({ code: z.string().optional() }).optional()).mutation(async ({ ctx }) => {
-      const { getDb } = await import("./db");
-      const { users } = await import("../drizzle/schema");
-      const { eq } = await import("drizzle-orm");
-      const db = await getDb();
       const userId = Number((ctx.user as any)?.id);
-      if (!db || !userId) throw new Error("Database unavailable");
-      const [u] = await db.select({ metadata: users.metadata, email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
-      let meta: any = {};
-      try { meta = u?.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
-      meta.twoFactorEnabled = false;
-      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
-      const { notify2FADisabled } = await import("./services/notifications");
-      notify2FADisabled({ email: u?.email || "", phone: u?.phone || undefined, name: u?.name || "" });
+      if (!userId) throw new Error("User not found");
+      const { mfaService } = await import("./services/mfa");
+      await mfaService.disable(userId);
+      // Send notification
+      try {
+        const { getDb } = await import("./db");
+        const { users } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (db) {
+          const [u] = await db.select({ email: users.email, phone: users.phone, name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+          if (u) {
+            const { notify2FADisabled } = await import("./services/notifications");
+            notify2FADisabled({ email: u?.email || "", phone: u?.phone || undefined, name: u?.name || "" });
+          }
+        }
+      } catch {}
       return { success: true };
     }),
 

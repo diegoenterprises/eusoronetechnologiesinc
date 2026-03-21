@@ -1658,12 +1658,20 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       INDEX pf_active_idx (active)
     )`);
 
-    // --- Seed: HAZMAT_SURCHARGE fee in platform_fee_configs (Drizzle-managed table) ---
+    // --- Seed: 9 platform fee configurations (INSERT IGNORE — idempotent) ---
     try {
-      await pool.execute(`INSERT IGNORE INTO platform_fee_configs (feeCode, name, description, transactionType, feeType, baseRate, flatAmount, isActive, effectiveFrom)
-        VALUES ('HAZMAT_SURCHARGE', 'Hazmat Surcharge', 'Surcharge applied to all hazmat loads per 49 CFR compliance', 'load_completion', 'percentage', 2.5000, 75.00, 1, NOW())`);
-      logger.info("[SchemaSync] platform_fee_configs HAZMAT_SURCHARGE seed ensured.");
-    } catch (seedErr: any) { logger.warn("[SchemaSync] HAZMAT_SURCHARGE seed skip:", seedErr?.message?.slice(0, 120)); }
+      await pool.execute(`INSERT IGNORE INTO platform_fee_configs (feeCode, name, description, transactionType, feeType, baseRate, flatAmount, minFee, maxFee, isActive, effectiveFrom) VALUES
+        ('LOAD_BOOKING_FEE', 'Load Booking Fee', 'Commission on every load booking', 'load_booking', 'percentage', 5.0000, NULL, 25.00, 500.00, 1, NOW()),
+        ('LOAD_COMPLETION_FEE', 'Load Completion Fee', 'Fee collected upon successful delivery', 'load_completion', 'percentage', 3.5000, NULL, 15.00, 350.00, 1, NOW()),
+        ('INSTANT_PAY_FEE', 'Instant Pay Fee', 'Fee for same-day carrier payment', 'instant_pay', 'hybrid', 1.5000, 5.00, 5.00, 150.00, 1, NOW()),
+        ('CASH_ADVANCE_FEE', 'Cash Advance Fee', 'Fee for pre-trip fuel advances', 'cash_advance', 'hybrid', 3.0000, 10.00, 10.00, 200.00, 1, NOW()),
+        ('P2P_TRANSFER_FEE', 'P2P Transfer Fee', 'Wallet-to-wallet transfer fee', 'p2p_transfer', 'flat', NULL, 2.50, 2.50, 2.50, 1, NOW()),
+        ('WALLET_WITHDRAWAL_FEE', 'Wallet Withdrawal Fee', 'Fee for withdrawing to bank account', 'wallet_withdrawal', 'flat', NULL, 1.50, 1.50, 1.50, 1, NOW()),
+        ('PREMIUM_SUBSCRIPTION', 'Premium Subscription', 'Monthly premium tier access', 'subscription', 'flat', NULL, 99.00, 99.00, 99.00, 1, NOW()),
+        ('PREMIUM_ANALYTICS', 'Premium Analytics', 'Advanced analytics feature fee', 'premium_feature', 'flat', NULL, 49.00, 49.00, 49.00, 1, NOW()),
+        ('HAZMAT_SURCHARGE', 'Hazmat Surcharge', 'Surcharge applied to all hazmat loads per 49 CFR compliance', 'load_completion', 'percentage', 2.5000, 75.00, 25.00, 500.00, 1, NOW())`);
+      logger.info("[SchemaSync] 9 platform_fee_configs seeded.");
+    } catch (seedErr: any) { logger.warn("[SchemaSync] platform_fee_configs seed skip:", seedErr?.message?.slice(0, 120)); }
 
     // --- Phase 4: Accessorial Charges table ---
     await ensureTable("accessorial_charges", `CREATE TABLE IF NOT EXISTS accessorial_charges (
@@ -2275,6 +2283,246 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
       UNIQUE KEY gatepass_code_idx (passCode),
       INDEX gatepass_driver_idx (driverId)
     )`);
+
+    // ── RAIL TABLES ──
+    await ensureTable("rail_carriers", `CREATE TABLE rail_carriers (
+      id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, reportingMark VARCHAR(4) NOT NULL,
+      classType ENUM('I','II','III') NOT NULL, dotNumber VARCHAR(50), stbDocketNumber VARCHAR(50),
+      headquarters JSON, serviceTerritory TEXT, totalMiles INT, website VARCHAR(255),
+      isActive BOOLEAN DEFAULT TRUE, createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY rc_mark_idx (reportingMark), INDEX rc_class_idx (classType)
+    )`);
+
+    await ensureTable("rail_yards", `CREATE TABLE rail_yards (
+      id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, splcCode VARCHAR(10),
+      railroadId INT, city VARCHAR(100), state VARCHAR(50), country ENUM('US','CA','MX') DEFAULT 'US',
+      coordinates JSON, yardType ENUM('classification','flat','intermodal_ramp','team_track','industry','staging'),
+      totalTracks INT, capacity INT, hasIntermodal BOOLEAN DEFAULT FALSE, hasHazmat BOOLEAN DEFAULT TRUE,
+      operatingHours JSON, status ENUM('active','inactive','maintenance') DEFAULT 'active',
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX ry_railroad_idx (railroadId), INDEX ry_state_idx (state)
+    )`);
+
+    await ensureTable("railcars", `CREATE TABLE railcars (
+      id INT AUTO_INCREMENT PRIMARY KEY, railcarNumber VARCHAR(20) NOT NULL,
+      carType ENUM('boxcar','tankcar','hopper','flatcar','gondola','intermodal','autorack','centerbeam','coilcar','reefer','covered_hopper','open_hopper') NOT NULL,
+      owner VARCHAR(100), lessee VARCHAR(100), capacityCubicFeet INT, tareWeight INT, loadLimit INT,
+      lengthFeet INT, insideDimensions JSON, aarClass VARCHAR(10), dotSpec VARCHAR(20),
+      lastInspectionDate TIMESTAMP NULL, nextInspectionDate TIMESTAMP NULL, currentLocation JSON,
+      status ENUM('available','loaded','in_transit','in_repair','out_of_service','stored','assigned') DEFAULT 'available',
+      assignedShipmentId INT, currentYardId INT, createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY rc_number_idx (railcarNumber), INDEX rc_cartype_idx (carType), INDEX rc_status_idx (status)
+    )`);
+
+    await ensureTable("rail_shipments", `CREATE TABLE rail_shipments (
+      id INT AUTO_INCREMENT PRIMARY KEY, shipmentNumber VARCHAR(50) NOT NULL,
+      shipperId INT, carrierId INT, originYardId INT, destinationYardId INT,
+      carType ENUM('boxcar','tankcar','hopper','flatcar','gondola','intermodal','autorack','centerbeam','coilcar','reefer','covered_hopper','open_hopper'),
+      numberOfCars INT DEFAULT 1, commodity VARCHAR(255), hazmatClass VARCHAR(10), unNumber VARCHAR(10),
+      weight DECIMAL(12,2),
+      status ENUM('requested','car_ordered','car_placed','loading','loaded','in_consist','departed','in_transit','at_interchange','in_yard','spotted','unloading','unloaded','empty_returned','invoiced','settled','cancelled','on_hold','derailment_hold','hazmat_exception','interchange_delay') DEFAULT 'requested',
+      rate DECIMAL(10,2), rateType ENUM('per_car','per_ton','per_cwt','per_mile'),
+      estimatedTransitDays INT, actualTransitDays INT, originRailroad VARCHAR(10), destinationRailroad VARCHAR(10),
+      routeDescription TEXT, waybillNumber VARCHAR(50), transportMode VARCHAR(10) DEFAULT 'RAIL', companyId INT,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY rs_shipnum_idx (shipmentNumber), INDEX rs_shipper_idx (shipperId), INDEX rs_status_idx (status)
+    )`);
+
+    await ensureTable("rail_shipment_events", `CREATE TABLE rail_shipment_events (
+      id INT AUTO_INCREMENT PRIMARY KEY, shipmentId INT, eventType VARCHAR(50) NOT NULL,
+      description TEXT, location JSON, yardId INT, railcarId INT,
+      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, metadata JSON,
+      INDEX rse_shipment_idx (shipmentId), INDEX rse_event_idx (eventType)
+    )`);
+
+    await ensureTable("rail_crew_assignments", `CREATE TABLE rail_crew_assignments (
+      id INT AUTO_INCREMENT PRIMARY KEY, userId INT, consistId INT,
+      role ENUM('engineer','conductor','brakeman','dispatcher') NOT NULL,
+      assignedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, relievedAt TIMESTAMP NULL,
+      hoursOnDuty DECIMAL(6,2), hoursOfServiceCompliant BOOLEAN DEFAULT TRUE,
+      INDEX rca_user_idx (userId), INDEX rca_consist_idx (consistId)
+    )`);
+
+    await ensureTable("train_consists", `CREATE TABLE train_consists (
+      id INT AUTO_INCREMENT PRIMARY KEY, consistNumber VARCHAR(50) NOT NULL, locomotiveUnits JSON,
+      totalCars INT, totalWeight DECIMAL(12,2), totalLengthFeet INT,
+      trainType ENUM('unit','manifest','intermodal','local','work'),
+      originYardId INT, destinationYardId INT, departureTime TIMESTAMP NULL, arrivalTime TIMESTAMP NULL,
+      status ENUM('building','ready','departed','in_transit','arrived','broken_up') DEFAULT 'building',
+      engineerId INT, conductorId INT, railroadId INT, ptcActive BOOLEAN DEFAULT TRUE,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX tc_status_idx (status)
+    )`);
+
+    await ensureTable("rail_waybills", `CREATE TABLE rail_waybills (
+      id INT AUTO_INCREMENT PRIMARY KEY, waybillNumber VARCHAR(50) NOT NULL, shipmentId INT,
+      shipperId INT, consigneeId INT, railcarNumber VARCHAR(20), commodity VARCHAR(255),
+      hazmatInfo JSON, originStation VARCHAR(100), destinationStation VARCHAR(100),
+      routingInstructions TEXT, freightCharges DECIMAL(10,2), weightPounds INT,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY rw_number_idx (waybillNumber)
+    )`);
+
+    await ensureTable("rail_demurrage", `CREATE TABLE rail_demurrage (
+      id INT AUTO_INCREMENT PRIMARY KEY, shipmentId INT, railcarId INT, yardId INT,
+      placedAt TIMESTAMP NULL, releasedAt TIMESTAMP NULL, freeTimeHours INT DEFAULT 48,
+      chargeableHours INT, ratePerHour DECIMAL(8,2), totalCharge DECIMAL(10,2),
+      status ENUM('accruing','invoiced','paid','disputed','waived') DEFAULT 'accruing',
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX rd_shipment_idx (shipmentId)
+    )`);
+
+    logger.info("[SchemaSync] Rail tables ensured.");
+
+    // ── VESSEL / MARITIME TABLES ──
+    await ensureTable("ports", `CREATE TABLE ports (
+      id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(256) NOT NULL, unlocode VARCHAR(10),
+      city VARCHAR(128), state VARCHAR(64), country VARCHAR(3) DEFAULT 'US', coordinates JSON,
+      portType ENUM('seaport','river_port','lake_port','inland_port','container_terminal'),
+      maxDraft DECIMAL(6,2), totalBerths INT, containerCapacityTEU INT,
+      hasCranes BOOLEAN DEFAULT FALSE, hasRailAccess BOOLEAN DEFAULT FALSE,
+      customsOffice VARCHAR(255), ftzNumber VARCHAR(20), operatingAuthority VARCHAR(100),
+      website VARCHAR(255), isActive BOOLEAN DEFAULT TRUE, createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX p_unlocode_idx (unlocode), INDEX p_country_idx (country), INDEX p_state_idx (state)
+    )`);
+
+    await ensureTable("vessels", `CREATE TABLE vessels (
+      id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255) NOT NULL, imoNumber VARCHAR(20),
+      mmsiNumber VARCHAR(20), callSign VARCHAR(20),
+      vesselType ENUM('container_ship','bulk_carrier','tanker','ro_ro','general_cargo','barge','tug','lng_carrier','reefer') NOT NULL,
+      flag VARCHAR(50), grossTonnage INT, deadweightTonnage INT, lengthMeters DECIMAL(8,2),
+      beamMeters DECIMAL(8,2), draftMeters DECIMAL(6,2), teuCapacity INT, yearBuilt INT,
+      ownerCompany VARCHAR(255), operatorId INT, classificationSociety VARCHAR(100), currentPosition JSON,
+      status ENUM('at_sea','in_port','anchored','docked','loading','discharging','dry_dock','laid_up') DEFAULT 'in_port',
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX v_imo_idx (imoNumber), INDEX v_type_idx (vesselType), INDEX v_status_idx (status)
+    )`);
+
+    await ensureTable("vessel_shipments", `CREATE TABLE vessel_shipments (
+      id INT AUTO_INCREMENT PRIMARY KEY, bookingNumber VARCHAR(50) NOT NULL, billOfLading VARCHAR(50),
+      shipperId INT, operatorId INT, vesselId INT, originPortId INT, destinationPortId INT,
+      cargoType ENUM('container','bulk_dry','bulk_liquid','breakbulk','ro_ro','reefer','project_cargo'),
+      commodity VARCHAR(255), hazmatClass VARCHAR(10), imdgCode VARCHAR(10), numberOfContainers INT,
+      totalWeightKg DECIMAL(14,2), totalVolumeCBM DECIMAL(10,2),
+      status ENUM('booking_requested','booking_confirmed','documentation','container_released','gate_in','loaded_on_vessel','departed','in_transit','transshipment','arrived','customs_hold','discharged','gate_out','delivered','invoiced','settled','cancelled','rolled') DEFAULT 'booking_requested',
+      freightTerms ENUM('prepaid','collect','third_party'), incoterms VARCHAR(10),
+      rate DECIMAL(10,2), rateType ENUM('per_teu','per_ton','per_cbm','lump_sum'),
+      etd TIMESTAMP NULL, eta TIMESTAMP NULL, atd TIMESTAMP NULL, ata TIMESTAMP NULL,
+      voyageNumber VARCHAR(50), serviceRoute VARCHAR(100), transportMode VARCHAR(10) DEFAULT 'VESSEL', companyId INT,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY vs_booking_idx (bookingNumber), INDEX vs_shipper_idx (shipperId), INDEX vs_status_idx (status)
+    )`);
+
+    await ensureTable("shipping_containers", `CREATE TABLE shipping_containers (
+      id INT AUTO_INCREMENT PRIMARY KEY, containerNumber VARCHAR(20) NOT NULL,
+      isoType VARCHAR(10), sizeType ENUM('20ft','40ft','40ft_hc','45ft','20ft_reefer','40ft_reefer') NOT NULL,
+      ownerCompany VARCHAR(255), tareWeightKg INT, maxPayloadKg INT, maxVolumeCBM DECIMAL(8,2),
+      \`condition\` ENUM('new','good','fair','damaged','retired') DEFAULT 'good',
+      currentLocation JSON, currentPortId INT,
+      status ENUM('empty','loaded','in_transit','at_port','at_depot','in_repair','at_shipper','at_consignee') DEFAULT 'empty',
+      assignedShipmentId INT, lastInspectionDate TIMESTAMP NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY sc_number_idx (containerNumber), INDEX sc_status_idx (status)
+    )`);
+
+    await ensureTable("vessel_voyages", `CREATE TABLE vessel_voyages (
+      id INT AUTO_INCREMENT PRIMARY KEY, vesselId INT, voyageNumber VARCHAR(50) NOT NULL,
+      serviceRoute VARCHAR(100), departurePortId INT, arrivalPortId INT,
+      scheduledDeparture TIMESTAMP NULL, scheduledArrival TIMESTAMP NULL,
+      actualDeparture TIMESTAMP NULL, actualArrival TIMESTAMP NULL,
+      status ENUM('scheduled','departed','in_transit','arrived','completed','cancelled') DEFAULT 'scheduled',
+      portCalls JSON, captainId INT, createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX vv_vessel_idx (vesselId), INDEX vv_status_idx (status)
+    )`);
+
+    await ensureTable("bills_of_lading", `CREATE TABLE bills_of_lading (
+      id INT AUTO_INCREMENT PRIMARY KEY, bolNumber VARCHAR(50) NOT NULL, shipmentId INT,
+      bolType ENUM('master','house','express','seaway') NOT NULL, shipperId INT, consigneeId INT,
+      notifyParty JSON, originPort VARCHAR(100), destinationPort VARCHAR(100),
+      vesselName VARCHAR(255), voyageNumber VARCHAR(50), cargoDescription TEXT,
+      numberOfPackages INT, grossWeightKg DECIMAL(12,2), volumeCBM DECIMAL(10,2),
+      freightTerms ENUM('prepaid','collect'), dateOfIssue TIMESTAMP NULL, placeOfIssue VARCHAR(100),
+      status ENUM('draft','issued','surrendered','accomplished','void') DEFAULT 'draft',
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY bol_number_idx (bolNumber)
+    )`);
+
+    await ensureTable("customs_declarations", `CREATE TABLE customs_declarations (
+      id INT AUTO_INCREMENT PRIMARY KEY, shipmentId INT,
+      declarationType ENUM('import','export','transit','temporary_import') NOT NULL,
+      entryNumber VARCHAR(50), htsCode VARCHAR(20), countryOfOrigin VARCHAR(3),
+      declaredValue DECIMAL(14,2), currency VARCHAR(3) DEFAULT 'USD',
+      dutyRate DECIMAL(6,4), dutyAmount DECIMAL(12,2), brokerId INT,
+      filedDate TIMESTAMP NULL, clearedDate TIMESTAMP NULL,
+      status ENUM('draft','filed','under_review','cleared','held','rejected') DEFAULT 'draft',
+      holdReasons JSON, createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX cd_shipment_idx (shipmentId), INDEX cd_status_idx (status)
+    )`);
+
+    await ensureTable("vessel_demurrage", `CREATE TABLE vessel_demurrage (
+      id INT AUTO_INCREMENT PRIMARY KEY, shipmentId INT, containerId INT, portId INT,
+      chargeType ENUM('demurrage','detention','per_diem') NOT NULL, freeTimeDays INT DEFAULT 7,
+      chargeableDays INT, ratePerDay DECIMAL(8,2), totalCharge DECIMAL(10,2),
+      startDate TIMESTAMP NULL, endDate TIMESTAMP NULL,
+      status ENUM('accruing','invoiced','paid','disputed','waived') DEFAULT 'accruing',
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    logger.info("[SchemaSync] Vessel tables ensured.");
+
+    // ── SEED: 7 Class I Railroads + Yards + Railcars ──
+    try {
+      const [existingRR]: any = await pool.query("SELECT COUNT(*) as cnt FROM rail_carriers");
+      if (existingRR?.[0]?.cnt === 0) {
+        await pool.query(`INSERT INTO rail_carriers (name, reportingMark, classType, totalMiles, website, headquarters) VALUES
+          ('BNSF Railway', 'BNSF', 'I', 32500, 'https://www.bnsf.com', '{"city":"Fort Worth","state":"TX","country":"US"}'),
+          ('Union Pacific Railroad', 'UP', 'I', 32400, 'https://www.up.com', '{"city":"Omaha","state":"NE","country":"US"}'),
+          ('CSX Transportation', 'CSXT', 'I', 21000, 'https://www.csx.com', '{"city":"Jacksonville","state":"FL","country":"US"}'),
+          ('Norfolk Southern Railway', 'NS', 'I', 19500, 'https://www.nscorp.com', '{"city":"Atlanta","state":"GA","country":"US"}'),
+          ('Kansas City Southern', 'KCS', 'I', 3200, 'https://www.kcsouthern.com', '{"city":"Kansas City","state":"MO","country":"US"}'),
+          ('Canadian National Railway', 'CN', 'I', 20000, 'https://www.cn.ca', '{"city":"Montreal","state":"QC","country":"CA"}'),
+          ('Canadian Pacific Railway', 'CPKC', 'I', 13000, 'https://www.cpkcr.com', '{"city":"Calgary","state":"AB","country":"CA"}')`);
+        logger.info("[SchemaSync] Seeded 7 Class I railroads.");
+
+        await pool.query(`INSERT INTO rail_yards (name, railroadId, city, state, yardType, totalTracks, capacity, hasIntermodal, coordinates) VALUES
+          ('Alliance Intermodal', 1, 'Fort Worth', 'TX', 'intermodal_ramp', 24, 500, TRUE, '{"lat":32.97,"lng":-97.28}'),
+          ('Bailey Yard', 2, 'North Platte', 'NE', 'classification', 200, 10000, FALSE, '{"lat":41.13,"lng":-100.77}'),
+          ('Selkirk Yard', 3, 'Selkirk', 'NY', 'classification', 60, 3000, FALSE, '{"lat":42.54,"lng":-73.85}'),
+          ('Bellevue Yard', 4, 'Bellevue', 'OH', 'classification', 80, 4000, FALSE, '{"lat":41.28,"lng":-82.84}'),
+          ('Shreveport Yard', 5, 'Shreveport', 'LA', 'classification', 40, 1500, FALSE, '{"lat":32.47,"lng":-93.79}'),
+          ('Taschereau Yard', 6, 'Montreal', 'QC', 'classification', 70, 3500, TRUE, '{"lat":45.43,"lng":-73.66}'),
+          ('Bensenville Yard', 7, 'Bensenville', 'IL', 'intermodal_ramp', 50, 2500, TRUE, '{"lat":41.95,"lng":-87.93}')`);
+        logger.info("[SchemaSync] Seeded 7 rail yards.");
+
+        await pool.query(`INSERT INTO railcars (railcarNumber, carType, owner, capacityCubicFeet, tareWeight, loadLimit, lengthFeet, status, currentYardId) VALUES
+          ('BNSF-100201', 'hopper', 'BNSF Railway', 4500, 55000, 220000, 50, 'available', 1),
+          ('BNSF-100202', 'tankcar', 'BNSF Railway', 20000, 60000, 263000, 55, 'available', 1),
+          ('UP-200301', 'boxcar', 'Union Pacific', 5500, 62000, 220000, 60, 'available', 2),
+          ('UP-200302', 'flatcar', 'Union Pacific', NULL, 48000, 200000, 89, 'available', 2),
+          ('CSXT-300401', 'hopper', 'CSX Transportation', 4200, 54000, 210000, 50, 'available', 3),
+          ('NS-400501', 'gondola', 'Norfolk Southern', 3800, 52000, 200000, 52, 'available', 4),
+          ('KCS-500601', 'tankcar', 'Kansas City Southern', 20000, 62000, 263000, 55, 'available', 5),
+          ('CN-600701', 'intermodal', 'Canadian National', NULL, 45000, 180000, 89, 'available', 6),
+          ('CPKC-700801', 'covered_hopper', 'CPKC Railway', 5000, 56000, 220000, 55, 'available', 7),
+          ('BNSF-100203', 'autorack', 'BNSF Railway', NULL, 70000, 200000, 89, 'available', 1)`);
+        logger.info("[SchemaSync] Seeded 10 railcars.");
+      }
+    } catch (seedErr: any) { logger.warn("[SchemaSync] Rail seed skip:", seedErr?.message?.slice(0, 120)); }
+
+    // ── SEED: Major US Ports ──
+    try {
+      const [existingPorts]: any = await pool.query("SELECT COUNT(*) as cnt FROM ports");
+      if (existingPorts?.[0]?.cnt === 0) {
+        await pool.query(`INSERT INTO ports (name, unlocode, city, state, portType, totalBerths, containerCapacityTEU, hasCranes, hasRailAccess, coordinates) VALUES
+          ('Port of Los Angeles', 'USLAX', 'Los Angeles', 'CA', 'seaport', 270, 10000000, TRUE, TRUE, '{"lat":33.74,"lng":-118.27}'),
+          ('Port of Long Beach', 'USLGB', 'Long Beach', 'CA', 'seaport', 140, 8000000, TRUE, TRUE, '{"lat":33.75,"lng":-118.22}'),
+          ('Port of New York/New Jersey', 'USNYC', 'Newark', 'NJ', 'seaport', 100, 7500000, TRUE, TRUE, '{"lat":40.68,"lng":-74.14}'),
+          ('Port of Savannah', 'USSAV', 'Savannah', 'GA', 'seaport', 30, 5500000, TRUE, TRUE, '{"lat":32.08,"lng":-81.08}'),
+          ('Port of Houston', 'USHOU', 'Houston', 'TX', 'seaport', 200, 3500000, TRUE, TRUE, '{"lat":29.73,"lng":-95.27}'),
+          ('Port of Charleston', 'USCHS', 'Charleston', 'SC', 'seaport', 20, 2800000, TRUE, TRUE, '{"lat":32.79,"lng":-79.95}'),
+          ('Port of Seattle/Tacoma', 'USSEA', 'Seattle', 'WA', 'seaport', 60, 3600000, TRUE, TRUE, '{"lat":47.58,"lng":-122.35}')`);
+        logger.info("[SchemaSync] Seeded 7 US ports.");
+      }
+    } catch (seedErr: any) { logger.warn("[SchemaSync] Port seed skip:", seedErr?.message?.slice(0, 120)); }
 
     logger.info("[SchemaSync] Done.");
   } catch (err: any) {

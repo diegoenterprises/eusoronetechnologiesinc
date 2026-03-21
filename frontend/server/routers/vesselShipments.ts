@@ -1,6 +1,6 @@
 /**
  * VESSEL SHIPMENTS tRPC ROUTER
- * V5 Multi-Modal Expansion — 20 procedures for maritime/vessel operations
+ * V6 Multi-Modal Expansion — ISF 10+2, USCG compliance, port directory + 30+ procedures for maritime/vessel operations
  * ALL procedures use vesselProcedure to enforce VESSEL mode access
  */
 
@@ -8,6 +8,7 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte, lte, inArray, count } from "drizzle-orm";
 import { vesselProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { getCrossBorderPorts, getISFRequirements, getCabotageRules, getIMDGClasses, getRequiredVesselDocs, checkVesselCrossBorderCompliance, estimateVesselCustomsClearanceTime, type MaritimeCountry } from "../services/crossBorderVessel";
 import { marineTrafficService } from "../services/integrations/MarineTrafficService";
 import { inttraService } from "../services/integrations/INTTRAService";
 import { descartesABIService } from "../services/integrations/DescartesABIService";
@@ -640,30 +641,38 @@ export const vesselShipmentsRouter = router({
       };
     }),
 
-  // 20. getISFStatus
+  // 20. getISFStatus — ISF 10+2 Filing Management with overdue/penalty tracking
   getISFStatus: vesselProcedure
     .input(z.object({ shipmentId: z.number() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) return null;
+      if (!db) return { status: 'not_filed' as const, deadline: null, filings: [], warning: null };
 
+      // ISF must be filed 24 hours before vessel loading at foreign port
       const [shipment] = await db.select().from(vesselShipments).where(eq(vesselShipments.id, input.shipmentId)).limit(1);
-      if (!shipment) return null;
+      if (!shipment) return { status: 'not_filed' as const, deadline: null, filings: [], warning: null };
 
-      const customs = await db.select().from(customsDeclarations).where(
-        and(eq(customsDeclarations.shipmentId, input.shipmentId), eq(customsDeclarations.declarationType, "import" as any))
-      );
+      const etd = shipment.etd ? new Date(shipment.etd) : null;
+      const isfDeadline = etd ? new Date(etd.getTime() - 24 * 3600000) : null; // 24h before ETD
 
-      const isfFiled = customs.length > 0;
-      const isfCleared = customs.some((c: any) => c.status === "cleared");
+      // Check customs declarations for ISF filings
+      const filings = await db.select().from(customsDeclarations)
+        .where(and(eq(customsDeclarations.shipmentId, input.shipmentId), eq(customsDeclarations.declarationType, 'import' as any)));
+
+      const filed = filings.length > 0;
+      const isfCleared = filings.some((c: any) => c.status === 'cleared');
+      const isOverdue = isfDeadline && !filed && new Date() > isfDeadline;
 
       return {
         shipmentId: input.shipmentId,
         bookingNumber: shipment.bookingNumber,
-        isfFiled,
+        status: filed ? (isfCleared ? 'cleared' : 'filed') : isOverdue ? 'overdue' : 'not_filed',
+        deadline: isfDeadline?.toISOString() || null,
+        filings: filings.map((f: any) => ({ id: f.id, entryNumber: f.entryNumber, status: f.status, filedDate: f.filedDate })),
+        isfFiled: filed,
         isfCleared,
-        entries: customs,
-        deadline: shipment.etd ? new Date(new Date(shipment.etd).getTime() - 24 * 60 * 60 * 1000) : null,
+        entries: filings,
+        warning: isOverdue ? 'ISF filing is OVERDUE — CBP penalty risk ($5,000 per violation)' : null,
       };
     }),
 
@@ -1059,5 +1068,132 @@ export const vesselShipmentsRouter = router({
         const d = await db.select().from(vesselDemurrage).limit(20);
         return { settlements: s, demurrage: d };
       } catch { return { settlements: [], demurrage: [] }; }
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CROSS-BORDER VESSEL (role-enforced via vesselProcedure)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getCrossBorderPorts: vesselProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']).optional(), hasRailConnection: z.boolean().optional() }).optional())
+    .query(({ input }) => getCrossBorderPorts({ country: input?.country as MaritimeCountry | undefined, hasRailConnection: input?.hasRailConnection })),
+
+  getISFRequirements: vesselProcedure
+    .query(() => getISFRequirements()),
+
+  getCabotageRules: vesselProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']).optional() }).optional())
+    .query(({ input }) => getCabotageRules(input?.country as MaritimeCountry | undefined)),
+
+  getIMDGClasses: vesselProcedure
+    .input(z.object({ classCode: z.string().optional() }).optional())
+    .query(({ input }) => getIMDGClasses(input?.classCode)),
+
+  getCrossBorderVesselDocs: vesselProcedure
+    .input(z.object({ direction: z.string(), mode: z.string().default('VESSEL'), hasHazmat: z.boolean().default(false), hasLiveAnimals: z.boolean().default(false) }))
+    .query(({ input }) => getRequiredVesselDocs(input)),
+
+  checkVesselCrossBorderCompliance: vesselProcedure
+    .input(z.object({
+      direction: z.string(), hasISF: z.boolean().default(false),
+      hasCustomsEntry: z.boolean(), hasBOL: z.boolean(),
+      hasIMDGCompliance: z.boolean().default(false),
+      meetssCabotage: z.boolean().default(true),
+      has24hrRule: z.boolean().default(false),
+    }))
+    .query(({ input }) => checkVesselCrossBorderCompliance(input)),
+
+  estimateVesselClearanceTime: vesselProcedure
+    .input(z.object({ portId: z.string(), hasPreClearance: z.boolean().default(false), containerCount: z.number().default(1), hasHazmat: z.boolean().default(false), hasAgriculture: z.boolean().default(false) }))
+    .query(({ input }) => estimateVesselCustomsClearanceTime(input)),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // USCG SAFETY COMPLIANCE CHECK
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getUSCGCompliance: vesselProcedure
+    .input(z.object({ vesselId: z.number().optional() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { compliant: false, checks: [] };
+
+      const checks: Array<{ name: string; status: string; details: string }> = [];
+
+      if (input.vesselId) {
+        // Check vessel inspections
+        const inspections = await db.select().from(vesselInspections)
+          .where(eq(vesselInspections.vesselId, input.vesselId))
+          .orderBy(desc(vesselInspections.inspectionDate))
+          .limit(5);
+
+        const latestPSC = inspections.find((i: any) => i.inspectionType === 'psc');
+        checks.push({
+          name: 'Port State Control (PSC)',
+          status: latestPSC ? ((latestPSC as any).result === 'pass' ? 'compliant' : 'deficient') : 'no_record',
+          details: latestPSC ? `Last inspection: ${latestPSC.inspectionDate}` : 'No PSC inspection on record',
+        });
+
+        // Check ISPS compliance
+        const [isps] = await db.select().from(vesselISPSRecords)
+          .where(eq(vesselISPSRecords.vesselId, input.vesselId)).limit(1);
+        checks.push({
+          name: 'ISPS Security Certificate',
+          status: (isps as any)?.isscExpiry && new Date((isps as any).isscExpiry) > new Date() ? 'compliant' : 'expired',
+          details: isps ? `ISSC expires: ${(isps as any).isscExpiry}` : 'No ISPS record',
+        });
+
+        // Check insurance
+        const insurance = await db.select().from(vesselInsurance)
+          .where(and(eq(vesselInsurance.vesselId, input.vesselId), eq(vesselInsurance.status, 'active' as any)));
+        const hasPI = insurance.some((i: any) => i.policyType === 'p_and_i');
+        const hasHull = insurance.some((i: any) => i.policyType === 'hull_machinery');
+        checks.push({
+          name: 'P&I Insurance',
+          status: hasPI ? 'compliant' : 'missing',
+          details: hasPI ? 'Active P&I coverage' : 'No P&I insurance on file — USCG requirement',
+        });
+        checks.push({
+          name: 'Hull & Machinery Insurance',
+          status: hasHull ? 'compliant' : 'missing',
+          details: hasHull ? 'Active H&M coverage' : 'No hull insurance on file',
+        });
+      }
+
+      return {
+        compliant: checks.length > 0 && checks.every(c => c.status === 'compliant'),
+        checks,
+        vesselId: input.vesselId,
+      };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PORT DIRECTORY — list all ports with search/filter (542-port database)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getPorts: vesselProcedure
+    .input(z.object({
+      limit: z.number().default(100),
+      offset: z.number().default(0),
+      country: z.string().optional(),
+      search: z.string().optional(),
+      portType: z.string().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      const params = input || { limit: 100, offset: 0 };
+
+      let conditions: any[] = [];
+      if (params.country) conditions.push(eq(ports.country, params.country));
+      if (params.portType) conditions.push(eq(ports.portType, params.portType as any));
+      if (params.search) conditions.push(sql`(${ports.name} LIKE ${'%' + params.search + '%'} OR ${ports.code} LIKE ${'%' + params.search + '%'} OR ${ports.city} LIKE ${'%' + params.search + '%'})`);
+
+      const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+      return db.select().from(ports).where(where)
+        .orderBy(ports.name)
+        .limit(params.limit || 100)
+        .offset(params.offset || 0);
     }),
 });

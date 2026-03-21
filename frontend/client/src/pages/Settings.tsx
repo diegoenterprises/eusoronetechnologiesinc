@@ -23,8 +23,10 @@ import {
 } from "lucide-react";
 import MyProductsTab from "@/components/MyProductsTab";
 import { toast } from "sonner";
+import { useTranslation } from 'react-i18next';
 
 export default function Settings() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("tab") || "profile";
@@ -382,31 +384,31 @@ export default function Settings() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-            Settings
+            {t('nav.settings')}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Manage your account and preferences</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{t('settings.subtitle', 'Manage your account and preferences')}</p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-1">
           <TabsTrigger value="profile" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-lg text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">
-            <User className="w-4 h-4 mr-2" />Profile
+            <User className="w-4 h-4 mr-2" />{t('settings.profile', 'Profile')}
           </TabsTrigger>
           <TabsTrigger value="notifications" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-lg text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">
-            <Bell className="w-4 h-4 mr-2" />Notifications
+            <Bell className="w-4 h-4 mr-2" />{t('settings.notifications', 'Notifications')}
           </TabsTrigger>
           <TabsTrigger value="security" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-lg text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">
-            <Shield className="w-4 h-4 mr-2" />Security
+            <Shield className="w-4 h-4 mr-2" />{t('settings.security', 'Security')}
           </TabsTrigger>
           <TabsTrigger value="billing" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-lg text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">
-            <CreditCard className="w-4 h-4 mr-2" />Billing
+            <CreditCard className="w-4 h-4 mr-2" />{t('settings.billing', 'Billing')}
           </TabsTrigger>
           <TabsTrigger value="products" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-lg text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">
-            <Package className="w-4 h-4 mr-2" />My Products
+            <Package className="w-4 h-4 mr-2" />{t('settings.myProducts', 'My Products')}
           </TabsTrigger>
           <TabsTrigger value="account" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm rounded-lg text-slate-600 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white">
-            <UserX className="w-4 h-4 mr-2" />Account
+            <UserX className="w-4 h-4 mr-2" />{t('settings.account', 'Account')}
           </TabsTrigger>
         </TabsList>
 

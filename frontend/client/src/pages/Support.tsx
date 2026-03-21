@@ -36,6 +36,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getApprovalStatus } from "@/lib/approvalGating";
+import { useTranslation } from 'react-i18next';
 
 export default function Support() {
   const { user } = useAuth();
@@ -52,6 +53,7 @@ export default function Support() {
 function AdminSupportView() {
   const { theme } = useTheme();
   const L = theme === "light";
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"queue" | "kb" | "health">("queue");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -112,13 +114,13 @@ function AdminSupportView() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Support Management</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('support.management', 'Support Management')}</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
               <Headphones className="w-3 h-3 text-blue-500" />
               <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Admin</span>
             </div>
           </div>
-          <p className={cn("text-sm mt-1", mt)}>Manage incoming tickets, platform health & knowledge base</p>
+          <p className={cn("text-sm mt-1", mt)}>{t('support.adminSubtitle', 'Manage incoming tickets, platform health & knowledge base')}</p>
         </div>
         <Button variant="outline" size="sm" className={cn("rounded-xl", L ? "border-slate-200" : "border-slate-700")} onClick={() => { ticketsQuery?.refetch?.(); summaryQuery?.refetch?.(); }}>
           <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
@@ -297,6 +299,7 @@ function UserSupportView() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [, setLocation] = useLocation();
+  const { t } = useTranslation();
   type Tab = "tickets" | "new" | "kb" | "contact";
   const [activeTab, setActiveTab] = useState<Tab>("tickets");
   const [subject, setSubject] = useState("");
@@ -464,18 +467,18 @@ function UserSupportView() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Support Center</h1>
-          <p className={mt}>Get help, manage tickets & explore the knowledge base</p>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('support.center', 'Support Center')}</h1>
+          <p className={mt}>{t('support.subtitle', 'Get help, manage tickets & explore the knowledge base')}</p>
           <a href="tel:+18553876874" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors mt-2">
             <Phone className="h-4 w-4" /> Call: 1-855-EUSO-TRIP
           </a>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className={cn("rounded-xl", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setActiveTab("kb")}>
-            <BookOpen className="w-4 h-4 mr-2" />Knowledge Base
+            <BookOpen className="w-4 h-4 mr-2" />{t('support.knowledgeBase', 'Knowledge Base')}
           </Button>
           <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => setActiveTab("new")}>
-            <Plus className="w-4 h-4 mr-2" />New Ticket
+            <Plus className="w-4 h-4 mr-2" />{t('support.newTicket', 'New Ticket')}
           </Button>
         </div>
       </div>
@@ -511,10 +514,10 @@ function UserSupportView() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Total Tickets", value: summary?.total ?? 0, icon: <MessageSquare className="w-4 h-4" />, color: "text-blue-500", bg: "bg-blue-500/15" },
-          { label: "Open", value: summary?.open ?? 0, icon: <Clock className="w-4 h-4" />, color: "text-yellow-500", bg: "bg-yellow-500/15" },
-          { label: "In Progress", value: summary?.inProgress ?? 0, icon: <Zap className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-400/15" },
-          { label: "Resolved", value: summary?.resolved ?? 0, icon: <CheckCircle className="w-4 h-4" />, color: "text-green-500", bg: "bg-green-500/15" },
+          { label: t('support.totalTickets', 'Total Tickets'), value: summary?.total ?? 0, icon: <MessageSquare className="w-4 h-4" />, color: "text-blue-500", bg: "bg-blue-500/15" },
+          { label: t('support.open', 'Open'), value: summary?.open ?? 0, icon: <Clock className="w-4 h-4" />, color: "text-yellow-500", bg: "bg-yellow-500/15" },
+          { label: t('support.inProgress', 'In Progress'), value: summary?.inProgress ?? 0, icon: <Zap className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-400/15" },
+          { label: t('support.resolved', 'Resolved'), value: summary?.resolved ?? 0, icon: <CheckCircle className="w-4 h-4" />, color: "text-green-500", bg: "bg-green-500/15" },
         ].map(s => (
           <div key={s.label} className={cl}>
             <div className="flex items-center gap-2 mb-1">
@@ -529,14 +532,14 @@ function UserSupportView() {
       {/* Tab Navigation */}
       <div className="flex gap-1.5 overflow-x-auto pb-1">
         {([
-          { id: "tickets" as Tab, label: "My Tickets", icon: <MessageSquare className="w-3.5 h-3.5" /> },
-          { id: "new" as Tab, label: "New Ticket", icon: <Plus className="w-3.5 h-3.5" /> },
-          { id: "kb" as Tab, label: "Knowledge Base", icon: <BookOpen className="w-3.5 h-3.5" /> },
-          { id: "contact" as Tab, label: "Contact Us", icon: <Headphones className="w-3.5 h-3.5" /> },
-        ]).map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)} className={cn("flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all",
-            activeTab === t.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
-          )}>{t.icon}{t.label}</button>
+          { id: "tickets" as Tab, label: t('support.myTickets', 'My Tickets'), icon: <MessageSquare className="w-3.5 h-3.5" /> },
+          { id: "new" as Tab, label: t('support.newTicket', 'New Ticket'), icon: <Plus className="w-3.5 h-3.5" /> },
+          { id: "kb" as Tab, label: t('support.knowledgeBase', 'Knowledge Base'), icon: <BookOpen className="w-3.5 h-3.5" /> },
+          { id: "contact" as Tab, label: t('support.contactUs', 'Contact Us'), icon: <Headphones className="w-3.5 h-3.5" /> },
+        ]).map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all",
+            activeTab === tab.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+          )}>{tab.icon}{tab.label}</button>
         ))}
       </div>
 

@@ -2408,6 +2408,41 @@ export const walletRouter = router({
       logger.info(`[Wallet] Cleaned ${count} orphaned wallet records`);
       return { cleaned: count, orphanIds };
     }),
+
+  // ─── Multi-Currency: Set Wallet Currency ──────────────────────────────────
+  setCurrency: auditedProtectedProcedure
+    .input(z.object({ currency: z.enum(['USD', 'CAD', 'MXN']).default('USD') }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+      const userId = Number(ctx.user?.id);
+      if (!userId) throw new TRPCError({ code: 'UNAUTHORIZED' });
+      const wallet = await ensureWallet(db, userId);
+      await db.update(wallets).set({ currency: input.currency }).where(eq(wallets.userId, userId));
+      logger.info(`[Wallet] User ${userId} set currency to ${input.currency}`);
+      return { success: true, currency: input.currency, walletId: wallet.id };
+    }),
+
+  // ─── Multi-Currency: Convert Balance ──────────────────────────────────────
+  convertBalance: auditedProtectedProcedure
+    .input(z.object({
+      from: z.enum(['USD', 'CAD', 'MXN']),
+      to: z.enum(['USD', 'CAD', 'MXN']),
+      amount: z.number().positive(),
+    }))
+    .query(async ({ input }) => {
+      const { convertCurrency, formatCurrency } = await import('../services/currencyEngine');
+      const converted = await convertCurrency(input.amount, input.from, input.to);
+      return {
+        originalAmount: input.amount,
+        originalCurrency: input.from,
+        convertedAmount: converted.convertedAmount,
+        convertedCurrency: input.to,
+        rate: converted.rate,
+        rateSource: converted.rateSource,
+        display: formatCurrency(converted.convertedAmount, input.to),
+      };
+    }),
 });
 
 /** Server-startup cleanup — call from index.ts */

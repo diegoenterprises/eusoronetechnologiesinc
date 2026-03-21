@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
+import useLocale from "@/hooks/useLocale";
 
 type EquipFilter = "all" | "tanker" | "flatbed" | "dry_van" | "reefer" | "hopper" | "cryogenic" | "hazmat" | "pneumatic" | "end_dump" | "intermodal_chassis" | "curtain_side" | "step_deck" | "lowboy" | "double_drop" | "conestoga" | "auto_carrier" | "livestock" | "log_trailer" | "grain_hopper" | "food_grade_tank" | "water_tank";
 type SortKey = "rate_desc" | "rate_asc" | "rpm_desc" | "distance_asc" | "distance_desc" | "newest" | "pickup" | "preferred";
@@ -48,6 +49,7 @@ function isSameDay(a: Date, b: Date) { return a.getFullYear() === b.getFullYear(
 export default function FindLoads() {
   const { theme } = useTheme();
   const L = theme === "light";
+  const { t, formatCurrency } = useLocale();
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [equipFilter, setEquipFilter] = useState<EquipFilter>("all");
@@ -176,7 +178,7 @@ export default function FindLoads() {
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>
-            Discover and bid on available loads — real-time market intelligence
+            {t('findLoads.subtitle', 'Discover and bid on available loads — real-time market intelligence')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -199,12 +201,12 @@ export default function FindLoads() {
       {/* ── Market KPI Strip ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { l: "Total Loads", v: allLoads.length, I: Package, c: "text-blue-500", b: "from-blue-500/10 to-blue-600/5" },
-          { l: "Market Value", v: `$${(totalMarketValue / 1000).toFixed(0)}K`, I: DollarSign, c: "text-emerald-500", b: "from-emerald-500/10 to-emerald-600/5" },
-          { l: "Avg Rate", v: marketStats?.avgRate ? `$${marketStats.avgRate.toLocaleString()}` : "\u2014", I: TrendingUp, c: "text-purple-500", b: "from-purple-500/10 to-purple-600/5" },
-          { l: "Avg $/Mile", v: avgRPM > 0 ? `$${avgRPM.toFixed(2)}` : "\u2014", I: Percent, c: "text-cyan-500", b: "from-cyan-500/10 to-cyan-600/5" },
-          { l: "Hazmat", v: hazmatCount, I: Flame, c: "text-red-500", b: "from-red-500/10 to-red-600/5" },
-          { l: "My Lanes", v: preferredCount, I: Route, c: "text-pink-500", b: "from-pink-500/10 to-pink-600/5" },
+          { l: t('findLoads.totalLoads', 'Total Loads'), v: allLoads.length, I: Package, c: "text-blue-500", b: "from-blue-500/10 to-blue-600/5" },
+          { l: t('findLoads.marketValue', 'Market Value'), v: formatCurrency(totalMarketValue), I: DollarSign, c: "text-emerald-500", b: "from-emerald-500/10 to-emerald-600/5" },
+          { l: t('findLoads.avgRate', 'Avg Rate'), v: marketStats?.avgRate ? formatCurrency(marketStats.avgRate) : "\u2014", I: TrendingUp, c: "text-purple-500", b: "from-purple-500/10 to-purple-600/5" },
+          { l: t('findLoads.avgPerMile', 'Avg $/Mile'), v: avgRPM > 0 ? formatCurrency(avgRPM) : "\u2014", I: Percent, c: "text-cyan-500", b: "from-cyan-500/10 to-cyan-600/5" },
+          { l: t('loads.hazmat', 'Hazmat'), v: hazmatCount, I: Flame, c: "text-red-500", b: "from-red-500/10 to-red-600/5" },
+          { l: t('findLoads.myLanes', 'My Lanes'), v: preferredCount, I: Route, c: "text-pink-500", b: "from-pink-500/10 to-pink-600/5" },
         ].map((k) => (
           <div key={k.l} className={cn("rounded-2xl p-3 bg-gradient-to-br border", `${k.b} border-slate-200/60 dark:border-slate-700/30`)}>
             <k.I className={cn("w-4 h-4 mb-1", k.c)} />
@@ -354,13 +356,13 @@ export default function FindLoads() {
                 </div>
                 {/* Rate Column */}
                 <div className="text-right flex-shrink-0">
-                  <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(load.rate || 0).toLocaleString()}</p>
+                  <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{formatCurrency(load.rate || 0)}</p>
                   <p className="text-xs text-slate-400">
-                    Net after fee: ~${(Number(load.rate) * 0.92).toLocaleString(undefined, {maximumFractionDigits: 0})}
+                    {t('findLoads.netAfterFee', 'Net after fee')}: ~{formatCurrency(Number(load.rate) * 0.92)}
                   </p>
                   <div className="flex items-center gap-2 justify-end">
-                    {rpm && <span className="text-[10px] font-semibold text-emerald-500">${rpm}/mi</span>}
-                    {est > 0 && <span className="text-[10px] text-slate-400">~${est.toLocaleString()} net</span>}
+                    {rpm && <span className="text-[10px] font-semibold text-emerald-500">{formatCurrency(Number(rpm))}/{t('findLoads.mile', 'mi')}</span>}
+                    {est > 0 && <span className="text-[10px] text-slate-400">~{formatCurrency(est)} {t('findLoads.net', 'net')}</span>}
                   </div>
                 </div>
                 {/* Actions */}
@@ -509,19 +511,19 @@ export default function FindLoads() {
                   <div className={cn("mx-5 mb-4 p-4 rounded-2xl", L ? "bg-gradient-to-r from-blue-50/80 via-purple-50/60 to-pink-50/40 border border-blue-100/80" : "bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 border border-slate-700/40")}>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="text-center">
-                        <p className="text-2xl font-extrabold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(load.rate || 0).toLocaleString()}</p>
+                        <p className="text-2xl font-extrabold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{formatCurrency(load.rate || 0)}</p>
                         <p className="text-xs text-slate-400 mt-0.5">
-                          Net after fee: ~${(Number(load.rate) * 0.92).toLocaleString(undefined, {maximumFractionDigits: 0})}
+                          {t('findLoads.netAfterFee', 'Net after fee')}: ~{formatCurrency(Number(load.rate) * 0.92)}
                         </p>
-                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">Total Rate</p>
+                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{t('findLoads.totalRate', 'Total Rate')}</p>
                       </div>
                       <div className={cn("text-center border-x", L ? "border-slate-200/60" : "border-slate-700/40")}>
-                        <p className={cn("text-2xl font-extrabold", rpm ? "text-emerald-500" : "text-slate-400")}>{rpm ? `$${rpm}` : "--"}</p>
-                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">Per Mile</p>
+                        <p className={cn("text-2xl font-extrabold", rpm ? "text-emerald-500" : "text-slate-400")}>{rpm ? formatCurrency(Number(rpm)) : "--"}</p>
+                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{t('findLoads.perMile', 'Per Mile')}</p>
                       </div>
                       <div className="text-center">
-                        <p className={cn("text-2xl font-extrabold", estNet > 0 ? (L ? "text-slate-800" : "text-white") : "text-slate-400")}>{estNet > 0 ? `$${estNet.toLocaleString()}` : "--"}</p>
-                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">Est. Net <span className="normal-case">({Math.round(PLATFORM_FEE_PCT * 100)}% fee)</span></p>
+                        <p className={cn("text-2xl font-extrabold", estNet > 0 ? (L ? "text-slate-800" : "text-white") : "text-slate-400")}>{estNet > 0 ? formatCurrency(estNet) : "--"}</p>
+                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{t('findLoads.estNet', 'Est. Net')} <span className="normal-case">({Math.round(PLATFORM_FEE_PCT * 100)}% {t('findLoads.fee', 'fee')})</span></p>
                       </div>
                     </div>
                   </div>

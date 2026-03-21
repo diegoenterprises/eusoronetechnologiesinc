@@ -1880,4 +1880,53 @@ export const usersRouter = router({
 
       return { success: true };
     }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // MFA / 2FA — P0 Security Fix
+  // ═══════════════════════════════════════════════════════════════
+
+  setupMFA: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const { setupMFA } = await import("../services/mfaService");
+      const userId = Number(ctx.user?.id) || 0;
+      const email = (ctx.user as any)?.email || "";
+      return setupMFA(userId, email);
+    }),
+
+  verifyAndEnableMFA: protectedProcedure
+    .input(z.object({ code: z.string().length(6) }))
+    .mutation(async ({ ctx, input }) => {
+      const { verifyAndEnableMFA } = await import("../services/mfaService");
+      const userId = Number(ctx.user?.id) || 0;
+      const success = await verifyAndEnableMFA(userId, input.code);
+      return { success };
+    }),
+
+  verifyMFALogin: protectedProcedure
+    .input(z.object({ code: z.string().min(6).max(12) }))
+    .mutation(async ({ ctx, input }) => {
+      const { verifyMFALogin } = await import("../services/mfaService");
+      const userId = Number(ctx.user?.id) || 0;
+      const valid = await verifyMFALogin(userId, input.code);
+      return { valid };
+    }),
+
+  getMFAStatus: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { isMFAEnabled } = await import("../services/mfaService");
+      const userId = Number(ctx.user?.id) || 0;
+      const enabled = await isMFAEnabled(userId);
+      return { enabled };
+    }),
+
+  disableMFA: protectedProcedure
+    .input(z.object({ code: z.string().length(6) }))
+    .mutation(async ({ ctx, input }) => {
+      const { verifyMFALogin, disableMFA } = await import("../services/mfaService");
+      const userId = Number(ctx.user?.id) || 0;
+      const verified = await verifyMFALogin(userId, input.code);
+      if (!verified) return { success: false, error: "Invalid MFA code" };
+      const success = await disableMFA(userId);
+      return { success };
+    }),
 });

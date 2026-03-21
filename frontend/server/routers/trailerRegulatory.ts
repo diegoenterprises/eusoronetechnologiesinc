@@ -866,4 +866,48 @@ export const trailerRegulatoryRouter = router({
         permitTypes: [],
       };
     }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // BRIDGE CLEARANCE VALIDATION — P0 Safety Fix (23 CFR 650)
+  // ═══════════════════════════════════════════════════════════════
+
+  checkBridgeClearance: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      vehicleHeightFt: z.number(),
+      routePoints: z.array(z.object({ lat: z.number(), lng: z.number() })).optional(),
+    }))
+    .query(async ({ input }) => {
+      const { checkBridgeClearances } = await import("../services/bridgeClearance");
+      return checkBridgeClearances(input.loadId, input.vehicleHeightFt, input.routePoints);
+    }),
+
+  overrideBridgeBlock: protectedProcedure
+    .input(z.object({
+      checkId: z.number(),
+      reason: z.string().min(10),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { overrideBridgeBlock } = await import("../services/bridgeClearance");
+      const userId = Number(ctx.user?.id) || 0;
+      const success = await overrideBridgeBlock(input.checkId, userId, input.reason);
+      return { success };
+    }),
+
+  getClearanceHistory: protectedProcedure
+    .input(z.object({ loadId: z.number() }))
+    .query(async ({ input }) => {
+      const { getClearanceHistory } = await import("../services/bridgeClearance");
+      return getClearanceHistory(input.loadId);
+    }),
+
+  requiresBridgeCheck: protectedProcedure
+    .input(z.object({
+      cargoType: z.string(),
+      vehicleHeightFt: z.number().optional(),
+    }))
+    .query(({ input }) => {
+      const { requiresBridgeCheck } = require("../services/bridgeClearance");
+      return { required: requiresBridgeCheck(input.cargoType, input.vehicleHeightFt) };
+    }),
 });

@@ -8,8 +8,8 @@ import bcrypt from "bcryptjs";
 import type { Request } from "express";
 import { COOKIE_NAME } from "@shared/const";
 import { getDb } from "../db";
-import { users } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { users, mfaTokens } from "../../drizzle/schema";
+import { eq, and } from "drizzle-orm";
 import { logger } from "./logger";
 
 // Rate limiter — 10 attempts per 15 minutes per email
@@ -127,7 +127,7 @@ export const authService = {
   /**
    * Login with credentials (for development/testing)
    */
-  async loginWithCredentials(email: string, password: string): Promise<{ user: AuthUser; token: string } | null> {
+  async loginWithCredentials(email: string, password: string): Promise<{ user: AuthUser | null; token: string | null; requiresMFA?: boolean; mfaMethod?: string; tempToken?: string } | null> {
     // Rate limit check — block brute-force attempts
     checkLoginRateLimit(email);
 
@@ -195,6 +195,28 @@ export const authService = {
               companyId: dbUser.companyId ? String(dbUser.companyId) : undefined,
             };
             logger.info(`[auth] DB login: ${email} role=${effectiveRole} dbId=${dbUser.id}`);
+
+            // Check if user has MFA enabled
+            try {
+              const [mfa] = await db.select().from(mfaTokens)
+                .where(and(eq(mfaTokens.userId, dbUser.id), eq(mfaTokens.isEnabled, true))).limit(1);
+
+              if (mfa) {
+                // Return MFA challenge instead of full token
+                const tempToken = this.createSessionToken({ ...authUser, id: `mfa-pending-${authUser.id}` });
+                logger.info(`[auth] MFA required for ${email}, method=${mfa.method}`);
+                return {
+                  requiresMFA: true,
+                  mfaMethod: mfa.method,
+                  tempToken,
+                  user: null,
+                  token: null,
+                };
+              }
+            } catch (mfaErr) {
+              logger.warn("[auth] MFA check failed, proceeding without MFA:", mfaErr);
+            }
+
             const token = this.createSessionToken(authUser);
             return { user: authUser, token };
           }

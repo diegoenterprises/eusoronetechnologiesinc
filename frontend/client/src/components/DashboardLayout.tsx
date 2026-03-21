@@ -146,6 +146,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import EsangFloatingButton from "./EsangFloatingButton";
 import EmergencyFAB from "./driver/EmergencyFAB";
 import { ModeProvider, ModeSelector, ModeBadge } from "./ModeSelector";
+import useLocale from "@/hooks/useLocale";
 
 // Icon map for rendering icons from string names
 const iconMap: Record<string, React.ReactNode> = {
@@ -425,6 +426,7 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const { user, loading, logout } = useAuth();
   const { theme, mode, setMode, toggleTheme } = useTheme();
+  const { translateLabel: tl } = useLocale();
   const [location, navigate] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
@@ -748,7 +750,7 @@ export default function DashboardLayout({
                       transition={{ duration: 0.2 }}
                       className="flex items-center gap-2 flex-1 overflow-hidden"
                     >
-                      <span className={`flex-1 text-left text-sm whitespace-nowrap ${isLocked ? "text-gray-600" : ""}`}>{item.label}</span>
+                      <span className={`flex-1 text-left text-sm whitespace-nowrap ${isLocked ? "text-gray-600" : ""}`}>{tl(item.label)}</span>
                       {isLocked ? (
                         <Lock className="w-3.5 h-3.5 text-gray-600 flex-shrink-0" />
                       ) : hasChildren && sidebarOpen ? (
@@ -802,7 +804,7 @@ export default function DashboardLayout({
                             }`}
                           >
                             <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center [&>svg]:w-[15px] [&>svg]:h-[15px]">{iconMap[child.icon] || null}</span>
-                            <span className="truncate">{child.label}</span>
+                            <span className="truncate">{tl(child.label)}</span>
                           </Link>
                         );
                       })}
@@ -927,7 +929,7 @@ export default function DashboardLayout({
                 className="hidden md:flex items-center gap-2"
               >
                 <span className={`text-sm font-medium ${theme === "light" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-white"}`}>
-                  {activeMenuItem?.label || "Dashboard"}
+                  {tl(activeMenuItem?.label || "Dashboard")}
                 </span>
               </motion.div>
             </AnimatePresence>

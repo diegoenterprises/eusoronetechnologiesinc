@@ -10044,3 +10044,507 @@ export const paymentQueue = mysqlTable("payment_queue", {
   statusRetryIdx: index("pq_status_retry").on(table.status, table.nextRetryAt),
   loadIdx: index("pq_load").on(table.loadId),
 }));
+
+
+// ============================================================================
+// V10: CROSS-BORDER TABLES — Phase 0+1 Foundation
+// Carta Porte, Pedimentos, Agente Aduanal, MX Insurance, Border Crossings, FX
+// ============================================================================
+
+export const cartaPorte = mysqlTable("carta_porte", {
+  id: int("id").autoincrement().primaryKey(),
+  documentId: varchar("document_id", { length: 64 }).notNull().unique(),
+  version: varchar("version", { length: 8 }).notNull().default("3.1"),
+  tipo: mysqlEnum("tipo", ["ingreso", "traslado"]).notNull(),
+  status: mysqlEnum("status", ["draft", "pending_signature", "signed", "stamped", "cancelled", "error"]).notNull().default("draft"),
+  rfcEmisor: varchar("rfc_emisor", { length: 13 }).notNull(),
+  nombreEmisor: varchar("nombre_emisor", { length: 255 }).notNull(),
+  regimenFiscal: varchar("regimen_fiscal", { length: 8 }).notNull(),
+  rfcReceptor: varchar("rfc_receptor", { length: 13 }).notNull(),
+  nombreReceptor: varchar("nombre_receptor", { length: 255 }).notNull(),
+  usoCfdi: varchar("uso_cfdi", { length: 8 }).notNull().default("S01"),
+  transpInternac: mysqlEnum("transp_internac", ["Si", "No"]).notNull().default("No"),
+  entradaSalidaMerc: mysqlEnum("entrada_salida_merc", ["Entrada", "Salida"]),
+  paisOrigenDestino: varchar("pais_origen_destino", { length: 8 }),
+  mercancias: json("mercancias").notNull(),
+  vehiculo: json("vehiculo").notNull(),
+  figuraTransporte: json("figura_transporte").notNull(),
+  ruta: json("ruta").notNull(),
+  pesoTotalKg: decimal("peso_total_kg", { precision: 12, scale: 2 }).notNull(),
+  numTotalMercancias: int("num_total_mercancias").notNull(),
+  uuid: varchar("uuid", { length: 64 }),
+  selloDigital: text("sello_digital"),
+  cadenaOriginal: text("cadena_original"),
+  fechaTimbrado: datetime("fecha_timbrado"),
+  noCertificado: varchar("no_certificado", { length: 32 }),
+  xmlContent: text("xml_content"),
+  loadId: int("load_id"),
+  createdBy: int("created_by").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  loadIdx: index("cp_load").on(table.loadId),
+  statusIdx: index("cp_status").on(table.status),
+  rfcIdx: index("cp_rfc_emisor").on(table.rfcEmisor),
+  uuidIdx: index("cp_uuid").on(table.uuid),
+}));
+
+export const pedimentos = mysqlTable("pedimentos", {
+  id: int("id").autoincrement().primaryKey(),
+  pedimentoId: varchar("pedimento_id", { length: 64 }).notNull().unique(),
+  numeroPedimento: varchar("numero_pedimento", { length: 24 }).notNull(),
+  tipo: mysqlEnum("tipo", ["A1", "A4", "G1", "IN", "K1", "V1", "RT"]).notNull(),
+  status: mysqlEnum("status", ["draft", "pre_validated", "submitted", "paid", "cleared", "cancelled", "rejected"]).notNull().default("draft"),
+  fechaEntrada: datetime("fecha_entrada").notNull(),
+  fechaPago: datetime("fecha_pago"),
+  importadorExportador: json("importador_exportador").notNull(),
+  agenteAduanal: json("agente_aduanal").notNull(),
+  proveedor: json("proveedor"),
+  destinatario: json("destinatario"),
+  aduanaEntrada: varchar("aduana_entrada", { length: 8 }).notNull(),
+  aduanaSalida: varchar("aduana_salida", { length: 8 }),
+  patente: varchar("patente", { length: 8 }).notNull(),
+  seccion: varchar("seccion", { length: 4 }).notNull().default("0"),
+  mercancias: json("mercancias").notNull(),
+  pesoTotalKg: decimal("peso_total_kg", { precision: 12, scale: 2 }).notNull(),
+  numBultos: int("num_bultos").notNull(),
+  medioTransporte: mysqlEnum("medio_transporte", ["carretero", "maritimo", "aereo", "ferroviario"]).notNull(),
+  placaVehiculo: varchar("placa_vehiculo", { length: 16 }),
+  numContenedor: varchar("num_contenedor", { length: 32 }),
+  valorDolares: decimal("valor_dolares", { precision: 14, scale: 2 }).notNull(),
+  tipoCambio: decimal("tipo_cambio", { precision: 8, scale: 4 }).notNull(),
+  impuestos: json("impuestos").notNull(),
+  cartaPorteId: varchar("carta_porte_id", { length: 64 }),
+  emanifestId: varchar("emanifest_id", { length: 64 }),
+  facturaComercial: varchar("factura_comercial", { length: 64 }),
+  certificadoOrigen: varchar("certificado_origen", { length: 64 }),
+  loadId: int("load_id"),
+  createdBy: int("created_by").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  loadIdx: index("ped_load").on(table.loadId),
+  statusIdx: index("ped_status").on(table.status),
+  numeroIdx: index("ped_numero").on(table.numeroPedimento),
+  aduanaIdx: index("ped_aduana").on(table.aduanaEntrada),
+}));
+
+export const agentesAduanales = mysqlTable("agentes_aduanales", {
+  id: int("id").autoincrement().primaryKey(),
+  agentId: varchar("agent_id", { length: 64 }).notNull().unique(),
+  patente: varchar("patente", { length: 8 }).notNull(),
+  nombre: varchar("nombre", { length: 255 }).notNull(),
+  rfc: varchar("rfc", { length: 13 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  telefono: varchar("telefono", { length: 32 }),
+  aduanasAutorizadas: json("aduanas_autorizadas").notNull(),
+  especialidades: json("especialidades").notNull(),
+  status: mysqlEnum("status", ["active", "suspended", "revoked", "inactive"]).notNull().default("active"),
+  domicilio: text("domicilio"),
+  ciudad: varchar("ciudad", { length: 128 }),
+  estado: varchar("estado", { length: 8 }),
+  codigoPostal: varchar("codigo_postal", { length: 8 }),
+  totalDespachos: int("total_despachos").notNull().default(0),
+  tiempoPromedioHoras: decimal("tiempo_promedio_horas", { precision: 8, scale: 2 }).notNull().default("0"),
+  calificacion: decimal("calificacion", { precision: 3, scale: 2 }).notNull().default("0"),
+  tarifaBase: decimal("tarifa_base", { precision: 12, scale: 2 }).notNull().default("3000"),
+  tarifaPorPartida: decimal("tarifa_por_partida", { precision: 8, scale: 2 }).notNull().default("150"),
+  companyId: int("company_id"),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  patenteIdx: index("aa_patente").on(table.patente),
+  statusIdx: index("aa_status").on(table.status),
+  companyIdx: index("aa_company").on(table.companyId),
+}));
+
+export const brokerAssignments = mysqlTable("broker_assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  assignmentId: varchar("assignment_id", { length: 64 }).notNull().unique(),
+  agenteId: varchar("agente_id", { length: 64 }).notNull(),
+  loadId: int("load_id").notNull(),
+  pedimentoId: varchar("pedimento_id", { length: 64 }),
+  cartaPorteId: varchar("carta_porte_id", { length: 64 }),
+  status: mysqlEnum("status", ["pending", "accepted", "in_progress", "documents_requested", "cleared", "rejected", "cancelled"]).notNull().default("pending"),
+  tipoOperacion: mysqlEnum("tipo_operacion", ["importacion", "exportacion", "transito"]).notNull(),
+  aduanaEntrada: varchar("aduana_entrada", { length: 8 }).notNull(),
+  aduanaSalida: varchar("aduana_salida", { length: 8 }),
+  valorMercancias: decimal("valor_mercancias", { precision: 14, scale: 2 }).notNull(),
+  moneda: mysqlEnum("moneda", ["USD", "MXN"]).notNull().default("USD"),
+  numPartidas: int("num_partidas").notNull(),
+  esHazmat: boolean("es_hazmat").notNull().default(false),
+  documentosRequeridos: json("documentos_requeridos").notNull(),
+  documentosRecibidos: json("documentos_recibidos").notNull(),
+  cotizacion: json("cotizacion"),
+  notas: json("notas").notNull(),
+  fechaSolicitud: datetime("fecha_solicitud").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  fechaAceptacion: datetime("fecha_aceptacion"),
+  fechaDespacho: datetime("fecha_despacho"),
+  fechaLiberacion: datetime("fecha_liberacion"),
+  createdBy: int("created_by").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  loadIdx: index("ba_load").on(table.loadId),
+  agenteIdx: index("ba_agente").on(table.agenteId),
+  statusIdx: index("ba_status").on(table.status),
+}));
+
+export const mexicanInsurancePolicies = mysqlTable("mexican_insurance_policies", {
+  id: int("id").autoincrement().primaryKey(),
+  policyId: varchar("policy_id", { length: 64 }).notNull().unique(),
+  tipoSeguro: mysqlEnum("tipo_seguro", ["responsabilidad_civil", "danos_al_medio_ambiente", "carga", "ocupantes", "danos_materiales"]).notNull(),
+  aseguradora: varchar("aseguradora", { length: 255 }).notNull(),
+  claveAseguradora: varchar("clave_aseguradora", { length: 16 }).notNull(),
+  numeroPoliza: varchar("numero_poliza", { length: 64 }).notNull(),
+  vigenciaInicio: date("vigencia_inicio").notNull(),
+  vigenciaFin: date("vigencia_fin").notNull(),
+  sumaAsegurada: decimal("suma_asegurada", { precision: 14, scale: 2 }).notNull(),
+  moneda: mysqlEnum("moneda", ["MXN", "USD"]).notNull().default("MXN"),
+  coberturaGeografica: mysqlEnum("cobertura_geografica", ["nacional", "fronteriza", "internacional"]).notNull().default("nacional"),
+  vehiculosAmparados: json("vehiculos_amparados").notNull(),
+  conductoresAmparados: json("conductores_amparados"),
+  hazmatCubierto: boolean("hazmat_cubierto").notNull().default(false),
+  deducible: decimal("deducible", { precision: 12, scale: 2 }).notNull().default("0"),
+  companyId: int("company_id").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  companyIdx: index("mxins_company").on(table.companyId),
+  tipoIdx: index("mxins_tipo").on(table.tipoSeguro),
+  vigenciaIdx: index("mxins_vigencia").on(table.vigenciaFin),
+}));
+
+export const borderCrossings = mysqlTable("border_crossings", {
+  id: int("id").autoincrement().primaryKey(),
+  crossingId: varchar("crossing_id", { length: 64 }).notNull().unique(),
+  driverId: int("driver_id").notNull(),
+  loadId: int("load_id"),
+  fromCountry: mysqlEnum("from_country", ["US", "CA", "MX"]).notNull(),
+  toCountry: mysqlEnum("to_country", ["US", "CA", "MX"]).notNull(),
+  portOfEntry: varchar("port_of_entry", { length: 128 }).notNull(),
+  lat: decimal("lat", { precision: 10, scale: 6 }).notNull(),
+  lng: decimal("lng", { precision: 10, scale: 6 }).notNull(),
+  emanifestId: varchar("emanifest_id", { length: 64 }),
+  cartaPorteId: varchar("carta_porte_id", { length: 64 }),
+  pedimentoId: varchar("pedimento_id", { length: 64 }),
+  hosRulesetBefore: varchar("hos_ruleset_before", { length: 64 }),
+  hosRulesetAfter: varchar("hos_ruleset_after", { length: 64 }),
+  crossingTime: datetime("crossing_time").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  driverIdx: index("bc_driver").on(table.driverId),
+  loadIdx: index("bc_load").on(table.loadId),
+  timeIdx: index("bc_time").on(table.crossingTime),
+  countriesIdx: index("bc_countries").on(table.fromCountry, table.toCountry),
+}));
+
+export const exchangeRates = mysqlTable("exchange_rates", {
+  id: int("id").autoincrement().primaryKey(),
+  baseCurrency: mysqlEnum("base_currency", ["USD", "CAD", "MXN"]).notNull(),
+  targetCurrency: mysqlEnum("target_currency", ["USD", "CAD", "MXN"]).notNull(),
+  rate: decimal("rate", { precision: 12, scale: 6 }).notNull(),
+  source: mysqlEnum("source", ["live", "cached", "fallback"]).notNull().default("live"),
+  fetchedAt: datetime("fetched_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  pairIdx: index("fx_pair").on(table.baseCurrency, table.targetCurrency),
+  fetchedIdx: index("fx_fetched").on(table.fetchedAt),
+}));
+
+
+// ============================================================================
+// V11: ACE/ACI eMANIFEST TABLES — Phase 2 Cross-Border
+// ============================================================================
+
+export const aceManifests = mysqlTable("ace_manifests", {
+  id: int("id").autoincrement().primaryKey(),
+  manifestId: varchar("manifest_id", { length: 64 }).notNull().unique(),
+  tripNumber: varchar("trip_number", { length: 32 }).notNull(),
+  scacCode: varchar("scac_code", { length: 8 }).notNull(),
+  portOfEntry: varchar("port_of_entry", { length: 8 }).notNull(),
+  estimatedArrival: datetime("estimated_arrival").notNull(),
+  status: mysqlEnum("status", ["draft", "submitted", "accepted", "hold", "refused", "do_not_load", "cancelled"]).notNull().default("draft"),
+  carrierName: varchar("carrier_name", { length: 255 }).notNull(),
+  dotNumber: varchar("dot_number", { length: 16 }).notNull(),
+  bondNumber: varchar("bond_number", { length: 32 }),
+  vehicleType: mysqlEnum("vehicle_type", ["truck", "rail", "vessel", "air"]).notNull().default("truck"),
+  truckLicense: varchar("truck_license", { length: 16 }).notNull(),
+  truckState: varchar("truck_state", { length: 4 }).notNull(),
+  trailerLicense: varchar("trailer_license", { length: 16 }),
+  trailerState: varchar("trailer_state", { length: 4 }),
+  sealNumbers: json("seal_numbers").notNull(),
+  driverFirstName: varchar("driver_first_name", { length: 128 }).notNull(),
+  driverLastName: varchar("driver_last_name", { length: 128 }).notNull(),
+  driverLicenseNumber: varchar("driver_license_number", { length: 32 }).notNull(),
+  driverLicenseState: varchar("driver_license_state", { length: 4 }).notNull(),
+  driverCitizenship: varchar("driver_citizenship", { length: 4 }).notNull(),
+  fastCardNumber: varchar("fast_card_number", { length: 32 }),
+  shipments: json("shipments").notNull(),
+  loadId: int("load_id"),
+  submittedAt: datetime("submitted_at"),
+  acceptedAt: datetime("accepted_at"),
+  responseMessage: text("response_message"),
+  cbpDisposition: varchar("cbp_disposition", { length: 64 }),
+  createdBy: int("created_by").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  tripIdx: index("ace_trip").on(table.tripNumber),
+  statusIdx: index("ace_status").on(table.status),
+  loadIdx: index("ace_load").on(table.loadId),
+  portIdx: index("ace_port").on(table.portOfEntry),
+  scacIdx: index("ace_scac").on(table.scacCode),
+}));
+
+export const aciManifests = mysqlTable("aci_manifests", {
+  id: int("id").autoincrement().primaryKey(),
+  manifestId: varchar("manifest_id", { length: 64 }).notNull().unique(),
+  cargoControlNumber: varchar("cargo_control_number", { length: 32 }).notNull(),
+  carrierCode: varchar("carrier_code", { length: 8 }).notNull(),
+  portOfEntry: varchar("port_of_entry", { length: 8 }).notNull(),
+  estimatedArrival: datetime("estimated_arrival").notNull(),
+  status: mysqlEnum("status", ["draft", "submitted", "matched", "not_matched", "referred", "released", "cancelled"]).notNull().default("draft"),
+  carrierName: varchar("carrier_name", { length: 255 }).notNull(),
+  conveyanceType: mysqlEnum("conveyance_type", ["highway", "rail", "marine", "air"]).notNull().default("highway"),
+  truckLicense: varchar("truck_license", { length: 16 }).notNull(),
+  truckJurisdiction: varchar("truck_jurisdiction", { length: 4 }).notNull(),
+  trailerLicense: varchar("trailer_license", { length: 16 }),
+  trailerJurisdiction: varchar("trailer_jurisdiction", { length: 4 }),
+  sealNumbers: json("seal_numbers").notNull(),
+  containerNumbers: json("container_numbers").notNull(),
+  driverFirstName: varchar("driver_first_name", { length: 128 }).notNull(),
+  driverLastName: varchar("driver_last_name", { length: 128 }).notNull(),
+  driverDateOfBirth: date("driver_date_of_birth").notNull(),
+  driverCitizenship: varchar("driver_citizenship", { length: 4 }).notNull(),
+  driverDocumentType: mysqlEnum("driver_document_type", ["passport", "fast_card", "nexus", "cdl"]).notNull(),
+  driverDocumentNumber: varchar("driver_document_number", { length: 32 }).notNull(),
+  shipments: json("shipments").notNull(),
+  parsNumber: varchar("pars_number", { length: 16 }),
+  loadId: int("load_id"),
+  submittedAt: datetime("submitted_at"),
+  matchedAt: datetime("matched_at"),
+  responseMessage: text("response_message"),
+  createdBy: int("created_by").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  ccnIdx: index("aci_ccn").on(table.cargoControlNumber),
+  statusIdx: index("aci_status").on(table.status),
+  loadIdx: index("aci_load").on(table.loadId),
+  portIdx: index("aci_port").on(table.portOfEntry),
+  parsIdx: index("aci_pars").on(table.parsNumber),
+}));
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// V11 — P0 BLOCKER TABLES (HOS persistence, FSMA, Bridge clearance, MFA)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const hosState = mysqlTable("hos_state", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  status: mysqlEnum("status", ["off_duty", "sleeper", "driving", "on_duty"]).notNull().default("off_duty"),
+  statusStartedAt: timestamp("statusStartedAt").defaultNow().notNull(),
+  drivingMinutesToday: int("drivingMinutesToday").notNull().default(0),
+  onDutyMinutesToday: int("onDutyMinutesToday").notNull().default(0),
+  drivingMinutesSinceReset: int("drivingMinutesSinceReset").notNull().default(0),
+  onDutyMinutesSinceReset: int("onDutyMinutesSinceReset").notNull().default(0),
+  cycleMinutesUsed: int("cycleMinutesUsed").notNull().default(0),
+  cycleDays: int("cycleDays").notNull().default(8),
+  drivingMinutesSinceBreak: int("drivingMinutesSinceBreak").notNull().default(0),
+  lastBreakAt: timestamp("lastBreakAt"),
+  lastOffDutyAt: timestamp("lastOffDutyAt"),
+  violations: json("violations").$type<any[]>(),
+  todayLog: json("todayLog").$type<any[]>(),
+  timezone: varchar("timezone", { length: 64 }).default("America/Chicago"),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  userUnique: uniqueIndex("hos_state_user_unique").on(table.userId),
+  statusIdx: index("hos_state_status_idx").on(table.status),
+}));
+
+export const hosLogs = mysqlTable("hos_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  eventType: mysqlEnum("eventType", ["status_change", "violation", "break_start", "break_end", "reset", "cycle_restart", "edit", "annotation"]).notNull(),
+  fromStatus: mysqlEnum("fromStatus", ["off_duty", "sleeper", "driving", "on_duty"]),
+  toStatus: mysqlEnum("toStatus", ["off_duty", "sleeper", "driving", "on_duty"]),
+  location: varchar("location", { length: 255 }),
+  locationLat: decimal("locationLat", { precision: 10, scale: 6 }),
+  locationLng: decimal("locationLng", { precision: 10, scale: 6 }),
+  odometer: decimal("odometer", { precision: 10, scale: 1 }),
+  engineHours: decimal("engineHours", { precision: 10, scale: 1 }),
+  vehicleId: int("vehicleId"),
+  loadId: int("loadId"),
+  annotation: text("annotation"),
+  source: mysqlEnum("source", ["driver", "auto", "eld", "system", "edit"]).notNull().default("driver"),
+  violationType: varchar("violationType", { length: 50 }),
+  violationCfr: varchar("violationCfr", { length: 50 }),
+  drivingMinutesAtEvent: int("drivingMinutesAtEvent"),
+  onDutyMinutesAtEvent: int("onDutyMinutesAtEvent"),
+  cycleMinutesAtEvent: int("cycleMinutesAtEvent"),
+  timezone: varchar("timezone", { length: 64 }).default("America/Chicago"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("hos_logs_user_idx").on(table.userId),
+  createdIdx: index("hos_logs_created_idx").on(table.createdAt),
+  typeIdx: index("hos_logs_type_idx").on(table.eventType),
+  userDateIdx: index("hos_logs_user_date_idx").on(table.userId, table.createdAt),
+}));
+
+export const fsmaTempLogs = mysqlTable("fsma_temp_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull().references(() => loads.id),
+  recordedBy: int("recordedBy"),
+  temperature: decimal("temperature", { precision: 6, scale: 2 }).notNull(),
+  unit: mysqlEnum("unit", ["F", "C"]).notNull().default("F"),
+  location: varchar("location", { length: 255 }),
+  eventType: mysqlEnum("eventType", ["pickup", "in_transit", "delivery", "excursion", "alarm", "manual"]).notNull(),
+  isExcursion: boolean("isExcursion").notNull().default(false),
+  minTemp: decimal("minTemp", { precision: 6, scale: 2 }),
+  maxTemp: decimal("maxTemp", { precision: 6, scale: 2 }),
+  setPoint: decimal("setPoint", { precision: 6, scale: 2 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  loadIdx: index("fsma_load_idx").on(table.loadId),
+  excursionIdx: index("fsma_excursion_idx").on(table.isExcursion),
+}));
+
+export const bridgeClearanceChecks = mysqlTable("bridge_clearance_checks", {
+  id: int("id").autoincrement().primaryKey(),
+  loadId: int("loadId").notNull().references(() => loads.id),
+  routeId: int("routeId"),
+  bridgeId: varchar("bridgeId", { length: 20 }),
+  bridgeName: varchar("bridgeName", { length: 255 }),
+  latitude: decimal("latitude", { precision: 10, scale: 6 }),
+  longitude: decimal("longitude", { precision: 10, scale: 6 }),
+  postedClearanceFt: decimal("postedClearanceFt", { precision: 6, scale: 2 }),
+  vehicleHeightFt: decimal("vehicleHeightFt", { precision: 6, scale: 2 }),
+  marginFt: decimal("marginFt", { precision: 6, scale: 2 }),
+  status: mysqlEnum("status", ["clear", "warning", "blocked", "override"]).notNull(),
+  checkedAt: timestamp("checkedAt").defaultNow().notNull(),
+  overrideBy: int("overrideBy"),
+  overrideReason: text("overrideReason"),
+}, (table) => ({
+  loadIdx: index("bridge_load_idx").on(table.loadId),
+  statusIdx: index("bridge_status_idx").on(table.status),
+}));
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// V12 — MX→US ENFORCEMENT: FDA Prior Notice + USDA APHIS Holds
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const fdaPriorNotices = mysqlTable("fda_prior_notices", {
+  id: int("id").autoincrement().primaryKey(),
+  confirmationNumber: varchar("confirmation_number", { length: 32 }).notNull().unique(),
+  loadId: int("load_id").references(() => loads.id),
+  aceManifestId: int("ace_manifest_id"),
+  status: mysqlEnum("status", ["draft", "submitted", "confirmed", "review", "hold", "refused", "cancelled"]).notNull().default("draft"),
+  // Submitter / importer
+  submitterId: int("submitter_id").notNull(),
+  importerName: varchar("importer_name", { length: 255 }).notNull(),
+  importerFeiNumber: varchar("importer_fei_number", { length: 16 }),
+  importerDunsNumber: varchar("importer_duns_number", { length: 16 }),
+  // Product info
+  productDescription: varchar("product_description", { length: 500 }).notNull(),
+  productCode: varchar("product_code", { length: 16 }),
+  productFdaCode: varchar("product_fda_code", { length: 16 }),
+  countryOfOrigin: varchar("country_of_origin", { length: 4 }).notNull(),
+  countryOfShipment: varchar("country_of_shipment", { length: 4 }).notNull(),
+  manufacturerName: varchar("manufacturer_name", { length: 255 }),
+  manufacturerFeiNumber: varchar("manufacturer_fei_number", { length: 16 }),
+  shipperName: varchar("shipper_name", { length: 255 }).notNull(),
+  growerId: varchar("grower_id", { length: 32 }),
+  // Quantity
+  quantity: decimal("quantity", { precision: 12, scale: 2 }).notNull(),
+  quantityUnit: varchar("quantity_unit", { length: 16 }).notNull(),
+  estimatedValueUsd: decimal("estimated_value_usd", { precision: 12, scale: 2 }),
+  // Port / arrival
+  portOfEntry: varchar("port_of_entry", { length: 8 }).notNull(),
+  anticipatedArrival: datetime("anticipated_arrival").notNull(),
+  modeOfTransport: mysqlEnum("mode_of_transport", ["truck", "rail", "vessel", "air"]).notNull().default("truck"),
+  // Consignee (US)
+  consigneeName: varchar("consignee_name", { length: 255 }).notNull(),
+  consigneeAddress: varchar("consignee_address", { length: 500 }),
+  consigneeFeiNumber: varchar("consignee_fei_number", { length: 16 }),
+  // Response
+  submittedAt: datetime("submitted_at"),
+  confirmedAt: datetime("confirmed_at"),
+  responseMessage: text("response_message"),
+  holdReason: text("hold_reason"),
+  // Filing deadline: must be filed 2-8 hrs before arrival (truck) per 21 CFR 1.279
+  filingDeadline: datetime("filing_deadline"),
+  isLate: boolean("is_late").notNull().default(false),
+  // Audit
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  loadIdx: index("fda_pn_load_idx").on(table.loadId),
+  statusIdx: index("fda_pn_status_idx").on(table.status),
+  portIdx: index("fda_pn_port_idx").on(table.portOfEntry),
+  arrivalIdx: index("fda_pn_arrival_idx").on(table.anticipatedArrival),
+  confirmIdx: index("fda_pn_confirm_idx").on(table.confirmationNumber),
+}));
+
+export const usdaHolds = mysqlTable("usda_holds", {
+  id: int("id").autoincrement().primaryKey(),
+  holdNumber: varchar("hold_number", { length: 32 }).notNull().unique(),
+  loadId: int("load_id").references(() => loads.id),
+  aceManifestId: int("ace_manifest_id"),
+  fdaPriorNoticeId: int("fda_prior_notice_id"),
+  status: mysqlEnum("status", ["pending_inspection", "inspecting", "sampled", "passed", "conditional_release", "hold", "refused", "released"]).notNull().default("pending_inspection"),
+  // Agency
+  agency: mysqlEnum("agency", ["APHIS", "FSIS", "AMS", "GIPSA"]).notNull().default("APHIS"),
+  inspectionType: mysqlEnum("inspection_type", ["phytosanitary", "veterinary", "food_safety", "grain_inspection", "fumigation", "lab_sample"]).notNull(),
+  // Commodity
+  commodityDescription: varchar("commodity_description", { length: 500 }).notNull(),
+  commodityHtsCode: varchar("commodity_hts_code", { length: 16 }),
+  countryOfOrigin: varchar("country_of_origin", { length: 4 }).notNull(),
+  quantity: decimal("quantity", { precision: 12, scale: 2 }),
+  quantityUnit: varchar("quantity_unit", { length: 16 }),
+  // Port
+  portOfEntry: varchar("port_of_entry", { length: 8 }).notNull(),
+  inspectionFacility: varchar("inspection_facility", { length: 255 }),
+  // Hold details
+  holdReason: text("hold_reason"),
+  holdIssuedAt: datetime("hold_issued_at"),
+  holdIssuedBy: varchar("hold_issued_by", { length: 128 }),
+  // Inspection
+  inspectorName: varchar("inspector_name", { length: 128 }),
+  inspectionStartedAt: datetime("inspection_started_at"),
+  inspectionCompletedAt: datetime("inspection_completed_at"),
+  inspectionNotes: text("inspection_notes"),
+  samplesTaken: boolean("samples_taken").notNull().default(false),
+  labResults: json("lab_results"),
+  // Release / refusal
+  releaseType: mysqlEnum("release_type", ["unconditional", "conditional", "refused"]),
+  releaseConditions: text("release_conditions"),
+  releasedAt: datetime("released_at"),
+  refusalReason: text("refusal_reason"),
+  // Fees
+  inspectionFeeUsd: decimal("inspection_fee_usd", { precision: 10, scale: 2 }),
+  storageFeeUsd: decimal("storage_fee_usd", { precision: 10, scale: 2 }),
+  // Audit
+  createdBy: int("created_by").notNull(),
+  createdAt: datetime("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: datetime("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  loadIdx: index("usda_hold_load_idx").on(table.loadId),
+  statusIdx: index("usda_hold_status_idx").on(table.status),
+  agencyIdx: index("usda_hold_agency_idx").on(table.agency),
+  portIdx: index("usda_hold_port_idx").on(table.portOfEntry),
+  holdNumIdx: index("usda_hold_num_idx").on(table.holdNumber),
+}));
+
+export const mfaTokens = mysqlTable("mfa_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  secret: varchar("secret", { length: 128 }).notNull(),
+  method: mysqlEnum("method", ["totp", "sms", "email"]).notNull().default("totp"),
+  isEnabled: boolean("isEnabled").notNull().default(false),
+  backupCodes: json("backupCodes").$type<string[]>(),
+  lastUsedAt: timestamp("lastUsedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userMethodUnique: uniqueIndex("mfa_user_method").on(table.userId, table.method),
+}));

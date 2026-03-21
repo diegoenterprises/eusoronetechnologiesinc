@@ -147,4 +147,19 @@ export const webhookRateLimiter = createRateLimiter({
   maxRequests: 1000, // Higher limit for webhooks
 });
 
+export const mfaRateLimiter = createRateLimiter({
+  windowMs: 300000, // 5 minutes
+  maxRequests: 5, // 5 MFA verification attempts per 5 minutes
+});
+
+export const registrationRateLimiter = createRateLimiter({
+  windowMs: 3600000, // 1 hour
+  maxRequests: 3, // 3 registration attempts per hour
+});
+
+export const passwordResetRateLimiter = createRateLimiter({
+  windowMs: 900000, // 15 minutes
+  maxRequests: 3, // 3 password reset requests per 15 minutes
+});
+
 export default createRateLimiter;

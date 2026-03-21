@@ -7,23 +7,38 @@ import { Lock, Mail, ArrowRight, AlertCircle, Shield, ShieldCheck, CheckCircle, 
 import { useTheme } from '@/contexts/ThemeContext';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
+import useLocale from '@/hooks/useLocale';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [mfaMethod, setMfaMethod] = useState<'totp' | 'sms'>('totp');
+  const [mfaMessage, setMfaMessage] = useState('');
   const [error, setError] = useState('');
   const { theme, toggleTheme } = useTheme();
+  const { t } = useLocale();
 
   const loginMutation = (trpc as any).auth.login.useMutation({
     onSuccess: (data: any) => {
+      if (data.requiresTwoFactor) {
+        setRequiresTwoFactor(true);
+        setMfaMethod(data.method || 'totp');
+        setMfaMessage(data.message || 'Enter your verification code.');
+        setError('');
+        return;
+      }
       toast.success(`Welcome back, ${data.user.name}!`);
-      // Single clean navigation — avoids race between setLocation and reload
       setTimeout(() => { window.location.href = '/'; }, 300);
     },
     onError: (err: any) => {
       setError(err.message || 'Invalid credentials');
-      toast.error('Login failed. Please check your credentials.');
+      if (!requiresTwoFactor) {
+        toast.error('Login failed. Please check your credentials.');
+      }
     },
   });
 
@@ -34,7 +49,22 @@ export default function Login() {
       setError('Please enter both email and password');
       return;
     }
-    loginMutation.mutate({ email, password });
+    if (requiresTwoFactor && !twoFactorCode) {
+      setError('Please enter the verification code');
+      return;
+    }
+    loginMutation.mutate({
+      email,
+      password,
+      ...(requiresTwoFactor && twoFactorCode ? { twoFactorCode } : {}),
+    });
+  };
+
+  const handleBackToLogin = () => {
+    setRequiresTwoFactor(false);
+    setTwoFactorCode('');
+    setMfaMessage('');
+    setError('');
   };
 
   return (
@@ -81,9 +111,9 @@ export default function Login() {
 
         <Card className={`backdrop-blur-xl ${theme === 'dark' ? 'bg-slate-800/10 border-white/20' : 'bg-white/80 border-slate-200 shadow-xl'}`}>
           <CardHeader className="text-center">
-            <CardTitle className={`text-xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Welcome Back</CardTitle>
+            <CardTitle className={`text-xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{t('auth.welcomeBack', 'Welcome Back')}</CardTitle>
             <CardDescription className={theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}>
-              Sign in to access your dashboard
+              {t('auth.signInSubtitle', 'Sign in to access your dashboard')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -94,55 +124,99 @@ export default function Login() {
                   {error}
                 </div>
               )}
-              <div className="space-y-4">
-                <div className="relative">
-                  <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-400'}`} />
-                  <Input
-                    type="email"
-                    placeholder="Email address"
-                    aria-label="Email address"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e: any) => setEmail(e.target.value)}
-                    className={`pl-10 h-12 ${theme === 'dark' ? 'bg-slate-800/10 border-white/20 text-white placeholder:text-slate-400' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
-                    disabled={loginMutation.isPending}
-                  />
+
+              {!requiresTwoFactor ? (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-400'}`} />
+                    <Input
+                      type="email"
+                      placeholder={t('auth.email', 'Email address')}
+                      aria-label={t('auth.email', 'Email address')}
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e: any) => setEmail(e.target.value)}
+                      className={`pl-10 h-12 ${theme === 'dark' ? 'bg-slate-800/10 border-white/20 text-white placeholder:text-slate-400' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      disabled={loginMutation.isPending}
+                    />
+                  </div>
+                  <div className="relative">
+                    <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-400'}`} />
+                    <Input
+                      type="password"
+                      placeholder={t('auth.password', 'Password')}
+                      aria-label={t('auth.password', 'Password')}
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e: any) => setPassword(e.target.value)}
+                      className={`pl-10 h-12 ${theme === 'dark' ? 'bg-slate-800/10 border-white/20 text-white placeholder:text-slate-400' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      disabled={loginMutation.isPending}
+                    />
+                  </div>
                 </div>
-                <div className="relative">
-                  <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-400'}`} />
-                  <Input
-                    type="password"
-                    placeholder="Password"
-                    aria-label="Password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e: any) => setPassword(e.target.value)}
-                    className={`pl-10 h-12 ${theme === 'dark' ? 'bg-slate-800/10 border-white/20 text-white placeholder:text-slate-400' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
-                    disabled={loginMutation.isPending}
-                  />
+              ) : (
+                <div className="space-y-4">
+                  <div className={`flex items-center gap-3 p-3 rounded-lg ${theme === 'dark' ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-blue-50 border border-blue-200'}`}>
+                    <Shield className={`w-5 h-5 flex-shrink-0 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-500'}`} />
+                    <p className={`text-sm ${theme === 'dark' ? 'text-blue-300' : 'text-blue-700'}`}>
+                      {mfaMessage || (mfaMethod === 'totp'
+                        ? 'Enter the 6-digit code from your authenticator app.'
+                        : 'A verification code was sent to your phone and email.')}
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <Shield className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-400'}`} />
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9A-Za-z\-]*"
+                      maxLength={10}
+                      placeholder={mfaMethod === 'totp' ? '6-digit code or backup code' : 'Verification code'}
+                      aria-label="Verification code"
+                      autoComplete="one-time-code"
+                      value={twoFactorCode}
+                      onChange={(e: any) => setTwoFactorCode(e.target.value)}
+                      className={`pl-10 h-12 text-center text-lg tracking-widest font-mono ${theme === 'dark' ? 'bg-slate-800/10 border-white/20 text-white placeholder:text-slate-400' : 'bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      disabled={loginMutation.isPending}
+                      autoFocus
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleBackToLogin}
+                    className={`text-sm ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'} transition-colors`}
+                  >
+                    &larr; Back to login
+                  </button>
                 </div>
-              </div>
+              )}
+
               <Button
                 type="submit"
                 disabled={loginMutation.isPending}
                 className="w-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260DD] hover:to-[#A801DD] h-12 text-lg"
               >
-                {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
-                <ArrowRight className="w-5 h-5 ml-2" />
+                {loginMutation.isPending
+                  ? (requiresTwoFactor ? t('auth.verifying', 'Verifying...') : t('auth.signingIn', 'Signing in...'))
+                  : (requiresTwoFactor ? t('auth.verifyCode', 'Verify Code') : t('auth.login', 'Sign In'))}
+                {!requiresTwoFactor && <ArrowRight className="w-5 h-5 ml-2" />}
+                {requiresTwoFactor && <ShieldCheck className="w-5 h-5 ml-2" />}
               </Button>
             </form>
 
-            <div className="text-center space-y-2">
-              <a href="/forgot-password" className={`text-sm ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'} transition-colors`}>
-                Forgot your password?
-              </a>
-              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                Don't have an account?{' '}
-                <a href="/register" className={`underline ${theme === 'dark' ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-500'}`}>
-                  Register here
+            {!requiresTwoFactor && (
+              <div className="text-center space-y-2">
+                <a href="/forgot-password" className={`text-sm ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'} transition-colors`}>
+                  {t('auth.forgotPassword', 'Forgot your password?')}
                 </a>
-              </p>
-            </div>
+                <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {t('auth.noAccount', "Don't have an account?")}{' '}
+                  <a href="/register" className={`underline ${theme === 'dark' ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-500'}`}>
+                    {t('auth.register', 'Register here')}
+                  </a>
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -168,6 +242,9 @@ export default function Login() {
               <CreditCard className="w-3 h-3 text-amber-400" />
               <span className="text-[10px] sm:text-xs font-medium text-amber-400">PCI-DSS</span>
             </div>
+          </div>
+          <div className="flex justify-center mb-3">
+            <LanguageSwitcher />
           </div>
           <p className={`text-center text-[10px] sm:text-xs ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
             © 2026 EusoTrip - Eusorone Technologies, Inc. All rights reserved.

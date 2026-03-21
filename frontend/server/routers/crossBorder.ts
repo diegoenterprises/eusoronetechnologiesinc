@@ -26,6 +26,24 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getLiveBorderWaitTimes, getPortMetadata, isLiveDataAvailable, getCacheAgeSeconds } from "../services/borderWaitTimes";
 import { screenEntity } from "../services/ofacScreening";
+import { convertCurrency, formatCurrency, getRates, type CurrencyCode } from "../services/currencyEngine";
+import { calculateMexicanHOS } from "../services/mexicanHosEngine";
+import { computeTransitionHOS, detectBorderCrossing, getHOSRuleSummary, type HOSCountry } from "../services/hosBorderTransition";
+import { createCartaPorte, validateCartaPorte, generateCartaPorteXML } from "../services/cartaPorte";
+import { createPedimento, validatePedimento, calculatePedimentoTaxes } from "../services/pedimento";
+import { validateMexicanInsurance, getRequiredInsurance, AUTHORIZED_INSURERS } from "../services/mexicanInsurance";
+import { estimateBrokerFees, getRequiredDocuments as getBrokerDocs, findBestBroker } from "../services/agenteAduanal";
+import { createACEManifest, createACIManifest, validateACEManifest, validateACIManifest, generateACEPayload, generateACIPayload, checkFilingDeadline, ACE_PORTS, ACI_PORTS } from "../services/eManifest";
+import { PROVINCIAL_WEIGHTS, PROVINCIAL_FUEL_TAX, CBSA_REQUIREMENTS, PROVINCIAL_PERMITS, TDG_CLASSES, checkWeightCompliance, checkTDGCompliance, getRequiredCBSADocuments, getProvincialPermits, estimateCanadianFuelTax, runFullCanadianComplianceCheck, type Province } from "../services/canadianCompliance";
+import { RAIL_INTERCHANGE_POINTS, RAIL_CREW_CERTS, RAIL_DG_REGULATIONS, getInterchangePoints, getCrewCertRequirements, getDGRailRegulations, getRequiredCrossBorderDocs, checkCrossBorderRailCompliance, estimateRailBorderCrossingTime, type RailBorderCountry } from "../services/crossBorderRail";
+import { CROSS_BORDER_PORTS, ISF_10_PLUS_2, CABOTAGE_RULES, IMDG_CLASSES, getCrossBorderPorts, getISFRequirements, getCabotageRules, getIMDGClasses, getRequiredVesselDocs, checkVesselCrossBorderCompliance, estimateVesselCustomsClearanceTime, type MaritimeCountry } from "../services/crossBorderVessel";
+import { getPlacardClasses, getPlacardRequirements, checkPlacardCrossBorderAcceptance, getUSMCAOriginRules, getUSMCACertificateRequirements, checkUSMCAEligibility, getTrustedPrograms, checkFASTEligibility, estimateBorderTimeSavings, type PlacardCountry } from "../services/crossBorderHardening";
+import { getReeferRegulations, getReeferTempRange, getHazmatCrossBorderRules, getOversizedRules, getAgricultureRules, checkReeferCrossBorderCompliance, checkOversizedCrossBorderCompliance, type VerticalCountry } from "../services/crossBorderVerticals";
+import { getIntermodalFacilities, getHandoffWorkflow, getAllHandoffWorkflows, getBillingLineItems, estimateMultiModalQuote, getHandoffDocumentChecklist, type TransportMode as MMTransportMode, type HandoffCountry, type HandoffCurrency } from "../services/multiModalHandoff";
+import { getVUCEMProcedures, getVUCEMForProduct, getNOMStandards, getMexicanImportTaxes, estimateMexicanImportTaxes, getIMMEXPrograms, getMXBorderCrossings, checkMexicanImportCompliance, type MXState } from "../services/mexicanDeepDive";
+import { getBaseRates, getSurcharges, getCrossBorderPremiums, generateQuote, type PricingMode, type PricingCurrency } from "../services/verticalPricingEngine";
+import { validateFDAPriorNotice, createFDAPriorNotice, generateFDAPNPayload, calculateFDAFilingDeadline, determineUSDARequirements, createUSDAHold, simulateACESubmission, checkMXtoUSCompliance, FDA_PRODUCT_CODES, USDA_INSPECTION_MATRIX } from "../services/fdaUsdaEnforcement";
+import { convert, unitLabel, formatWithUnit, COUNTRY_UNIT_SYSTEM, type CountryCode, type MeasureType } from "../../shared/units";
 import { getDb } from "../db";
 import {
   loads,
@@ -36,6 +54,15 @@ import {
   drivers,
   users,
   auditLogs,
+  cartaPorte,
+  pedimentos,
+  agentesAduanales,
+  brokerAssignments,
+  mexicanInsurancePolicies,
+  borderCrossings,
+  exchangeRates,
+  aceManifests,
+  aciManifests,
 } from "../../drizzle/schema";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -2151,4 +2178,1299 @@ export const crossBorderRouter = router({
         avoidPeak: "Monday AM, Friday PM",
       },
     })),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 0+1: NEW CROSS-BORDER PROCEDURES
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ─── Unit Conversion ──────────────────────────────────────────────────────
+
+  convertUnits: protectedProcedure
+    .input(z.object({
+      value: z.number(),
+      measure: z.enum(['weight', 'distance', 'volume', 'temperature', 'dim_small', 'dim_large']),
+      fromCountry: z.enum(['US', 'CA', 'MX']),
+      toCountry: z.enum(['US', 'CA', 'MX']),
+    }))
+    .query(({ input }) => {
+      const fromSystem = COUNTRY_UNIT_SYSTEM[input.fromCountry as CountryCode];
+      const toSystem = COUNTRY_UNIT_SYSTEM[input.toCountry as CountryCode];
+      const converted = convert(input.value, input.measure as MeasureType, fromSystem, toSystem);
+      return {
+        original: formatWithUnit(input.value, input.measure as MeasureType, fromSystem),
+        converted: formatWithUnit(converted, input.measure as MeasureType, toSystem),
+        rawValue: converted,
+        fromSystem,
+        toSystem,
+        fromLabel: unitLabel(input.measure as MeasureType, fromSystem),
+        toLabel: unitLabel(input.measure as MeasureType, toSystem),
+      };
+    }),
+
+  // ─── Multi-Currency ───────────────────────────────────────────────────────
+
+  convertAmount: protectedProcedure
+    .input(z.object({
+      amount: z.number(),
+      from: z.enum(['USD', 'CAD', 'MXN']),
+      to: z.enum(['USD', 'CAD', 'MXN']),
+    }))
+    .query(async ({ input }) => {
+      const result = await convertCurrency(input.amount, input.from as CurrencyCode, input.to as CurrencyCode);
+      return {
+        ...result,
+        display: formatCurrency(result.convertedAmount, input.to as CurrencyCode),
+      };
+    }),
+
+  getExchangeRates: protectedProcedure
+    .input(z.object({ base: z.enum(['USD', 'CAD', 'MXN']).default('USD') }))
+    .query(async ({ input }) => {
+      return getRates(input.base as CurrencyCode);
+    }),
+
+  // ─── Mexican HOS ──────────────────────────────────────────────────────────
+
+  getMexicanHOS: protectedProcedure
+    .input(z.object({
+      logs: z.array(z.object({
+        status: z.enum(['driving', 'on-duty', 'off-duty', 'sleeper']),
+        startTime: z.string(),
+        endTime: z.string(),
+        location: z.string().optional(),
+        notes: z.string().optional(),
+      })),
+    }))
+    .query(({ input }) => {
+      return calculateMexicanHOS(input.logs);
+    }),
+
+  getHOSRules: protectedProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']) }))
+    .query(({ input }) => {
+      return getHOSRuleSummary(input.country as HOSCountry);
+    }),
+
+  // ─── HOS Border Transition ────────────────────────────────────────────────
+
+  getTransitionHOS: protectedProcedure
+    .input(z.object({
+      logs: z.array(z.object({
+        status: z.enum(['driving', 'on-duty', 'off-duty', 'sleeper']),
+        startTime: z.string(),
+        endTime: z.string(),
+        location: z.string().optional(),
+        notes: z.string().optional(),
+        country: z.enum(['US', 'CA', 'MX']).optional(),
+      })),
+      currentCountry: z.enum(['US', 'CA', 'MX']),
+      crossings: z.array(z.object({
+        timestamp: z.string(),
+        fromCountry: z.enum(['US', 'CA', 'MX']),
+        toCountry: z.enum(['US', 'CA', 'MX']),
+        portOfEntry: z.string(),
+        lat: z.number(),
+        lng: z.number(),
+        eManifestId: z.string().optional(),
+      })).default([]),
+    }))
+    .query(({ input }) => {
+      return computeTransitionHOS(input.logs, input.currentCountry as HOSCountry, input.crossings);
+    }),
+
+  detectCrossing: protectedProcedure
+    .input(z.object({
+      previousLat: z.number(),
+      previousLng: z.number(),
+      currentLat: z.number(),
+      currentLng: z.number(),
+    }))
+    .query(({ input }) => {
+      return detectBorderCrossing(input.previousLat, input.previousLng, input.currentLat, input.currentLng);
+    }),
+
+  // ─── Carta Porte CFDI ─────────────────────────────────────────────────────
+
+  createCartaPorte: protectedProcedure
+    .input(z.object({
+      tipo: z.enum(['ingreso', 'traslado']),
+      emisor: z.object({ rfc: z.string(), nombre: z.string(), regimenFiscal: z.string() }),
+      receptor: z.object({ rfc: z.string(), nombre: z.string(), usoCFDI: z.string() }),
+      mercancias: z.array(z.object({
+        claveProducto: z.string(),
+        descripcion: z.string(),
+        cantidad: z.number(),
+        claveUnidad: z.string(),
+        pesoKg: z.number(),
+        valorMercancia: z.number(),
+        moneda: z.enum(['MXN', 'USD', 'CAD']),
+        materialPeligroso: z.boolean(),
+        cveMaterialPeligroso: z.string().optional(),
+        embalaje: z.string().optional(),
+        fraccionArancelaria: z.string().optional(),
+      })),
+      vehiculo: z.object({
+        configVehicular: z.string(),
+        placaVM: z.string(),
+        anioModelo: z.number(),
+        aseguradora: z.string(),
+        polizaSeguro: z.string(),
+        permisoSCT: z.string(),
+        numPermisoSCT: z.string(),
+        subtipRem: z.string().optional(),
+        placaRemolque: z.string().optional(),
+      }),
+      conductores: z.array(z.object({
+        rfcFigura: z.string(),
+        nombreFigura: z.string(),
+        numLicencia: z.string(),
+        tipoLicencia: z.string(),
+        residenciaFiscal: z.string().optional(),
+        numRegIdTrib: z.string().optional(),
+      })),
+      ruta: z.object({
+        origen: z.object({
+          rfcRemitente: z.string(),
+          nombreRemitente: z.string(),
+          domicilio: z.any(),
+          fechaSalida: z.string(),
+        }),
+        destino: z.object({
+          rfcRemitente: z.string(),
+          nombreRemitente: z.string(),
+          domicilio: z.any(),
+          fechaLlegada: z.string(),
+        }),
+        distanciaKm: z.number(),
+        paradas: z.array(z.any()).optional(),
+      }),
+      isInternational: z.boolean(),
+      entradaSalida: z.enum(['Entrada', 'Salida']).optional(),
+      paisOrigenDestino: z.string().optional(),
+      loadId: z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const doc = createCartaPorte({ ...input, createdBy: ctx.user.id as unknown as number });
+      const validation = validateCartaPorte(doc);
+      if (!validation.valid) {
+        return { success: false, document: doc, validation };
+      }
+      const xml = generateCartaPorteXML(doc);
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+      await db.insert(cartaPorte).values({
+        documentId: doc.id,
+        version: doc.version,
+        tipo: doc.tipo,
+        status: doc.status,
+        rfcEmisor: doc.rfcEmisor,
+        nombreEmisor: doc.nombreEmisor,
+        regimenFiscal: doc.regimenFiscal,
+        rfcReceptor: doc.rfcReceptor,
+        nombreReceptor: doc.nombreReceptor,
+        usoCfdi: doc.usoCFDI,
+        transpInternac: doc.transpInternac,
+        entradaSalidaMerc: doc.entradaSalidaMerc || null,
+        paisOrigenDestino: doc.paisOrigenDestino || null,
+        mercancias: doc.mercancias,
+        vehiculo: doc.vehiculo,
+        figuraTransporte: doc.figuraTransporte,
+        ruta: doc.ruta,
+        pesoTotalKg: String(doc.pesoTotalKg),
+        numTotalMercancias: doc.numTotalMercancias,
+        xmlContent: xml,
+        loadId: doc.loadId || null,
+        createdBy: ctx.user.id as unknown as number,
+      });
+      logger.info(`[CrossBorder] Carta Porte created: ${doc.id}`);
+      return { success: true, document: doc, validation, xml };
+    }),
+
+  // ─── Pedimento (MX Customs) ───────────────────────────────────────────────
+
+  estimateDuties: protectedProcedure
+    .input(z.object({
+      mercancias: z.array(z.object({
+        fraccionArancelaria: z.string(),
+        descripcion: z.string(),
+        cantidad: z.number(),
+        unidadMedida: z.string(),
+        paisOrigen: z.string(),
+        valorAduana: z.number(),
+        valorComercial: z.number(),
+        pesoKg: z.number(),
+        arancelAdValorem: z.number(),
+        cuotaCompensatoria: z.number().optional(),
+        vinculacion: z.boolean(),
+        metodoValoracion: z.enum(['1', '2', '3', '4', '5', '6']),
+      })),
+      tipoCambio: z.number(),
+      pedimentoType: z.enum(['A1', 'A4', 'G1', 'IN', 'K1', 'V1', 'RT']),
+    }))
+    .query(({ input }) => {
+      return calculatePedimentoTaxes(input.mercancias, input.tipoCambio, input.pedimentoType);
+    }),
+
+  // ─── Mexican Insurance ────────────────────────────────────────────────────
+
+  validateMXInsurance: protectedProcedure
+    .input(z.object({
+      policies: z.array(z.object({
+        id: z.string(),
+        tipoSeguro: z.enum(['responsabilidad_civil', 'danos_al_medio_ambiente', 'carga', 'ocupantes', 'danos_materiales']),
+        aseguradora: z.string(),
+        claveAseguradora: z.string(),
+        numeroPoliza: z.string(),
+        vigenciaInicio: z.string(),
+        vigenciaFin: z.string(),
+        sumaAsegurada: z.number(),
+        moneda: z.enum(['MXN', 'USD']),
+        coberturaGeografica: z.enum(['nacional', 'fronteriza', 'internacional']),
+        vehiculosAmparados: z.array(z.string()),
+        conductoresAmparados: z.array(z.string()).optional(),
+        hazmatCubierto: z.boolean(),
+        deducible: z.number(),
+      })),
+      isHazmat: z.boolean(),
+      isPublicService: z.boolean(),
+      vehiclePlate: z.string(),
+    }))
+    .query(({ input }) => {
+      return validateMexicanInsurance(input.policies, {
+        isHazmat: input.isHazmat,
+        isPublicService: input.isPublicService,
+        vehiclePlate: input.vehiclePlate,
+      });
+    }),
+
+  getAuthorizedInsurers: protectedProcedure
+    .query(() => {
+      return AUTHORIZED_INSURERS.filter(i => i.activo);
+    }),
+
+  getMXInsuranceRequirements: protectedProcedure
+    .input(z.object({ isHazmat: z.boolean(), isPublicService: z.boolean() }))
+    .query(({ input }) => {
+      return getRequiredInsurance(input);
+    }),
+
+  // ─── Customs Broker (Agente Aduanal) ──────────────────────────────────────
+
+  estimateBrokerFees: protectedProcedure
+    .input(z.object({
+      valorMercancias: z.number(),
+      moneda: z.enum(['USD', 'MXN']),
+      numPartidas: z.number(),
+      tipoOperacion: z.enum(['importacion', 'exportacion', 'transito']),
+      esHazmat: z.boolean(),
+      tipoCambio: z.number().optional(),
+    }))
+    .query(({ input }) => {
+      return estimateBrokerFees(input);
+    }),
+
+  getBrokerDocRequirements: protectedProcedure
+    .input(z.object({
+      tipoOperacion: z.enum(['importacion', 'exportacion', 'transito']),
+      esHazmat: z.boolean(),
+    }))
+    .query(({ input }) => {
+      return getBrokerDocs(input);
+    }),
+
+  // ─── Border Crossing Log ──────────────────────────────────────────────────
+
+  logBorderCrossing: protectedProcedure
+    .input(z.object({
+      driverId: z.number(),
+      loadId: z.number().optional(),
+      fromCountry: z.enum(['US', 'CA', 'MX']),
+      toCountry: z.enum(['US', 'CA', 'MX']),
+      portOfEntry: z.string(),
+      lat: z.number(),
+      lng: z.number(),
+      emanifestId: z.string().optional(),
+      cartaPorteId: z.string().optional(),
+      pedimentoId: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+      const crossingId = rid('BC');
+      const fromRules = getHOSRuleSummary(input.fromCountry as HOSCountry);
+      const toRules = getHOSRuleSummary(input.toCountry as HOSCountry);
+      await db.insert(borderCrossings).values({
+        crossingId,
+        driverId: input.driverId,
+        loadId: input.loadId || null,
+        fromCountry: input.fromCountry,
+        toCountry: input.toCountry,
+        portOfEntry: input.portOfEntry,
+        lat: String(input.lat),
+        lng: String(input.lng),
+        emanifestId: input.emanifestId || null,
+        cartaPorteId: input.cartaPorteId || null,
+        pedimentoId: input.pedimentoId || null,
+        hosRulesetBefore: fromRules.ruleset,
+        hosRulesetAfter: toRules.ruleset,
+        crossingTime: new Date(),
+      });
+      logger.info(`[CrossBorder] Border crossing logged: ${input.fromCountry} -> ${input.toCountry} at ${input.portOfEntry}`);
+      return { crossingId, hosTransition: { from: fromRules.ruleset, to: toRules.ruleset } };
+    }),
+
+  getBorderCrossingHistory: protectedProcedure
+    .input(z.object({
+      driverId: z.number().optional(),
+      loadId: z.number().optional(),
+      limit: z.number().default(50),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+      const conditions = [];
+      if (input.driverId) conditions.push(eq(borderCrossings.driverId, input.driverId));
+      if (input.loadId) conditions.push(eq(borderCrossings.loadId, input.loadId));
+      const where = conditions.length > 0 ? and(...conditions) : undefined;
+      return db.select().from(borderCrossings).where(where).orderBy(desc(borderCrossings.crossingTime)).limit(input.limit);
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 2: ACE/ACI eMANIFEST PROCEDURES
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getACEPorts: protectedProcedure
+    .input(z.object({ border: z.enum(['CA', 'MX']).optional() }).optional())
+    .query(({ input }) => {
+      const entries = Object.entries(ACE_PORTS);
+      if (input?.border) {
+        return entries.filter(([, p]) => p.border === input.border).map(([code, p]) => ({ code, ...p }));
+      }
+      return entries.map(([code, p]) => ({ code, ...p }));
+    }),
+
+  getACIPorts: protectedProcedure
+    .query(() => {
+      return Object.entries(ACI_PORTS).map(([code, p]) => ({ code, ...p }));
+    }),
+
+  checkManifestDeadline: protectedProcedure
+    .input(z.object({
+      estimatedArrival: z.string(),
+      direction: z.enum(['US_INBOUND', 'CA_INBOUND']),
+    }))
+    .query(({ input }) => {
+      return checkFilingDeadline(input.estimatedArrival, input.direction);
+    }),
+
+  createACEeManifest: protectedProcedure
+    .input(z.object({
+      scacCode: z.string().min(2).max(4),
+      portOfEntry: z.string(),
+      estimatedArrival: z.string(),
+      carrierName: z.string(),
+      dotNumber: z.string(),
+      bondNumber: z.string().optional(),
+      truckLicense: z.string(),
+      truckState: z.string(),
+      trailerLicense: z.string().optional(),
+      trailerState: z.string().optional(),
+      sealNumbers: z.array(z.string()).optional(),
+      driverFirstName: z.string(),
+      driverLastName: z.string(),
+      driverLicenseNumber: z.string(),
+      driverLicenseState: z.string(),
+      driverCitizenship: z.string(),
+      fastCardNumber: z.string().optional(),
+      shipments: z.array(z.object({
+        shipmentControlNumber: z.string(),
+        shipperName: z.string(),
+        shipperAddress: z.string(),
+        shipperCity: z.string(),
+        shipperCountry: z.string(),
+        consigneeName: z.string(),
+        consigneeAddress: z.string(),
+        consigneeCity: z.string(),
+        consigneeState: z.string(),
+        consigneeZip: z.string(),
+        consigneeCountry: z.string(),
+        commodities: z.array(z.object({
+          description: z.string(),
+          htsCode: z.string().optional(),
+          quantity: z.number(),
+          quantityUnit: z.string(),
+          weight: z.number(),
+          value: z.number(),
+          countryOfOrigin: z.string(),
+          hazmat: z.boolean(),
+          hazmatClass: z.string().optional(),
+          unNumber: z.string().optional(),
+        })),
+        weight: z.number(),
+        weightUnit: z.enum(['LBS', 'KGS']),
+        value: z.number(),
+        countryOfOrigin: z.string(),
+      })),
+      loadId: z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const manifest = createACEManifest({ ...input, createdBy: ctx.user.id as unknown as number });
+      const validation = validateACEManifest(manifest);
+      if (!validation.valid) {
+        return { success: false, manifest, validation };
+      }
+      const payload = generateACEPayload(manifest);
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+      await db.insert(aceManifests).values({
+        manifestId: manifest.id,
+        tripNumber: manifest.tripNumber,
+        scacCode: manifest.scacCode,
+        portOfEntry: manifest.portOfEntry,
+        estimatedArrival: new Date(manifest.estimatedArrival),
+        status: manifest.status,
+        carrierName: manifest.carrierName,
+        dotNumber: manifest.dotNumber,
+        bondNumber: manifest.bondNumber || null,
+        vehicleType: manifest.vehicleType,
+        truckLicense: manifest.truckLicense,
+        truckState: manifest.truckState,
+        trailerLicense: manifest.trailerLicense || null,
+        trailerState: manifest.trailerState || null,
+        sealNumbers: manifest.sealNumbers,
+        driverFirstName: manifest.driverFirstName,
+        driverLastName: manifest.driverLastName,
+        driverLicenseNumber: manifest.driverLicenseNumber,
+        driverLicenseState: manifest.driverLicenseState,
+        driverCitizenship: manifest.driverCitizenship,
+        fastCardNumber: manifest.fastCardNumber || null,
+        shipments: manifest.shipments,
+        loadId: manifest.loadId || null,
+        createdBy: ctx.user.id as unknown as number,
+      });
+      logger.info(`[CrossBorder] ACE eManifest created: ${manifest.id} trip=${manifest.tripNumber}`);
+      return { success: true, manifest, validation, payload };
+    }),
+
+  createACIeManifest: protectedProcedure
+    .input(z.object({
+      carrierCode: z.string().min(2),
+      portOfEntry: z.string(),
+      estimatedArrival: z.string(),
+      carrierName: z.string(),
+      truckLicense: z.string(),
+      truckJurisdiction: z.string(),
+      trailerLicense: z.string().optional(),
+      trailerJurisdiction: z.string().optional(),
+      sealNumbers: z.array(z.string()).optional(),
+      containerNumbers: z.array(z.string()).optional(),
+      driverFirstName: z.string(),
+      driverLastName: z.string(),
+      driverDateOfBirth: z.string(),
+      driverCitizenship: z.string(),
+      driverDocumentType: z.enum(['passport', 'fast_card', 'nexus', 'cdl']),
+      driverDocumentNumber: z.string(),
+      shipments: z.array(z.object({
+        houseBillNumber: z.string(),
+        shipperName: z.string(),
+        shipperAddress: z.string(),
+        shipperCity: z.string(),
+        shipperCountry: z.string(),
+        consigneeName: z.string(),
+        consigneeAddress: z.string(),
+        consigneeCity: z.string(),
+        consigneeProvince: z.string(),
+        consigneePostalCode: z.string(),
+        consigneeCountry: z.string(),
+        commodities: z.array(z.object({
+          description: z.string(),
+          hsCode: z.string().optional(),
+          quantity: z.number(),
+          quantityUnit: z.string(),
+          weight: z.number(),
+          undgNumber: z.string().optional(),
+          dangerousGoods: z.boolean(),
+        })),
+        weight: z.number(),
+        weightUnit: z.enum(['KGS', 'LBS']),
+        declaredValue: z.number(),
+        declaredCurrency: z.enum(['CAD', 'USD']),
+        countryOfOrigin: z.string(),
+        specialInstructions: z.string().optional(),
+      })),
+      loadId: z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const manifest = createACIManifest({ ...input, createdBy: ctx.user.id as unknown as number });
+      const validation = validateACIManifest(manifest);
+      if (!validation.valid) {
+        return { success: false, manifest, validation };
+      }
+      const payload = generateACIPayload(manifest);
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+      await db.insert(aciManifests).values({
+        manifestId: manifest.id,
+        cargoControlNumber: manifest.cargoControlNumber,
+        carrierCode: manifest.carrierCode,
+        portOfEntry: manifest.portOfEntry,
+        estimatedArrival: new Date(manifest.estimatedArrival),
+        status: manifest.status,
+        carrierName: manifest.carrierName,
+        conveyanceType: manifest.conveyanceType,
+        truckLicense: manifest.truckLicense,
+        truckJurisdiction: manifest.truckJurisdiction,
+        trailerLicense: manifest.trailerLicense || null,
+        trailerJurisdiction: manifest.trailerJurisdiction || null,
+        sealNumbers: manifest.sealNumbers,
+        containerNumbers: manifest.containerNumbers,
+        driverFirstName: manifest.driverFirstName,
+        driverLastName: manifest.driverLastName,
+        driverDateOfBirth: new Date(manifest.driverDateOfBirth),
+        driverCitizenship: manifest.driverCitizenship,
+        driverDocumentType: manifest.driverDocumentType,
+        driverDocumentNumber: manifest.driverDocumentNumber,
+        shipments: manifest.shipments,
+        parsNumber: manifest.parsNumber || null,
+        loadId: manifest.loadId || null,
+        createdBy: ctx.user.id as unknown as number,
+      });
+      logger.info(`[CrossBorder] ACI eManifest created: ${manifest.id} CCN=${manifest.cargoControlNumber}`);
+      return { success: true, manifest, validation, payload };
+    }),
+
+  getManifestHistory: protectedProcedure
+    .input(z.object({
+      direction: z.enum(['US_INBOUND', 'CA_INBOUND']),
+      loadId: z.number().optional(),
+      limit: z.number().default(50),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+      if (input.direction === 'US_INBOUND') {
+        const conditions = input.loadId ? eq(aceManifests.loadId, input.loadId) : undefined;
+        return db.select().from(aceManifests).where(conditions).orderBy(desc(aceManifests.createdAt)).limit(input.limit);
+      }
+      const conditions = input.loadId ? eq(aciManifests.loadId, input.loadId) : undefined;
+      return db.select().from(aciManifests).where(conditions).orderBy(desc(aciManifests.createdAt)).limit(input.limit);
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 2: CANADIAN COMPLIANCE PROCEDURES
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getProvincialWeightLimits: protectedProcedure
+    .input(z.object({ province: z.string().optional() }).optional())
+    .query(({ input }) => {
+      if (input?.province) {
+        const p = PROVINCIAL_WEIGHTS.find(w => w.province === input.province);
+        return p ? [p] : [];
+      }
+      return PROVINCIAL_WEIGHTS;
+    }),
+
+  checkCAWeightCompliance: protectedProcedure
+    .input(z.object({
+      province: z.string(),
+      gvw_kg: z.number(),
+      isWinter: z.boolean().default(false),
+    }))
+    .query(({ input }) => {
+      return checkWeightCompliance(input.province as Province, input.gvw_kg, input.isWinter);
+    }),
+
+  getTDGClasses: protectedProcedure
+    .query(() => TDG_CLASSES),
+
+  checkTDG: protectedProcedure
+    .input(z.object({
+      hasDangerousGoods: z.boolean(),
+      tdgClass: z.string().optional(),
+      hasShippingDoc: z.boolean(),
+      hasPlacards: z.boolean(),
+      hasERAP: z.boolean(),
+      driverTDGTrained: z.boolean(),
+    }))
+    .query(({ input }) => {
+      return checkTDGCompliance(input);
+    }),
+
+  getCBSARequirements: protectedProcedure
+    .input(z.object({
+      hasDangerousGoods: z.boolean().default(false),
+      hasFood: z.boolean().default(false),
+      claimingUSMCA: z.boolean().default(false),
+    }).optional())
+    .query(({ input }) => {
+      return getRequiredCBSADocuments({
+        hasDangerousGoods: input?.hasDangerousGoods ?? false,
+        hasFood: input?.hasFood ?? false,
+        claimingUSMCA: input?.claimingUSMCA ?? false,
+      });
+    }),
+
+  getCAProvincialPermits: protectedProcedure
+    .input(z.object({ provinces: z.array(z.string()) }))
+    .query(({ input }) => {
+      return getProvincialPermits(input.provinces as Province[]);
+    }),
+
+  getCAFuelTaxRates: protectedProcedure
+    .input(z.object({ province: z.string().optional() }).optional())
+    .query(({ input }) => {
+      if (input?.province) {
+        const rate = PROVINCIAL_FUEL_TAX[input.province as Province];
+        return rate ? [{ province: input.province, ...rate }] : [];
+      }
+      return Object.entries(PROVINCIAL_FUEL_TAX).map(([prov, rates]) => ({ province: prov, ...rates }));
+    }),
+
+  estimateCAFuelTax: protectedProcedure
+    .input(z.object({
+      provinces: z.array(z.string()),
+      litresPerProvince: z.record(z.string(), z.number()),
+    }))
+    .query(({ input }) => {
+      return estimateCanadianFuelTax(input.provinces as Province[], input.litresPerProvince);
+    }),
+
+  runCAComplianceCheck: protectedProcedure
+    .input(z.object({
+      provinces: z.array(z.string()),
+      gvw_kg: z.number(),
+      isWinter: z.boolean().default(false),
+      hasDangerousGoods: z.boolean().default(false),
+      tdgClass: z.string().optional(),
+      hasShippingDoc: z.boolean().default(false),
+      hasPlacards: z.boolean().default(false),
+      hasERAP: z.boolean().default(false),
+      driverTDGTrained: z.boolean().default(false),
+      hasInsurance: z.boolean().default(false),
+      insuranceAmount_CAD: z.number().default(0),
+      hasACIeManifest: z.boolean().default(false),
+      hasPARS: z.boolean().default(false),
+      hasCCI: z.boolean().default(false),
+      hasB3: z.boolean().default(false),
+    }))
+    .query(({ input }) => {
+      return runFullCanadianComplianceCheck({
+        ...input,
+        provinces: input.provinces as Province[],
+      });
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 3: CROSS-BORDER RAIL PROCEDURES
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getRailInterchangePoints: protectedProcedure
+    .input(z.object({
+      countryA: z.string().optional(),
+      countryB: z.string().optional(),
+      railroad: z.string().optional(),
+      hazmatOnly: z.boolean().optional(),
+      intermodalOnly: z.boolean().optional(),
+    }).optional())
+    .query(({ input }) => {
+      return getInterchangePoints({
+        countryA: input?.countryA as RailBorderCountry | undefined,
+        countryB: input?.countryB as RailBorderCountry | undefined,
+        railroad: input?.railroad,
+        hazmatOnly: input?.hazmatOnly,
+        intermodalOnly: input?.intermodalOnly,
+      });
+    }),
+
+  getRailCrewCerts: protectedProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']) }))
+    .query(({ input }) => getCrewCertRequirements(input.country)),
+
+  getRailDGRegulations: protectedProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']) }))
+    .query(({ input }) => getDGRailRegulations(input.country)),
+
+  getRailCrossBorderDocs: protectedProcedure
+    .input(z.object({ direction: z.enum(['US_to_CA', 'CA_to_US', 'US_to_MX', 'MX_to_US']) }))
+    .query(({ input }) => getRequiredCrossBorderDocs(input.direction)),
+
+  checkRailCrossBorderCompliance: protectedProcedure
+    .input(z.object({
+      direction: z.enum(['US_to_CA', 'CA_to_US', 'US_to_MX', 'MX_to_US']),
+      interchangePointId: z.string(),
+      hasManifest: z.boolean(),
+      hasCrewCerts: z.boolean(),
+      hasDangerousGoods: z.boolean().default(false),
+      hasDGDocs: z.boolean().default(false),
+      hasCustomsDocs: z.boolean(),
+      hasInsurance: z.boolean(),
+    }))
+    .query(({ input }) => checkCrossBorderRailCompliance(input)),
+
+  estimateRailCrossingTime: protectedProcedure
+    .input(z.object({
+      interchangePointId: z.string(),
+      hasDG: z.boolean().default(false),
+      carCount: z.number().default(50),
+    }))
+    .query(({ input }) => estimateRailBorderCrossingTime(input.interchangePointId, input.hasDG, input.carCount)),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 3: CROSS-BORDER VESSEL PROCEDURES
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getCrossBorderPorts: protectedProcedure
+    .input(z.object({
+      country: z.enum(['US', 'CA', 'MX']).optional(),
+      hasRailAccess: z.boolean().optional(),
+      minDraft: z.number().optional(),
+    }).optional())
+    .query(({ input }) => getCrossBorderPorts({
+      country: input?.country as MaritimeCountry | undefined,
+      hasRailAccess: input?.hasRailAccess,
+      minDraft: input?.minDraft,
+    })),
+
+  getISFRequirements: protectedProcedure
+    .query(() => getISFRequirements()),
+
+  getCabotageRules: protectedProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']).optional() }).optional())
+    .query(({ input }) => getCabotageRules(input?.country as MaritimeCountry | undefined)),
+
+  getIMDGClasses: protectedProcedure
+    .query(() => getIMDGClasses()),
+
+  getVesselCrossBorderDocs: protectedProcedure
+    .input(z.object({ direction: z.enum(['US_import', 'US_export', 'CA_import', 'CA_export', 'MX_import', 'MX_export']) }))
+    .query(({ input }) => getRequiredVesselDocs(input.direction)),
+
+  checkVesselCrossBorderCompliance: protectedProcedure
+    .input(z.object({
+      direction: z.enum(['US_import', 'US_export', 'CA_import', 'CA_export', 'MX_import', 'MX_export']),
+      originPortId: z.string(),
+      destPortId: z.string(),
+      hasManifest: z.boolean(),
+      hasISF: z.boolean().default(false),
+      hasBOL: z.boolean(),
+      hasCustomsDocs: z.boolean(),
+      hasDangerousGoods: z.boolean().default(false),
+      hasIMDGDocs: z.boolean().default(false),
+      isISPSCompliant: z.boolean(),
+      hasInsurance: z.boolean(),
+      isCabotageMove: z.boolean().default(false),
+      hasCabotageWaiver: z.boolean().default(false),
+    }))
+    .query(({ input }) => checkVesselCrossBorderCompliance(input)),
+
+  estimateVesselClearanceTime: protectedProcedure
+    .input(z.object({
+      direction: z.string(),
+      hasDG: z.boolean().default(false),
+      containerCount: z.number().default(100),
+    }))
+    .query(({ input }) => estimateVesselCustomsClearanceTime(input.direction, input.hasDG, input.containerCount)),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 3: CROSS-BORDER HARDENING (PLACARDS, USMCA, FAST/SENTRI)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getPlacardClasses: protectedProcedure
+    .input(z.object({ classNumber: z.string().optional() }).optional())
+    .query(({ input }) => getPlacardClasses(input?.classNumber)),
+
+  getPlacardRequirements: protectedProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']).optional() }).optional())
+    .query(({ input }) => getPlacardRequirements(input?.country as PlacardCountry | undefined)),
+
+  checkPlacardAcceptance: protectedProcedure
+    .input(z.object({
+      classNumber: z.string(),
+      division: z.string().optional(),
+      fromCountry: z.enum(['US', 'CA', 'MX']),
+      toCountry: z.enum(['US', 'CA', 'MX']),
+    }))
+    .query(({ input }) => checkPlacardCrossBorderAcceptance(input.classNumber, input.division, input.fromCountry, input.toCountry)),
+
+  getUSMCAOriginRules: protectedProcedure
+    .input(z.object({ sector: z.string().optional() }).optional())
+    .query(({ input }) => getUSMCAOriginRules(input?.sector)),
+
+  getUSMCACertRequirements: protectedProcedure
+    .query(() => getUSMCACertificateRequirements()),
+
+  checkUSMCAEligibility: protectedProcedure
+    .input(z.object({
+      rvcPercent: z.number(),
+      originCountries: z.array(z.enum(['US', 'CA', 'MX'])),
+      hasOriginCert: z.boolean(),
+      htsCovered: z.boolean(),
+    }))
+    .query(({ input }) => checkUSMCAEligibility(input)),
+
+  getTrustedPrograms: protectedProcedure
+    .input(z.object({
+      country: z.enum(['US', 'CA', 'MX']).optional(),
+      mode: z.string().optional(),
+      type: z.enum(['individual', 'company', 'both']).optional(),
+    }).optional())
+    .query(({ input }) => getTrustedPrograms({
+      country: input?.country as PlacardCountry | undefined,
+      mode: input?.mode,
+      type: input?.type,
+    })),
+
+  checkFASTEligibility: protectedProcedure
+    .input(z.object({
+      hasCtpat: z.boolean(),
+      hasPip: z.boolean(),
+      driverHasFastCard: z.boolean(),
+      cleanRecord: z.boolean(),
+    }))
+    .query(({ input }) => checkFASTEligibility(input)),
+
+  estimateBorderTimeSavings: protectedProcedure
+    .input(z.object({ programId: z.string() }))
+    .query(({ input }) => estimateBorderTimeSavings(input.programId)),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 3: VERTICAL-SPECIFIC CROSS-BORDER (REEFER, HAZMAT, OVERSIZED, AG)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getReeferRegulations: protectedProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']).optional() }).optional())
+    .query(({ input }) => getReeferRegulations(input?.country as VerticalCountry | undefined)),
+
+  getReeferTempRange: protectedProcedure
+    .input(z.object({ commodity: z.string(), country: z.enum(['US', 'CA', 'MX']).optional() }))
+    .query(({ input }) => getReeferTempRange(input.commodity, input.country as VerticalCountry | undefined)),
+
+  getHazmatCrossBorderRules: protectedProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']).optional() }).optional())
+    .query(({ input }) => getHazmatCrossBorderRules(input?.country as VerticalCountry | undefined)),
+
+  getOversizedRules: protectedProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']).optional() }).optional())
+    .query(({ input }) => getOversizedRules(input?.country as VerticalCountry | undefined)),
+
+  getAgricultureRules: protectedProcedure
+    .input(z.object({ country: z.enum(['US', 'CA', 'MX']).optional() }).optional())
+    .query(({ input }) => getAgricultureRules(input?.country as VerticalCountry | undefined)),
+
+  checkReeferCompliance: protectedProcedure
+    .input(z.object({
+      direction: z.string(),
+      commodity: z.string(),
+      tempSetC: z.number(),
+      hasTempLog: z.boolean(),
+      hasFSMACompliance: z.boolean().default(false),
+      hasPhytoCert: z.boolean().default(false),
+      hasPriorNotice: z.boolean().default(false),
+    }))
+    .query(({ input }) => checkReeferCrossBorderCompliance(input)),
+
+  checkOversizedCompliance: protectedProcedure
+    .input(z.object({
+      direction: z.string(),
+      widthM: z.number(),
+      heightM: z.number(),
+      lengthM: z.number(),
+      gvwKg: z.number(),
+      hasOriginPermit: z.boolean(),
+      hasDestPermit: z.boolean(),
+      hasEscort: z.boolean().default(false),
+    }))
+    .query(({ input }) => checkOversizedCrossBorderCompliance(input)),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 4: MULTI-MODAL HANDOFF + BILLING
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getIntermodalFacilities: protectedProcedure
+    .input(z.object({
+      country: z.enum(['US', 'CA', 'MX']).optional(),
+      mode: z.enum(['TRUCK', 'RAIL', 'VESSEL']).optional(),
+      nearBorder: z.boolean().optional(),
+    }).optional())
+    .query(({ input }) => getIntermodalFacilities({
+      country: input?.country as HandoffCountry | undefined,
+      mode: input?.mode as MMTransportMode | undefined,
+      nearBorder: input?.nearBorder,
+    })),
+
+  getHandoffWorkflow: protectedProcedure
+    .input(z.object({
+      fromMode: z.enum(['TRUCK', 'RAIL', 'VESSEL']),
+      toMode: z.enum(['TRUCK', 'RAIL', 'VESSEL']),
+    }))
+    .query(({ input }) => getHandoffWorkflow(input.fromMode, input.toMode)),
+
+  getAllHandoffWorkflows: protectedProcedure
+    .query(() => getAllHandoffWorkflows()),
+
+  getBillingLineItems: protectedProcedure
+    .input(z.object({
+      mode: z.enum(['TRUCK', 'RAIL', 'VESSEL', 'INTERMODAL']).optional(),
+      crossBorderOnly: z.boolean().optional(),
+    }).optional())
+    .query(({ input }) => getBillingLineItems({
+      mode: input?.mode as MMTransportMode | 'INTERMODAL' | undefined,
+      crossBorderOnly: input?.crossBorderOnly,
+    })),
+
+  estimateMultiModalQuote: protectedProcedure
+    .input(z.object({
+      legs: z.array(z.object({
+        mode: z.enum(['TRUCK', 'RAIL', 'VESSEL']),
+        originFacilityId: z.string().optional(),
+        destFacilityId: z.string().optional(),
+        distanceKm: z.number(),
+        containerCount: z.number(),
+      })),
+      crossBorder: z.boolean(),
+      hasHazmat: z.boolean().default(false),
+      hasReefer: z.boolean().default(false),
+      hasOversized: z.boolean().default(false),
+      direction: z.string().optional(),
+      currency: z.enum(['USD', 'CAD', 'MXN']).default('USD'),
+    }))
+    .query(({ input }) => estimateMultiModalQuote(input)),
+
+  getHandoffDocumentChecklist: protectedProcedure
+    .input(z.object({
+      fromMode: z.enum(['TRUCK', 'RAIL', 'VESSEL']),
+      toMode: z.enum(['TRUCK', 'RAIL', 'VESSEL']),
+      crossBorder: z.boolean().default(false),
+    }))
+    .query(({ input }) => getHandoffDocumentChecklist(input.fromMode, input.toMode, input.crossBorder)),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 4.2: MEXICAN DEEP-DIVE (VUCEM, NOM, TAX, IMMEX, BORDER CROSSINGS)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getVUCEMProcedures: protectedProcedure
+    .input(z.object({ authority: z.string().optional() }).optional())
+    .query(({ input }) => getVUCEMProcedures(input?.authority)),
+
+  getVUCEMForProduct: protectedProcedure
+    .input(z.object({ productType: z.string() }))
+    .query(({ input }) => getVUCEMForProduct(input.productType)),
+
+  getNOMStandards: protectedProcedure
+    .input(z.object({ sector: z.string().optional() }).optional())
+    .query(({ input }) => getNOMStandards(input?.sector)),
+
+  getMexicanImportTaxes: protectedProcedure
+    .query(() => getMexicanImportTaxes()),
+
+  estimateMexicanImportTaxes: protectedProcedure
+    .input(z.object({
+      customsValueUSD: z.number(),
+      htsRate: z.number(),
+      isUSMCA: z.boolean().default(false),
+      isIMMEX: z.boolean().default(false),
+      hasIEPS: z.boolean().default(false),
+      iepsRate: z.number().default(0),
+    }))
+    .query(({ input }) => estimateMexicanImportTaxes(input)),
+
+  getIMMEXPrograms: protectedProcedure
+    .input(z.object({ type: z.string().optional() }).optional())
+    .query(({ input }) => getIMMEXPrograms(input?.type)),
+
+  getMXBorderCrossings: protectedProcedure
+    .input(z.object({
+      state: z.string().optional(),
+      type: z.string().optional(),
+      minCapacity: z.number().optional(),
+    }).optional())
+    .query(({ input }) => getMXBorderCrossings({
+      state: input?.state as MXState | undefined,
+      type: input?.type,
+      minCapacity: input?.minCapacity,
+    })),
+
+  checkMexicanImportCompliance: protectedProcedure
+    .input(z.object({
+      hasRFC: z.boolean(),
+      hasPadronImportadores: z.boolean(),
+      hasAgenteAduanal: z.boolean(),
+      hasCartaPorte: z.boolean(),
+      productType: z.string(),
+      hasNOMCert: z.boolean().default(false),
+      isUSMCA: z.boolean().default(false),
+      hasOriginCert: z.boolean().default(false),
+    }))
+    .query(({ input }) => checkMexicanImportCompliance(input)),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 4.4: VERTICAL PRICING ENGINE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getBaseRates: protectedProcedure
+    .input(z.object({
+      mode: z.enum(['TRUCK', 'RAIL', 'VESSEL']).optional(),
+      currency: z.enum(['USD', 'CAD', 'MXN']).optional(),
+    }).optional())
+    .query(({ input }) => getBaseRates({
+      mode: input?.mode as PricingMode | undefined,
+      currency: input?.currency as PricingCurrency | undefined,
+    })),
+
+  getSurcharges: protectedProcedure
+    .input(z.object({
+      mode: z.enum(['TRUCK', 'RAIL', 'VESSEL']).optional(),
+      category: z.string().optional(),
+    }).optional())
+    .query(({ input }) => getSurcharges({
+      mode: input?.mode as PricingMode | undefined,
+      category: input?.category,
+    })),
+
+  getCrossBorderPremiums: protectedProcedure
+    .input(z.object({
+      direction: z.string().optional(),
+      mode: z.enum(['TRUCK', 'RAIL', 'VESSEL']).optional(),
+    }).optional())
+    .query(({ input }) => getCrossBorderPremiums({
+      direction: input?.direction,
+      mode: input?.mode as PricingMode | undefined,
+    })),
+
+  generateQuote: protectedProcedure
+    .input(z.object({
+      mode: z.enum(['TRUCK', 'RAIL', 'VESSEL']),
+      rateId: z.string(),
+      quantity: z.number(),
+      distance: z.number().optional(),
+      surchargeIds: z.array(z.string()).default([]),
+      crossBorder: z.boolean().default(false),
+      direction: z.string().optional(),
+      currency: z.enum(['USD', 'CAD', 'MXN']).default('USD'),
+    }))
+    .query(({ input }) => generateQuote(input)),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // PHASE 5: MX→US ENFORCEMENT — FDA PRIOR NOTICE + USDA APHIS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // FDA product codes reference
+  getFDAProductCodes: protectedProcedure
+    .query(() => FDA_PRODUCT_CODES),
+
+  // USDA inspection matrix reference
+  getUSDAInspectionMatrix: protectedProcedure
+    .query(() => USDA_INSPECTION_MATRIX),
+
+  // Calculate FDA filing deadline for a given arrival + transport mode
+  getFDAFilingDeadline: protectedProcedure
+    .input(z.object({
+      anticipatedArrival: z.string(),
+      modeOfTransport: z.enum(['truck', 'rail', 'vessel', 'air']).default('truck'),
+    }))
+    .query(({ input }) => calculateFDAFilingDeadline(input.anticipatedArrival, input.modeOfTransport)),
+
+  // Validate an FDA Prior Notice before submission
+  validateFDAPriorNotice: protectedProcedure
+    .input(z.object({
+      loadId: z.number().optional(),
+      aceManifestId: z.number().optional(),
+      importerName: z.string(),
+      importerFeiNumber: z.string().optional(),
+      importerDunsNumber: z.string().optional(),
+      productDescription: z.string(),
+      productCode: z.string().optional(),
+      productFdaCode: z.string().optional(),
+      countryOfOrigin: z.string(),
+      countryOfShipment: z.string(),
+      manufacturerName: z.string().optional(),
+      manufacturerFeiNumber: z.string().optional(),
+      shipperName: z.string(),
+      growerId: z.string().optional(),
+      quantity: z.number(),
+      quantityUnit: z.string(),
+      estimatedValueUsd: z.number().optional(),
+      portOfEntry: z.string(),
+      anticipatedArrival: z.string(),
+      modeOfTransport: z.enum(['truck', 'rail', 'vessel', 'air']).default('truck'),
+      consigneeName: z.string(),
+      consigneeAddress: z.string().optional(),
+      consigneeFeiNumber: z.string().optional(),
+    }))
+    .query(({ input }) => validateFDAPriorNotice(input)),
+
+  // Create + submit an FDA Prior Notice
+  submitFDAPriorNotice: protectedProcedure
+    .input(z.object({
+      loadId: z.number().optional(),
+      aceManifestId: z.number().optional(),
+      importerName: z.string(),
+      importerFeiNumber: z.string().optional(),
+      importerDunsNumber: z.string().optional(),
+      productDescription: z.string(),
+      productCode: z.string().optional(),
+      productFdaCode: z.string().optional(),
+      countryOfOrigin: z.string(),
+      countryOfShipment: z.string(),
+      manufacturerName: z.string().optional(),
+      manufacturerFeiNumber: z.string().optional(),
+      shipperName: z.string(),
+      growerId: z.string().optional(),
+      quantity: z.number(),
+      quantityUnit: z.string(),
+      estimatedValueUsd: z.number().optional(),
+      portOfEntry: z.string(),
+      anticipatedArrival: z.string(),
+      modeOfTransport: z.enum(['truck', 'rail', 'vessel', 'air']).default('truck'),
+      consigneeName: z.string(),
+      consigneeAddress: z.string().optional(),
+      consigneeFeiNumber: z.string().optional(),
+    }))
+    .mutation(({ input }) => {
+      const result = createFDAPriorNotice(input);
+      const payload = generateFDAPNPayload(input, result.confirmationNumber);
+      return { ...result, payload };
+    }),
+
+  // Determine USDA inspection requirements for a commodity
+  getUSDARequirements: protectedProcedure
+    .input(z.object({
+      commodityType: z.string(),
+      countryOfOrigin: z.string(),
+    }))
+    .query(({ input }) => determineUSDARequirements(input.commodityType, input.countryOfOrigin)),
+
+  // Create a USDA hold / inspection request
+  createUSDAHold: protectedProcedure
+    .input(z.object({
+      loadId: z.number().optional(),
+      aceManifestId: z.number().optional(),
+      fdaPriorNoticeId: z.number().optional(),
+      agency: z.enum(['APHIS', 'FSIS', 'AMS', 'GIPSA']),
+      inspectionType: z.enum(['phytosanitary', 'veterinary', 'food_safety', 'grain_inspection', 'fumigation', 'lab_sample']),
+      commodityDescription: z.string(),
+      commodityHtsCode: z.string().optional(),
+      countryOfOrigin: z.string(),
+      quantity: z.number().optional(),
+      quantityUnit: z.string().optional(),
+      portOfEntry: z.string(),
+      inspectionFacility: z.string().optional(),
+    }))
+    .mutation(({ input }) => createUSDAHold(input)),
+
+  // Simulate ACE manifest submission to CBP
+  simulateACESubmission: protectedProcedure
+    .input(z.object({
+      tripNumber: z.string(),
+      scacCode: z.string(),
+      portOfEntry: z.string(),
+      estimatedArrival: z.string(),
+      driverCitizenship: z.string(),
+      fastCardNumber: z.string().nullish(),
+      bondNumber: z.string().nullish(),
+      shipments: z.array(z.object({
+        shipper: z.string().optional(),
+        consignee: z.string().optional(),
+        value: z.number().optional(),
+        commodities: z.array(z.object({
+          description: z.string().optional(),
+          htsCode: z.string().optional(),
+          hazmat: z.boolean().optional(),
+          unNumber: z.string().optional(),
+        })).optional(),
+      })),
+    }))
+    .mutation(({ input }) => simulateACESubmission(input)),
+
+  // ─── ACE Submission Validation (MX→US Enforcement) ───────────────────────
+  validateACESubmission: protectedProcedure
+    .input(z.object({ loadId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { status: 'unknown' as const, checks: [] };
+
+      const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
+      if (!load) return { status: 'not_found' as const, checks: [] };
+
+      const checks: Array<{ name: string; status: string; required: boolean }> = [];
+
+      // Check 1: ACE eManifest
+      checks.push({
+        name: 'ACE eManifest',
+        status: 'required',
+        required: true,
+      });
+
+      // Check 2: FDA Prior Notice (if food/pharma)
+      const cargoLower = ((load as any).cargoType || '').toLowerCase();
+      const commodityLower = ((load as any).commodityName || '').toLowerCase();
+      const isFDA = ['food', 'pharma', 'beverage', 'dietary_supplement'].some(t =>
+        cargoLower.includes(t) || commodityLower.includes(t)
+      );
+      if (isFDA) {
+        checks.push({
+          name: 'FDA Prior Notice',
+          status: 'required',
+          required: true,
+        });
+      }
+
+      // Check 3: USDA/APHIS (if agricultural)
+      const isAgri = ['grain', 'livestock', 'produce', 'agricultural'].some(t =>
+        cargoLower.includes(t) || commodityLower.includes(t)
+      );
+      if (isAgri) {
+        checks.push({
+          name: 'USDA/APHIS Permit',
+          status: 'required',
+          required: true,
+        });
+      }
+
+      // Check 4: Hazmat (if applicable)
+      if ((load as any).hazmatClass) {
+        checks.push({
+          name: 'DOT Hazmat Declaration',
+          status: 'required',
+          required: true,
+        });
+      }
+
+      // Check 5: Commercial Invoice
+      checks.push({
+        name: 'Commercial Invoice',
+        status: 'required',
+        required: true,
+      });
+
+      return {
+        status: checks.every(c => c.status === 'cleared') ? 'cleared' as const : 'pending' as const,
+        checks,
+        isCrossBorder: true,
+        direction: 'MX_TO_US' as const,
+      };
+    }),
+
+  // Full MX→US compliance check
+  checkMXtoUSCompliance: protectedProcedure
+    .input(z.object({
+      hasACEManifest: z.boolean(),
+      aceStatus: z.string().optional(),
+      hasFDAPriorNotice: z.boolean(),
+      fdaStatus: z.string().optional(),
+      isFood: z.boolean(),
+      isAgricultural: z.boolean(),
+      isLiveAnimal: z.boolean(),
+      hasPhytoCert: z.boolean(),
+      hasVetCert: z.boolean(),
+      hasCustomsBond: z.boolean(),
+      hasFAST: z.boolean(),
+      hasISPM15: z.boolean(),
+      hasCartaPorte: z.boolean(),
+      hasPedimento: z.boolean(),
+      totalValueUsd: z.number(),
+      driverHasTWIC: z.boolean(),
+      driverHasVisa: z.boolean(),
+    }))
+    .query(({ input }) => checkMXtoUSCompliance(input)),
 });

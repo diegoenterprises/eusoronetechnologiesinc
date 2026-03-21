@@ -21,25 +21,17 @@ export default function Dashboard() {
   const { user, loading } = useAuth();
   const userRole = (user?.role as UserRole) || "SHIPPER";
   const [, navigate] = useLocation();
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const alreadyOnboarded = user ? !!localStorage.getItem(`eusotrip-onboarded-${user.id}`) : true;
+  const [showOnboarding, setShowOnboarding] = useState(!alreadyOnboarded);
 
   useEffect(() => {
-    if (loading) return;
-    if (RAIL_ROLES.includes(userRole)) {
-      navigate('/rail/dashboard');
-      return;
+    if (loading || !user) return;
+    // Only redirect if onboarding is already done
+    if (!showOnboarding) {
+      if (RAIL_ROLES.includes(userRole)) { navigate('/rail/dashboard'); return; }
+      if (VESSEL_ROLES.includes(userRole)) { navigate('/vessel/dashboard'); return; }
     }
-    if (VESSEL_ROLES.includes(userRole)) {
-      navigate('/vessel/dashboard');
-      return;
-    }
-  }, [userRole, loading]);
-
-  useEffect(() => {
-    if (user && !localStorage.getItem(`eusotrip-onboarded-${user.id}`)) {
-      setShowOnboarding(true);
-    }
-  }, [user]);
+  }, [userRole, loading, showOnboarding]);
 
   if (loading) {
     return (

@@ -86,7 +86,7 @@ export default function VesselDashboard() {
             <Plus className="w-3.5 h-3.5" /> Create Booking
           </Button>
         </Link>
-        <Link href="/vessel/containers/tracking">
+        <Link href="/vessel/container-tracking">
           <Button size="sm" variant="outline" className="gap-1.5"><Container className="w-3.5 h-3.5" /> Track Container</Button>
         </Link>
         <Link href="/vessel/ports">

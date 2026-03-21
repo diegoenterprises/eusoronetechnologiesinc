@@ -351,4 +351,59 @@ export const reeferTempRouter = router({
 
       return { success: true };
     }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // FSMA FOOD SAFETY COMPLIANCE — P0 Fix (21 CFR 1.908)
+  // ═══════════════════════════════════════════════════════════════
+
+  recordFSMATemp: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      temperature: z.number(),
+      unit: z.enum(["F", "C"]).default("F"),
+      location: z.string().optional(),
+      eventType: z.enum(["pickup", "in_transit", "delivery", "excursion", "alarm", "manual"]).default("manual"),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { recordTemperature } = await import("../services/fsmaCompliance");
+      const recordedBy = Number(ctx.user?.id) || 0;
+      return recordTemperature(input.loadId, {
+        temperature: input.temperature,
+        unit: input.unit,
+        location: input.location,
+        eventType: input.eventType,
+        notes: input.notes,
+      }, recordedBy);
+    }),
+
+  verifyPreCool: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      trailerTemp: z.number(),
+      unit: z.enum(["F", "C"]).default("F"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { verifyPreCool } = await import("../services/fsmaCompliance");
+      const recordedBy = Number(ctx.user?.id) || 0;
+      return verifyPreCool(input.loadId, input.trailerTemp, input.unit, recordedBy);
+    }),
+
+  getFSMAStatus: protectedProcedure
+    .input(z.object({ loadId: z.number() }))
+    .query(async ({ input }) => {
+      const { getFSMAStatus } = await import("../services/fsmaCompliance");
+      return getFSMAStatus(input.loadId);
+    }),
+
+  checkFSMARequired: protectedProcedure
+    .input(z.object({ cargoType: z.string() }))
+    .query(({ input }) => {
+      const { requiresFSMA, FSMA_RULES } = require("../services/fsmaCompliance");
+      const required = requiresFSMA(input.cargoType);
+      return {
+        required,
+        rules: required ? (FSMA_RULES as any)[input.cargoType === "refrigerated" ? "refrigerated" : "food_grade"] : null,
+      };
+    }),
 });

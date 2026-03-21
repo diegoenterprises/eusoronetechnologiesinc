@@ -7,6 +7,7 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { catalystProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
@@ -832,6 +833,14 @@ export const catalystsRouter = router({
       if (!catalystId) throw new Error("Could not resolve user");
       const loadIdNum = parseInt(input.loadId, 10);
       if (!loadIdNum) throw new Error("Invalid load ID");
+
+      // V17: Stripe Connect check — carriers must have a payout account to bid
+      try {
+        const [bidder] = await db.select({ stripeConnectId: users.stripeConnectId }).from(users).where(eq(users.id, catalystId)).limit(1);
+        if (!bidder?.stripeConnectId) {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Set up your EusoWallet payout account before bidding. Go to Settings → Payments.' });
+        }
+      } catch (e: any) { if (e?.code === 'PRECONDITION_FAILED') throw e; }
 
       // WS-P1-004: Prevent duplicate bids from same user on same load
       const [existingBid] = await db.select({ id: bids.id }).from(bids)

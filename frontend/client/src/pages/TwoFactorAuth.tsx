@@ -98,8 +98,8 @@ export default function TwoFactorAuth() {
                 <div className="p-4 rounded-xl bg-slate-700/30 text-center">
                   {setupQuery.isLoading ? (
                     <Skeleton className="h-48 w-48 mx-auto rounded-xl" />
-                  ) : (setupQuery.data as any)?.qrCode ? (
-                    <img src={(setupQuery.data as any).qrCode} alt="2FA QR Code" className="mx-auto rounded-xl" />
+                  ) : (setupQuery.data as any)?.qrDataUrl ? (
+                    <img src={(setupQuery.data as any).qrDataUrl} alt="2FA QR Code" className="mx-auto rounded-xl" />
                   ) : (
                     <div className="h-48 w-48 mx-auto rounded-xl bg-slate-600/50 flex items-center justify-center">
                       <QrCode className="w-16 h-16 text-slate-500" />

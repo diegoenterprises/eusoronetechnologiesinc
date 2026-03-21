@@ -36,6 +36,7 @@ import {
   vesselShipments, vessels, ports, shippingContainers, containerTracking, vesselShipmentEvents,
   vesselISPSRecords, vesselInspections,
   intermodalShipments, intermodalSegments,
+  hosState, hosLogs, fsmaTempLogs, bridgeClearanceChecks, mfaTokens,
 } from "../../drizzle/schema";
 import { eq, and, desc, like, sql, count, gte, lte, or, inArray } from "drizzle-orm";
 
@@ -75,7 +76,7 @@ const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".next", "__pycache__
 
 function createEusoTripMcpServer(): McpServer {
   const mcp = new McpServer(
-    { name: "EusoTrip Platform", version: "3.0.0" },
+    { name: "EusoTrip Platform", version: "5.0.0" },
     {
       capabilities: {
         tools: {},
@@ -2140,7 +2141,28 @@ PHASE 6 — OPERATIONAL INTELLIGENCE (MCP v3.0):
 - Certifications: CDL, hazmat, TWIC, medical card expiry tracking
 - Zeun Maintenance: mechanic module powered by Viga photo AI + Gemini diagnostics
 
-MCP TOOLS (45 total): search_loads, get_load_details, list_users, get_user_details, search_companies, fmcsa_carrier_safety, platform_analytics, get_platform_fees, accessorial_stats, search_pricebook, fsc_schedules, portal_tokens, portal_audit, credit_check, factoring_overview, list_directory, read_file, search_code, get_file_tree, run_sql_query, search_drivers, list_vehicles, dispatch_board, settlement_overview, list_agreements, wallet_overview, messaging_overview, notification_history, list_experiments, blockchain_audit, adr_compliance, imdg_compliance, autonomous_fleet, list_tenants, tenant_branding, hos_status, carrier_scorecard, safety_incidents, escort_overview, allocation_tracker, compliance_overview, eld_fleet_status, inspection_records, certifications_status, zeun_maintenance`,
+PHASE 7 — CROSS-BORDER OPERATIONS (MCP v4.0):
+- Mexican Import Compliance: RFC, Padron, Agente Aduanal, Carta Porte, NOM checks
+- Mexican Tax Estimation: IGI duty, IVA, DTA, IEPS with USMCA/IMMEX exemptions
+- VUCEM Portal: Digital trade procedures by authority (COFEPRIS, SEMARNAT, etc.)
+- NOM Standards: Official Mexican standards lookup by sector
+- MX Border Crossings: Infrastructure, capacity, hours for US-MX crossings
+- Canadian Compliance: Provincial weights, TDG, CBSA docs, permits
+- USMCA/T-MEC: Rules of origin, certificate requirements, duty savings
+- Trusted Programs: FAST, SENTRI, NEXUS, C-TPAT, PIP, NEEC with time savings
+- Vertical Pricing: Multi-modal freight quoting with cross-border premiums (USD/CAD/MXN)
+- HOS Comparison: US/CA/MX hours-of-service rule comparison
+- Currency Conversion: Live USD/CAD/MXN exchange rates
+
+PHASE 8 — P0 SAFETY & COMPLIANCE (MCP v5.0):
+- HOS Persistence: DB-backed state + immutable audit logs per 49 CFR 395.8 (no more in-memory loss on restart)
+- HOS Timezone: driver-specific timezone support, no hardcoded Central
+- FSMA Food Safety: temperature logging with FDA excursion detection per 21 CFR 1.908
+- Bridge Clearance: vehicle height vs bridge clearance validation per 23 CFR 650
+- 2FA/MFA: TOTP setup/verify with backup codes for platform security
+- Transport Mode Guards: ctx.user enriched with transportModes from DB for rail/vessel access control
+
+MCP TOOLS (74 total): search_loads, get_load_details, list_users, get_user_details, search_companies, fmcsa_carrier_safety, platform_analytics, get_platform_fees, accessorial_stats, search_pricebook, fsc_schedules, portal_tokens, portal_audit, credit_check, factoring_overview, list_directory, read_file, search_code, get_file_tree, run_sql_query, search_drivers, list_vehicles, dispatch_board, settlement_overview, list_agreements, wallet_overview, messaging_overview, notification_history, list_experiments, blockchain_audit, adr_compliance, imdg_compliance, autonomous_fleet, list_tenants, tenant_branding, hos_status, carrier_scorecard, safety_incidents, escort_overview, allocation_tracker, compliance_overview, eld_fleet_status, inspection_records, certifications_status, zeun_maintenance, cross_border_mx_compliance, cross_border_mx_taxes, cross_border_vucem, cross_border_nom, cross_border_mx_crossings, cross_border_ca_compliance, cross_border_usmca, cross_border_trusted_programs, cross_border_pricing, cross_border_base_rates, cross_border_surcharges, cross_border_hos, cross_border_currency, hos_audit_logs, fsma_compliance, bridge_clearance, mfa_status`,
       }],
     })
   );
@@ -2519,6 +2541,490 @@ Format as a professional business report with sections, key metrics, trends, and
     }
   );
 
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PHASE 7 — CROSS-BORDER OPERATIONS TOOLS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // TOOL: cross_border_compliance — Mexican import compliance check
+  mcp.tool(
+    "cross_border_mx_compliance",
+    "Check Mexican import compliance. Verifies RFC, Padron de Importadores, Agente Aduanal, Carta Porte, NOM certification, and USMCA eligibility for a given product type.",
+    {
+      hasRFC: z.boolean().describe("Does the importer have a valid RFC (tax ID)?"),
+      hasPadronImportadores: z.boolean().describe("Is the importer registered in Padron de Importadores?"),
+      hasAgenteAduanal: z.boolean().describe("Is a licensed customs broker (Agente Aduanal) assigned?"),
+      hasCartaPorte: z.boolean().describe("Has a Carta Porte CFDI been generated?"),
+      productType: z.string().describe("Product type (e.g. electronics, food, chemicals, textiles, automotive, pharmaceutical)"),
+      hasNOMCert: z.boolean().optional().describe("Has applicable NOM certification?"),
+      isUSMCA: z.boolean().optional().describe("Is this a USMCA/T-MEC origin shipment?"),
+      hasOriginCert: z.boolean().optional().describe("Has certificate of origin?"),
+    },
+    async ({ hasRFC, hasPadronImportadores, hasAgenteAduanal, hasCartaPorte, productType, hasNOMCert, isUSMCA, hasOriginCert }) => {
+      try {
+        const { checkMexicanImportCompliance } = await import("./mexicanDeepDive");
+        const result = checkMexicanImportCompliance({
+          hasRFC, hasPadronImportadores, hasAgenteAduanal, hasCartaPorte, productType,
+          hasNOMCert: hasNOMCert ?? false, isUSMCA: isUSMCA ?? false, hasOriginCert: hasOriginCert ?? false,
+        });
+        return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `MX compliance error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_mx_taxes — estimate Mexican import duties and taxes
+  mcp.tool(
+    "cross_border_mx_taxes",
+    "Estimate Mexican import taxes (IGI duty, IVA 16%, DTA 0.8%, optional IEPS) for a given customs value. Supports USMCA and IMMEX exemptions.",
+    {
+      customsValueUSD: z.number().describe("Customs value in USD"),
+      htsRate: z.number().describe("HTS tariff rate as decimal (e.g. 0.05 for 5%)"),
+      isUSMCA: z.boolean().optional().describe("USMCA/T-MEC origin (duty exemption)"),
+      isIMMEX: z.boolean().optional().describe("IMMEX/maquiladora program (IVA deferral)"),
+      hasIEPS: z.boolean().optional().describe("Subject to IEPS excise tax?"),
+      iepsRate: z.number().optional().describe("IEPS rate as decimal if applicable"),
+    },
+    async ({ customsValueUSD, htsRate, isUSMCA, isIMMEX, hasIEPS, iepsRate }) => {
+      try {
+        const { estimateMexicanImportTaxes } = await import("./mexicanDeepDive");
+        const result = estimateMexicanImportTaxes({
+          customsValueUSD, htsRate,
+          isUSMCA: isUSMCA ?? false, isIMMEX: isIMMEX ?? false,
+          hasIEPS: hasIEPS ?? false, iepsRate: iepsRate ?? 0,
+        });
+        return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `MX tax estimate error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_vucem — VUCEM portal procedures
+  mcp.tool(
+    "cross_border_vucem",
+    "Get VUCEM (Ventanilla Unica de Comercio Exterior Mexicano) digital trade procedures. Filter by authority (COFEPRIS, SEMARNAT, SENASICA, SE, SAT, SEDENA).",
+    {
+      authority: z.string().optional().describe("Filter by Mexican authority (e.g. COFEPRIS, SEMARNAT, SENASICA, SE, SAT, SEDENA)"),
+    },
+    async ({ authority }) => {
+      try {
+        const { getVUCEMProcedures } = await import("./mexicanDeepDive");
+        const result = getVUCEMProcedures(authority);
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: result.length, procedures: result }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `VUCEM error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_nom — NOM standards lookup
+  mcp.tool(
+    "cross_border_nom",
+    "Look up Mexican NOM (Norma Oficial Mexicana) standards by sector. Returns standard ID, description, and applicable products.",
+    {
+      sector: z.string().optional().describe("Filter by sector (e.g. electronics, food, chemicals, textiles, automotive, pharmaceutical)"),
+    },
+    async ({ sector }) => {
+      try {
+        const { getNOMStandards } = await import("./mexicanDeepDive");
+        const result = getNOMStandards(sector);
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: result.length, standards: result }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `NOM error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_mx_crossings — Mexican border crossing info
+  mcp.tool(
+    "cross_border_mx_crossings",
+    "Get information on major US-Mexico border crossings including location, capacity, hours, and commercial capabilities. Filter by Mexican state or crossing type.",
+    {
+      state: z.string().optional().describe("Filter by Mexican state (e.g. Tamaulipas, Chihuahua, Sonora, Baja California)"),
+      type: z.string().optional().describe("Filter by type (e.g. COMMERCIAL, PASSENGER, RAIL)"),
+      minCapacity: z.number().optional().describe("Minimum daily truck capacity"),
+    },
+    async ({ state, type, minCapacity }) => {
+      try {
+        const { getMXBorderCrossings } = await import("./mexicanDeepDive");
+        const result = getMXBorderCrossings({ state, type, minCapacity });
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: result.length, crossings: result }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `MX crossings error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_canadian_compliance — Canadian compliance check
+  mcp.tool(
+    "cross_border_ca_compliance",
+    "Run a full Canadian compliance check for a cross-border shipment. Checks provincial weight limits, TDG dangerous goods, CBSA document requirements, and provincial permits.",
+    {
+      province: z.string().describe("Canadian province code (e.g. ON, QC, BC, AB)"),
+      gvwKg: z.number().describe("Gross vehicle weight in kg"),
+      hasHazmat: z.boolean().optional().describe("Is the load hazmat/TDG regulated?"),
+      tdgClass: z.string().optional().describe("TDG class if hazmat (e.g. 3, 2.1, 6.1)"),
+    },
+    async ({ province, gvwKg, hasHazmat, tdgClass }) => {
+      try {
+        const { runFullCanadianComplianceCheck } = await import("./canadianCompliance");
+        const result = runFullCanadianComplianceCheck({
+          province: province as any,
+          gvwKg,
+          hasHazmat: hasHazmat ?? false,
+          tdgClass,
+        });
+        return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `CA compliance error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_usmca — USMCA/T-MEC eligibility check
+  mcp.tool(
+    "cross_border_usmca",
+    "Check USMCA/T-MEC eligibility for a product. Returns rules of origin, certificate requirements, and duty savings estimate.",
+    {
+      htsCode: z.string().optional().describe("HTS tariff code"),
+      productCategory: z.string().optional().describe("Product category"),
+    },
+    async ({ htsCode, productCategory }) => {
+      try {
+        const { getUSMCAOriginRules, getUSMCACertificateRequirements } = await import("./crossBorderHardening");
+        const rules = getUSMCAOriginRules();
+        const certReqs = getUSMCACertificateRequirements();
+        return { content: [{ type: "text" as const, text: JSON.stringify({ originRules: rules, certificateRequirements: certReqs }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `USMCA error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_trusted_programs — FAST/SENTRI/NEXUS/C-TPAT programs
+  mcp.tool(
+    "cross_border_trusted_programs",
+    "Get information on trusted traveler/shipper programs (FAST, SENTRI, NEXUS, C-TPAT, PIP, NEEC, AEO). Shows eligibility criteria, benefits, and estimated border time savings.",
+    {
+      programId: z.string().optional().describe("Specific program ID for time savings estimate"),
+    },
+    async ({ programId }) => {
+      try {
+        const { getTrustedPrograms, estimateBorderTimeSavings } = await import("./crossBorderHardening");
+        const programs = getTrustedPrograms();
+        let timeSavings = null;
+        if (programId) timeSavings = estimateBorderTimeSavings(programId);
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: programs.length, programs, timeSavings }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Trusted programs error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_pricing — generate freight quote with cross-border premiums
+  mcp.tool(
+    "cross_border_pricing",
+    "Generate a freight quote with mode-specific rates, surcharges, and cross-border premiums. Supports TRUCK/RAIL/VESSEL modes in USD/CAD/MXN.",
+    {
+      mode: z.enum(["TRUCK", "RAIL", "VESSEL"]).describe("Transport mode"),
+      rateId: z.string().describe("Base rate ID (e.g. TR-DRY-MI, RL-INTER-CTR, VS-FCL-40)"),
+      quantity: z.number().describe("Quantity (miles, containers, tons, etc.)"),
+      distance: z.number().optional().describe("Distance in miles/km (for per-mile/km rates)"),
+      surchargeIds: z.array(z.string()).optional().describe("Surcharge IDs to apply (e.g. SC-FSC, SC-XBORDER, SC-HAZ)"),
+      crossBorder: z.boolean().optional().describe("Is this a cross-border shipment?"),
+      direction: z.string().optional().describe("Cross-border direction (US_TO_CA, CA_TO_US, US_TO_MX, MX_TO_US)"),
+      currency: z.enum(["USD", "CAD", "MXN"]).optional().describe("Quote currency (default USD)"),
+    },
+    async ({ mode, rateId, quantity, distance, surchargeIds, crossBorder, direction, currency }) => {
+      try {
+        const { generateQuote } = await import("./verticalPricingEngine");
+        const result = generateQuote({
+          mode, rateId, quantity, distance,
+          surchargeIds: surchargeIds || [],
+          crossBorder: crossBorder ?? false,
+          direction,
+          currency: currency ?? "USD",
+        });
+        return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Pricing error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_base_rates — list available freight rates
+  mcp.tool(
+    "cross_border_base_rates",
+    "List all available freight base rates across TRUCK, RAIL, and VESSEL modes. Filter by mode or currency. Shows rate ID, unit, base rate, and conditions.",
+    {
+      mode: z.enum(["TRUCK", "RAIL", "VESSEL"]).optional().describe("Filter by transport mode"),
+      currency: z.enum(["USD", "CAD", "MXN"]).optional().describe("Filter by currency"),
+    },
+    async ({ mode, currency }) => {
+      try {
+        const { getBaseRates } = await import("./verticalPricingEngine");
+        const result = getBaseRates({ mode: mode as any, currency: currency as any });
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: result.length, rates: result }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Base rates error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_surcharges — list freight surcharges and accessorials
+  mcp.tool(
+    "cross_border_surcharges",
+    "List all freight surcharges and accessorials (fuel, cross-border, equipment, handling, hazmat, specialty). Filter by mode or category.",
+    {
+      mode: z.enum(["TRUCK", "RAIL", "VESSEL"]).optional().describe("Filter by applicable mode"),
+      category: z.string().optional().describe("Filter by category keyword (e.g. fuel, hazmat, cross-border, detention, drayage)"),
+    },
+    async ({ mode, category }) => {
+      try {
+        const { getSurcharges } = await import("./verticalPricingEngine");
+        const result = getSurcharges({ mode: mode as any, category });
+        return { content: [{ type: "text" as const, text: JSON.stringify({ count: result.length, surcharges: result }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Surcharges error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_hos — get HOS rules for US/CA/MX
+  mcp.tool(
+    "cross_border_hos",
+    "Get Hours of Service rules for US (49 CFR 395), Canada (SOR/2005-313), and Mexico (NOM-087-SCT). Compare rules across jurisdictions and check border transition requirements.",
+    {
+      country: z.enum(["US", "CA", "MX"]).optional().describe("Specific country HOS rules"),
+    },
+    async ({ country }) => {
+      try {
+        const { getHOSRuleSummary } = await import("./hosBorderTransition");
+        if (country) {
+          const rules = getHOSRuleSummary(country as any);
+          return { content: [{ type: "text" as const, text: JSON.stringify({ country, rules }, null, 2) }] };
+        }
+        const us = getHOSRuleSummary("US");
+        const ca = getHOSRuleSummary("CA");
+        const mx = getHOSRuleSummary("MX");
+        return { content: [{ type: "text" as const, text: JSON.stringify({ comparison: { US: us, CA: ca, MX: mx } }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `HOS rules error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: cross_border_currency — convert currencies
+  mcp.tool(
+    "cross_border_currency",
+    "Convert between USD, CAD, and MXN. Uses live exchange rates with fallback to cached rates.",
+    {
+      amount: z.number().describe("Amount to convert"),
+      from: z.enum(["USD", "CAD", "MXN"]).describe("Source currency"),
+      to: z.enum(["USD", "CAD", "MXN"]).describe("Target currency"),
+    },
+    async ({ amount, from, to }) => {
+      try {
+        const { convertCurrency, formatCurrency } = await import("./currencyEngine");
+        const converted = await convertCurrency(amount, from as any, to as any);
+        return { content: [{ type: "text" as const, text: JSON.stringify({ original: { amount, currency: from }, converted: { amount: converted, currency: to, formatted: formatCurrency(converted, to as any) } }, null, 2) }] };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Currency error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PHASE 8 — P0 SAFETY & COMPLIANCE TOOLS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // TOOL: hos_audit_logs — immutable HOS audit trail per 49 CFR 395.8
+  mcp.tool(
+    "hos_audit_logs",
+    "Query the immutable HOS audit log for a driver. Shows every status change, violation, break, and reset event with timestamps, location, odometer, and engine hours. Required for 49 CFR 395.8 recordkeeping.",
+    {
+      userId: z.number().describe("Driver user ID"),
+      eventType: z.string().optional().describe("Filter by event type: status_change, violation, break_start, break_end, reset, cycle_restart, edit, annotation"),
+      limit: z.number().optional().default(50).describe("Max results (default 50)"),
+    },
+    async ({ userId, eventType, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [eq(hosLogs.userId, userId)];
+        if (eventType) conditions.push(eq(hosLogs.eventType, eventType as any));
+        const logs = await db.select().from(hosLogs)
+          .where(and(...conditions))
+          .orderBy(desc(hosLogs.createdAt))
+          .limit(limit || 50);
+        const [state] = await db.select().from(hosState).where(eq(hosState.userId, userId)).limit(1);
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              userId,
+              currentState: state || null,
+              logCount: logs.length,
+              logs,
+            }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `HOS audit error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: fsma_compliance — FSMA food safety temperature logs & excursions
+  mcp.tool(
+    "fsma_compliance",
+    "Query FSMA (Food Safety Modernization Act) temperature logs for refrigerated/food-grade loads. Shows temperature readings, excursion events, set points, and compliance status per 21 CFR 1.908.",
+    {
+      loadId: z.number().optional().describe("Filter by load ID"),
+      excursionsOnly: z.boolean().optional().describe("Show only temperature excursion events"),
+      limit: z.number().optional().default(50).describe("Max results (default 50)"),
+    },
+    async ({ loadId, excursionsOnly, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (loadId) conditions.push(eq(fsmaTempLogs.loadId, loadId));
+        if (excursionsOnly) conditions.push(eq(fsmaTempLogs.isExcursion, true));
+        const logs = await db.select().from(fsmaTempLogs)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(fsmaTempLogs.createdAt))
+          .limit(limit || 50);
+        const [stats] = await db.select({
+          totalReadings: sql<number>`COUNT(*)`,
+          excursions: sql<number>`SUM(CASE WHEN isExcursion = 1 THEN 1 ELSE 0 END)`,
+          avgTemp: sql<number>`COALESCE(AVG(CAST(temperature AS DECIMAL)), 0)`,
+          minTemp: sql<number>`COALESCE(MIN(CAST(temperature AS DECIMAL)), 0)`,
+          maxTemp: sql<number>`COALESCE(MAX(CAST(temperature AS DECIMAL)), 0)`,
+        }).from(fsmaTempLogs)
+          .where(loadId ? eq(fsmaTempLogs.loadId, loadId) : undefined);
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              summary: {
+                totalReadings: stats?.totalReadings || 0,
+                excursions: stats?.excursions || 0,
+                avgTemp: Math.round((stats?.avgTemp || 0) * 10) / 10,
+                minTemp: stats?.minTemp || 0,
+                maxTemp: stats?.maxTemp || 0,
+              },
+              returned: logs.length,
+              logs,
+            }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `FSMA error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: bridge_clearance — bridge clearance checks for oversized loads
+  mcp.tool(
+    "bridge_clearance",
+    "Query bridge clearance validation results for loads. Shows bridge height checks, warnings, blocks, and overrides per 23 CFR 650. Critical for oversize/overheight loads.",
+    {
+      loadId: z.number().optional().describe("Filter by load ID"),
+      status: z.string().optional().describe("Filter by status: clear, warning, blocked, override"),
+      limit: z.number().optional().default(30).describe("Max results (default 30)"),
+    },
+    async ({ loadId, status, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (loadId) conditions.push(eq(bridgeClearanceChecks.loadId, loadId));
+        if (status) conditions.push(eq(bridgeClearanceChecks.status, status as any));
+        const checks = await db.select().from(bridgeClearanceChecks)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(bridgeClearanceChecks.checkedAt))
+          .limit(limit || 30);
+        const [stats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+          clear: sql<number>`SUM(CASE WHEN status = 'clear' THEN 1 ELSE 0 END)`,
+          warnings: sql<number>`SUM(CASE WHEN status = 'warning' THEN 1 ELSE 0 END)`,
+          blocked: sql<number>`SUM(CASE WHEN status = 'blocked' THEN 1 ELSE 0 END)`,
+          overrides: sql<number>`SUM(CASE WHEN status = 'override' THEN 1 ELSE 0 END)`,
+        }).from(bridgeClearanceChecks)
+          .where(loadId ? eq(bridgeClearanceChecks.loadId, loadId) : undefined);
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              summary: stats,
+              returned: checks.length,
+              checks,
+            }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `Bridge clearance error: ${e.message}` }] };
+      }
+    }
+  );
+
+  // TOOL: mfa_status — 2FA/MFA enrollment status
+  mcp.tool(
+    "mfa_status",
+    "Query MFA (Multi-Factor Authentication) enrollment status across the platform. Shows which users have TOTP/SMS/email MFA enabled, method types, and last usage.",
+    {
+      userId: z.number().optional().describe("Check MFA status for a specific user ID"),
+      enabledOnly: z.boolean().optional().describe("Only show users with MFA enabled"),
+      limit: z.number().optional().default(25).describe("Max results (default 25)"),
+    },
+    async ({ userId, enabledOnly, limit }) => {
+      const db = await getDb();
+      if (!db) return { content: [{ type: "text" as const, text: "Database unavailable" }] };
+      try {
+        const conditions: any[] = [];
+        if (userId) conditions.push(eq(mfaTokens.userId, userId));
+        if (enabledOnly) conditions.push(eq(mfaTokens.isEnabled, true));
+        const tokens = await db.select({
+          id: mfaTokens.id,
+          userId: mfaTokens.userId,
+          method: mfaTokens.method,
+          isEnabled: mfaTokens.isEnabled,
+          lastUsedAt: mfaTokens.lastUsedAt,
+          createdAt: mfaTokens.createdAt,
+        }).from(mfaTokens)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(mfaTokens.createdAt))
+          .limit(limit || 25);
+        const [stats] = await db.select({
+          totalEnrolled: sql<number>`COUNT(*)`,
+          enabled: sql<number>`SUM(CASE WHEN isEnabled = 1 THEN 1 ELSE 0 END)`,
+          totp: sql<number>`SUM(CASE WHEN method = 'totp' THEN 1 ELSE 0 END)`,
+          sms: sql<number>`SUM(CASE WHEN method = 'sms' THEN 1 ELSE 0 END)`,
+          email: sql<number>`SUM(CASE WHEN method = 'email' THEN 1 ELSE 0 END)`,
+        }).from(mfaTokens);
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              platformMFA: {
+                totalEnrolled: stats?.totalEnrolled || 0,
+                enabled: stats?.enabled || 0,
+                byMethod: { totp: stats?.totp || 0, sms: stats?.sms || 0, email: stats?.email || 0 },
+              },
+              returned: tokens.length,
+              tokens,
+            }, null, 2),
+          }],
+        };
+      } catch (e: any) {
+        return { content: [{ type: "text" as const, text: `MFA status error: ${e.message}` }] };
+      }
+    }
+  );
+
   return mcp;
 }
 
@@ -2545,13 +3051,18 @@ export function mountMcpServer(app: Express): void {
     }
   });
 
-  app.get("/api/mcp", async (req: Request, res: Response) => {
-    try {
-      await handleMcpRequest(req, res);
-    } catch (e: any) {
-      logger.error("[MCP] GET error:", e?.message);
-      if (!res.headersSent) res.status(500).json({ error: "MCP server error" });
-    }
+  app.get("/api/mcp", (_req: Request, res: Response) => {
+    res.status(200).json({
+      jsonrpc: "2.0",
+      result: {
+        server: "EusoTrip Platform",
+        version: "5.0.0",
+        status: "ok",
+        tools: 74,
+        transport: "streamable-http",
+        endpoint: "POST /api/mcp",
+      },
+    });
   });
 
   app.delete("/api/mcp", (_req: Request, res: Response) => {

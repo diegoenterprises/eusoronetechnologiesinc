@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import DatePicker from "@/components/DatePicker";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { EUSOTRIP_LOGO_BASE64 } from "@/lib/logoBase64";
+import useLocale from "@/hooks/useLocale";
 
 type WalletTab = "overview" | "invoices" | "send" | "cards" | "bank" | "escrow" | "history" | "terminal" | "eusoticket";
 
@@ -41,6 +42,7 @@ export default function Wallet() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const { user } = useAuth();
+  const { t, formatCurrency } = useLocale();
   const [activeTab, setActiveTab] = useState<WalletTab>("overview");
   const [historyFilter, setHistoryFilter] = useState("all");
   const [showBalance, setShowBalance] = useState(true);
@@ -604,26 +606,26 @@ export default function Wallet() {
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isLight ? 'bg-gradient-to-br from-purple-100 to-pink-100' : 'bg-white/10 backdrop-blur'}`}>
                 <WalletIcon className={`w-5 h-5 ${isLight ? 'text-slate-800' : 'text-white'}`} />
               </div>
-              <span className={`font-semibold text-lg ${isLight ? 'text-slate-800' : 'text-white/90'}`}>EusoWallet</span>
+              <span className={`font-semibold text-lg ${isLight ? 'text-slate-800' : 'text-white/90'}`}>{t('wallet.title')}</span>
             </div>
             <button onClick={() => setShowBalance(!showBalance)} className={`${isLight ? 'text-slate-400 hover:text-slate-600' : 'text-white/50 hover:text-white'} transition-colors`}>
               {showBalance ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
             </button>
           </div>
           <div className="mb-6">
-            <p className={`text-sm mb-1 ${isLight ? 'text-slate-500' : 'text-white/60'}`}>Available Balance</p>
+            <p className={`text-sm mb-1 ${isLight ? 'text-slate-500' : 'text-white/60'}`}>{t('wallet.availableBalance')}</p>
             {balanceQuery.isLoading ? <Skeleton className={`h-12 w-48 rounded-2xl ${isLight ? 'bg-slate-200' : 'bg-white/20'}`} /> : (
               <p className={`text-4xl md:text-5xl font-bold tracking-tight ${isLight ? 'bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent' : 'text-white'}`}>
-                {showBalance ? `$${(balance?.available || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '••••••'}
+                {showBalance ? formatCurrency(balance?.available || 0) : '••••••'}
               </p>
             )}
           </div>
           {/* Sub-stat boxes */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Pending", value: balance?.pending || 0 },
-              { label: "In Escrow", value: balance?.escrow || 0 },
-              { label: "This Month", value: balance?.monthVolume || 0 },
+              { label: t('wallet.pendingBalance', 'Pending'), value: balance?.pending || 0 },
+              { label: t('wallet.inEscrow', 'In Escrow'), value: balance?.escrow || 0 },
+              { label: t('wallet.thisMonth', 'This Month'), value: balance?.monthVolume || 0 },
             ].map((box) => (
               <div
                 key={box.label}
@@ -631,7 +633,7 @@ export default function Wallet() {
               >
                 <p className={`text-sm font-semibold tracking-wide ${isLight ? 'text-slate-700' : 'text-white/80'}`}>{box.label}</p>
                 <p className={`font-bold text-xl mt-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                  {showBalance ? `$${box.value.toLocaleString()}` : '••••'}
+                  {showBalance ? formatCurrency(box.value) : '••••'}
                 </p>
               </div>
             ))}
@@ -652,7 +654,7 @@ export default function Wallet() {
                   <div key={box.label} className="text-center">
                     <p className={`text-[10px] ${isLight ? 'text-emerald-600' : 'text-emerald-500/80'}`}>{box.label}</p>
                     <p className={`font-bold text-sm ${isLight ? 'text-emerald-800' : 'text-emerald-300'}`}>
-                      {showBalance ? `$${box.value.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '••••'}
+                      {showBalance ? formatCurrency(box.value) : '••••'}
                     </p>
                   </div>
                 ))}
