@@ -3495,4 +3495,104 @@ export const crossBorderRouter = router({
       const validation = await validateCAAT((vehicle as any).vin || '', input.hazmatClass);
       return { required: true, reason: requirement.reason, validation };
     }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MX TAX CALCULATION
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  calculateMXTaxes: protectedProcedure
+    .input(z.object({
+      baseRateUSD: z.number().positive(),
+      exchangeRate: z.number().positive().optional(),
+      isPersonaFisica: z.boolean().optional(),
+      isHazmat: z.boolean().optional(),
+      isFuel: z.boolean().optional(),
+    }))
+    .query(({ input }) => {
+      const { calculateMXTaxes } = require("../services/mxCrossBorderEnforcement");
+      return calculateMXTaxes(input);
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MX PRE-DISPATCH COMPLIANCE CHECK
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  mxPreDispatchCheck: protectedProcedure
+    .input(z.object({
+      carrierCountry: z.enum(["US", "MX", "CA"]),
+      originCountry: z.enum(["US", "MX", "CA"]),
+      destinationCountry: z.enum(["US", "MX", "CA"]),
+      hasSCTPermit: z.boolean(),
+      hasMexicanInsurance: z.boolean(),
+      baseRateUSD: z.number().optional(),
+      isHazmat: z.boolean().optional(),
+      weightKg: z.number().optional(),
+      axles: z.number().optional(),
+      widthMeters: z.number().optional(),
+      heightMeters: z.number().optional(),
+      cartaPorteFields: z.object({
+        rfcTransportista: z.string().optional(),
+        curpOperador: z.string().optional(),
+        permisoSCT: z.string().optional(),
+        tipoPermisoSCT: z.string().optional(),
+        configVehicular: z.string().optional(),
+        placaVM: z.string().optional(),
+        polizaSeguro: z.string().optional(),
+        claveProdServCP: z.string().optional(),
+        pesoKg: z.number().optional(),
+        origenDestinoFE: z.object({ origen: z.string(), destino: z.string() }).optional(),
+      }).optional(),
+    }))
+    .query(({ input }) => {
+      const { runMXPreDispatchChecks } = require("../services/mxCrossBorderEnforcement");
+      return runMXPreDispatchChecks({
+        ...input,
+        cartaPorteFields: input.cartaPorteFields || undefined,
+      });
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CARTA PORTE VALIDATION
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  validateCartaPorte: protectedProcedure
+    .input(z.object({
+      rfcTransportista: z.string().optional(),
+      curpOperador: z.string().optional(),
+      permisoSCT: z.string().optional(),
+      tipoPermisoSCT: z.string().optional(),
+      configVehicular: z.string().optional(),
+      placaVM: z.string().optional(),
+      polizaSeguro: z.string().optional(),
+      claveProdServCP: z.string().optional(),
+      pesoKg: z.number().optional(),
+      origenDestinoFE: z.object({ origen: z.string(), destino: z.string() }).optional(),
+      hazmat: z.object({
+        claseMaterial: z.string().optional(),
+        unNumber: z.string().optional(),
+        embalaje: z.string().optional(),
+      }).optional(),
+    }))
+    .query(({ input }) => {
+      const { validateCartaPorte } = require("../services/mxCrossBorderEnforcement");
+      return validateCartaPorte(input);
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NOM-012 WEIGHT/DIMENSION CHECK
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  checkNOM012: protectedProcedure
+    .input(z.object({
+      widthMeters: z.number().optional(),
+      heightMeters: z.number().optional(),
+      lengthMeters: z.number().optional(),
+      weightKg: z.number().optional(),
+      axles: z.number().optional(),
+      isArticulated: z.boolean().optional(),
+    }))
+    .query(({ input }) => {
+      const { checkNOM012 } = require("../services/mxCrossBorderEnforcement");
+      return checkNOM012(input);
+    }),
 });

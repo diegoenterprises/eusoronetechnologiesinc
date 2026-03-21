@@ -165,7 +165,7 @@ export const CatalystSourcingWidget: React.FC = () => {
     refetchInterval: 120000,
   });
 
-  const catalysts = catalystsData || [];
+  const catalysts = (Array.isArray(catalystsData) ? catalystsData : catalystsData?.catalysts) || [];
 
   return (
     <ResponsiveWidget>
@@ -270,7 +270,7 @@ export const FuelStationsWidget: React.FC = () => {
     refetchInterval: 300000,
   });
 
-  const stations = stationsData || [];
+  const stations = (Array.isArray(stationsData) ? stationsData : stationsData?.stations) || [];
   const bestPrice = stations.length > 0 ? Math.min(...stations.map((s: any) => s.price)) : 0;
 
   return (
@@ -531,7 +531,7 @@ export const ActiveShipmentsWidget: React.FC = () => {
     refetchInterval: 60000,
   });
 
-  const shipments = shipmentsData || [];
+  const shipments = (Array.isArray(shipmentsData) ? shipmentsData : shipmentsData?.byMonth) || [];
 
   return (
     <ResponsiveWidget>
@@ -647,7 +647,7 @@ export const LiveTrackingWidget: React.FC = () => {
     refetchInterval: 30000,
   });
 
-  const vehicles = (vehiclesData || []) as { id: string; driver: string; status: string; speed: number; lat: number; lng: number }[];
+  const vehicles = ((Array.isArray(vehiclesData) ? vehiclesData : vehiclesData?.vehicles) || []) as { id: string; driver: string; status: string; speed: number; lat: number; lng: number }[];
 
   return (
     <ResponsiveWidget expandThreshold={300}>
@@ -1262,7 +1262,7 @@ export const RoutePermitsWidget: React.FC = () => {
     refetchInterval: 600000,
   });
 
-  const permits = permitsData || [];
+  const permits = (Array.isArray(permitsData) ? permitsData : permitsData?.permits) || [];
 
   return (
     <ResponsiveWidget>
@@ -1349,7 +1349,7 @@ export const CatalystRatingsWidget: React.FC = () => {
     refetchInterval: 300000,
   });
 
-  const catalysts = catalystsData || [];
+  const catalysts = (Array.isArray(catalystsData) ? catalystsData : catalystsData?.catalysts) || [];
 
   return (
     <ResponsiveWidget>
@@ -1687,7 +1687,7 @@ export const DockSchedulingWidget: React.FC = () => {
     refetchInterval: 60000,
   });
 
-  const docks = docksData || [];
+  const docks = (Array.isArray(docksData) ? docksData : docksData?.docks) || [];
 
   return (
     <ResponsiveWidget>
@@ -1856,7 +1856,7 @@ export const FreightQuotesWidget: React.FC = () => {
     refetchInterval: 120000,
   });
 
-  const quotes = quotesData || [];
+  const quotes = (Array.isArray(quotesData) ? quotesData : quotesData?.quotes) || [];
 
   return (
     <ResponsiveWidget>
@@ -1893,7 +1893,7 @@ export const DeliveryExceptionsWidget: React.FC = () => {
     refetchInterval: 120000,
   });
 
-  const exceptions = exceptionsData || [];
+  const exceptions = (Array.isArray(exceptionsData) ? exceptionsData : exceptionsData?.exceptions) || [];
 
   return (
     <ResponsiveWidget>
@@ -2056,7 +2056,7 @@ export const MaintenanceScheduleWidget: React.FC = () => {
     refetchInterval: 300000,
   });
 
-  const maintenance = maintenanceData || [];
+  const maintenance = (Array.isArray(maintenanceData) ? maintenanceData : maintenanceData?.upcoming) || [];
 
   return (
     <ResponsiveWidget>

@@ -505,6 +505,8 @@ export const TRANSITIONS: Transition[] = [
     guards: [
       { type: "data", check: "carrier_hazmat_authorized", errorMessage: "Carrier is not authorized for hazmat transport per FMCSA records" },
       { type: "data", check: "carrier_insurance_minimum", errorMessage: "Carrier insurance does not meet minimum requirements for this load type" },
+      { type: "data", check: "mx_cabotage_check", errorMessage: "Cabotage violation — carrier cannot perform domestic moves in this country" },
+      { type: "data", check: "mx_cross_border_compliance", errorMessage: "Mexico cross-border compliance requirements not met (SCT permit, insurance, or Carta Porte)" },
     ],
     effects: [
       { type: "notification", action: "carrier_accepted", recipients: ["SHIPPER", "BROKER"] },
@@ -560,6 +562,8 @@ export const TRANSITIONS: Transition[] = [
       { type: "hos", check: "driver_has_hours", errorMessage: "Driver does not have sufficient HOS hours" },
       { type: "data", check: "equipment_matches_load", errorMessage: "Assigned vehicle does not match load requirements" },
       { type: "data", check: "commodity_segregation_safe", errorMessage: "Hazmat class conflict — cannot co-load per 49 CFR 177.848" },
+      { type: "data", check: "workers_comp_valid", errorMessage: "Workers' compensation insurance required for operating states" },
+      { type: "data", check: "oversize_dimensions_check", errorMessage: "Oversize/overweight load requires escort vehicles — assign escorts before dispatch" },
     ],
     effects: [
       { type: "notification", action: "driver_assigned", recipients: ["DRIVER"] },
@@ -606,6 +610,7 @@ export const TRANSITIONS: Transition[] = [
       { type: "data", check: "route_state_compliance", errorMessage: "Route passes through state with compliance restriction for this load" },
       // Flatbed/Oversize-specific guards
       { type: "data", check: "oversize_escort_confirmed", errorMessage: "Escort vehicle positioning required for oversized loads" },
+      { type: "data", check: "oversize_travel_window", errorMessage: "OS/OW loads cannot depart during restricted hours/days in this state" },
     ],
     effects: [
       { type: "notification", action: "trip_started", recipients: ["SHIPPER", "CATALYST", "DISPATCH"] },

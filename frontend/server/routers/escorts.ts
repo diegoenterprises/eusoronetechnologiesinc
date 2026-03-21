@@ -1478,4 +1478,58 @@ export const escortsRouter = router({
       await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
       return { success: true, updatedAt: new Date().toISOString() };
     }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // OVERSIZE/OVERWEIGHT ANALYSIS ENDPOINT
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  analyzeOversize: protectedProcedure
+    .input(z.object({
+      widthFt: z.number().optional(),
+      heightFt: z.number().optional(),
+      lengthFt: z.number().optional(),
+      overallLengthFt: z.number().optional(),
+      weightLbs: z.number().optional(),
+      axles: z.number().optional(),
+      routeStates: z.array(z.string()).optional(),
+    }))
+    .query(({ input }) => {
+      const { analyzeLoadDimensions, aggregateMultiStatePermits } = require("../services/oversizeEnforcement");
+      const analysis = analyzeLoadDimensions({
+        widthFt: input.widthFt,
+        heightFt: input.heightFt,
+        lengthFt: input.lengthFt,
+        overallLengthFt: input.overallLengthFt,
+        weightLbs: input.weightLbs,
+        axles: input.axles || 5,
+      }, input.routeStates || []);
+
+      let permitSummary = null;
+      if (input.routeStates && input.routeStates.length > 0 && (analysis.isOversize || analysis.isOverweight)) {
+        permitSummary = aggregateMultiStatePermits({
+          widthFt: input.widthFt,
+          heightFt: input.heightFt,
+          lengthFt: input.lengthFt,
+          overallLengthFt: input.overallLengthFt,
+          weightLbs: input.weightLbs,
+          axles: input.axles || 5,
+        }, input.routeStates);
+      }
+
+      return { ...analysis, permitSummary };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // AXLE WEIGHT CALCULATION ENDPOINT
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  calculateAxleWeights: protectedProcedure
+    .input(z.object({
+      totalWeight: z.number(),
+      axleCount: z.number().min(2).max(11),
+    }))
+    .query(({ input }) => {
+      const { calculateAxleWeights } = require("../services/oversizeEnforcement");
+      return calculateAxleWeights(input.totalWeight, input.axleCount);
+    }),
 });

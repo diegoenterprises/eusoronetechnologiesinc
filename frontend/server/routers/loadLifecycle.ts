@@ -31,6 +31,9 @@ import { loads, vehicles, escortAssignments, settlements, settlementDocuments, w
 import type { Load, User } from "../../drizzle/schema";
 import { eq, and, ne, sql, inArray } from "drizzle-orm";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
+import { analyzeLoadDimensions, checkTravelWindow } from "../services/oversizeEnforcement";
+import { validateWorkersComp } from "../services/workersCompCompliance";
+import { checkCabotage, runMXPreDispatchChecks } from "../services/mxCrossBorderEnforcement";
 
 /** Row shape returned by raw `db.execute(sql`...`)` queries (MySQL2 RowDataPacket). */
 type RawRow = Record<string, unknown>;
@@ -905,11 +908,127 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
       return null;
     }
 
+    // ── Oversize/Overweight auto-detection guard (at CONFIRMED→EN_ROUTE_PICKUP) ──
+    case "oversize_dimensions_check": {
+      const weight = parseFloat(String(ctx.load?.weight || 0));
+      const widthFt = parseFloat(String(ctx.data?.widthFt || ctx.load?.widthFt || 0));
+      const heightFt = parseFloat(String(ctx.data?.heightFt || ctx.load?.heightFt || 0));
+      const lengthFt = parseFloat(String(ctx.data?.lengthFt || ctx.load?.lengthFt || 0));
+      if (!widthFt && !heightFt && !weight) return null; // No dimensions set — skip
+      const analysis = analyzeLoadDimensions({ widthFt, heightFt, lengthFt, weightLbs: weight, axles: ctx.load?.axles || 5 });
+      if (analysis.isOversize || analysis.isOverweight) {
+        // Check escort assignment if required
+        if (analysis.requiresEscort && analysis.escortCount > 0) {
+          const escortCount = ctx.load?.escortCount || 0;
+          if (escortCount < analysis.escortCount) {
+            return `Oversize load requires ${analysis.escortCount} escort(s) but only ${escortCount} assigned. ${analysis.violations.join('; ')}`;
+          }
+        }
+        // Check permit
+        if (analysis.requiresPermit && !ctx.load?.requiresEscort) {
+          logger.warn(`[Guard] OS/OW load ${ctx.load?.id} — permit required: ${analysis.violations.join('; ')}`);
+        }
+      }
+      return null;
+    }
+
+    // ── Travel window enforcement for OS/OW loads ──
+    case "oversize_travel_window": {
+      if (!ctx.load?.requiresEscort && ctx.load?.cargoType !== "oversized") return null;
+      const originState = ctx.load?.pickupLocation?.state || ctx.load?.originState;
+      if (!originState) return null;
+      const travelCheck = checkTravelWindow(originState, new Date(), true, false);
+      if (!travelCheck.allowed) {
+        return `${travelCheck.reason}${travelCheck.nextAllowedWindow ? ` — next window: ${travelCheck.nextAllowedWindow}` : ''}`;
+      }
+      return null;
+    }
+
+    // ── Workers' compensation insurance guard (at ACCEPTED→ASSIGNED) ──
+    case "workers_comp_valid": {
+      const wcCarrierId = ctx.load?.catalystId || (ctx.data?.carrierId as number | undefined);
+      if (!wcCarrierId) return null;
+      try {
+        const db = await getDb();
+        if (!db) return null;
+        const [wcResult] = await db.execute(sql`
+          SELECT COUNT(*) as cnt FROM insurance_policies
+          WHERE companyId IN (SELECT companyId FROM users WHERE id = ${wcCarrierId})
+            AND policyType = 'workers_compensation'
+            AND status = 'active'
+            AND expirationDate > NOW()
+        `) as unknown as RawQueryResult;
+        const hasWC = ((wcResult || [])[0] as RawRow)?.cnt as number > 0;
+        // Get operating states from load
+        const originState = ctx.load?.pickupLocation?.state || ctx.load?.originState || '';
+        const destState = ctx.load?.deliveryLocation?.state || ctx.load?.destState || '';
+        const states = [originState, destState].filter(Boolean);
+        if (states.length === 0) return null;
+        const wcValidation = validateWorkersComp({
+          hasWCPolicy: hasWC,
+          wcPolicyExpired: false,
+          isOwnerOperator: false, // Default — would need carrier profile data
+          employeeCount: 5, // Default assumption
+          operatingStates: states,
+        });
+        if (!wcValidation.compliant) {
+          return wcValidation.errors[0]; // Return first error
+        }
+        return null;
+      } catch {
+        return null; // Don't block on WC check failure
+      }
+    }
+
+    // ── Mexico cross-border cabotage guard ──
+    case "mx_cabotage_check": {
+      const originCountry = detectCountry(ctx.load?.pickupLocation?.state);
+      const destCountry = detectCountry(ctx.load?.deliveryLocation?.state);
+      if (originCountry === "US" && destCountry === "US") return null; // Domestic US — skip
+      const carrierCountry = (ctx.data?.carrierCountry as string) || "US";
+      const cabotageResult = checkCabotage({
+        carrierCountry: carrierCountry as "US" | "MX" | "CA",
+        originCountry: originCountry as "US" | "MX" | "CA",
+        destinationCountry: destCountry as "US" | "MX" | "CA",
+      });
+      return cabotageResult.allowed ? null : cabotageResult.reason!;
+    }
+
+    // ── Mexico SCT permit + insurance guard ──
+    case "mx_cross_border_compliance": {
+      const mxOriginCountry = detectCountry(ctx.load?.pickupLocation?.state);
+      const mxDestCountry = detectCountry(ctx.load?.deliveryLocation?.state);
+      if (mxOriginCountry !== "MX" && mxDestCountry !== "MX") return null; // Not MX — skip
+      const mxResult = runMXPreDispatchChecks({
+        carrierCountry: ((ctx.data?.carrierCountry as string) || "US") as "US" | "MX" | "CA",
+        originCountry: mxOriginCountry as "US" | "MX" | "CA",
+        destinationCountry: mxDestCountry as "US" | "MX" | "CA",
+        hasSCTPermit: !!(ctx.data?.hasSCTPermit || ctx.complianceChecks?.sctPermitValid),
+        hasMexicanInsurance: !!(ctx.data?.hasMexicanInsurance || ctx.complianceChecks?.mexicanInsuranceValid),
+        isHazmat: !!(ctx.load?.hazmatClass || ctx.load?.cargoType === "hazmat"),
+        baseRateUSD: parseFloat(String(ctx.load?.rate || 0)),
+      });
+      if (!mxResult.cleared) {
+        return mxResult.blockers.join(' | ');
+      }
+      return null;
+    }
+
     default:
       // In production, unknown guards block to prevent unchecked transitions
       logger.warn(`[Guard] Unknown guard check: ${guard.check}`);
       return IS_PROD ? guard.errorMessage : null;
   }
+}
+
+/** Detect country from US state code or MX state code */
+function detectCountry(stateCode?: string): string {
+  if (!stateCode) return "US";
+  const MX_STATES = ["AGU","BCN","BCS","CAM","CHP","CHH","COA","COL","DUR","GUA","GRO","HID","JAL","MEX","MIC","MOR","NAY","NLE","OAX","PUE","QUE","ROO","SLP","SIN","SON","TAB","TAM","TLA","VER","YUC","ZAC","CMX"];
+  const CA_PROVINCES = ["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"];
+  if (MX_STATES.includes(stateCode.toUpperCase())) return "MX";
+  if (CA_PROVINCES.includes(stateCode.toUpperCase())) return "CA";
+  return "US";
 }
 
 /** Parse lat/lng from a location object (handles various DB shapes) */

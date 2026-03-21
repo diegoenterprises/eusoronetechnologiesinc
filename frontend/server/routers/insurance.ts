@@ -1390,4 +1390,48 @@ export const insuranceRouter = router({
         return { compliant: false, deficiencies: [(error as Error)?.message || "Check failed"], requiredLiability: 0, currentLiability: 0 };
       }
     }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // WORKERS' COMPENSATION COMPLIANCE CHECK
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  checkWorkersComp: protectedProcedure
+    .input(z.object({
+      operatingStates: z.array(z.string()),
+      isOwnerOperator: z.boolean().default(false),
+      employeeCount: z.number().default(1),
+    }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const db = await getDb();
+        if (!db) return { compliant: false, errors: ["Database unavailable"], warnings: [], stateDetails: [] };
+        const companyId = ctx.user?.companyId;
+        if (!companyId) return { compliant: false, errors: ["No company associated"], warnings: [], stateDetails: [] };
+
+        // Check for active WC policy
+        const wcPolicies = await db.select().from(insurancePolicies)
+          .where(and(
+            eq(insurancePolicies.companyId, companyId),
+            eq(insurancePolicies.policyType, "workers_compensation"),
+            eq(insurancePolicies.status, "active")
+          ));
+
+        const hasWC = wcPolicies.length > 0;
+        const wcExpired = wcPolicies.length > 0 && wcPolicies.every(p =>
+          p.expirationDate && new Date(p.expirationDate) < new Date()
+        );
+
+        const { validateWorkersComp } = await import("../services/workersCompCompliance");
+        return validateWorkersComp({
+          hasWCPolicy: hasWC,
+          wcPolicyExpired: wcExpired,
+          isOwnerOperator: input.isOwnerOperator,
+          employeeCount: input.employeeCount,
+          operatingStates: input.operatingStates,
+        });
+      } catch (error: unknown) {
+        logger.error("[Insurance] checkWorkersComp error:", error);
+        return { compliant: false, errors: [(error as Error)?.message || "Check failed"], warnings: [], stateDetails: [] };
+      }
+    }),
 });
