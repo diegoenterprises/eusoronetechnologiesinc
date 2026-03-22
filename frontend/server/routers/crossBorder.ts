@@ -3596,97 +3596,6 @@ export const crossBorderRouter = router({
       return checkNOM012(input);
     }),
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // CARTA PORTE — Create, validate, list, generate XML
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  createCartaPorte: protectedProcedure
-    .input(z.object({
-      loadId: z.number().optional(),
-      tipo: z.enum(["Ingreso", "Traslado", "Egreso"]).default("Traslado"),
-      emisorRfc: z.string(),
-      emisorNombre: z.string(),
-      receptorRfc: z.string(),
-      receptorNombre: z.string(),
-      vehiculoConfig: z.string(),
-      vehiculoPlaca: z.string(),
-      vehiculoPermisoSCT: z.string(),
-      conductorCurp: z.string(),
-      conductorNombre: z.string(),
-      conductorLicenciaSCT: z.string(),
-      origenRfc: z.string(),
-      origenNombre: z.string(),
-      origenEstado: z.string(),
-      origenFecha: z.string(),
-      destinoRfc: z.string(),
-      destinoNombre: z.string(),
-      destinoEstado: z.string(),
-      destinoFecha: z.string(),
-      distanciaKm: z.number(),
-      mercancias: z.array(z.object({
-        descripcion: z.string(),
-        claveProdServ: z.string(),
-        claveUnidad: z.string(),
-        cantidad: z.number(),
-        pesoKg: z.number(),
-        valorMercancia: z.number(),
-        moneda: z.string().default("MXN"),
-        fraccionArancelaria: z.string().optional(),
-        materialPeligroso: z.boolean().default(false),
-        claseMaterialPeligroso: z.string().optional(),
-        unNumberMaterialPeligroso: z.string().optional(),
-      })),
-      isInternational: z.boolean().default(true),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const { createCartaPorte, validateCartaPorte, generateCartaPorteXML } = await import("../services/cartaPorte");
-      const doc = createCartaPorte({
-        tipo: input.tipo,
-        emisor: { rfc: input.emisorRfc, nombre: input.emisorNombre, regimenFiscal: "601" },
-        receptor: { rfc: input.receptorRfc, nombre: input.receptorNombre, usoCFDI: "S01" },
-        vehiculo: { configVehicular: input.vehiculoConfig, placaVM: input.vehiculoPlaca, anioModelo: 2024, permisoSCT: "TPAF09", numPermisoSCT: input.vehiculoPermisoSCT, segurosRespCivil: "", polizaRespCivil: "", segurosAmbiente: "", polizaAmbiente: "" },
-        conductores: [{ curp: input.conductorCurp, nombre: input.conductorNombre, numLicencia: input.conductorLicenciaSCT, tipoLicencia: "C" }],
-        mercancias: input.mercancias.map(m => ({ descripcion: m.descripcion, claveProdServ: m.claveProdServ, claveUnidad: m.claveUnidad, cantidad: m.cantidad, pesoKg: m.pesoKg, valorMercancia: m.valorMercancia, moneda: m.moneda, fraccionArancelaria: m.fraccionArancelaria, materialPeligroso: m.materialPeligroso, claseMaterialPeligroso: m.claseMaterialPeligroso, unNumberMaterialPeligroso: m.unNumberMaterialPeligroso })),
-        ruta: {
-          origen: { rfcRemitente: input.origenRfc, nombreRemitente: input.origenNombre, domicilio: { calle: "", codigoPostal: "", estado: input.origenEstado, pais: "MEX", municipio: "" }, fechaSalida: input.origenFecha },
-          destino: { rfcRemitente: input.destinoRfc, nombreRemitente: input.destinoNombre, domicilio: { calle: "", codigoPostal: "", estado: input.destinoEstado, pais: "MEX", municipio: "" }, fechaLlegada: input.destinoFecha },
-          distanciaKm: input.distanciaKm,
-        },
-        isInternational: input.isInternational,
-        loadId: input.loadId,
-        createdBy: ctx.user?.id || 0,
-      });
-      const validation = validateCartaPorte(doc);
-      const xml = validation.isValid ? generateCartaPorteXML(doc) : null;
-
-      // Persist to DB
-      try {
-        const db = await getDb();
-        if (db) {
-          const { cartaPorte: cpTable } = await import("../../drizzle/schema");
-          await db.insert(cpTable).values({
-            documentId: doc.documentId,
-            version: "3.1",
-            tipo: doc.tipo,
-            emisorRfc: doc.emisor.rfc,
-            emisorNombre: doc.emisor.nombre,
-            receptorRfc: doc.receptor.rfc,
-            receptorNombre: doc.receptor.nombre,
-            loadId: input.loadId || null,
-            status: validation.isValid ? "pending_signature" : "draft",
-            xmlContent: xml || "",
-            mercancias: JSON.stringify(doc.mercancias),
-            ubicaciones: JSON.stringify(doc.ubicaciones),
-            vehiculos: JSON.stringify([doc.vehiculo]),
-            conductores: JSON.stringify(doc.conductores),
-            createdBy: ctx.user?.id || 0,
-          });
-        }
-      } catch (e) { logger.warn("[CartaPorte] DB persist failed:", (e as Error).message); }
-
-      return { documentId: doc.documentId, validation, xml, status: validation.isValid ? "pending_signature" : "draft" };
-    }),
-
   getCartaPorteList: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return [];
@@ -3849,39 +3758,6 @@ export const crossBorderRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // FAST / C-TPAT / NEEC — Trusted Trader Programs
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  checkFASTEligibility: protectedProcedure
-    .input(z.object({
-      hasCtpat: z.boolean(),
-      hasPip: z.boolean(),
-      driverHasFastCard: z.boolean(),
-      cleanRecord: z.boolean(),
-    }))
-    .query(({ input }) => {
-      const { checkFASTEligibility, estimateBorderTimeSavings, getTrustedPrograms } = require("../services/crossBorderHardening");
-      const eligibility = checkFASTEligibility(input);
-      const savings = estimateBorderTimeSavings("FAST");
-      const programs = getTrustedPrograms();
-      return { eligibility, savings, programs };
-    }),
-
-  checkUSMCAEligibility: protectedProcedure
-    .input(z.object({
-      rvcPercent: z.number(),
-      originCountries: z.array(z.enum(["US", "MX", "CA"])),
-      hasOriginCert: z.boolean(),
-      htsCovered: z.boolean(),
-    }))
-    .query(({ input }) => {
-      const { checkUSMCAEligibility, getUSMCACertificateRequirements } = require("../services/crossBorderHardening");
-      const eligibility = checkUSMCAEligibility(input);
-      const certRequirements = getUSMCACertificateRequirements();
-      return { eligibility, certRequirements };
-    }),
-
-  // ═══════════════════════════════════════════════════════════════════════════
   // MEXICAN BITÁCORA ELECTRÓNICA (Electronic Logbook per NOM-087)
   // ═══════════════════════════════════════════════════════════════════════════
 
@@ -3979,19 +3855,4 @@ export const crossBorderRouter = router({
     ];
   }),
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // CROSS-BORDER PLACARD ACCEPTANCE CHECK
-  // ═══════════════════════════════════════════════════════════════════════════
-
-  checkPlacardAcceptance: protectedProcedure
-    .input(z.object({
-      hazmatClass: z.string(),
-      division: z.string().optional(),
-      fromCountry: z.enum(["US", "MX", "CA"]),
-      toCountry: z.enum(["US", "MX", "CA"]),
-    }))
-    .query(({ input }) => {
-      const { checkPlacardCrossBorderAcceptance } = require("../services/crossBorderHardening");
-      return checkPlacardCrossBorderAcceptance(input.hazmatClass, input.division, input.fromCountry, input.toCountry);
-    }),
 });
