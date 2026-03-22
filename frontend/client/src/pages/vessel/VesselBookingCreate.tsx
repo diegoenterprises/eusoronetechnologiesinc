@@ -16,6 +16,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { Ship, Package, MapPin, FileText, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle, Anchor, Thermometer } from "lucide-react";
 import { toast } from "sonner";
+import { VerticalSelector } from "@/components/VerticalFieldsPanel";
+import { VERTICAL_VESSEL_MAP, VERTICAL_CONTAINER_MAP } from "@/lib/loadConstants";
 
 const STEPS = ["Cargo", "Containers", "Route", "Terms", "Review"];
 const STEP_ICONS = [Package, Ship, MapPin, FileText, CheckCircle];
@@ -37,6 +39,7 @@ export default function VesselBookingCreate() {
   const isLight = theme === "light";
   const [, navigate] = useLocation();
   const [step, setStep] = useState(0);
+  const [selectedVertical, setSelectedVertical] = useState("");
 
   const [form, setForm] = useState({
     // Step 1: Cargo
@@ -99,9 +102,11 @@ export default function VesselBookingCreate() {
       destinationPortId: Number(form.destinationPortId),
       cargoType: (form.cargoType || undefined) as any,
       commodity: form.commodity || undefined,
+      containerSize: (form.containerSize || undefined) as any,
       numberOfContainers: Number(form.numberOfContainers) || 1,
       totalWeightKg: form.totalWeightKg ? Number(form.totalWeightKg) : undefined,
       totalVolumeCBM: form.totalVolumeCBM ? Number(form.totalVolumeCBM) : undefined,
+      temperatureSetting: form.temperatureSetting || undefined,
       hazmatClass: form.isHazmat ? form.imdgClass : undefined,
       imdgCode: form.isHazmat ? form.unNumber : undefined,
       incoterms: form.incoterms || undefined,
@@ -137,15 +142,30 @@ export default function VesselBookingCreate() {
     </div>
   );
 
+  const filteredCargoTypes = selectedVertical && VERTICAL_VESSEL_MAP[selectedVertical]
+    ? CARGO_TYPES.filter(t => VERTICAL_VESSEL_MAP[selectedVertical].includes(t))
+    : CARGO_TYPES;
+
+  const filteredContainerSizes = selectedVertical && VERTICAL_CONTAINER_MAP[selectedVertical]
+    ? CONTAINER_SIZES.filter(s => VERTICAL_CONTAINER_MAP[selectedVertical].includes(s))
+    : CONTAINER_SIZES;
+
   // Step 1: Cargo & Hazmat
   const renderStep0 = () => (
     <div className="space-y-4">
+      <VerticalSelector selectedVertical={selectedVertical} onVerticalChange={(v) => { setSelectedVertical(v); set("cargoType", ""); set("containerSize", ""); }} />
+
       <div>
-        <Label className={lbl}>Cargo Type *</Label>
+        <div className="flex items-center justify-between mb-1.5">
+          <Label className={lbl}>Cargo Type *</Label>
+          {selectedVertical && (
+            <button onClick={() => setSelectedVertical("")} className="text-[10px] text-slate-500 hover:text-slate-300 underline transition-colors">Show all cargo types</button>
+          )}
+        </div>
         <Select value={form.cargoType} onValueChange={(v) => set("cargoType", v)}>
           <SelectTrigger><SelectValue placeholder="Select cargo type" /></SelectTrigger>
           <SelectContent>
-            {CARGO_TYPES.map((t) => (
+            {filteredCargoTypes.map((t) => (
               <SelectItem key={t} value={t}>{t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</SelectItem>
             ))}
           </SelectContent>
@@ -199,7 +219,7 @@ export default function VesselBookingCreate() {
         <Select value={form.containerSize} onValueChange={(v) => set("containerSize", v)}>
           <SelectTrigger><SelectValue placeholder="Select container size" /></SelectTrigger>
           <SelectContent>
-            {CONTAINER_SIZES.map((s) => (
+            {filteredContainerSizes.map((s) => (
               <SelectItem key={s} value={s}>{s.replace(/_/g, " ").toUpperCase()}</SelectItem>
             ))}
           </SelectContent>

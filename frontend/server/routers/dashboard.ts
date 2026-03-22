@@ -2014,7 +2014,7 @@ async function getFactoringStats(db: any, userId: number, companyId: number) {
   // Query settlements as proxy for factoring invoices
   const [totalSettlements] = await db.select({ count: sql<number>`count(*)`, sum: sql<number>`COALESCE(SUM(CAST(carrierPayment AS DECIMAL)),0)` }).from(settlements).where(eq(settlements.carrierId, userId));
   const [pending] = await db.select({ count: sql<number>`count(*)` }).from(settlements).where(and(eq(settlements.carrierId, userId), eq(settlements.status, 'pending')));
-  const [paid] = await db.select({ count: sql<number>`count(*)` }).from(settlements).where(and(eq(settlements.carrierId, userId), eq(settlements.status, 'paid')));
+  const [paid] = await db.select({ count: sql<number>`count(*)` }).from(settlements).where(and(eq(settlements.carrierId, userId), eq(settlements.status, 'completed')));
   const approvalRate = (totalSettlements?.count || 0) > 0 ? Math.round(((paid?.count || 0) / totalSettlements.count) * 100) : 0;
   return { totalPortfolioValue: totalSettlements?.sum || 0, fundsAdvanced: 0, activeInvoices: pending?.count || 0, approvalRate, chargebacksThisMonth: 0 };
 }
@@ -2022,48 +2022,48 @@ async function getFactoringStats(db: any, userId: number, companyId: number) {
 // ── RAIL STATS ──
 async function getRailShipperStats(db: any, userId: number) {
   try {
-    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_shipments WHERE shipper_id=${userId} AND status IN ('requested','car_ordered','in_transit','departed')`);
-    const [total] = await db.execute(sql`SELECT COUNT(*) as cnt, COALESCE(SUM(CAST(rate AS DECIMAL)),0) as rev FROM rail_shipments WHERE shipper_id=${userId}`);
-    const [avgDays] = await db.execute(sql`SELECT COALESCE(AVG(DATEDIFF(actual_delivery_date, actual_pickup_date)),0) as avg_days FROM rail_shipments WHERE shipper_id=${userId} AND status='settled'`);
+    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_shipments WHERE shipperId=${userId} AND status IN ('requested','car_ordered','in_transit','departed')`);
+    const [total] = await db.execute(sql`SELECT COUNT(*) as cnt, COALESCE(SUM(CAST(rate AS DECIMAL)),0) as rev FROM rail_shipments WHERE shipperId=${userId}`);
+    const [avgDays] = await db.execute(sql`SELECT COALESCE(AVG(actualTransitDays),0) as avg_days FROM rail_shipments WHERE shipperId=${userId} AND status='settled'`);
     return { activeShipments: (active as any)?.cnt || 0, totalShipments: (total as any)?.cnt || 0, revenue: (total as any)?.rev || 0, avgTransitDays: Math.round((avgDays as any)?.avg_days || 0), demurrageCosts: 0, onTimeRate: 0 };
   } catch { return { activeShipments: 0, totalShipments: 0, revenue: 0, avgTransitDays: 0, demurrageCosts: 0, onTimeRate: 0 }; }
 }
 
 async function getRailCatalystStats(db: any, companyId: number) {
   try {
-    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_shipments WHERE carrier_id=${companyId} AND status IN ('car_ordered','in_transit','departed')`);
-    const [cars] = await db.execute(sql`SELECT COUNT(*) as cnt FROM railcars WHERE company_id=${companyId}`);
-    const [rev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(rate AS DECIMAL)),0) as rev FROM rail_shipments WHERE carrier_id=${companyId} AND status='settled'`);
+    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_shipments WHERE carrierId=${companyId} AND status IN ('car_ordered','in_transit','departed')`);
+    const [cars] = await db.execute(sql`SELECT COUNT(*) as cnt FROM railcars WHERE companyId=${companyId}`);
+    const [rev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(rate AS DECIMAL)),0) as rev FROM rail_shipments WHERE carrierId=${companyId} AND status='settled'`);
     return { activeShipments: (active as any)?.cnt || 0, totalCars: (cars as any)?.cnt || 0, revenue: (rev as any)?.rev || 0, utilization: 0, crewAssignments: 0, consistCount: 0 };
   } catch { return { activeShipments: 0, totalCars: 0, revenue: 0, utilization: 0, crewAssignments: 0, consistCount: 0 }; }
 }
 
 async function getRailDispatcherStats(db: any, companyId: number) {
   try {
-    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_shipments WHERE carrier_id=${companyId} AND status IN ('car_ordered','in_transit','departed')`);
-    const [consists] = await db.execute(sql`SELECT COUNT(*) as cnt FROM train_consists WHERE company_id=${companyId} AND status='active'`);
+    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_shipments WHERE carrierId=${companyId} AND status IN ('car_ordered','in_transit','departed')`);
+    const [consists] = await db.execute(sql`SELECT COUNT(*) as cnt FROM train_consists WHERE companyId=${companyId} AND status='active'`);
     return { activeTrains: (active as any)?.cnt || 0, consistsActive: (consists as any)?.cnt || 0, crewAvailable: 0, dwellTime: 0, scheduleAdherence: 0, incidents: 0 };
   } catch { return { activeTrains: 0, consistsActive: 0, crewAvailable: 0, dwellTime: 0, scheduleAdherence: 0, incidents: 0 }; }
 }
 
 async function getRailEngineerStats(db: any, userId: number) {
   try {
-    const [assignment] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_crew_assignments WHERE user_id=${userId} AND status='active'`);
+    const [assignment] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_crew_assignments WHERE userId=${userId} AND status='active'`);
     return { currentAssignment: (assignment as any)?.cnt || 0, hoursAvailable: null, safetyScore: 100, totalTrips: 0, certifications: 0, earnings: 0 };
   } catch { return { currentAssignment: 0, hoursAvailable: null, safetyScore: 100, totalTrips: 0, certifications: 0, earnings: 0 }; }
 }
 
 async function getRailConductorStats(db: any, userId: number) {
   try {
-    const [assignment] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_crew_assignments WHERE user_id=${userId} AND status='active'`);
+    const [assignment] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_crew_assignments WHERE userId=${userId} AND status='active'`);
     return { currentAssignment: (assignment as any)?.cnt || 0, hoursAvailable: null, safetyScore: 100, switchingOps: 0, certifications: 0, earnings: 0 };
   } catch { return { currentAssignment: 0, hoursAvailable: null, safetyScore: 100, switchingOps: 0, certifications: 0, earnings: 0 }; }
 }
 
 async function getRailBrokerStats(db: any, userId: number) {
   try {
-    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_shipments WHERE broker_id=${userId} AND status IN ('requested','car_ordered','in_transit')`);
-    const [rev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(rate AS DECIMAL)),0) as rev FROM rail_shipments WHERE broker_id=${userId} AND status='settled'`);
+    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM rail_shipments WHERE shipperId=${userId} AND status IN ('requested','car_ordered','in_transit')`);
+    const [rev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(rate AS DECIMAL)),0) as rev FROM rail_shipments WHERE shipperId=${userId} AND status='settled'`);
     return { activeShipments: (active as any)?.cnt || 0, revenue: (rev as any)?.rev || 0, carrierNetwork: 0, commission: 0, bookings: 0, marketRate: 0 };
   } catch { return { activeShipments: 0, revenue: 0, carrierNetwork: 0, commission: 0, bookings: 0, marketRate: 0 }; }
 }
@@ -2071,32 +2071,32 @@ async function getRailBrokerStats(db: any, userId: number) {
 // ── VESSEL STATS ──
 async function getVesselShipperStats(db: any, userId: number) {
   try {
-    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM vessel_shipments WHERE shipper_id=${userId} AND status IN ('booking_requested','booking_confirmed','in_transit','departed')`);
-    const [containers] = await db.execute(sql`SELECT COALESCE(SUM(container_count),0) as cnt FROM vessel_shipments WHERE shipper_id=${userId} AND status='in_transit'`);
-    const [rev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(rate AS DECIMAL)),0) as rev FROM vessel_shipments WHERE shipper_id=${userId}`);
+    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM vessel_shipments WHERE shipperId=${userId} AND status IN ('booking_requested','booking_confirmed','in_transit','departed')`);
+    const [containers] = await db.execute(sql`SELECT COALESCE(SUM(numberOfContainers),0) as cnt FROM vessel_shipments WHERE shipperId=${userId} AND status='in_transit'`);
+    const [rev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(rate AS DECIMAL)),0) as rev FROM vessel_shipments WHERE shipperId=${userId}`);
     return { activeBookings: (active as any)?.cnt || 0, containersInTransit: (containers as any)?.cnt || 0, revenue: (rev as any)?.rev || 0, customsClearanceRate: 0, avgTransitDays: 0, portOperations: 0 };
   } catch { return { activeBookings: 0, containersInTransit: 0, revenue: 0, customsClearanceRate: 0, avgTransitDays: 0, portOperations: 0 }; }
 }
 
 async function getVesselOperatorStats(db: any, companyId: number) {
   try {
-    const [vessels] = await db.execute(sql`SELECT COUNT(*) as cnt FROM vessels WHERE company_id=${companyId}`);
-    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM vessel_shipments WHERE carrier_id=${companyId} AND status IN ('in_transit','departed')`);
-    const [rev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(rate AS DECIMAL)),0) as rev FROM vessel_shipments WHERE carrier_id=${companyId} AND status='delivered'`);
+    const [vessels] = await db.execute(sql`SELECT COUNT(*) as cnt FROM vessels WHERE companyId=${companyId}`);
+    const [active] = await db.execute(sql`SELECT COUNT(*) as cnt FROM vessel_shipments WHERE operatorId=${companyId} AND status IN ('in_transit','departed')`);
+    const [rev] = await db.execute(sql`SELECT COALESCE(SUM(CAST(rate AS DECIMAL)),0) as rev FROM vessel_shipments WHERE operatorId=${companyId} AND status='delivered'`);
     return { fleetSize: (vessels as any)?.cnt || 0, activeVoyages: (active as any)?.cnt || 0, revenue: (rev as any)?.rev || 0, berthUtilization: 0, bunkerCosts: 0, crewCount: 0 };
   } catch { return { fleetSize: 0, activeVoyages: 0, revenue: 0, berthUtilization: 0, bunkerCosts: 0, crewCount: 0 }; }
 }
 
 async function getPortMasterStats(db: any, companyId: number) {
   try {
-    const [arrivals] = await db.execute(sql`SELECT COUNT(*) as cnt FROM vessel_shipments WHERE status IN ('arrived','in_transit') AND port_id IN (SELECT id FROM ports WHERE company_id=${companyId})`);
+    const [arrivals] = await db.execute(sql`SELECT COUNT(*) as cnt FROM vessel_shipments WHERE status IN ('arrived','in_transit') AND destinationPortId IN (SELECT id FROM ports WHERE companyId=${companyId})`);
     return { vesselArrivals: (arrivals as any)?.cnt || 0, berthsOccupied: 0, berthsTotal: 0, containerMoves: 0, gateTransactions: 0, dwellTime: 0 };
   } catch { return { vesselArrivals: 0, berthsOccupied: 0, berthsTotal: 0, containerMoves: 0, gateTransactions: 0, dwellTime: 0 }; }
 }
 
 async function getShipCaptainStats(db: any, userId: number) {
   try {
-    const [voyage] = await db.execute(sql`SELECT COUNT(*) as cnt FROM vessel_shipments WHERE captain_id=${userId} AND status IN ('in_transit','departed')`);
+    const [voyage] = await db.execute(sql`SELECT COUNT(*) as cnt FROM vessel_shipments WHERE operatorId=${userId} AND status IN ('in_transit','departed')`);
     return { activeVoyage: (voyage as any)?.cnt || 0, crewOnBoard: 0, cargoUtilization: 0, fuelRemaining: 0, nextPort: null, safetyDrills: 0 };
   } catch { return { activeVoyage: 0, crewOnBoard: 0, cargoUtilization: 0, fuelRemaining: 0, nextPort: null, safetyDrills: 0 }; }
 }

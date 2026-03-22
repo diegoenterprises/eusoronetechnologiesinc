@@ -18,6 +18,7 @@ import {
   gamificationProfiles,
   badges,
   userBadges,
+  users,
 } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { emitGamificationEvent } from "../_core/websocket";

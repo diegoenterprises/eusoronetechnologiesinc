@@ -10,7 +10,7 @@ import { isolatedApprovedProcedure as protectedProcedure, router } from "../_cor
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
-import { drivers, loads, users, escortAssignments, convoys, companies, vehicles, documents, incidents } from "../../drizzle/schema";
+import { drivers, loads, users, escortAssignments, convoys, companies, vehicles, documents, incidents, railShipments, vesselShipments } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, isNull, ne } from "drizzle-orm";
 import { emitDispatchEvent, emitDriverStatusChange, emitLoadStatusChange, emitNotification, emitEscortJobAssigned, emitEscortJobAvailable } from "../_core/websocket";
 import { TRPCError } from "@trpc/server";
@@ -44,7 +44,7 @@ export const dispatchRouter = router({
       await requireAccess({ userId: ctx.user?.id, role: ctx.user?.role || 'DISPATCH', companyId: (ctx.user as any)?.companyId, action: 'READ', resource: 'LOAD' }, (ctx as any).req);
       const db = await getDb();
       if (!db) {
-        return { active: 0, activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, completedToday: 0, totalDrivers: 0, availableDrivers: 0, fmcsaSafety: null };
+        return { active: 0, activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, completedToday: 0, totalDrivers: 0, availableDrivers: 0, fmcsaSafety: null, truckActive: 0, railActive: 0, vesselActive: 0, truckInTransit: 0, railInTransit: 0, vesselInTransit: 0 };
       }
 
       try {
@@ -53,42 +53,94 @@ export const dispatchRouter = router({
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Get active loads — filtered by company (catalyst = carrier company)
-        const [activeLoads] = await db
+        // ── Active shipments (truck + rail + vessel) ──
+        // Truck: "assigned", "in_transit"
+        const [activeLoadsTruck] = await db
           .select({ count: sql<number>`count(*)` })
           .from(loads)
           .where(isAdmin ? sql`${loads.status} IN ('assigned', 'in_transit')` : and(sql`${loads.status} IN ('assigned', 'in_transit')`, eq(loads.catalystId, companyId)));
+        // Rail: "car_ordered","car_placed","loading","loaded","in_consist","departed","in_transit","at_interchange","in_yard","spotted","unloading"
+        const [activeLoadsRail] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(railShipments)
+          .where(isAdmin
+            ? sql`${railShipments.status} IN ('car_ordered','car_placed','loading','loaded','in_consist','departed','in_transit','at_interchange','in_yard','spotted','unloading')`
+            : and(sql`${railShipments.status} IN ('car_ordered','car_placed','loading','loaded','in_consist','departed','in_transit','at_interchange','in_yard','spotted','unloading')`, eq(railShipments.companyId, companyId)));
+        // Vessel: "booking_confirmed","documentation","container_released","gate_in","loaded_on_vessel","departed","in_transit","transshipment","arrived"
+        const [activeLoadsVessel] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(vesselShipments)
+          .where(isAdmin
+            ? sql`${vesselShipments.status} IN ('booking_confirmed','documentation','container_released','gate_in','loaded_on_vessel','departed','in_transit','transshipment','arrived')`
+            : and(sql`${vesselShipments.status} IN ('booking_confirmed','documentation','container_released','gate_in','loaded_on_vessel','departed','in_transit','transshipment','arrived')`, eq(vesselShipments.companyId, companyId)));
+        const activeLoadsTotal = (activeLoadsTruck?.count || 0) + (activeLoadsRail?.count || 0) + (activeLoadsVessel?.count || 0);
 
-        // Get unassigned loads
-        const [unassigned] = await db
+        // ── Unassigned shipments (truck + rail + vessel) ──
+        // Truck: posted/bidding with no driver
+        const [unassignedTruck] = await db
           .select({ count: sql<number>`count(*)` })
           .from(loads)
           .where(isAdmin ? sql`${loads.status} IN ('posted', 'bidding') AND ${loads.driverId} IS NULL` : and(sql`${loads.status} IN ('posted', 'bidding') AND ${loads.driverId} IS NULL`, eq(loads.catalystId, companyId)));
+        // Rail: "requested" (not yet assigned to carrier/consist)
+        const [unassignedRail] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(railShipments)
+          .where(isAdmin ? eq(railShipments.status, 'requested') : and(eq(railShipments.status, 'requested'), eq(railShipments.companyId, companyId)));
+        // Vessel: "booking_requested" (not yet confirmed)
+        const [unassignedVessel] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(vesselShipments)
+          .where(isAdmin ? eq(vesselShipments.status, 'booking_requested') : and(eq(vesselShipments.status, 'booking_requested'), eq(vesselShipments.companyId, companyId)));
+        const unassignedTotal = (unassignedTruck?.count || 0) + (unassignedRail?.count || 0) + (unassignedVessel?.count || 0);
 
-        // Get in transit loads
-        const [inTransit] = await db
+        // ── In-transit shipments (truck + rail + vessel) ──
+        const [inTransitTruck] = await db
           .select({ count: sql<number>`count(*)` })
           .from(loads)
           .where(isAdmin ? eq(loads.status, 'in_transit') : and(eq(loads.status, 'in_transit'), eq(loads.catalystId, companyId)));
+        const [inTransitRail] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(railShipments)
+          .where(isAdmin ? eq(railShipments.status, 'in_transit') : and(eq(railShipments.status, 'in_transit'), eq(railShipments.companyId, companyId)));
+        const [inTransitVessel] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(vesselShipments)
+          .where(isAdmin ? eq(vesselShipments.status, 'in_transit') : and(eq(vesselShipments.status, 'in_transit'), eq(vesselShipments.companyId, companyId)));
+        const inTransitTotal = (inTransitTruck?.count || 0) + (inTransitRail?.count || 0) + (inTransitVessel?.count || 0);
 
-        // Get completed today
-        const [completedToday] = await db
+        // ── Completed today (truck + rail + vessel) ──
+        // Truck: "delivered", Rail: "settled"/"unloaded", Vessel: "delivered"/"settled"
+        const [completedTodayTruck] = await db
           .select({ count: sql<number>`count(*)` })
           .from(loads)
           .where(isAdmin ? and(eq(loads.status, 'delivered'), gte(loads.updatedAt, today)) : and(eq(loads.status, 'delivered'), gte(loads.updatedAt, today), eq(loads.catalystId, companyId)));
+        const [completedTodayRail] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(railShipments)
+          .where(isAdmin
+            ? and(sql`${railShipments.status} IN ('unloaded', 'settled')`, gte(railShipments.updatedAt, today))
+            : and(sql`${railShipments.status} IN ('unloaded', 'settled')`, gte(railShipments.updatedAt, today), eq(railShipments.companyId, companyId)));
+        const [completedTodayVessel] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(vesselShipments)
+          .where(isAdmin
+            ? and(sql`${vesselShipments.status} IN ('delivered', 'settled')`, gte(vesselShipments.updatedAt, today))
+            : and(sql`${vesselShipments.status} IN ('delivered', 'settled')`, gte(vesselShipments.updatedAt, today), eq(vesselShipments.companyId, companyId)));
+        const completedTodayTotal = (completedTodayTruck?.count || 0) + (completedTodayRail?.count || 0) + (completedTodayVessel?.count || 0);
 
-        // Get total drivers
+        // Get total drivers (truck mode — rail/vessel crews managed separately)
         const [totalDrivers] = await db
           .select({ count: sql<number>`count(*)` })
           .from(drivers)
           .where(eq(drivers.companyId, companyId));
 
-        // Get available drivers (not on active loads)
+        // Get available drivers (not on active truck loads)
+        // Note: Rail and vessel shipments use carrier/operator assignments, not driver table
         const driversOnLoads = await db
           .select({ driverId: loads.driverId })
           .from(loads)
           .where(sql`${loads.status} IN ('in_transit', 'assigned')`);
-        
+
         const onLoadIds = new Set(driversOnLoads.map(l => l.driverId));
         const availableDrivers = (totalDrivers?.count || 0) - onLoadIds.size;
 
@@ -133,17 +185,24 @@ export const dispatchRouter = router({
           .where(isAdmin ? ne(incidents.status, 'resolved') : and(ne(incidents.status, 'resolved'), eq(incidents.companyId, companyId)));
 
         return {
-          active: activeLoads?.count || 0,
-          activeLoads: activeLoads?.count || 0,
-          unassigned: unassigned?.count || 0,
-          enRoute: inTransit?.count || 0,
+          active: activeLoadsTotal,
+          activeLoads: activeLoadsTotal,
+          unassigned: unassignedTotal,
+          enRoute: inTransitTotal,
           loading: loadingCount?.count || 0,
-          inTransit: inTransit?.count || 0,
+          inTransit: inTransitTotal,
           issues: issuesCount?.count || 0,
-          completedToday: completedToday?.count || 0,
+          completedToday: completedTodayTotal,
           totalDrivers: totalDrivers?.count || 0,
           availableDrivers: Math.max(0, availableDrivers),
           fmcsaSafety,
+          // Per-mode breakdowns
+          truckActive: activeLoadsTruck?.count || 0,
+          railActive: activeLoadsRail?.count || 0,
+          vesselActive: activeLoadsVessel?.count || 0,
+          truckInTransit: inTransitTruck?.count || 0,
+          railInTransit: inTransitRail?.count || 0,
+          vesselInTransit: inTransitVessel?.count || 0,
         };
       } catch (error) {
         logger.error('[Dispatch] getDashboardStats error:', error);

@@ -196,15 +196,26 @@ export class FeeCalculator {
   private calculateTieredFee(tiers: Array<{ minAmount: number; maxAmount: number; rate: number }> | null, amount: number): number {
     if (!tiers || tiers.length === 0) return 0;
 
-    for (const tier of tiers) {
-      if (amount >= tier.minAmount && amount <= tier.maxAmount) {
-        return amount * (tier.rate / 100);
-      }
+    // Bracket-based calculation: each tier applies only to the slice of amount within its range
+    let totalFee = 0;
+    let remaining = amount;
+    const sortedTiers = [...tiers].sort((a, b) => a.minAmount - b.minAmount);
+
+    for (const tier of sortedTiers) {
+      if (remaining <= 0) break;
+      const tierSpan = tier.maxAmount - tier.minAmount;
+      const taxableInTier = Math.min(remaining, tierSpan > 0 ? tierSpan : remaining);
+      totalFee += taxableInTier * (tier.rate / 100);
+      remaining -= taxableInTier;
     }
 
-    // If amount exceeds all tiers, use highest tier rate
-    const highestTier = tiers[tiers.length - 1];
-    return amount * (highestTier.rate / 100);
+    // If amount exceeds all tiers, apply highest tier rate to remainder
+    if (remaining > 0) {
+      const highestTier = sortedTiers[sortedTiers.length - 1];
+      totalFee += remaining * (highestTier.rate / 100);
+    }
+
+    return Math.round(totalFee * 100) / 100;
   }
 
   /**

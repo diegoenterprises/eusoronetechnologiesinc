@@ -96,7 +96,7 @@ export const TRAILER_COMMODITY_MAP: Record<string, string> = {
 export const VERTICAL_TRAILER_MAP: Record<string, string[]> = {
   general_freight:   ["dry_van", "reefer", "flatbed", "step_deck", "conestoga", "curtain_side", "intermodal_chassis"],
   refrigerated:      ["reefer", "food_grade_tank"],
-  hazardous:         ["liquid_tank", "gas_tank", "cryogenic", "hazmat_van"],
+  hazmat:            ["liquid_tank", "gas_tank", "cryogenic", "hazmat_van"],
   tanker:            ["liquid_tank", "gas_tank", "cryogenic", "food_grade_tank", "water_tank", "pneumatic"],
   flatbed:           ["flatbed", "step_deck", "lowboy", "double_drop", "conestoga"],
   auto_transport:    ["auto_carrier"],
@@ -104,8 +104,56 @@ export const VERTICAL_TRAILER_MAP: Record<string, string[]> = {
   ltl:               ["dry_van", "reefer", "flatbed", "curtain_side"],
   heavy_haul:        ["lowboy", "double_drop", "step_deck", "flatbed"],
   livestock:         ["livestock"],
-  dry_bulk:          ["bulk_hopper", "hopper", "grain_hopper", "pneumatic", "end_dump"],
-  household:         ["dry_van", "curtain_side"],
+  bulk_dry:          ["bulk_hopper", "hopper", "grain_hopper", "pneumatic", "end_dump"],
+  moving_household:  ["dry_van", "curtain_side"],
+};
+
+// Rail car types filtered by industry vertical
+export const VERTICAL_RAIL_MAP: Record<string, string[]> = {
+  general_freight:   ["boxcar", "covered_hopper", "intermodal", "centerbeam"],
+  refrigerated:      ["reefer"],
+  hazmat:            ["tankcar"],
+  tanker:            ["tankcar"],
+  flatbed:           ["flatcar", "gondola", "centerbeam"],
+  auto_transport:    ["autorack"],
+  intermodal:        ["intermodal"],
+  ltl:               ["boxcar", "intermodal"],
+  heavy_haul:        ["flatcar", "gondola", "coilcar"],
+  livestock:         ["boxcar"],
+  bulk_dry:          ["hopper", "covered_hopper", "open_hopper", "gondola"],
+  moving_household:  ["boxcar", "intermodal"],
+};
+
+// Vessel cargo types filtered by industry vertical
+export const VERTICAL_VESSEL_MAP: Record<string, string[]> = {
+  general_freight:   ["container", "breakbulk"],
+  refrigerated:      ["reefer"],
+  hazmat:            ["container", "bulk_liquid"],
+  tanker:            ["bulk_liquid"],
+  flatbed:           ["breakbulk", "project_cargo"],
+  auto_transport:    ["ro_ro"],
+  intermodal:        ["container"],
+  ltl:               ["container"],
+  heavy_haul:        ["breakbulk", "project_cargo"],
+  livestock:         ["container"],
+  bulk_dry:          ["bulk_dry"],
+  moving_household:  ["container"],
+};
+
+// Vessel container sizes filtered by industry vertical
+export const VERTICAL_CONTAINER_MAP: Record<string, string[]> = {
+  general_freight:   ["20ft", "40ft", "40ft_hc", "45ft"],
+  refrigerated:      ["20ft_reefer", "40ft_reefer"],
+  hazmat:            ["20ft", "40ft"],
+  tanker:            ["20ft", "40ft"],
+  flatbed:           ["20ft", "40ft"],
+  auto_transport:    ["40ft_hc", "45ft"],
+  intermodal:        ["20ft", "40ft", "40ft_hc", "45ft"],
+  ltl:               ["20ft", "40ft"],
+  heavy_haul:        ["40ft", "40ft_hc"],
+  livestock:         ["40ft_hc"],
+  bulk_dry:          ["20ft", "40ft"],
+  moving_household:  ["20ft", "40ft", "40ft_hc"],
 };
 
 export const SEGREGATION_TABLE: Record<string, string[]> = {

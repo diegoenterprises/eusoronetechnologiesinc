@@ -16,13 +16,15 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { TrainFront, Package, MapPin, FileText, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { VerticalSelector } from "@/components/VerticalFieldsPanel";
+import { VERTICAL_RAIL_MAP } from "@/lib/loadConstants";
 
 const STEPS = ["Commodity", "Equipment", "Route", "Requirements", "Review"];
 const STEP_ICONS = [Package, TrainFront, MapPin, FileText, CheckCircle];
 
 const CAR_TYPES = [
-  "tank_car", "boxcar", "hopper", "flat_car", "gondola",
-  "intermodal_well", "covered_hopper", "centerbeam", "autorack", "refrigerated",
+  "tankcar", "boxcar", "hopper", "flatcar", "gondola",
+  "intermodal", "covered_hopper", "open_hopper", "centerbeam", "autorack", "coilcar", "reefer",
 ];
 
 const HAZMAT_CLASSES = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -32,6 +34,7 @@ export default function RailShipmentCreate() {
   const isLight = theme === "light";
   const [, navigate] = useLocation();
   const [step, setStep] = useState(0);
+  const [selectedVertical, setSelectedVertical] = useState("");
 
   const [form, setForm] = useState({
     commodity: "",
@@ -82,8 +85,9 @@ export default function RailShipmentCreate() {
       destinationYardId: Number(form.destinationYardId),
       carType: (form.carType || undefined) as any,
       commodity: form.commodity || undefined,
-      weightLbs: form.weightLbs ? Number(form.weightLbs) : undefined,
+      weight: form.weightLbs ? Number(form.weightLbs) : undefined,
       hazmatClass: form.isHazmat ? form.hazmatClass : undefined,
+      unNumber: form.isHazmat ? form.unNumber || undefined : undefined,
       numberOfCars: Number(form.numberOfCars) || 1,
       specialInstructions: form.specialInstructions || undefined,
     });
@@ -167,14 +171,25 @@ export default function RailShipmentCreate() {
     </div>
   );
 
+  const filteredCarTypes = selectedVertical && VERTICAL_RAIL_MAP[selectedVertical]
+    ? CAR_TYPES.filter(t => VERTICAL_RAIL_MAP[selectedVertical].includes(t))
+    : CAR_TYPES;
+
   const renderStep1 = () => (
     <div className="space-y-4">
+      <VerticalSelector selectedVertical={selectedVertical} onVerticalChange={(v) => { setSelectedVertical(v); set("carType", ""); }} />
+
       <div>
-        <Label className={lbl}>Car Type *</Label>
+        <div className="flex items-center justify-between mb-1.5">
+          <Label className={lbl}>Car Type *</Label>
+          {selectedVertical && (
+            <button onClick={() => setSelectedVertical("")} className="text-[10px] text-slate-500 hover:text-slate-300 underline transition-colors">Show all car types</button>
+          )}
+        </div>
         <Select value={form.carType} onValueChange={(v) => set("carType", v)}>
           <SelectTrigger><SelectValue placeholder="Select car type" /></SelectTrigger>
           <SelectContent>
-            {CAR_TYPES.map((t) => (
+            {filteredCarTypes.map((t) => (
               <SelectItem key={t} value={t}>{t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</SelectItem>
             ))}
           </SelectContent>

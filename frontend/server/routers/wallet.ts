@@ -535,7 +535,7 @@ export const walletRouter = router({
    */
   requestPayout: auditedProtectedProcedure
     .input(z.object({
-      amount: z.number().positive(),
+      amount: z.number().min(1, "Minimum payout is $1.00"),
       payoutMethodId: z.string(),
       instant: z.boolean().default(false),
     }))
@@ -570,6 +570,7 @@ export const walletRouter = router({
         logger.warn("[Wallet] Withdrawal fee calculator fallback:", (feeErr as Error).message);
       }
       const netAmount = input.amount - fee;
+      if (netAmount <= 0) throw new Error("Payout amount too small after fees");
 
       // Create payout transaction record as 'processing' BEFORE Stripe call
       const [txn] = await db.insert(walletTransactions).values({
@@ -814,7 +815,7 @@ export const walletRouter = router({
   transfer: auditedProtectedProcedure
     .input(z.object({
       recipientId: z.string(),
-      amount: z.number().positive(),
+      amount: z.number().min(1, "Minimum transfer is $1.00"),
       note: z.string().optional(),
       transferType: z.enum(["standard", "instant", "scheduled"]).default("standard"),
       scheduledFor: z.string().optional(),
@@ -869,71 +870,77 @@ export const walletRouter = router({
         logger.warn("[Wallet] P2P fee calculator fallback:", (feeErr as Error).message);
       }
       const netAmount = input.amount - fee;
+      if (netAmount <= 0) throw new Error("Transfer amount too small after fees");
 
-      // Create transfer record
-      const [result] = await db.insert(p2pTransfers).values({
-        senderWalletId: senderWallet.id,
-        recipientWalletId: recipientWallet.id,
-        amount: input.amount.toString(),
-        fee: fee.toString(),
-        note: input.note,
-        transferType: input.transferType,
-        scheduledFor: input.scheduledFor ? new Date(input.scheduledFor) : undefined,
-        status: input.transferType === "scheduled" ? "pending" : "completed",
-        completedAt: input.transferType !== "scheduled" ? new Date() : undefined,
+      // Atomic transfer: wrap all balance updates + records in a single transaction
+      const result = await db.transaction(async (tx) => {
+        // Create transfer record
+        const [transferResult] = await tx.insert(p2pTransfers).values({
+          senderWalletId: senderWallet.id,
+          recipientWalletId: recipientWallet.id,
+          amount: input.amount.toString(),
+          fee: fee.toString(),
+          note: input.note,
+          transferType: input.transferType,
+          scheduledFor: input.scheduledFor ? new Date(input.scheduledFor) : undefined,
+          status: input.transferType === "scheduled" ? "pending" : "completed",
+          completedAt: input.transferType !== "scheduled" ? new Date() : undefined,
+        });
+
+        // Update balances if not scheduled
+        if (input.transferType !== "scheduled") {
+          await tx.update(wallets)
+            .set({
+              availableBalance: String(availableBalance - input.amount),
+              totalSpent: String(parseFloat(senderWallet.totalSpent || "0") + input.amount),
+            })
+            .where(eq(wallets.id, senderWallet.id));
+
+          await tx.update(wallets)
+            .set({
+              availableBalance: String(parseFloat(recipientWallet.availableBalance || "0") + netAmount),
+              totalReceived: String(parseFloat(recipientWallet.totalReceived || "0") + netAmount),
+            })
+            .where(eq(wallets.id, recipientWallet.id));
+
+          // Create transaction records
+          await tx.insert(walletTransactions).values({
+            walletId: senderWallet.id,
+            type: "transfer",
+            amount: String(-input.amount),
+            fee: fee.toString(),
+            netAmount: String(-input.amount),
+            status: "completed",
+            description: `Transfer to user ${input.recipientId}`,
+            completedAt: new Date(),
+          });
+
+          await tx.insert(walletTransactions).values({
+            walletId: recipientWallet.id,
+            type: "transfer",
+            amount: netAmount.toString(),
+            fee: "0",
+            netAmount: netAmount.toString(),
+            status: "completed",
+            description: `Transfer from user ${userId}`,
+            completedAt: new Date(),
+          });
+        }
+
+        return transferResult;
       });
 
-      // Blockchain audit — P2P transfer
+      // Blockchain audit — P2P transfer (best-effort, outside transaction)
       try { await BlockchainService.logEvent(0, "P2P_TRANSFER", { senderId: senderWallet.userId, recipientId: recipientWallet.userId, amount: input.amount, fee, transferType: input.transferType, timestamp: new Date().toISOString() }); } catch { /* best-effort */ }
 
       // Record fee collection for platform revenue tracking
       if (fee > 0) {
         try {
-          const feeResult = await feeCalculator.calculateFee({ userId, userRole: ctx.user?.role || "DRIVER", transactionType: "p2p_transfer", amount: input.amount });
-          await feeCalculator.recordFeeCollection(result.insertId, "p2p_transfer", userId, input.amount, feeResult);
+          const feeResult2 = await feeCalculator.calculateFee({ userId, userRole: ctx.user?.role || "DRIVER", transactionType: "p2p_transfer", amount: input.amount });
+          await feeCalculator.recordFeeCollection(result.insertId, "p2p_transfer", userId, input.amount, feeResult2);
         } catch (e) {
           logger.error("[wallet] Failed to record p2p_transfer fee collection:", e);
         }
-      }
-
-      // Update balances if not scheduled
-      if (input.transferType !== "scheduled") {
-        await db.update(wallets)
-          .set({
-            availableBalance: String(availableBalance - input.amount),
-            totalSpent: String(parseFloat(senderWallet.totalSpent || "0") + input.amount),
-          })
-          .where(eq(wallets.id, senderWallet.id));
-
-        await db.update(wallets)
-          .set({
-            availableBalance: String(parseFloat(recipientWallet.availableBalance || "0") + netAmount),
-            totalReceived: String(parseFloat(recipientWallet.totalReceived || "0") + netAmount),
-          })
-          .where(eq(wallets.id, recipientWallet.id));
-
-        // Create transaction records
-        await db.insert(walletTransactions).values({
-          walletId: senderWallet.id,
-          type: "transfer",
-          amount: String(-input.amount),
-          fee: fee.toString(),
-          netAmount: String(-input.amount),
-          status: "completed",
-          description: `Transfer to user ${input.recipientId}`,
-          completedAt: new Date(),
-        });
-
-        await db.insert(walletTransactions).values({
-          walletId: recipientWallet.id,
-          type: "transfer",
-          amount: netAmount.toString(),
-          fee: "0",
-          netAmount: netAmount.toString(),
-          status: "completed",
-          description: `Transfer from user ${userId}`,
-          completedAt: new Date(),
-        });
       }
 
       try {

@@ -60,7 +60,7 @@ export default function Billing() {
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(summary?.totalPaid || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(summary?.totalPaid || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Paid</p>
               </div>
@@ -76,7 +76,7 @@ export default function Billing() {
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">${(summary?.pending || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-yellow-400">${(summary?.pending || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 )}
                 <p className="text-xs text-slate-400">Pending</p>
               </div>
@@ -92,7 +92,7 @@ export default function Billing() {
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-red-400">${(summary?.overdue || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-red-400">${(summary?.overdue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 )}
                 <p className="text-xs text-slate-400">Overdue</p>
               </div>

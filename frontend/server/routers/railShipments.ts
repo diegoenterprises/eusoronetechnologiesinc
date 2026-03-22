@@ -16,6 +16,7 @@ import { vizionRailService } from "../services/integrations/VizionRailService";
 import { cloudMoyoCrewService } from "../services/integrations/CloudMoyoCrewService";
 import { railRateService } from "../services/integrations/RailRateService";
 import { logger } from "../_core/logger";
+import { fireGamificationEvent } from "../services/gamificationDispatcher";
 import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 import {
   railShipments,
@@ -33,6 +34,7 @@ import {
   users,
   wallets,
   settlements,
+  notifications,
 } from "../../drizzle/schema";
 
 function generateShipmentNumber(): string {
@@ -47,11 +49,12 @@ export const railShipmentsRouter = router({
       originYardId: z.number(),
       destinationYardId: z.number(),
       carrierId: z.number().optional(),
-      carType: z.enum(["boxcar", "gondola", "hopper", "tank_car", "flat_car", "refrigerated", "autorack", "intermodal_well", "centerbeam", "covered_hopper"]).optional(),
+      carType: z.enum(["boxcar", "tankcar", "hopper", "flatcar", "gondola", "intermodal", "autorack", "centerbeam", "coilcar", "reefer", "covered_hopper", "open_hopper"]).optional(),
       commodity: z.string().optional(),
       hazmatClass: z.string().optional(),
+      unNumber: z.string().optional(),
       stccCode: z.string().optional(),
-      weightLbs: z.number().optional(),
+      weight: z.number().optional(),
       numberOfCars: z.number().default(1),
       specialInstructions: z.string().optional(),
     }))
@@ -71,9 +74,10 @@ export const railShipmentsRouter = router({
         carType: input.carType as any,
         commodity: input.commodity,
         hazmatClass: input.hazmatClass,
-        weightLbs: input.weightLbs ? String(input.weightLbs) : undefined,
+        unNumber: input.unNumber,
+        weight: input.weight ? String(input.weight) : undefined,
         numberOfCars: input.numberOfCars,
-        specialInstructions: input.specialInstructions,
+        routeDescription: input.specialInstructions,
         status: "requested" as any,
         transportMode: "RAIL",
         companyId,
@@ -84,6 +88,9 @@ export const railShipmentsRouter = router({
         eventType: "shipment_created",
         description: `Rail shipment ${shipmentNumber} created`,
       });
+
+      // Gamification: fire load_created at actual creation time
+      fireGamificationEvent({ userId, type: "load_created", value: 1, metadata: { mode: "rail" } });
 
       return { id: (result as any).insertId, shipmentNumber, status: "requested" };
     }),
@@ -189,6 +196,9 @@ export const railShipmentsRouter = router({
         empty_returned: ["invoiced", "cancelled", "on_hold"],
         invoiced: ["settled", "cancelled", "on_hold"],
         on_hold: ["requested", "car_ordered", "car_placed", "loading", "loaded", "in_consist", "departed", "in_transit", "cancelled"],
+        derailment_hold: ["on_hold", "cancelled", "in_yard"],
+        hazmat_exception: ["on_hold", "cancelled"],
+        interchange_delay: ["in_transit", "at_interchange", "on_hold", "cancelled"],
       };
 
       const currentStatus = shipment.status || "requested";
@@ -219,14 +229,15 @@ export const railShipmentsRouter = router({
             const carrierPayment = rate - platformFee;
 
             await db.execute(sql`INSERT IGNORE INTO settlements
-              (loadId, shipperId, carrierId, loadRate, platformFeePercent, platformFeeAmount, carrierPayment, totalShipperCharge, status, createdAt)
-              VALUES (${shipment.id}, ${shipment.shipperId}, ${shipment.carrierId || 0}, ${String(rate)}, '${platformFeePercent}.00', ${String(platformFee)}, ${String(carrierPayment)}, ${String(rate)}, 'pending', NOW())`);
+              (railShipmentId, shipperId, carrierId, loadRate, platformFeePercent, platformFeeAmount, carrierPayment, totalShipperCharge, status, createdAt, updatedAt)
+              VALUES (${shipment.id}, ${shipment.shipperId}, ${shipment.carrierId || shipment.shipperId}, ${rate}, ${platformFeePercent}, ${platformFee}, ${carrierPayment}, ${rate}, 'pending', NOW(), NOW())`);
 
             logger.info(`[RailSettlement] Created settlement for rail shipment ${shipment.shipmentNumber}: $${rate}`);
 
             // Credit carrier wallet
             try {
-              const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, shipment.carrierId || shipment.shipperId)).limit(1);
+              const walletUserId = shipment.carrierId || shipment.shipperId || 0;
+              const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, walletUserId)).limit(1);
               if (wallet) {
                 await db.execute(sql`UPDATE wallets SET availableBalance = availableBalance + ${carrierPayment}, totalReceived = totalReceived + ${carrierPayment} WHERE id = ${wallet.id}`);
                 logger.info(`[RailSettlement] Credited wallet ${wallet.id} with $${carrierPayment}`);
@@ -238,12 +249,49 @@ export const railShipmentsRouter = router({
         }
       }
 
+      // Gamification events for rail milestones
+      try {
+        const shipperIdForEvent = shipment.shipperId || 0;
+        const carrierIdForEvent = shipment.carrierId || 0;
+        if (input.newStatus === 'settled') {
+          if (shipperIdForEvent) fireGamificationEvent({ userId: shipperIdForEvent, type: "load_completed", value: 1, metadata: { mode: "rail" } });
+          if (carrierIdForEvent) fireGamificationEvent({ userId: carrierIdForEvent, type: "load_completed", value: 1, metadata: { mode: "rail" } });
+          if (carrierIdForEvent) fireGamificationEvent({ userId: carrierIdForEvent, type: "route_completed", value: 1, metadata: { mode: "rail" } });
+        }
+        if (input.newStatus === 'settled' && carrierIdForEvent) {
+          fireGamificationEvent({ userId: carrierIdForEvent, type: "earnings_received", value: Number(shipment.rate || 0), metadata: { mode: "rail" } });
+        }
+      } catch {}
+
       // WebSocket real-time notification
       try {
         const io = (global as any).io;
         if (io) {
           io.to(`rail:shipment:${input.id}`).emit('rail:status_changed', {
             shipmentId: input.id, newStatus: input.newStatus, timestamp: new Date().toISOString(),
+          });
+        }
+      } catch {}
+
+      // Persistent notifications for offline users
+      try {
+        const statusLabel = input.newStatus.replace(/_/g, ' ');
+        if (shipment.shipperId) {
+          await db.insert(notifications).values({
+            userId: shipment.shipperId,
+            type: "load_update",
+            title: `Rail ${shipment.shipmentNumber} — ${statusLabel}`,
+            message: input.notes || `Status changed to ${statusLabel}`,
+            data: { shipmentId: input.id, shipmentNumber: shipment.shipmentNumber, newStatus: input.newStatus, mode: "rail" },
+          });
+        }
+        if (shipment.carrierId && shipment.carrierId !== shipment.shipperId) {
+          await db.insert(notifications).values({
+            userId: shipment.carrierId,
+            type: "load_update",
+            title: `Rail ${shipment.shipmentNumber} — ${statusLabel}`,
+            message: input.notes || `Status changed to ${statusLabel}`,
+            data: { shipmentId: input.id, shipmentNumber: shipment.shipmentNumber, newStatus: input.newStatus, mode: "rail" },
           });
         }
       } catch {}
@@ -562,29 +610,42 @@ export const railShipmentsRouter = router({
       const loadingStart = events.find((e: any) => e.eventType === "status_loading" || e.eventType === "loading");
 
       if (!carPlaced) {
-        return { demurrage: 0, dwellHours: 0, freeTimeHours: 24, message: "No car_placed event found" };
+        return { demurrage: 0, dwellHours: 0, freeTimeHours: 48, message: "No car_placed event found" };
       }
+
+      // Determine country-specific demurrage rules from destination yard
+      const [shipmentForYard] = await db.select({ destinationYardId: railShipments.destinationYardId })
+        .from(railShipments).where(eq(railShipments.id, input.shipmentId)).limit(1);
+      let yardCountry = "US";
+      if (shipmentForYard?.destinationYardId) {
+        try {
+          const [yard] = await db.select().from(railYards).where(eq(railYards.id, shipmentForYard.destinationYardId)).limit(1);
+          yardCountry = (yard as any)?.country || "US";
+        } catch {}
+      }
+      // US/CA: 48h free time (STB/CTA); MX: 24h free time (SCT/ARTF)
+      const freeTimeByCountry: Record<string, number> = { US: 48, CA: 48, MX: 24 };
+      const rateByCountry: Record<string, number> = { US: 35, CA: 35, MX: 40 };
 
       const endTime = loadingStart ? new Date(loadingStart.timestamp!) : new Date();
       const startTime = new Date(carPlaced.timestamp!);
       const dwellMs = endTime.getTime() - startTime.getTime();
       const dwellHours = Math.max(0, dwellMs / (1000 * 60 * 60));
-      const freeTimeHours = 24;
+      const freeTimeHours = freeTimeByCountry[yardCountry] || 48;
       const chargeableHours = Math.max(0, dwellHours - freeTimeHours);
-      const ratePerHour = 35;
+      const ratePerHour = rateByCountry[yardCountry] || 35;
       const demurrageAmount = Math.round(chargeableHours * ratePerHour * 100) / 100;
 
       if (demurrageAmount > 0) {
         await db.insert(railDemurrage).values({
           shipmentId: input.shipmentId,
-          chargeType: "demurrage" as any,
-          startDate: startTime,
-          endDate: endTime,
-          freeTimeHours: String(freeTimeHours),
-          chargeableHours: String(chargeableHours),
+          placedAt: startTime,
+          releasedAt: endTime,
+          freeTimeHours: Math.round(freeTimeHours),
+          chargeableHours: Math.round(chargeableHours),
           ratePerHour: String(ratePerHour),
           totalCharge: String(demurrageAmount),
-          status: "pending" as any,
+          status: "accruing" as any,
         });
 
         logger.info(`[RailDemurrage] Shipment ${input.shipmentId}: ${chargeableHours.toFixed(1)}h chargeable @ $${ratePerHour}/hr = $${demurrageAmount}`);
@@ -837,17 +898,18 @@ export const railShipmentsRouter = router({
 
   getCrossBorderRailDocs: railProcedure
     .input(z.object({ direction: z.string(), mode: z.string().default('RAIL'), hasHazmat: z.boolean().default(false), hasOversized: z.boolean().default(false) }))
-    .query(({ input }) => getRequiredCrossBorderDocs(input)),
+    .query(({ input }) => getRequiredCrossBorderDocs(input.direction as any)),
 
   checkCrossBorderRailCompliance: railProcedure
     .input(z.object({
-      direction: z.string(), railroad: z.string(), hasCrewCerts: z.boolean(),
-      hasEManifest: z.boolean(), hasDGCompliance: z.boolean().default(false),
-      hasCustomsDocs: z.boolean(), hasInterchangeAgreement: z.boolean(),
+      direction: z.string(), interchangePointId: z.string(),
+      hasManifest: z.boolean(), hasCrewCerts: z.boolean(),
+      hasDangerousGoods: z.boolean().default(false), hasDGDocs: z.boolean().default(false),
+      hasCustomsDocs: z.boolean(), hasInsurance: z.boolean(),
     }))
-    .query(({ input }) => checkCrossBorderRailCompliance(input)),
+    .query(({ input }) => checkCrossBorderRailCompliance(input as any)),
 
   estimateRailBorderCrossingTime: railProcedure
     .input(z.object({ interchangePointId: z.string(), hasPreClearance: z.boolean().default(false), carCount: z.number().default(1), hasHazmat: z.boolean().default(false) }))
-    .query(({ input }) => estimateRailBorderCrossingTime(input)),
+    .query(({ input }) => estimateRailBorderCrossingTime(input.interchangePointId, input.hasHazmat, input.carCount)),
 });

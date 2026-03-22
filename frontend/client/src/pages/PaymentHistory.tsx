@@ -192,7 +192,7 @@ export default function PaymentHistory() {
                     </div>
                     <div className="text-right">
                       <p className={cn("font-bold text-lg", payment.type === "received" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-red-400")}>
-                        {payment.type === "received" ? "+" : "-"}${payment.amount?.toLocaleString()}
+                        {payment.type === "received" ? "+" : "-"}${payment.amount?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                       <p className="text-xs text-slate-500">{payment.method}</p>
                     </div>

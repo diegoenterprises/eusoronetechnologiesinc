@@ -337,6 +337,9 @@ export const loads = mysqlTable(
       lat: number;
       lng: number;
     }>(),
+    originCountry: mysqlEnum("originCountry", ["US", "CA", "MX"]).default("US"),
+    destCountry: mysqlEnum("destCountry", ["US", "CA", "MX"]).default("US"),
+    isCrossBorder: boolean("isCrossBorder").default(false),
     pickupDate: timestamp("pickupDate"),
     deliveryDate: timestamp("deliveryDate"),
     estimatedDeliveryDate: timestamp("estimatedDeliveryDate"),
@@ -718,7 +721,9 @@ export const settlements = mysqlTable(
   "settlements",
   {
     id: int("id").autoincrement().primaryKey(),
-    loadId: int("loadId").notNull(),
+    loadId: int("loadId"),
+    railShipmentId: int("railShipmentId"),
+    vesselShipmentId: int("vesselShipmentId"),
     shipperId: int("shipperId").notNull(),
     carrierId: int("carrierId").notNull(),
     driverId: int("driverId"),
@@ -737,7 +742,9 @@ export const settlements = mysqlTable(
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
   (table) => ({
-    loadIdx: unique("idx_settlement_load").on(table.loadId),
+    loadIdx: index("idx_settlement_load").on(table.loadId),
+    railIdx: index("idx_settlement_rail").on(table.railShipmentId),
+    vesselIdx: index("idx_settlement_vessel").on(table.vesselShipmentId),
     carrierIdx: index("idx_settlement_carrier").on(table.carrierId),
     statusIdx: index("idx_settlement_status").on(table.status),
     createdAtIdx: index("settlement_created_at_idx").on(table.createdAt),
@@ -9582,10 +9589,12 @@ export const vesselShipments = mysqlTable("vessel_shipments", {
   numberOfContainers: int("numberOfContainers"),
   totalWeightKg: decimal("totalWeightKg", { precision: 14, scale: 2 }),
   totalVolumeCBM: decimal("totalVolumeCBM", { precision: 10, scale: 2 }),
+  containerSize: mysqlEnum("containerSize", ["20ft", "40ft", "40ft_hc", "45ft", "20ft_reefer", "40ft_reefer"]),
+  temperatureSetting: varchar("temperatureSetting", { length: 50 }),
   status: mysqlEnum("status", [
     "booking_requested", "booking_confirmed", "documentation", "container_released",
     "gate_in", "loaded_on_vessel", "departed", "in_transit", "transshipment",
-    "arrived", "customs_hold", "discharged", "gate_out", "delivered",
+    "arrived", "customs_hold", "customs_cleared", "discharged", "gate_out", "delivered",
     "invoiced", "settled", "cancelled", "rolled"
   ]).default("booking_requested"),
   freightTerms: mysqlEnum("freightTerms", ["prepaid", "collect", "third_party"]),
@@ -9738,7 +9747,7 @@ export const vesselFreightRates = mysqlTable("vessel_freight_rates", {
   operatorId: int("operatorId").references(() => users.id),
   originPortId: int("originPortId").references(() => ports.id),
   destinationPortId: int("destinationPortId").references(() => ports.id),
-  containerSize: mysqlEnum("containerSize", ["20ft", "40ft", "40ft_hc", "45ft"]),
+  containerSize: mysqlEnum("containerSize", ["20ft", "40ft", "40ft_hc", "45ft", "20ft_reefer", "40ft_reefer"]),
   ratePerUnit: decimal("ratePerUnit", { precision: 10, scale: 2 }),
   currency: varchar("currency", { length: 3 }).default("USD"),
   bafSurcharge: decimal("bafSurcharge", { precision: 8, scale: 2 }),

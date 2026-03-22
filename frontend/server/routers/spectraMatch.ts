@@ -15,6 +15,7 @@ import { z } from "zod";
 import { sql, desc, eq } from "drizzle-orm";
 import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
+import { fireGamificationEvent } from "../services/gamificationDispatcher";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 import { esangAI, type SpectraMatchAIRequest } from "../_core/esangAI";
@@ -108,6 +109,12 @@ export const spectraMatchRouter = router({
       // Merge: if AI gives higher confidence, prefer AI product name but keep static data structure
       const useAI = aiAnalysis && aiAnalysis.confidence > topMatch.confidence;
       
+      // Fire gamification event for spectra match usage
+      try {
+        const spectraUserId = Number(ctx.user?.id) || 0;
+        if (spectraUserId) fireGamificationEvent({ userId: spectraUserId, type: "spectra_match", value: 1 });
+      } catch {}
+
       return {
         primaryMatch: {
           id: useAI ? aiAnalysis!.suggestedProduct.toLowerCase().replace(/\s+/g, "_") : topMatch.crude.id,

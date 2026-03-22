@@ -581,6 +581,8 @@ export default function LoadCreatePage() {
                   <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <Input
                     type="number"
+                    min="0"
+                    step="0.01"
                     value={formData.rate}
                     onChange={(e: any) => setFormData({ ...formData, rate: e.target.value })}
                     placeholder="Enter your rate"

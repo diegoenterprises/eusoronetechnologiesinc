@@ -1542,6 +1542,8 @@ export default function Wallet() {
                   <Input
                     type="number"
                     placeholder="0.00"
+                    min="0.01"
+                    step="0.01"
                     value={sendAmount}
                     onChange={(e) => setSendAmount(e.target.value)}
                     className={`pl-10 text-xl font-bold rounded-xl ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-900/50 border-slate-600'}`}

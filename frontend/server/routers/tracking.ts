@@ -9,7 +9,7 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { loads, vehicles, users, companies, gpsTracking, geofences, geofenceEvents, safetyAlerts } from "../../drizzle/schema";
+import { loads, vehicles, users, companies, gpsTracking, geofences, geofenceEvents, safetyAlerts, railShipments, vesselShipments } from "../../drizzle/schema";
 import { emitGPSUpdate, wsService, WS_CHANNELS } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
 import { unsafeCast } from "../_core/types/unsafe";
@@ -28,68 +28,135 @@ export const trackingRouter = router({
       if (!db) return null;
 
       try {
+        // 1. Try truck loads first
         const [load] = await db.select()
           .from(loads)
           .where(eq(loads.loadNumber, input.loadNumber))
           .limit(1);
 
-        if (!load) return null;
+        if (load) {
+          const pickup = unsafeCast(load.pickupLocation) || {};
+          const delivery = unsafeCast(load.deliveryLocation) || {};
 
-        const pickup = unsafeCast(load.pickupLocation) || {};
-        const delivery = unsafeCast(load.deliveryLocation) || {};
-
-        // Get driver info if assigned
-        let driverInfo = { name: "Not assigned", phone: "" };
-        if (load.driverId) {
-          const [driver] = await db.select({ name: users.name, phone: users.phone })
-            .from(users).where(eq(users.id, load.driverId)).limit(1);
-          if (driver) {
-            driverInfo = { name: driver.name?.split(' ')[0] + " " + (driver.name?.split(' ')[1]?.[0] || "") + ".", phone: "***-***-" + (driver.phone?.slice(-4) || "0000") };
+          // Get driver info if assigned
+          let driverInfo = { name: "Not assigned", phone: "" };
+          if (load.driverId) {
+            const [driver] = await db.select({ name: users.name, phone: users.phone })
+              .from(users).where(eq(users.id, load.driverId)).limit(1);
+            if (driver) {
+              driverInfo = { name: driver.name?.split(' ')[0] + " " + (driver.name?.split(' ')[1]?.[0] || "") + ".", phone: "***-***-" + (driver.phone?.slice(-4) || "0000") };
+            }
           }
-        }
 
-        // Get catalyst info
-        let catalystInfo = { name: "Catalyst", mcNumber: "" };
-        if (load.catalystId) {
-          const [catalyst] = await db.select({ name: companies.name, mcNumber: companies.mcNumber })
-            .from(companies).where(eq(companies.id, load.catalystId)).limit(1);
-          if (catalyst) catalystInfo = { name: catalyst.name, mcNumber: catalyst.mcNumber || "" };
-        }
-
-        // Get current GPS location if available
-        let currentLocation = { lat: 0, lng: 0, address: "Location unavailable", updatedAt: new Date().toISOString() };
-        if (load.driverId) {
-          const [gps] = await db.select()
-            .from(gpsTracking)
-            .where(eq(gpsTracking.driverId, load.driverId))
-            .orderBy(desc(gpsTracking.timestamp))
-            .limit(1);
-          if (gps) {
-            currentLocation = { lat: Number(gps.latitude), lng: Number(gps.longitude), address: "En route", updatedAt: gps.timestamp?.toISOString() || new Date().toISOString() };
+          // Get catalyst info
+          let catalystInfo = { name: "Catalyst", mcNumber: "" };
+          if (load.catalystId) {
+            const [catalyst] = await db.select({ name: companies.name, mcNumber: companies.mcNumber })
+              .from(companies).where(eq(companies.id, load.catalystId)).limit(1);
+            if (catalyst) catalystInfo = { name: catalyst.name, mcNumber: catalyst.mcNumber || "" };
           }
+
+          // Get current GPS location if available
+          let currentLocation = { lat: 0, lng: 0, address: "Location unavailable", updatedAt: new Date().toISOString() };
+          if (load.driverId) {
+            const [gps] = await db.select()
+              .from(gpsTracking)
+              .where(eq(gpsTracking.driverId, load.driverId))
+              .orderBy(desc(gpsTracking.timestamp))
+              .limit(1);
+            if (gps) {
+              currentLocation = { lat: Number(gps.latitude), lng: Number(gps.longitude), address: "En route", updatedAt: gps.timestamp?.toISOString() || new Date().toISOString() };
+            }
+          }
+
+          const statusOrder = ['posted', 'bidding', 'assigned', 'in_transit', 'delivered'];
+          const currentIdx = statusOrder.indexOf(load.status);
+          const progress = Math.round((currentIdx / (statusOrder.length - 1)) * 100);
+
+          return {
+            loadNumber: load.loadNumber,
+            transportMode: 'truck' as const,
+            status: load.status,
+            origin: { name: pickup.city ? `${pickup.city} Terminal` : "Origin", address: pickup.address || "", departedAt: load.pickupDate?.toISOString() || "" },
+            destination: { name: delivery.city ? `${delivery.city} Terminal` : "Destination", address: delivery.address || "", eta: load.deliveryDate?.toISOString() || "" },
+            currentLocation,
+            progress,
+            driver: driverInfo,
+            catalyst: catalystInfo,
+            milestones: [
+              { status: "created", timestamp: load.createdAt?.toISOString() || "", completed: true },
+              { status: "dispatched", timestamp: load.status !== 'posted' && load.status !== 'bidding' ? load.updatedAt?.toISOString() : null, completed: currentIdx >= 2 },
+              { status: "picked_up", timestamp: currentIdx >= 3 ? load.pickupDate?.toISOString() : null, completed: currentIdx >= 3 },
+              { status: "in_transit", timestamp: currentIdx >= 3 ? load.updatedAt?.toISOString() : null, completed: currentIdx >= 3 },
+              { status: "delivered", timestamp: currentIdx >= 4 ? load.deliveryDate?.toISOString() : null, completed: currentIdx >= 4 },
+            ],
+          };
         }
 
-        const statusOrder = ['posted', 'bidding', 'assigned', 'in_transit', 'delivered'];
-        const currentIdx = statusOrder.indexOf(load.status);
-        const progress = Math.round((currentIdx / (statusOrder.length - 1)) * 100);
+        // 2. Try rail shipments
+        const [railShipment] = await db.select()
+          .from(railShipments)
+          .where(eq(railShipments.shipmentNumber, input.loadNumber))
+          .limit(1);
 
-        return {
-          loadNumber: load.loadNumber,
-          status: load.status,
-          origin: { name: pickup.city ? `${pickup.city} Terminal` : "Origin", address: pickup.address || "", departedAt: load.pickupDate?.toISOString() || "" },
-          destination: { name: delivery.city ? `${delivery.city} Terminal` : "Destination", address: delivery.address || "", eta: load.deliveryDate?.toISOString() || "" },
-          currentLocation,
-          progress,
-          driver: driverInfo,
-          catalyst: catalystInfo,
-          milestones: [
-            { status: "created", timestamp: load.createdAt?.toISOString() || "", completed: true },
-            { status: "dispatched", timestamp: load.status !== 'posted' && load.status !== 'bidding' ? load.updatedAt?.toISOString() : null, completed: currentIdx >= 2 },
-            { status: "picked_up", timestamp: currentIdx >= 3 ? load.pickupDate?.toISOString() : null, completed: currentIdx >= 3 },
-            { status: "in_transit", timestamp: currentIdx >= 3 ? load.updatedAt?.toISOString() : null, completed: currentIdx >= 3 },
-            { status: "delivered", timestamp: currentIdx >= 4 ? load.deliveryDate?.toISOString() : null, completed: currentIdx >= 4 },
-          ],
-        };
+        if (railShipment) {
+          const railStatusOrder = ['requested', 'car_ordered', 'car_placed', 'loading', 'loaded', 'in_consist', 'departed', 'in_transit', 'in_yard', 'spotted', 'unloading', 'unloaded', 'empty_returned'];
+          const railIdx = railStatusOrder.indexOf(railShipment.status || '');
+          const railProgress = railIdx >= 0 ? Math.round((railIdx / (railStatusOrder.length - 1)) * 100) : 0;
+
+          return {
+            loadNumber: railShipment.shipmentNumber,
+            transportMode: 'rail' as const,
+            status: railShipment.status || 'requested',
+            origin: { name: railShipment.originRailroad || "Origin Yard", address: "", departedAt: "" },
+            destination: { name: railShipment.destinationRailroad || "Destination Yard", address: "", eta: "" },
+            currentLocation: { lat: 0, lng: 0, address: "Rail tracking — location via railroad ETA", updatedAt: new Date().toISOString() },
+            progress: railProgress,
+            driver: { name: "N/A (Rail)", phone: "" },
+            catalyst: { name: railShipment.originRailroad || "Railroad", mcNumber: "" },
+            milestones: [
+              { status: "requested", timestamp: railShipment.createdAt?.toISOString() || "", completed: true },
+              { status: "car_placed", timestamp: railIdx >= 2 ? railShipment.updatedAt?.toISOString() : null, completed: railIdx >= 2 },
+              { status: "departed", timestamp: railIdx >= 6 ? railShipment.updatedAt?.toISOString() : null, completed: railIdx >= 6 },
+              { status: "in_transit", timestamp: railIdx >= 7 ? railShipment.updatedAt?.toISOString() : null, completed: railIdx >= 7 },
+              { status: "unloaded", timestamp: railIdx >= 11 ? railShipment.updatedAt?.toISOString() : null, completed: railIdx >= 11 },
+            ],
+          };
+        }
+
+        // 3. Try vessel shipments
+        const [vesselShipment] = await db.select()
+          .from(vesselShipments)
+          .where(eq(vesselShipments.bookingNumber, input.loadNumber))
+          .limit(1);
+
+        if (vesselShipment) {
+          const vesselStatusOrder = ['booking_requested', 'booking_confirmed', 'documentation', 'container_released', 'gate_in', 'loaded_on_vessel', 'departed', 'in_transit', 'transshipment', 'arrived', 'customs_cleared', 'discharged', 'gate_out', 'delivered'];
+          const vesselIdx = vesselStatusOrder.indexOf(vesselShipment.status || '');
+          const vesselProgress = vesselIdx >= 0 ? Math.round((vesselIdx / (vesselStatusOrder.length - 1)) * 100) : 0;
+
+          return {
+            loadNumber: vesselShipment.bookingNumber,
+            transportMode: 'vessel' as const,
+            status: vesselShipment.status || 'booking_requested',
+            origin: { name: "Origin Port", address: "", departedAt: vesselShipment.atd?.toISOString() || vesselShipment.etd?.toISOString() || "" },
+            destination: { name: "Destination Port", address: "", eta: vesselShipment.eta?.toISOString() || "" },
+            currentLocation: { lat: 0, lng: 0, address: "Vessel tracking — location via AIS/port updates", updatedAt: new Date().toISOString() },
+            progress: vesselProgress,
+            driver: { name: "N/A (Vessel)", phone: "" },
+            catalyst: { name: vesselShipment.voyageNumber ? `Voyage ${vesselShipment.voyageNumber}` : "Vessel Operator", mcNumber: "" },
+            milestones: [
+              { status: "booking_confirmed", timestamp: vesselShipment.createdAt?.toISOString() || "", completed: true },
+              { status: "gate_in", timestamp: vesselIdx >= 4 ? vesselShipment.updatedAt?.toISOString() : null, completed: vesselIdx >= 4 },
+              { status: "departed", timestamp: vesselShipment.atd?.toISOString() || (vesselIdx >= 6 ? vesselShipment.updatedAt?.toISOString() : null), completed: vesselIdx >= 6 },
+              { status: "in_transit", timestamp: vesselIdx >= 7 ? vesselShipment.updatedAt?.toISOString() : null, completed: vesselIdx >= 7 },
+              { status: "delivered", timestamp: vesselIdx >= 13 ? vesselShipment.updatedAt?.toISOString() : null, completed: vesselIdx >= 13 },
+            ],
+          };
+        }
+
+        // Not found in any table
+        return null;
       } catch (error) {
         logger.error('[Tracking] trackShipment error:', error);
         return null;

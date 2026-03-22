@@ -121,6 +121,8 @@ import {
   milesTransactions,
   lootCrates,
   userInventory,
+  railShipments,
+  vesselShipments,
 } from "./schema";
 
 // ═══════════════════════════════════════════════════════════════
@@ -274,6 +276,8 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
 
 export const settlementsRelations = relations(settlements, ({ one, many }) => ({
   load: one(loads, { fields: [settlements.loadId], references: [loads.id] }),
+  railShipment: one(railShipments, { fields: [settlements.railShipmentId], references: [railShipments.id] }),
+  vesselShipment: one(vesselShipments, { fields: [settlements.vesselShipmentId], references: [vesselShipments.id] }),
   shipper: one(users, { fields: [settlements.shipperId], references: [users.id], relationName: "settlementShipper" }),
   carrier: one(users, { fields: [settlements.carrierId], references: [users.id], relationName: "settlementCarrier" }),
   driver: one(users, { fields: [settlements.driverId], references: [users.id], relationName: "settlementDriver" }),

@@ -17,8 +17,10 @@ import {
   Newspaper, Clock, Share2, Bookmark, BookmarkCheck, Search, ExternalLink,
   TrendingUp, AlertTriangle, Truck, DollarSign, Shield, Fuel,
   Snowflake, FlaskConical, Ship, Zap, RefreshCw, Radio, Wifi,
-  WifiOff, Activity, Landmark, BookOpen, Lock
+  WifiOff, Activity, Landmark, BookOpen, Lock, Flame, TrainFront,
+  Send, Star, Hash, Plus, X
 } from "lucide-react";
+import { toast } from "sonner";
 import { getApprovalStatus, pathRequiresApproval } from "@/lib/approvalGating";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -37,6 +39,7 @@ const CATEGORIES = [
   { value: "energy", label: "Energy", icon: Zap },
   { value: "supply_chain", label: "Supply Chain", icon: TrendingUp },
   { value: "government", label: "Government", icon: Landmark },
+  { value: "rail", label: "Rail", icon: TrainFront },
   { value: "saved", label: "Saved", icon: BookOpen },
 ];
 
@@ -226,6 +229,29 @@ export default function NewsFeed() {
     },
   });
 
+  // New: Morning Brief, Breaking News, Topics, Source Tiers, Share
+  const briefQuery = (trpc as any).news.getMorningBrief.useQuery(undefined, { staleTime: 300_000 });
+  const breakingQuery = (trpc as any).news.getBreakingNews.useQuery(undefined, { refetchInterval: 120_000, staleTime: 60_000 });
+  const topicsQuery = (trpc as any).news.getFollowedTopics.useQuery(undefined, { staleTime: 30_000 });
+  const sourceTiersQuery = (trpc as any).news.getSourceTiers.useQuery(undefined, { staleTime: 600_000 });
+  const followMut = (trpc as any).news.followTopic.useMutation({ onSuccess: () => topicsQuery.refetch() });
+  const unfollowMut = (trpc as any).news.unfollowTopic.useMutation({ onSuccess: () => topicsQuery.refetch() });
+  const shareMut = (trpc as any).news.shareArticle.useMutation({
+    onSuccess: () => toast.success("Article shared"),
+    onError: (e: any) => toast.error(e.message || "Failed to share"),
+  });
+  const [topicInput, setTopicInput] = useState("");
+  const followedTopics: string[] = topicsQuery.data?.topics || [];
+  const sourceTiers: Record<string, { tier: number }> = sourceTiersQuery.data || {};
+
+  const getTierBadge = (source: string) => {
+    const info = sourceTiers[source];
+    if (!info) return null;
+    if (info.tier === 1) return <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold ml-1">T1</span>;
+    if (info.tier === 3) return <span className="text-[8px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold ml-1">GOV</span>;
+    return null;
+  };
+
   const status = statusQuery.data;
   const rawArticles = activeTab === "saved"
     ? (savedArticlesQuery.data as any)?.articles || []
@@ -287,6 +313,52 @@ export default function NewsFeed() {
           <span className="text-sm text-blue-300 font-medium">New articles just arrived</span>
           <span className="text-xs text-slate-500 ml-auto">Auto-updated</span>
         </div>
+      )}
+
+      {/* Breaking News Alert */}
+      {(breakingQuery.data?.clusters?.length > 0) && (
+        <div className="bg-gradient-to-r from-red-900/30 to-orange-900/30 border border-red-500/40 rounded-xl p-4 animate-in fade-in">
+          <div className="flex items-center gap-2 mb-2">
+            <Flame className="w-5 h-5 text-red-400" />
+            <span className="text-sm font-bold text-red-400 uppercase tracking-wide">Breaking</span>
+            <span className="text-xs text-slate-500">{breakingQuery.data.clusters[0].sourceCount} sources reporting</span>
+          </div>
+          <a href={breakingQuery.data.clusters[0].articles[0]?.link} target="_blank" rel="noopener noreferrer" className="text-white font-semibold hover:text-red-300 transition-colors">
+            {breakingQuery.data.clusters[0].articles[0]?.title}
+          </a>
+          {breakingQuery.data.clusters[0].articles.length > 1 && (
+            <p className="text-xs text-slate-400 mt-1">Also reported by: {breakingQuery.data.clusters[0].articles.slice(1).map((a: any) => a.source).join(', ')}</p>
+          )}
+        </div>
+      )}
+
+      {/* Morning Brief */}
+      {briefQuery.data?.articles?.length > 0 && (
+        <Card className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-slate-700/50">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-purple-500/20"><Star className="w-4 h-4 text-purple-400" /></div>
+                <div>
+                  <h3 className="text-white font-semibold text-sm">Your Daily Brief</h3>
+                  <p className="text-[10px] text-slate-500">{briefQuery.data.totalToday} articles today | Top {briefQuery.data.briefCount} for your role</p>
+                </div>
+              </div>
+              <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]">{briefQuery.data.role}</Badge>
+            </div>
+            <div className="space-y-2">
+              {briefQuery.data.articles.slice(0, 5).map((a: any, i: number) => (
+                <a key={i} href={a.link} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 p-2 rounded-lg hover:bg-slate-700/30 transition-colors group">
+                  <span className="text-xs font-bold text-slate-600 mt-0.5 w-4 shrink-0">{i + 1}</span>
+                  <div className="min-w-0">
+                    <p className="text-white text-xs line-clamp-1 group-hover:text-purple-400 transition-colors">{a.title}</p>
+                    <p className="text-[10px] text-slate-500">{a.source} | {a.category.replace('_', ' ')}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -359,7 +431,7 @@ export default function NewsFeed() {
                           </a>
                           <p className="text-xs text-slate-400 line-clamp-2">{article.summary}</p>
                           <div className="flex items-center justify-between mt-2">
-                            <span className="text-[11px] text-slate-500">{article.source}</span>
+                            <span className="text-[11px] text-slate-500 flex items-center">{article.source}{getTierBadge(article.source)}</span>
                             <div className="flex items-center gap-1">
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild>
                                 <a href={article.link} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3.5 h-3.5" /></a>
@@ -367,7 +439,7 @@ export default function NewsFeed() {
                               <Button variant="ghost" size="sm" className={cn("h-7 w-7 p-0", savedIds.has(article.id) && "text-yellow-400")} onClick={() => toggleBookmark(article.id)}>
                                 {savedIds.has(article.id) ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Share2 className="w-3.5 h-3.5" /></Button>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { navigator.clipboard.writeText(article.link); toast.success("Link copied"); }}><Share2 className="w-3.5 h-3.5" /></Button>
                             </div>
                           </div>
                         </div>
@@ -409,6 +481,40 @@ export default function NewsFeed() {
               </div>
               {status?.lastUpdated && (
                 <p className="text-[10px] text-slate-600 text-center mt-2">Last refresh: {formatDate(status.lastUpdated)}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Follow Topics */}
+          <Card className="bg-slate-800/50 border-slate-700">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white flex items-center gap-2 text-base">
+                <Hash className="w-4 h-4 text-cyan-400" />Follow Topics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-1.5 mb-3">
+                <Input
+                  value={topicInput}
+                  onChange={(e: any) => setTopicInput(e.target.value)}
+                  placeholder="e.g. Permian Basin"
+                  className="h-7 text-xs bg-slate-700/50 border-slate-600"
+                  onKeyDown={(e: any) => { if (e.key === 'Enter' && topicInput.trim()) { followMut.mutate({ topic: topicInput.trim() }); setTopicInput(""); } }}
+                />
+                <Button size="sm" className="h-7 px-2 bg-cyan-600 hover:bg-cyan-700" disabled={!topicInput.trim()} onClick={() => { followMut.mutate({ topic: topicInput.trim() }); setTopicInput(""); }}>
+                  <Plus className="w-3 h-3" />
+                </Button>
+              </div>
+              {followedTopics.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {followedTopics.map((topic: string) => (
+                    <Badge key={topic} className="bg-cyan-500/15 text-cyan-400 border-0 text-[10px] cursor-pointer hover:bg-red-500/20 hover:text-red-400 transition-colors" onClick={() => unfollowMut.mutate({ topic })}>
+                      #{topic} <X className="w-2.5 h-2.5 ml-1" />
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[10px] text-slate-600 text-center">Follow topics to highlight relevant articles</p>
               )}
             </CardContent>
           </Card>

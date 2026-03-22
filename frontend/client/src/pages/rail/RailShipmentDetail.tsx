@@ -86,7 +86,7 @@ export default function RailShipmentDetail() {
         <Card className={cn("border", cardBg)}>
           <CardHeader><CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-900" : "text-white")}><Package className="w-4 h-4" /> Shipment Info</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
-            {[["Commodity", s.commodity], ["Car Type", s.carType?.replace(/_/g, " ")], ["# of Cars", s.numberOfCars], ["Weight", s.weightLbs ? `${Number(s.weightLbs).toLocaleString()} lbs` : "—"], ["Hazmat", s.hazmatClass || "None"]].map(([k, v]) => (
+            {[["Commodity", s.commodity], ["Car Type", s.carType?.replace(/_/g, " ")], ["# of Cars", s.numberOfCars], ["Weight", s.weight ? `${Number(s.weight).toLocaleString()} lbs` : "—"], ["Hazmat", s.hazmatClass || "None"]].map(([k, v]) => (
               <div key={String(k)} className="flex justify-between"><span className={isLight ? "text-slate-500" : "text-slate-400"}>{k}</span><span className={cn("font-medium", isLight ? "text-slate-900" : "text-white")}>{v || "—"}</span></div>
             ))}
           </CardContent>

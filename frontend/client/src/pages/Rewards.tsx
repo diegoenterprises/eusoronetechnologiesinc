@@ -15,11 +15,17 @@ import {
   Gift, Star, Trophy, Target, ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function Rewards() {
   const summaryQuery = (trpc as any).rewards.getSummary.useQuery();
-  const rewardsQuery = (trpc as any).rewards.getAvailable.useQuery();
+  const catalogQuery = (trpc as any).gamification.getRewardsCatalog.useQuery();
   const historyQuery = (trpc as any).rewards.getHistory.useQuery({ limit: 10 });
+  const redeemMutation = (trpc as any).gamification.redeemReward.useMutation({
+    onSuccess: () => { toast.success("Reward redeemed!"); summaryQuery.refetch(); catalogQuery.refetch(); historyQuery.refetch(); },
+    onError: (e: any) => toast.error(e.message || "Failed to redeem"),
+  });
+  const rewardsData = catalogQuery.data?.rewards || [];
 
   const summary = summaryQuery.data;
 
@@ -141,9 +147,9 @@ export default function Rewards() {
             <CardTitle className="text-white text-lg">Available Rewards</CardTitle>
           </CardHeader>
           <CardContent>
-            {rewardsQuery.isLoading ? (
+            {catalogQuery.isLoading ? (
               <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-            ) : (rewardsQuery.data as any)?.length === 0 ? (
+            ) : (rewardsData as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Gift className="w-8 h-8 text-slate-500" />
@@ -152,7 +158,7 @@ export default function Rewards() {
               </div>
             ) : (
               <div className="space-y-3">
-                {(rewardsQuery.data as any)?.map((reward: any) => (
+                {(rewardsData as any)?.map((reward: any) => (
                   <div key={reward.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -165,9 +171,9 @@ export default function Rewards() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-yellow-400 font-bold">{reward.points} pts</p>
-                        <Button size="sm" className="mt-1 bg-purple-600 hover:bg-purple-700 rounded-lg text-xs" disabled={(summary?.points || 0) < reward.points}>
-                          Redeem
+                        <p className="text-yellow-400 font-bold">{(reward.cost || reward.points || 0)} pts</p>
+                        <Button size="sm" className="mt-1 bg-purple-600 hover:bg-purple-700 rounded-lg text-xs" disabled={(summary?.points || 0) < (reward.cost || reward.points || 0) || redeemMutation.isPending} onClick={() => redeemMutation.mutate({ rewardId: reward.id })}>
+                          {redeemMutation.isPending ? "..." : "Redeem"}
                         </Button>
                       </div>
                     </div>

@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq, and, desc, sql, gte, lte, inArray, count } from "drizzle-orm";
+import { eq, and, or, desc, sql, gte, lte, inArray, count } from "drizzle-orm";
 import { vesselProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { getCrossBorderPorts, getISFRequirements, getCabotageRules, getIMDGClasses, getRequiredVesselDocs, checkVesselCrossBorderCompliance, estimateVesselCustomsClearanceTime, type MaritimeCountry } from "../services/crossBorderVessel";
@@ -17,6 +17,7 @@ import { dtnMarineWeatherService } from "../services/integrations/DTNMarineWeath
 import { oilPriceMarineService } from "../services/integrations/OilPriceMarineService";
 import { avalaraHTSService } from "../services/integrations/AvalaraHTSService";
 import { logger } from "../_core/logger";
+import { fireGamificationEvent } from "../services/gamificationDispatcher";
 import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
 import {
   vesselShipments,
@@ -39,6 +40,7 @@ import {
   users,
   wallets,
   settlements,
+  notifications,
 } from "../../drizzle/schema";
 
 function generateBookingNumber(): string {
@@ -60,13 +62,16 @@ export const vesselShipmentsRouter = router({
       vesselId: z.number().optional(),
       cargoType: z.enum(["container", "bulk_dry", "bulk_liquid", "breakbulk", "ro_ro", "reefer", "project_cargo"]).optional(),
       commodity: z.string().optional(),
+      containerSize: z.enum(["20ft", "40ft", "40ft_hc", "45ft", "20ft_reefer", "40ft_reefer"]).optional(),
       numberOfContainers: z.number().optional(),
       totalWeightKg: z.number().optional(),
       totalVolumeCBM: z.number().optional(),
+      temperatureSetting: z.string().optional(),
       hazmatClass: z.string().optional(),
       imdgCode: z.string().optional(),
       incoterms: z.string().optional(),
       freightTerms: z.enum(["prepaid", "collect", "third_party"]).optional(),
+      rate: z.number().optional(),
       etd: z.string().optional(),
       eta: z.string().optional(),
     }))
@@ -85,13 +90,16 @@ export const vesselShipmentsRouter = router({
         vesselId: input.vesselId,
         cargoType: input.cargoType as any,
         commodity: input.commodity,
+        containerSize: input.containerSize as any,
         numberOfContainers: input.numberOfContainers,
         totalWeightKg: input.totalWeightKg ? String(input.totalWeightKg) : undefined,
         totalVolumeCBM: input.totalVolumeCBM ? String(input.totalVolumeCBM) : undefined,
+        temperatureSetting: input.temperatureSetting,
         hazmatClass: input.hazmatClass,
         imdgCode: input.imdgCode,
         incoterms: input.incoterms,
         freightTerms: input.freightTerms as any,
+        rate: input.rate ? String(input.rate) : undefined,
         etd: input.etd ? new Date(input.etd) : undefined,
         eta: input.eta ? new Date(input.eta) : undefined,
         status: "booking_requested" as any,
@@ -195,12 +203,12 @@ export const vesselShipmentsRouter = router({
       if (!shipment) throw new Error("Booking not found");
 
       const VALID_VESSEL_TRANSITIONS: Record<string, string[]> = {
-        booking_requested: ["booking_confirmed", "cancelled"],
-        booking_confirmed: ["documentation", "container_released", "cancelled"],
+        booking_requested: ["booking_confirmed", "cancelled", "rolled"],
+        booking_confirmed: ["documentation", "container_released", "cancelled", "rolled"],
         documentation: ["container_released", "cancelled"],
-        container_released: ["gate_in", "cancelled"],
+        container_released: ["gate_in", "cancelled", "rolled"],
         gate_in: ["loaded_on_vessel", "cancelled"],
-        loaded_on_vessel: ["departed", "cancelled"],
+        loaded_on_vessel: ["departed", "cancelled", "rolled"],
         departed: ["in_transit", "cancelled"],
         in_transit: ["transshipment", "arrived", "cancelled"],
         transshipment: ["in_transit", "cancelled"],
@@ -211,6 +219,7 @@ export const vesselShipmentsRouter = router({
         gate_out: ["delivered", "cancelled"],
         delivered: ["invoiced"],
         invoiced: ["settled"],
+        rolled: ["booking_confirmed", "cancelled"],
       };
 
       const currentStatus = shipment.status || "booking_requested";
@@ -262,14 +271,15 @@ export const vesselShipmentsRouter = router({
             const carrierPayment = rate - platformFee;
 
             await db.execute(sql`INSERT IGNORE INTO settlements
-              (loadId, shipperId, carrierId, loadRate, platformFeePercent, platformFeeAmount, carrierPayment, totalShipperCharge, status, createdAt)
-              VALUES (${booking.id}, ${booking.shipperId}, ${booking.operatorId || 0}, ${String(rate)}, '${platformFeePercent}.00', ${String(platformFee)}, ${String(carrierPayment)}, ${String(rate)}, 'pending', NOW())`);
+              (vesselShipmentId, shipperId, carrierId, loadRate, platformFeePercent, platformFeeAmount, carrierPayment, totalShipperCharge, status, createdAt, updatedAt)
+              VALUES (${booking.id}, ${booking.shipperId}, ${booking.operatorId || booking.shipperId}, ${rate}, ${platformFeePercent}, ${platformFee}, ${carrierPayment}, ${rate}, 'pending', NOW(), NOW())`);
 
             logger.info(`[VesselSettlement] Created settlement for booking ${booking.bookingNumber}: $${rate}`);
 
             // Credit carrier/operator wallet
             try {
-              const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, booking.operatorId || booking.shipperId)).limit(1);
+              const walletUserId = booking.operatorId || booking.shipperId || 0;
+              const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, walletUserId)).limit(1);
               if (wallet) {
                 await db.execute(sql`UPDATE wallets SET availableBalance = availableBalance + ${carrierPayment}, totalReceived = totalReceived + ${carrierPayment} WHERE id = ${wallet.id}`);
                 logger.info(`[VesselSettlement] Credited wallet ${wallet.id} with $${carrierPayment}`);
@@ -281,12 +291,52 @@ export const vesselShipmentsRouter = router({
         }
       }
 
+      // Gamification events for vessel milestones
+      try {
+        const shipperIdForEvent = shipment.shipperId || 0;
+        const operatorIdForEvent = shipment.operatorId || 0;
+        if (input.newStatus === 'delivered' || input.newStatus === 'settled') {
+          if (shipperIdForEvent) fireGamificationEvent({ userId: shipperIdForEvent, type: "load_completed", value: 1, metadata: { mode: "vessel" } });
+          if (operatorIdForEvent) fireGamificationEvent({ userId: operatorIdForEvent, type: "load_completed", value: 1, metadata: { mode: "vessel" } });
+          if (operatorIdForEvent) fireGamificationEvent({ userId: operatorIdForEvent, type: "route_completed", value: 1, metadata: { mode: "vessel" } });
+        }
+        if (input.newStatus === 'departed') {
+          if (shipperIdForEvent) fireGamificationEvent({ userId: shipperIdForEvent, type: "load_created", value: 1, metadata: { mode: "vessel" } });
+        }
+        if (input.newStatus === 'settled' && operatorIdForEvent) {
+          fireGamificationEvent({ userId: operatorIdForEvent, type: "earnings_received", value: Number(shipment.rate || 0), metadata: { mode: "vessel" } });
+        }
+      } catch {}
+
       // WebSocket real-time notification
       try {
         const io = (global as any).io;
         if (io) {
           io.to(`vessel:booking:${input.id}`).emit('vessel:status_changed', {
             shipmentId: input.id, newStatus: input.newStatus, timestamp: new Date().toISOString(),
+          });
+        }
+      } catch {}
+
+      // Persistent notifications for offline users
+      try {
+        const statusLabel = input.newStatus.replace(/_/g, ' ');
+        if (shipment.shipperId) {
+          await db.insert(notifications).values({
+            userId: shipment.shipperId,
+            type: "load_update",
+            title: `Booking ${shipment.bookingNumber} — ${statusLabel}`,
+            message: input.notes || `Status changed to ${statusLabel}`,
+            data: { shipmentId: input.id, bookingNumber: shipment.bookingNumber, newStatus: input.newStatus, mode: "vessel" },
+          });
+        }
+        if (shipment.operatorId && shipment.operatorId !== shipment.shipperId) {
+          await db.insert(notifications).values({
+            userId: shipment.operatorId,
+            type: "load_update",
+            title: `Booking ${shipment.bookingNumber} — ${statusLabel}`,
+            message: input.notes || `Status changed to ${statusLabel}`,
+            data: { shipmentId: input.id, bookingNumber: shipment.bookingNumber, newStatus: input.newStatus, mode: "vessel" },
           });
         }
       } catch {}
@@ -573,7 +623,19 @@ export const vesselShipmentsRouter = router({
       if (!shipment) return null;
 
       const demurrageCharges = await db.select().from(vesselDemurrage).where(eq(vesselDemurrage.shipmentId, input.shipmentId));
-      const portCharges = await db.select().from(vesselPortCharges).where(eq(vesselPortCharges.voyageId, input.shipmentId));
+
+      // Port charges are linked to voyages, not shipments directly — query by vessel + port IDs
+      const portCharges = (shipment.vesselId)
+        ? await db.select().from(vesselPortCharges).where(
+            and(
+              eq(vesselPortCharges.vesselId, shipment.vesselId),
+              or(
+                eq(vesselPortCharges.portId, shipment.originPortId!),
+                eq(vesselPortCharges.portId, shipment.destinationPortId!)
+              )
+            )
+          )
+        : [];
 
       const totalDemurrage = demurrageCharges.reduce((sum: number, d: any) => sum + parseFloat(d.totalCharge || "0"), 0);
       const totalPortCharges = portCharges.reduce((sum: number, p: any) => sum + parseFloat(p.amount || "0"), 0);

@@ -9,7 +9,7 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure, isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions, auditLogs, notifications } from "../../drizzle/schema";
+import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions, auditLogs, notifications, railShipments, vesselShipments } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { unsafeCast } from "../_core/types/unsafe";
@@ -75,11 +75,16 @@ export const billingRouter = router({
         const companyId = ctx.user?.companyId || 0;
         const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
         const [lc] = await db.select({ cnt: sql<number>`COUNT(*)` }).from(loads).where(and(eq(loads.shipperId, companyId), gte(loads.createdAt, monthStart)));
-        loadsUsed = lc?.cnt || 0;
+        const truckLoads = lc?.cnt || 0;
+        const [rc] = await db.select({ cnt: sql<number>`COUNT(*)` }).from(railShipments).where(and(eq(railShipments.companyId, companyId), gte(railShipments.createdAt, monthStart)));
+        const railLoads = rc?.cnt || 0;
+        const [vc] = await db.select({ cnt: sql<number>`COUNT(*)` }).from(vesselShipments).where(and(eq(vesselShipments.companyId, companyId), gte(vesselShipments.createdAt, monthStart)));
+        const vesselLoads = vc?.cnt || 0;
+        loadsUsed = truckLoads + railLoads + vesselLoads;
         const [uc] = await db.select({ cnt: sql<number>`COUNT(*)` }).from(users).where(eq(users.companyId, companyId));
         usersUsed = uc?.cnt || 0;
-        const [vc] = await db.select({ cnt: sql<number>`COUNT(*)` }).from(vehicles).where(eq(vehicles.companyId, companyId));
-        vehiclesUsed = vc?.cnt || 0;
+        const [vhc] = await db.select({ cnt: sql<number>`COUNT(*)` }).from(vehicles).where(eq(vehicles.companyId, companyId));
+        vehiclesUsed = vhc?.cnt || 0;
       } catch {}
     }
     return {

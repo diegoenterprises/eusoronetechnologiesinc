@@ -9,7 +9,7 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { payments, loads, users, companies, settlementDocuments } from "../../drizzle/schema";
+import { payments, loads, users, companies, settlements, settlementDocuments, railShipments, vesselShipments } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
 
 const invoiceStatusSchema = z.enum([
@@ -112,6 +112,8 @@ export const accountingRouter = router({
     .input(z.object({
       customerId: z.string(),
       loadIds: z.array(z.string()),
+      railShipmentIds: z.array(z.string()).optional(),
+      vesselShipmentIds: z.array(z.string()).optional(),
       dueDate: z.string(),
       notes: z.string().optional(),
     }))
@@ -119,18 +121,27 @@ export const accountingRouter = router({
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const userId = Number(ctx.user?.id) || 0;
       const customerId = parseInt(input.customerId, 10);
-      // Sum load rates to get invoice amount
+      // Sum rates from all 3 transport modes
       let totalAmount = 0;
       for (const lid of input.loadIds) {
         const [load] = await db.select({ rate: loads.rate }).from(loads).where(eq(loads.id, parseInt(lid, 10))).limit(1);
         if (load?.rate) totalAmount += parseFloat(String(load.rate));
       }
+      for (const rid of (input.railShipmentIds || [])) {
+        const [rail] = await db.select({ rate: railShipments.rate }).from(railShipments).where(eq(railShipments.id, parseInt(rid, 10))).limit(1);
+        if (rail?.rate) totalAmount += parseFloat(String(rail.rate));
+      }
+      for (const vid of (input.vesselShipmentIds || [])) {
+        const [vessel] = await db.select({ rate: vesselShipments.rate }).from(vesselShipments).where(eq(vesselShipments.id, parseInt(vid, 10))).limit(1);
+        if (vessel?.rate) totalAmount += parseFloat(String(vessel.rate));
+      }
+      const allIds = { loadIds: input.loadIds, railShipmentIds: input.railShipmentIds || [], vesselShipmentIds: input.vesselShipmentIds || [] };
       const result = await db.insert(payments).values({
         loadId: input.loadIds.length > 0 ? parseInt(input.loadIds[0], 10) : null,
         payerId: customerId, payeeId: userId,
         amount: String(totalAmount.toFixed(2)),
         paymentType: unsafeCast('load_payment'), status: unsafeCast('pending'),
-        metadata: { invoiceNumber: `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`, loadIds: input.loadIds, notes: input.notes, dueDate: input.dueDate },
+        metadata: { invoiceNumber: `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`, ...allIds, notes: input.notes, dueDate: input.dueDate },
       } as never).$returningId();
       return { id: String(result[0]?.id), invoiceNumber: `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`, status: 'draft', createdBy: userId, createdAt: new Date().toISOString() };
     }),
@@ -332,27 +343,54 @@ export const accountingRouter = router({
       const db = await getDb();
       let grossPay = 0;
       let loadCount = 0;
+      let totalFees = 0;
+      let totalCarrierPay = 0;
+      const driverId = parseInt(input.driverId);
+      const periodStart = new Date(input.periodStart);
+      const periodEnd = new Date(input.periodEnd);
+
       if (db) {
         try {
-          const driverId = parseInt(input.driverId);
-          const [stats] = await db.select({
-            total: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+          // Query actual settlements (not raw load rates) for accurate financials
+          const [settleStats] = await db.select({
+            grossTotal: sql<number>`COALESCE(SUM(CAST(${settlements.totalShipperCharge} AS DECIMAL)), 0)`,
+            fees: sql<number>`COALESCE(SUM(CAST(${settlements.platformFeeAmount} AS DECIMAL)), 0)`,
+            carrierTotal: sql<number>`COALESCE(SUM(CAST(${settlements.carrierPayment} AS DECIMAL)), 0)`,
             count: sql<number>`COUNT(*)`,
-          }).from(loads).where(and(
-            eq(loads.driverId, driverId),
-            eq(loads.status, 'delivered'),
-            gte(loads.createdAt, new Date(input.periodStart)),
-            sql`${loads.createdAt} <= ${new Date(input.periodEnd)}`,
+          }).from(settlements).where(and(
+            eq(settlements.driverId, driverId),
+            gte(settlements.createdAt, periodStart),
+            sql`${settlements.createdAt} <= ${periodEnd}`,
           ));
-          grossPay = Math.round((stats?.total || 0) * 100) / 100;
-          loadCount = stats?.count || 0;
+
+          if (settleStats && settleStats.count > 0) {
+            grossPay = Math.round((settleStats.grossTotal || 0) * 100) / 100;
+            totalFees = Math.round((settleStats.fees || 0) * 100) / 100;
+            totalCarrierPay = Math.round((settleStats.carrierTotal || 0) * 100) / 100;
+            loadCount = settleStats.count || 0;
+          } else {
+            // Fallback: query loads directly if no settlements exist yet
+            const [loadStats] = await db.select({
+              total: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+              count: sql<number>`COUNT(*)`,
+            }).from(loads).where(and(
+              eq(loads.driverId, driverId),
+              eq(loads.status, 'delivered'),
+              gte(loads.createdAt, periodStart),
+              sql`${loads.createdAt} <= ${periodEnd}`,
+            ));
+            grossPay = Math.round((loadStats?.total || 0) * 100) / 100;
+            loadCount = loadStats?.count || 0;
+            totalFees = Math.round(grossPay * 0.05 * 100) / 100; // Default 5% platform fee
+            totalCarrierPay = grossPay - totalFees;
+          }
         } catch {}
       }
-      const deductions = Math.round(grossPay * 0.15 * 100) / 100;
+
       return {
         settlementId: `settle_${Date.now()}`, driverId: input.driverId,
         periodStart: input.periodStart, periodEnd: input.periodEnd,
-        grossPay, deductions, netPay: grossPay - deductions, loadCount,
+        grossPay, deductions: totalFees, netPay: totalCarrierPay, loadCount,
         generatedBy: ctx.user?.id, generatedAt: new Date().toISOString(),
       };
     }),

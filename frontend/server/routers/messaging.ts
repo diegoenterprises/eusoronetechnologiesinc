@@ -9,7 +9,7 @@ import { eq, and, desc, sql, inArray, like } from "drizzle-orm";
 import { router, isolatedProcedure as protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { conversations, messages, users, auditLogs, messageAttachments, notifications } from "../../drizzle/schema";
+import { conversations, conversationParticipants, messages, users, auditLogs, messageAttachments, notifications } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
 import { emitNotification } from "../_core/websocket";
 
@@ -228,6 +228,17 @@ export const messagingRouter = router({
 
       if (input.conversationId) {
         convId = parseInt(input.conversationId, 10);
+        // Verify sender is a participant in this conversation
+        const [conv] = await db.select({ participants: conversations.participants }).from(conversations).where(eq(conversations.id, convId)).limit(1);
+        if (!conv) throw new Error("Conversation not found");
+        const participantIds = (conv.participants as number[]) || [];
+        if (!participantIds.includes(senderId)) {
+          // Also check conversationParticipants table as fallback
+          const [cp] = await db.select({ id: conversationParticipants.id }).from(conversationParticipants)
+            .where(and(eq(conversationParticipants.conversationId, convId), eq(conversationParticipants.userId, senderId), sql`${conversationParticipants.leftAt} IS NULL`))
+            .limit(1);
+          if (!cp) throw new Error("Not a participant in this conversation");
+        }
       } else if (input.to) {
         // Create or find direct conversation
         const toId = parseInt(input.to, 10);

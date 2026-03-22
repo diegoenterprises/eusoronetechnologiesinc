@@ -295,7 +295,10 @@ async function evaluateGuard(guard: { type: string; check: string; errorMessage:
       // Server-side HOS verification (the source of truth)
       const driverId = ctx.load?.driverId || (ctx.data?.driverId as number | undefined);
       if (driverId) {
-        const hosResult = verifyHOSServerSide(driverId);
+        // Detect destination country for country-specific HOS rules (US/CA/MX)
+        const destState = ctx.load?.deliveryLocation?.state || ctx.load?.deliveryState;
+        const destCountry = destState ? detectCountryFromState(destState) : "US";
+        const hosResult = verifyHOSServerSide(driverId, destCountry);
         if (!hosResult.compliant) return `${guard.errorMessage}: ${hosResult.reason}`;
       }
       return null;
@@ -1156,19 +1159,55 @@ function getOperatingStates(load: any): string[] {
 // SERVER-SIDE HOS VERIFICATION
 // ═══════════════════════════════════════════════════════════════
 
-function verifyHOSServerSide(driverId: number | null | undefined): { compliant: boolean; reason?: string } {
+// Country-specific HOS driving limits (hours)
+const HOS_LIMITS_BY_COUNTRY: Record<string, { maxDriving: number; maxOnDuty: number; regulation: string }> = {
+  US: { maxDriving: 11, maxOnDuty: 14, regulation: "49 CFR 395.3" },
+  CA: { maxDriving: 13, maxOnDuty: 14, regulation: "SOR/2005-313" },
+  MX: { maxDriving: 14, maxOnDuty: 16, regulation: "NOM-087-SCT-2-2017" },
+};
+
+function detectCountryFromState(state: string): string {
+  if (!state) return "US";
+  const s = state.toUpperCase().trim();
+  const mxStates = ["AG","BC","BS","CM","CS","CH","CL","CO","DG","GT","GR","HG","JA","MX","MI","MO","NA","NL","OA","PU","QT","QR","SL","SI","SO","TB","TM","TL","VE","YU","ZA","DF"];
+  const caProvinces = ["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"];
+  if (mxStates.includes(s)) return "MX";
+  if (caProvinces.includes(s)) return "CA";
+  return "US";
+}
+
+function verifyHOSServerSide(driverId: number | null | undefined, country?: string): { compliant: boolean; reason?: string } {
   if (!driverId) return { compliant: true }; // No driver assigned yet — pass
   try {
     const summary = getHOSSummary(driverId);
-    if (!summary.canDrive) {
+    const effectiveCountry = country || "US";
+    const limits = HOS_LIMITS_BY_COUNTRY[effectiveCountry] || HOS_LIMITS_BY_COUNTRY.US;
+
+    // Check driving hours against country-specific limits
+    const drivingHoursLeft = summary.hoursAvailable?.driving ?? 11;
+    const onDutyHoursLeft = summary.hoursAvailable?.onDuty ?? 14;
+
+    if (!summary.canDrive && drivingHoursLeft < 1 && effectiveCountry === "US") {
+      // Under US rules driver can't drive — but check if CA/MX rules would allow it
       const reasons: string[] = [];
-      if (summary.hoursAvailable.driving < 1) reasons.push(`Only ${summary.drivingRemaining} driving time left`);
-      if (summary.hoursAvailable.onDuty < 1) reasons.push(`Only ${summary.onDutyRemaining} on-duty time left`);
-      if (summary.breakRequired) reasons.push("30-minute break required (49 CFR 395.3)");
+      if (drivingHoursLeft < 1) reasons.push(`Only ${summary.drivingRemaining} driving time left under ${limits.regulation}`);
+      if (onDutyHoursLeft < 1) reasons.push(`Only ${summary.onDutyRemaining} on-duty time left`);
+      if (summary.breakRequired) reasons.push(`Break required (${limits.regulation})`);
       const activeViolations = summary.violations.filter(v => v.severity === "violation");
       if (activeViolations.length > 0) reasons.push(activeViolations.map(v => v.description).join("; "));
-      return { compliant: false, reason: reasons.join("; ") || "HOS limits exceeded" };
+      return { compliant: false, reason: reasons.join("; ") || `HOS limits exceeded (${effectiveCountry} — ${limits.regulation})` };
     }
+
+    if (!summary.canDrive) {
+      // Check if the driver is compliant under the destination country's more lenient rules
+      // CA allows 13h driving, MX allows 14h driving
+      const totalDriven = (limits.maxDriving) - drivingHoursLeft;
+      if (totalDriven < limits.maxDriving) {
+        return { compliant: true }; // Compliant under destination country rules
+      }
+      return { compliant: false, reason: `HOS limits exceeded under ${effectiveCountry} rules (${limits.regulation})` };
+    }
+
     return { compliant: true };
   } catch (e) {
     logger.error(`[HOS] Server-side HOS verification failed for driver ${driverId}:`, (e as Error).message);
@@ -2275,7 +2314,11 @@ export const loadLifecycleRouter = router({
       // Update load status in DB
       const newStatusLower = resolvedTo.toLowerCase();
       try {
-        await db.execute(sql`UPDATE loads SET status = ${newStatusLower}, updatedAt = NOW() WHERE id = ${numericLoadId}`);
+        if (resolvedTo === "DELIVERED") {
+          await db.execute(sql`UPDATE loads SET status = ${newStatusLower}, actualDeliveryDate = NOW(), updatedAt = NOW() WHERE id = ${numericLoadId}`);
+        } else {
+          await db.execute(sql`UPDATE loads SET status = ${newStatusLower}, updatedAt = NOW() WHERE id = ${numericLoadId}`);
+        }
       } catch (dbErr) {
         return { success: false, error: `DB update failed: ${(dbErr as Error).message}` };
       }
@@ -2326,6 +2369,8 @@ export const loadLifecycleRouter = router({
         } catch (cascadeErr) {
           logger.warn(`[LoadCancel] Cascade partial failure for load ${numericLoadId}:`, cascadeErr);
         }
+        // Gamification: track cancellation
+        if (load?.shipperId) fireGamificationEvent({ userId: load.shipperId, type: "load_cancelled", value: 1 });
       }
 
       // If ON_HOLD, save previous state
@@ -2425,12 +2470,14 @@ export const loadLifecycleRouter = router({
               await _sDb.insert(settlements).values({
                 loadId: numericLoadId,
                 shipperId: load.shipperId,
-                carrierId,
+                carrierId: carrierId || load.shipperId,
                 driverId: load.driverId || null,
                 loadRate: loadRate.toFixed(2),
                 platformFeePercent: feeResult.breakdown?.baseRate?.toString() || "5.00",
                 platformFeeAmount: platformFee.toFixed(2),
                 carrierPayment: carrierPay.toFixed(2),
+                accessorialCharges: accessorialTotal.toFixed(2),
+                hazmatSurcharge: hazmatSurcharge.toFixed(2),
                 totalShipperCharge: totalShipperCharge.toFixed(2),
                 status: "pending",
               });
@@ -2564,6 +2611,11 @@ export const loadLifecycleRouter = router({
               }
 
               logger.info(`[Settlement] Load ${numericLoadId} settled: rate=$${loadRate}, accessorials=$${accessorialTotal.toFixed(2)}, hazmat=$${hazmatSurcharge.toFixed(2)}, total=$${totalShipperCharge.toFixed(2)}, fee=$${platformFee.toFixed(2)}, carrier=$${carrierPay.toFixed(2)}`);
+
+              // ── Gamification: earnings event for carrier ──
+              if (carrierId && carrierPay > 0) {
+                fireGamificationEvent({ userId: carrierId, type: "earnings_received", value: carrierPay });
+              }
 
               // ── Notifications: settlement created on DELIVERED ──
               try {

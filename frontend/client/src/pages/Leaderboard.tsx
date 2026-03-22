@@ -20,10 +20,44 @@ export default function Leaderboard() {
   const [timeRange, setTimeRange] = useState("weekly");
   const [category, setCategory] = useState("overall");
 
-  const leaderboardQuery = (trpc as any).users.getLeaderboard.useQuery({ timeRange, category, limit: 50 });
-  const myRankQuery = (trpc as any).users.getMyRank.useQuery({ timeRange, category });
+  // Map UI time ranges to gamification API period values
+  const periodMap: Record<string, string> = { daily: "week", weekly: "week", monthly: "month", allTime: "all" };
+  const categoryMap: Record<string, string> = { overall: "points", loads: "loads", revenue: "points", rating: "rating" };
 
-  const myRank = myRankQuery.data;
+  const leaderboardQuery = (trpc as any).gamification.getLeaderboard.useQuery({
+    period: periodMap[timeRange] || "month",
+    category: categoryMap[category] || "points",
+    limit: 50,
+    roleFilter: "all",
+  });
+  const profileQuery = (trpc as any).gamification.getProfile.useQuery();
+
+  // Transform gamification leaderboard data to match UI expectations
+  const leaderboardData = (leaderboardQuery.data?.leaders || []).map((l: any, i: number) => ({
+    id: String(l.userId),
+    name: l.name,
+    score: l.totalXp || 0,
+    points: l.totalXp || 0,
+    loads: l.missionsCompleted || 0,
+    miles: l.totalMiles || 0,
+    trend: "flat" as const,
+    trendValue: 0,
+    isCurrentUser: l.userId === profileQuery.data?.userId,
+    title: `Level ${l.level}`,
+    avatar: null,
+  }));
+  // Override leaderboardQuery.data to use transformed data
+  const transformedLeaderboard = { ...leaderboardQuery, data: leaderboardData };
+
+  const myRank = profileQuery.data ? {
+    rank: leaderboardQuery.data?.myRank || 0,
+    percentile: leaderboardQuery.data?.totalParticipants
+      ? Math.max(1, Math.round(100 - ((leaderboardQuery.data.myRank - 1) / leaderboardQuery.data.totalParticipants * 100)))
+      : 0,
+    score: profileQuery.data?.totalXp || 0,
+    trend: "flat",
+    trendValue: 0,
+  } : null;
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="w-6 h-6 text-yellow-400" />;
@@ -75,7 +109,7 @@ export default function Leaderboard() {
       </div>
 
       {/* My Rank Card */}
-      {myRankQuery.isLoading ? (
+      {profileQuery.isLoading ? (
         <Skeleton className="h-32 w-full rounded-xl" />
       ) : myRank && (
         <Card className="bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 border-cyan-500/30 rounded-xl">
@@ -108,9 +142,9 @@ export default function Leaderboard() {
       )}
 
       {/* Top 3 Podium */}
-      {leaderboardQuery.isLoading ? (
+      {transformedLeaderboard.isLoading ? (
         <div className="grid grid-cols-3 gap-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
-      ) : ((leaderboardQuery.data as any)?.length ?? 0) >= 3 && (
+      ) : ((transformedLeaderboard.data as any)?.length ?? 0) >= 3 && (
         <div className="grid grid-cols-3 gap-4">
           {/* 2nd Place */}
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl mt-8">
@@ -118,8 +152,8 @@ export default function Leaderboard() {
               <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center mb-3">
                 <Medal className="w-8 h-8 text-white" />
               </div>
-              <p className="text-white font-bold">{(leaderboardQuery.data as any)?.[1]?.name}</p>
-              <p className="text-sm text-slate-400">{(leaderboardQuery.data as any)?.[1]?.score?.toLocaleString()} pts</p>
+              <p className="text-white font-bold">{(transformedLeaderboard.data as any)?.[1]?.name}</p>
+              <p className="text-sm text-slate-400">{(transformedLeaderboard.data as any)?.[1]?.score?.toLocaleString()} pts</p>
               <Badge className="mt-2 bg-slate-500/20 text-slate-300 border-0">2nd Place</Badge>
             </CardContent>
           </Card>
@@ -130,8 +164,8 @@ export default function Leaderboard() {
               <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center mb-3">
                 <Crown className="w-10 h-10 text-white" />
               </div>
-              <p className="text-white font-bold text-lg">{(leaderboardQuery.data as any)?.[0]?.name}</p>
-              <p className="text-yellow-400 font-bold">{(leaderboardQuery.data as any)?.[0]?.score?.toLocaleString()} pts</p>
+              <p className="text-white font-bold text-lg">{(transformedLeaderboard.data as any)?.[0]?.name}</p>
+              <p className="text-yellow-400 font-bold">{(transformedLeaderboard.data as any)?.[0]?.score?.toLocaleString()} pts</p>
               <Badge className="mt-2 bg-yellow-500/20 text-yellow-400 border-0">1st Place</Badge>
             </CardContent>
           </Card>
@@ -142,8 +176,8 @@ export default function Leaderboard() {
               <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-amber-600 to-amber-700 flex items-center justify-center mb-3">
                 <Medal className="w-8 h-8 text-white" />
               </div>
-              <p className="text-white font-bold">{(leaderboardQuery.data as any)?.[2]?.name}</p>
-              <p className="text-sm text-slate-400">{(leaderboardQuery.data as any)?.[2]?.score?.toLocaleString()} pts</p>
+              <p className="text-white font-bold">{(transformedLeaderboard.data as any)?.[2]?.name}</p>
+              <p className="text-sm text-slate-400">{(transformedLeaderboard.data as any)?.[2]?.score?.toLocaleString()} pts</p>
               <Badge className="mt-2 bg-amber-500/20 text-amber-400 border-0">3rd Place</Badge>
             </CardContent>
           </Card>
@@ -159,16 +193,16 @@ export default function Leaderboard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {leaderboardQuery.isLoading ? (
+          {transformedLeaderboard.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : (leaderboardQuery.data as any)?.length === 0 ? (
+          ) : (transformedLeaderboard.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <Trophy className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No rankings available</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50 max-h-[500px] overflow-y-auto">
-              {(leaderboardQuery.data as any)?.slice(3).map((user: any, idx: number) => (
+              {(transformedLeaderboard.data as any)?.slice(3).map((user: any, idx: number) => (
                 <div key={user.id} className={cn("p-4 flex items-center justify-between", user.isCurrentUser && "bg-cyan-500/10 border-l-2 border-cyan-500")}>
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-slate-700/50 flex items-center justify-center">

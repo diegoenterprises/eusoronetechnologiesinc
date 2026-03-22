@@ -525,6 +525,7 @@ function Router() {
       <Route path={"/privacy-policy"} component={PrivacyPolicy} />
       <Route path={"/validate/:token"} component={AccessValidation} />
       <Route path={"/portal"} component={() => <CustomerPortal />} />
+      <Route path={"/customer-portal"} component={() => <CustomerPortal />} />
 
       {/* ============================================ */}
       {/* SHARED ROUTES (All Authenticated Users) */}
@@ -689,7 +690,7 @@ function Router() {
       <Route path={"/driver/drug-test"} component={guard(DRIV, <DrugTestAcknowledgment />)} />
       <Route path={"/hazmat/segregation-rules"} component={guard([...DRIV, ...CARR, ...DISP, ...COMP, ...SAFE, ...TERM, ...ADMN], <SegregationRules />)} />
       <Route path={"/hazmat/fire-response"} component={guard([...DRIV, ...CARR, ...DISP, ...COMP, ...SAFE, ...TERM, ...ADMN], <FireResponse />)} />
-      <Route path={"/hazmat/incident-report"} component={guard([...DRIV, ...CARR, ...DISP, ...COMP, ...SAFE, ...TERM, ...ADMN], <IncidentReportForm />)} />
+      <Route path={"/hazmat/incident-report"} component={guard([...SHIP, ...DRIV, ...CARR, ...BROK, ...DISP, ...COMP, ...SAFE, ...TERM, ...ADMN], <IncidentReportForm />)} />
       <Route path={"/driver/trip-pay"} component={guard(DRIV, <TripPay />)} />
       <Route path={"/driver/settlement-history"} component={guard(DRIV, <SettlementHistory />)} />
       <Route path={"/driver/deductions"} component={guard(DRIV, <DeductionsBreakdown />)} />
@@ -865,7 +866,7 @@ function Router() {
       <Route path={"/safety/meetings"} component={guard(SAFE, <SafetyMeetingsPage />)} />
       <Route path={"/safety/programs"} component={guard(SAFE, <SafetyDashboard />)} />
       <Route path={"/safety/training"} component={guard(SAFE, <TrainingManagement />)} />
-      <Route path="/training-compliance" component={guard([...DRIV, ...CARR, ...DISP, ...SAFE, ...COMP, ...ADMN], <TrainingCompliance />)} />
+      <Route path="/training-compliance" component={guard([...SHIP, ...DRIV, ...CARR, ...BROK, ...DISP, ...SAFE, ...COMP, ...ADMN], <TrainingCompliance />)} />
       <Route path="/training-lms" component={guard([...DRIV, ...CARR, ...DISP, ...SAFE, ...COMP, ...ADMN], <TrainingLMS />)} />
       <Route path={"/safety/inspections"} component={guard([...SAFE, ...COMP, ...CARR], <VehicleInspectionsPage />)} />
       <Route path={"/safety/scores"} component={guard(SAFE, <CSAScoresDashboard />)} />
@@ -975,7 +976,8 @@ function Router() {
       <Route path="/accounting" component={guard([...SHIP, ...CARR, ...BROK, ...FACT], <AccountingPage />)} />
       <Route path="/in-house" component={guard([...SHIP, ...CARR, ...DISP, ...ADMN], <InHouseFleet />)} />
       <Route path="/inspection-forms" component={guard([...COMP, ...SAFE, ...CARR, ...DRIV], <InspectionFormsPage />)} />
-      <Route path="/vendors" component={guard([...CARR, ...SHIP, ...ADMN], <VendorManagement />)} />
+      <Route path="/vendors" component={guard([...CARR, ...SHIP, ...BROK, ...TERM, ...ADMN], <VendorManagement />)} />
+      <Route path="/vendor-management" component={guard([...CARR, ...SHIP, ...BROK, ...TERM, ...ADMN], <VendorManagement />)} />
       <Route path="/vendor-supplier" component={guard([...CARR, ...SHIP, ...ADMN], <VendorSupplier />)} />
       <Route path="/commission-engine" component={guard(ADMN, <CommissionEnginePage />)} />
       <Route path="/newsfeed" component={guard(ALL, <NewsfeedPage />)} />
@@ -1009,6 +1011,7 @@ function Router() {
       <Route path={"/driver/vehicle-inspection"} component={guard(DRIV, <VehicleInspectionHub />)} />
       <Route path={"/driver/emergency-response"} component={guard(DRIV, <EmergencyResponse />)} />
       <Route path={"/driver/earnings"} component={guard(DRIV, <DriverEarningsHub />)} />
+      <Route path={"/driver/licenses"} component={guard([...DRIV, ...CARR, ...COMP, ...ADMN], <DriverEarningsHub />)} />
       <Route path={"/terminal/hub"} component={guard(TERM, <TerminalHub />)} />
       <Route path={"/terminal/dock-hub"} component={guard(TERM, <DockHub />)} />
       <Route path={"/terminal/facility-hub"} component={guard([...TERM, ...SHIP, ...CARR, ...BROK], <FacilityHub />)} />
@@ -1038,7 +1041,7 @@ function Router() {
       <Route path="/communication-hub" component={guard(ALL, <CommunicationHubPage />)} />
       <Route path="/data-migration" component={guard(ADMN, <DataMigrationPage />)} />
       <Route path="/safety-risk" component={guard([...CARR, ...DISP, ...SAFE, ...COMP, ...ADMN], <SafetyRiskPage />)} />
-      <Route path="/multi-modal" component={guard([...CARR, ...BROK, ...DISP, ...ADMN], <MultiModalPage />)} />
+      <Route path="/multi-modal" component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...ADMN], <MultiModalPage />)} />
 
       {/* ============================================ */}
       {/* TRUCK ROLE GAP FIXES — Routes previously missing */}
@@ -1056,6 +1059,10 @@ function Router() {
       {/* ============================================ */}
       <Route path={"/rail/dashboard"} component={guard(RAIL, <RailDashboard />)} />
       <Route path={"/rail/shipments/create"} component={guard(RAIL, <RailShipmentCreate />)} />
+      <Route path={"/rail/shipments/completed"} component={guard(RAIL, <RailShipments />)} />
+      <Route path={"/rail/shipments/history"} component={guard(RAIL, <RailShipments />)} />
+      <Route path={"/rail/shipments/pending"} component={guard(RAIL, <RailShipments />)} />
+      <Route path={"/rail/shipments/templates"} component={guard(RAIL, <RailShipments />)} />
       <Route path={"/rail/shipments/:id"} component={guard(RAIL, <RailShipmentDetail />)} />
       <Route path={"/rail/shipments"} component={guard(RAIL, <RailShipments />)} />
       <Route path={"/rail/tracking"} component={guard(RAIL, <RailTracking />)} />
@@ -1079,6 +1086,8 @@ function Router() {
       <Route path={"/rail/crew/engineers"} component={guard(RAIL, <RailCrew />)} />
       <Route path={"/rail/crew/conductors"} component={guard(RAIL, <RailCrew />)} />
       <Route path={"/rail/crew/certifications"} component={guard(RAIL, <RailCrew />)} />
+      <Route path={"/rail/crew/assignments"} component={guard(RAIL, <RailCrew />)} />
+      <Route path={"/rail/conductor/docs"} component={guard(RAIL, <RailCrew />)} />
       {/* ── V5 Rail: Safety ── */}
       <Route path={"/rail/safety"} component={guard(RAIL, <RailSafety />)} />
       <Route path={"/rail/incidents"} component={guard(RAIL, <RailSafety />)} />
@@ -1280,6 +1289,7 @@ function Router() {
       {/* V5 INTERMODAL ROUTES */}
       {/* ============================================ */}
       <Route path={"/intermodal/dashboard"} component={guard([...RAIL, ...VESL] as UserRole[], <IntermodalDashboard />)} />
+      <Route path={"/intermodal"} component={guard([...RAIL, ...VESL] as UserRole[], <IntermodalDashboard />)} />
       <Route path={"/intermodal/shipments/create"} component={guard([...RAIL, ...VESL] as UserRole[], <IntermodalShipmentCreate />)} />
       <Route path={"/intermodal/tracking"} component={guard([...RAIL, ...VESL] as UserRole[], <IntermodalTracking />)} />
       <Route path={"/intermodal/transfers"} component={guard([...RAIL, ...VESL] as UserRole[], <IntermodalTransfers />)} />

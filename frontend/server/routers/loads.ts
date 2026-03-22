@@ -101,6 +101,17 @@ async function resolveUserId(ctxUser: User | null | undefined): Promise<number> 
   }
 }
 
+// Detect country from state/province abbreviation
+function detectLoadCountry(state?: string): "US" | "CA" | "MX" {
+  if (!state) return "US";
+  const s = state.toUpperCase().trim();
+  const mxStates = ["AG","BC","BS","CM","CS","CH","CL","CO","DG","GT","GR","HG","JA","MX","MI","MO","NA","NL","OA","PU","QT","QR","SL","SI","SO","TB","TM","TL","VE","YU","ZA","DF"];
+  const caProvinces = ["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"];
+  if (mxStates.includes(s)) return "MX";
+  if (caProvinces.includes(s)) return "CA";
+  return "US";
+}
+
 export const loadsRouter = router({
   // Load creation from wizard - stores ERG/SPECTRA-MATCH data so all users see it
   create: protectedProcedure
@@ -456,6 +467,10 @@ export const loadsRouter = router({
             hazardClassNumber: input?.hazardClassNumber || null,
             subsidiaryHazards: input?.subsidiaryHazards || null,
             specialPermit: input?.specialPermit || null,
+            // Cross-border country detection
+            originCountry: detectLoadCountry(input?.origin?.split(",")[1]?.trim()) as any,
+            destCountry: detectLoadCountry(input?.destination?.split(",")[1]?.trim()) as any,
+            isCrossBorder: detectLoadCountry(input?.origin?.split(",")[1]?.trim()) !== detectLoadCountry(input?.destination?.split(",")[1]?.trim()),
           } satisfies InsertLoad);
           insertedId = (result as unknown as [ResultSetHeader, unknown])[0]?.insertId || 0;
           break; // success
@@ -2802,7 +2817,8 @@ export const bidsRouter = router({
     }
 
     if (input.status === 'delivered') {
-      fireGamificationEvent({ userId, type: 'load_delivered', value: 1 });
+      const deliveryDriverId = load.driverId || load.catalystId || userId;
+      fireGamificationEvent({ userId: deliveryDriverId, type: 'load_delivered', value: 1 });
       if (load.shipperId) {
         emitNotification(String(load.shipperId), { id: `notif_${Date.now()}`, type: 'load_delivered', title: 'Load Delivered', message: `Load ${load.loadNumber} has been delivered`, priority: 'high', data: { loadId: input.loadId }, actionUrl: `/loads/${input.loadId}`, timestamp: new Date().toISOString() });
       }

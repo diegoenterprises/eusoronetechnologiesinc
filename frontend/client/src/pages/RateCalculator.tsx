@@ -117,6 +117,8 @@ export default function RateCalculator() {
               <Label className="text-slate-400">Weight (lbs)</Label>
               <Input
                 type="number"
+                min="0.01"
+                step="0.1"
                 value={weight}
                 onChange={(e: any) => setWeight(e.target.value)}
                 placeholder="Enter weight"

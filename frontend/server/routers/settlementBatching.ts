@@ -20,8 +20,8 @@ import { randomBytes } from "crypto";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
-import { settlementBatches, settlementBatchItems, settlements, loads, notifications } from "../../drizzle/schema";
-import { eq, and, sql, inArray } from "drizzle-orm";
+import { settlementBatches, settlementBatchItems, settlements, loads, railShipments, vesselShipments, notifications } from "../../drizzle/schema";
+import { eq, and, or, sql, inArray } from "drizzle-orm";
 import { emitDispatchEvent, emitNotification } from "../_core/websocket";
 import { unsafeCast } from "../_core/types/unsafe";
 import { BlockchainService } from "../services/BlockchainService";
@@ -43,7 +43,9 @@ export const settlementBatchingRouter = router({
       batchType: z.enum(["shipper_payable", "carrier_receivable", "driver_payable"]),
       periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      loadIds: z.array(z.number()).min(1),
+      loadIds: z.array(z.number()).optional().default([]),
+      railShipmentIds: z.array(z.number()).optional().default([]),
+      vesselShipmentIds: z.array(z.number()).optional().default([]),
     }))
     .mutation(async ({ ctx, input }) => {
       await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: "CREATE", resource: "INVOICE" }, ctx.req);
@@ -56,8 +58,14 @@ export const settlementBatchingRouter = router({
 
       // Wrap all writes in a transaction for atomicity — if any step fails, everything rolls back
       const result = await db.transaction(async (tx) => {
-        // V8: Batch query — fetch all settlements for provided load IDs in one query
-        const allSettlements = await tx.select().from(settlements).where(inArray(settlements.loadId, input.loadIds));
+        // V8: Batch query — fetch all settlements for provided IDs across all modes
+        const allIds = [...input.loadIds, ...input.railShipmentIds, ...input.vesselShipmentIds];
+        if (allIds.length === 0) throw new Error("At least one shipment ID is required");
+        const conditions = [];
+        if (input.loadIds.length > 0) conditions.push(inArray(settlements.loadId, input.loadIds));
+        if (input.railShipmentIds.length > 0) conditions.push(inArray(settlements.railShipmentId, input.railShipmentIds));
+        if (input.vesselShipmentIds.length > 0) conditions.push(inArray(settlements.vesselShipmentId, input.vesselShipmentIds));
+        const allSettlements = await tx.select().from(settlements).where(or(...conditions));
         const matchedSettlements: Array<typeof settlements.$inferSelect> = [];
         if (allSettlements.length > 0) {
           // V8: Batch check for double-batching prevention
@@ -70,7 +78,7 @@ export const settlementBatchingRouter = router({
           for (const s of allSettlements) {
             const existingBatch = existingMap.get(s.id);
             if (existingBatch) {
-              throw new Error(`Settlement for load ${s.loadId} is already in batch #${existingBatch}. Remove it first.`);
+              throw new Error(`Settlement #${s.id} is already in batch #${existingBatch}. Remove it first.`);
             }
             matchedSettlements.push(s);
           }
@@ -100,12 +108,28 @@ export const settlementBatchingRouter = router({
         if (!batch) throw new Error("Failed to create batch");
 
         // V8: Batch-fetch all load details in one query instead of N queries
-        const loadIds = matchedSettlements.map(s => s.loadId);
-        const loadDetails = loadIds.length > 0
+        const truckLoadIds = matchedSettlements.filter(s => s.loadId).map(s => s.loadId!);
+        const loadDetails = truckLoadIds.length > 0
           ? await tx.select({ id: loads.id, loadNumber: loads.loadNumber, pickupDate: loads.pickupDate, deliveryDate: loads.deliveryDate })
-              .from(loads).where(inArray(loads.id, loadIds))
+              .from(loads).where(inArray(loads.id, truckLoadIds))
           : [];
         const loadMap = new Map(loadDetails.map(ld => [ld.id, ld]));
+
+        // Fetch rail shipment details
+        const railIds = matchedSettlements.filter(s => s.railShipmentId).map(s => s.railShipmentId!);
+        const railDetails = railIds.length > 0
+          ? await tx.select({ id: railShipments.id, shipmentNumber: railShipments.shipmentNumber, createdAt: railShipments.createdAt })
+              .from(railShipments).where(inArray(railShipments.id, railIds))
+          : [];
+        const railMap = new Map(railDetails.map(rd => [rd.id, rd]));
+
+        // Fetch vessel booking details
+        const vesselIds = matchedSettlements.filter(s => s.vesselShipmentId).map(s => s.vesselShipmentId!);
+        const vesselDetails = vesselIds.length > 0
+          ? await tx.select({ id: vesselShipments.id, bookingNumber: vesselShipments.bookingNumber, createdAt: vesselShipments.createdAt })
+              .from(vesselShipments).where(inArray(vesselShipments.id, vesselIds))
+          : [];
+        const vesselMap = new Map(vesselDetails.map(vd => [vd.id, vd]));
 
         // Insert batch items
         for (const s of matchedSettlements) {
@@ -114,10 +138,15 @@ export const settlementBatchingRouter = router({
           const dedAmt = Number(s.platformFeeAmount) || 0;
           const netAmt = lineAmt + accAmt - dedAmt;
 
-          const ld = loadMap.get(s.loadId);
+          // Resolve reference number across modes
+          const shipmentId = s.loadId || s.railShipmentId || s.vesselShipmentId;
+          const ld = s.loadId ? loadMap.get(s.loadId) : null;
+          const rd = s.railShipmentId ? railMap.get(s.railShipmentId) : null;
+          const vd = s.vesselShipmentId ? vesselMap.get(s.vesselShipmentId) : null;
+          const refNumber = ld?.loadNumber || rd?.shipmentNumber || vd?.bookingNumber || null;
 
           await tx.execute(
-            sql`INSERT INTO settlement_batch_items (batchId, settlementId, loadId, loadNumber, pickupDate, deliveryDate, lineAmount, fscAmount, accessorialAmount, deductions, netAmount) VALUES (${batch.id}, ${s.id}, ${s.loadId}, ${ld?.loadNumber || null}, ${ld?.pickupDate || null}, ${ld?.deliveryDate || null}, ${lineAmt.toFixed(2)}, ${"0.00"}, ${accAmt.toFixed(2)}, ${dedAmt.toFixed(2)}, ${netAmt.toFixed(2)})`
+            sql`INSERT INTO settlement_batch_items (batchId, settlementId, loadId, loadNumber, pickupDate, deliveryDate, lineAmount, fscAmount, accessorialAmount, deductions, netAmount) VALUES (${batch.id}, ${s.id}, ${shipmentId}, ${refNumber}, ${ld?.pickupDate || rd?.createdAt || vd?.createdAt || null}, ${ld?.deliveryDate || null}, ${lineAmt.toFixed(2)}, ${"0.00"}, ${accAmt.toFixed(2)}, ${dedAmt.toFixed(2)}, ${netAmt.toFixed(2)})`
           );
         }
 
@@ -439,9 +468,29 @@ export const settlementBatchingRouter = router({
         .where(eq(settlementBatchItems.settlementId, input.settlementId)).limit(1);
       if (dup) throw new Error(`Settlement already in batch #${dup.batchId}`);
 
-      // Get load info
-      const [ld] = await db.select({ loadNumber: loads.loadNumber, pickupDate: loads.pickupDate, deliveryDate: loads.deliveryDate })
-        .from(loads).where(eq(loads.id, s.loadId)).limit(1);
+      // Get shipment info (truck, rail, or vessel)
+      const shipmentId = s.loadId || s.railShipmentId || s.vesselShipmentId;
+      let refNumber: string | null = null;
+      let pickupDate: Date | null = null;
+      let deliveryDate: Date | null = null;
+
+      if (s.loadId) {
+        const [ld] = await db.select({ loadNumber: loads.loadNumber, pickupDate: loads.pickupDate, deliveryDate: loads.deliveryDate })
+          .from(loads).where(eq(loads.id, s.loadId)).limit(1);
+        refNumber = ld?.loadNumber || null;
+        pickupDate = ld?.pickupDate || null;
+        deliveryDate = ld?.deliveryDate || null;
+      } else if (s.railShipmentId) {
+        const [rd] = await db.select({ shipmentNumber: railShipments.shipmentNumber, createdAt: railShipments.createdAt })
+          .from(railShipments).where(eq(railShipments.id, s.railShipmentId)).limit(1);
+        refNumber = rd?.shipmentNumber || null;
+        pickupDate = rd?.createdAt || null;
+      } else if (s.vesselShipmentId) {
+        const [vd] = await db.select({ bookingNumber: vesselShipments.bookingNumber, createdAt: vesselShipments.createdAt })
+          .from(vesselShipments).where(eq(vesselShipments.id, s.vesselShipmentId)).limit(1);
+        refNumber = vd?.bookingNumber || null;
+        pickupDate = vd?.createdAt || null;
+      }
 
       const lineAmt = Number(s.loadRate) || 0;
       const accAmt = Number(s.accessorialCharges) || 0;
@@ -449,7 +498,7 @@ export const settlementBatchingRouter = router({
       const netAmt = lineAmt + accAmt - dedAmt;
 
       await db.execute(
-        sql`INSERT INTO settlement_batch_items (batchId, settlementId, loadId, loadNumber, pickupDate, deliveryDate, lineAmount, fscAmount, accessorialAmount, deductions, netAmount) VALUES (${batch.id}, ${s.id}, ${s.loadId}, ${ld?.loadNumber || null}, ${ld?.pickupDate || null}, ${ld?.deliveryDate || null}, ${lineAmt.toFixed(2)}, ${"0.00"}, ${accAmt.toFixed(2)}, ${dedAmt.toFixed(2)}, ${netAmt.toFixed(2)})`
+        sql`INSERT INTO settlement_batch_items (batchId, settlementId, loadId, loadNumber, pickupDate, deliveryDate, lineAmount, fscAmount, accessorialAmount, deductions, netAmount) VALUES (${batch.id}, ${s.id}, ${shipmentId}, ${refNumber}, ${pickupDate}, ${deliveryDate}, ${lineAmt.toFixed(2)}, ${"0.00"}, ${accAmt.toFixed(2)}, ${dedAmt.toFixed(2)}, ${netAmt.toFixed(2)})`
       );
 
       // Recalculate batch totals

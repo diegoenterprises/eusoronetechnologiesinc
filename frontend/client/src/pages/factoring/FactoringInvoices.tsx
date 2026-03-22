@@ -20,7 +20,7 @@ export default function FactoringInvoices() {
 
   const submitMutation = (trpc as any).factoring.submitInvoice.useMutation({
     onSuccess: () => { toast.success("Invoice submitted for factoring"); invoicesQuery.refetch(); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message || "Failed to submit invoice"),
   });
 
   const invoices = (invoicesQuery.data || []).filter((inv: any) =>
@@ -92,7 +92,7 @@ export default function FactoringInvoices() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="font-bold">${(inv.amount || 0).toLocaleString()}</p>
+                      <p className="font-bold">${(inv.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       <p className="text-xs text-muted-foreground">{inv.dueDate || "No due date"}</p>
                     </div>
                     {statusBadge(inv.status || "pending")}

@@ -1616,6 +1616,24 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     )`);
     await addColIfMissing("settlements", "accessorialTotal", "DECIMAL(12,2) DEFAULT 0.00");
     await addColIfMissing("settlements", "hazmatSurcharge", "DECIMAL(12,2) DEFAULT 0.00");
+    await addColIfMissing("settlements", "railShipmentId", "INT DEFAULT NULL");
+    await addColIfMissing("settlements", "vesselShipmentId", "INT DEFAULT NULL");
+
+    // Vessel shipments — new columns for container size, temperature, customs_cleared status
+    await addColIfMissing("vessel_shipments", "containerSize", "ENUM('20ft','40ft','40ft_hc','45ft','20ft_reefer','40ft_reefer') DEFAULT NULL");
+    await addColIfMissing("vessel_shipments", "temperatureSetting", "VARCHAR(50) DEFAULT NULL");
+    // Add customs_cleared to vessel_shipments status enum
+    try { await pool.query("ALTER TABLE vessel_shipments MODIFY COLUMN status ENUM('booking_requested','booking_confirmed','documentation','container_released','gate_in','loaded_on_vessel','departed','in_transit','transshipment','arrived','customs_hold','customs_cleared','discharged','gate_out','delivered','invoiced','settled','cancelled','rolled') DEFAULT 'booking_requested'"); } catch {}
+    // Add reefer sizes to vessel_freight_rates containerSize enum
+    try { await pool.query("ALTER TABLE vessel_freight_rates MODIFY COLUMN containerSize ENUM('20ft','40ft','40ft_hc','45ft','20ft_reefer','40ft_reefer') DEFAULT NULL"); } catch {}
+
+    // Make settlements.loadId nullable (was NOT NULL, now supports rail/vessel settlements without loadId)
+    try { await pool.query("ALTER TABLE settlements MODIFY COLUMN loadId INT DEFAULT NULL"); } catch {}
+
+    // Cross-border country tracking on loads
+    await addColIfMissing("loads", "originCountry", "ENUM('US','CA','MX') DEFAULT 'US'");
+    await addColIfMissing("loads", "destCountry", "ENUM('US','CA','MX') DEFAULT 'US'");
+    await addColIfMissing("loads", "isCrossBorder", "BOOLEAN DEFAULT FALSE");
 
     // --- Phase 4: Settlement Documents table ---
     await ensureTable("settlement_documents", `CREATE TABLE IF NOT EXISTS settlement_documents (

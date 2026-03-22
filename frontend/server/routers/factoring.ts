@@ -160,7 +160,9 @@ const invoiceStatusSchema = z.enum([
 export const factoringRouter = router({
   create: protectedProcedure
     .input(z.object({
-      loadId: z.number(),
+      loadId: z.number().optional(),
+      railShipmentId: z.number().optional(),
+      vesselShipmentId: z.number().optional(),
       invoiceAmount: z.number(),
       advanceRate: z.number().optional(),
       factoringFeePercent: z.number().optional(),
@@ -168,15 +170,21 @@ export const factoringRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      if (!input.loadId && !input.railShipmentId && !input.vesselShipmentId) throw new Error("A shipment ID is required");
       const userId = Number(ctx.user?.id) || 0;
       const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
       const advRate = input.advanceRate || 97;
       const feePercent = input.factoringFeePercent || 3;
 
-      // Use net-after-platform-fee amount from settlement if available
+      // Use net-after-platform-fee amount from settlement if available (supports all modes)
       let netInvoiceAmount = Number(input.invoiceAmount);
       try {
-        const [settlement] = await db.select().from(settlements).where(eq(settlements.loadId, input.loadId)).limit(1);
+        const settlementCondition = input.loadId
+          ? eq(settlements.loadId, input.loadId)
+          : input.railShipmentId
+            ? eq(settlements.railShipmentId, input.railShipmentId)
+            : eq(settlements.vesselShipmentId, input.vesselShipmentId!);
+        const [settlement] = await db.select().from(settlements).where(settlementCondition).limit(1);
         if (settlement) {
           netInvoiceAmount = Number(settlement.totalShipperCharge || input.invoiceAmount) - Number(settlement.platformFeeAmount || 0);
         }
@@ -185,8 +193,9 @@ export const factoringRouter = router({
       const feeAmount = Math.round(netInvoiceAmount * (feePercent / 100) * 100) / 100;
       const advanceAmount = Math.round(netInvoiceAmount * (advRate / 100) * 100) / 100;
       const reserveAmount = Math.round((netInvoiceAmount - advanceAmount - feeAmount) * 100) / 100;
+      const shipmentId = input.loadId || input.railShipmentId || input.vesselShipmentId || 0;
       const [result] = await db.insert(factoringInvoices).values({
-        loadId: input.loadId,
+        loadId: shipmentId,
         catalystUserId: userId,
         invoiceNumber,
         invoiceAmount: String(input.invoiceAmount),

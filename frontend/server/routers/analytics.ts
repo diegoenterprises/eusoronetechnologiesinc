@@ -9,7 +9,7 @@ import { eq, and, desc, sql, gte, lte, ne } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { loads, payments, users, vehicles, companies, drivers, inspections, certifications, bids, insurancePolicies } from "../../drizzle/schema";
+import { loads, payments, users, vehicles, companies, drivers, inspections, certifications, bids, insurancePolicies, railShipments, vesselShipments } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
 
 const periodSchema = z.enum(["day", "week", "month", "quarter", "year"]);
@@ -41,10 +41,27 @@ export const analyticsRouter = router({
           .from(loads)
           .where(and(eq(loads.status, 'delivered'), gte(loads.createdAt, lastMonthStart), lte(loads.createdAt, monthStart)));
 
-        const total = currentMonth?.total || 0;
-        const lastTotal = lastMonth?.total || 1;
+        // Rail shipments revenue (delivered = unloaded/invoiced/settled)
+        const [railCurrent] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)`, count: sql<number>`count(*)` })
+          .from(railShipments)
+          .where(and(sql`${railShipments.status} IN ('unloaded','invoiced','settled')`, gte(railShipments.createdAt, monthStart)));
+        const [railLast] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` })
+          .from(railShipments)
+          .where(and(sql`${railShipments.status} IN ('unloaded','invoiced','settled')`, gte(railShipments.createdAt, lastMonthStart), lte(railShipments.createdAt, monthStart)));
+
+        // Vessel shipments revenue (delivered = delivered/invoiced/settled)
+        const [vesselCurrent] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)`, count: sql<number>`count(*)` })
+          .from(vesselShipments)
+          .where(and(sql`${vesselShipments.status} IN ('delivered','invoiced','settled')`, gte(vesselShipments.createdAt, monthStart)));
+        const [vesselLast] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` })
+          .from(vesselShipments)
+          .where(and(sql`${vesselShipments.status} IN ('delivered','invoiced','settled')`, gte(vesselShipments.createdAt, lastMonthStart), lte(vesselShipments.createdAt, monthStart)));
+
+        const total = (currentMonth?.total || 0) + (railCurrent?.total || 0) + (vesselCurrent?.total || 0);
+        const totalCount = (currentMonth?.count || 0) + (railCurrent?.count || 0) + (vesselCurrent?.count || 0);
+        const lastTotal = (lastMonth?.total || 0) + (railLast?.total || 0) + (vesselLast?.total || 0) || 1;
         const growth = lastTotal > 0 ? ((total - lastTotal) / lastTotal) * 100 : 0;
-        const avgPerLoad = currentMonth?.count > 0 ? total / currentMonth.count : 0;
+        const avgPerLoad = totalCount > 0 ? total / totalCount : 0;
 
         return { total, change: growth, growth, avgPerLoad, topCustomer: "", margin: 0 };
       } catch (error) {
@@ -106,7 +123,7 @@ export const analyticsRouter = router({
       const db = await getDb();
       if (!db) return [];
       try {
-        const rows = await db.select({
+        const truckRows = await db.select({
           month: sql<string>`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`,
           revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
           count: sql<number>`count(*)`,
@@ -115,7 +132,36 @@ export const analyticsRouter = router({
           .groupBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`)
           .orderBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m') DESC`)
           .limit(12);
-        return rows.reverse().map(r => ({ period: r.month, revenue: Math.round(r.revenue || 0), loads: r.count || 0 }));
+
+        const railRows = await db.select({
+          month: sql<string>`DATE_FORMAT(${railShipments.createdAt}, '%Y-%m')`,
+          revenue: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)`,
+          count: sql<number>`count(*)`,
+        }).from(railShipments)
+          .where(sql`${railShipments.status} IN ('unloaded','invoiced','settled')`)
+          .groupBy(sql`DATE_FORMAT(${railShipments.createdAt}, '%Y-%m')`)
+          .orderBy(sql`DATE_FORMAT(${railShipments.createdAt}, '%Y-%m') DESC`)
+          .limit(12);
+
+        const vesselRows = await db.select({
+          month: sql<string>`DATE_FORMAT(${vesselShipments.createdAt}, '%Y-%m')`,
+          revenue: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)`,
+          count: sql<number>`count(*)`,
+        }).from(vesselShipments)
+          .where(sql`${vesselShipments.status} IN ('delivered','invoiced','settled')`)
+          .groupBy(sql`DATE_FORMAT(${vesselShipments.createdAt}, '%Y-%m')`)
+          .orderBy(sql`DATE_FORMAT(${vesselShipments.createdAt}, '%Y-%m') DESC`)
+          .limit(12);
+
+        // Merge all modes by month
+        const merged: Record<string, { revenue: number; count: number }> = {};
+        for (const r of [...truckRows, ...railRows, ...vesselRows]) {
+          if (!merged[r.month]) merged[r.month] = { revenue: 0, count: 0 };
+          merged[r.month].revenue += (r.revenue || 0);
+          merged[r.month].count += (r.count || 0);
+        }
+        const rows = Object.entries(merged).sort(([a], [b]) => a.localeCompare(b)).slice(-12);
+        return rows.map(([period, r]) => ({ period, revenue: Math.round(r.revenue), loads: r.count }));
       } catch (e) { return []; }
     }),
 
@@ -134,9 +180,14 @@ export const analyticsRouter = router({
         const daysInMonth = monthEnd.getDate();
         const daysRemaining = daysInMonth - now.getDate();
         const [cur] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.status, 'delivered'), gte(loads.createdAt, monthStart)));
-        const [lastMonth] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.status, 'delivered'), gte(loads.createdAt, new Date(now.getFullYear(), now.getMonth() - 1, 1)), lte(loads.createdAt, monthStart)));
-        const target = Math.round((lastMonth?.rev || 0) * 1.1) || 50000;
-        const current = Math.round(cur?.rev || 0);
+        const [curRail] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` }).from(railShipments).where(and(sql`${railShipments.status} IN ('unloaded','invoiced','settled')`, gte(railShipments.createdAt, monthStart)));
+        const [curVessel] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` }).from(vesselShipments).where(and(sql`${vesselShipments.status} IN ('delivered','invoiced','settled')`, gte(vesselShipments.createdAt, monthStart)));
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const [lastMonth] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.status, 'delivered'), gte(loads.createdAt, lastMonthStart), lte(loads.createdAt, monthStart)));
+        const [lastRail] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` }).from(railShipments).where(and(sql`${railShipments.status} IN ('unloaded','invoiced','settled')`, gte(railShipments.createdAt, lastMonthStart), lte(railShipments.createdAt, monthStart)));
+        const [lastVessel] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` }).from(vesselShipments).where(and(sql`${vesselShipments.status} IN ('delivered','invoiced','settled')`, gte(vesselShipments.createdAt, lastMonthStart), lte(vesselShipments.createdAt, monthStart)));
+        const target = Math.round(((lastMonth?.rev || 0) + (lastRail?.rev || 0) + (lastVessel?.rev || 0)) * 1.1) || 50000;
+        const current = Math.round((cur?.rev || 0) + (curRail?.rev || 0) + (curVessel?.rev || 0));
         const percentage = target > 0 ? Math.round((current / target) * 100) : 0;
         return { target, current, percentage, daysRemaining, remaining: Math.max(0, target - current) };
       } catch { return { target: 0, current: 0, percentage: 0, daysRemaining: 0, remaining: 0 }; }
@@ -256,35 +307,90 @@ export const analyticsRouter = router({
         const ownerCol = isShipper ? loads.shipperId : loads.catalystId;
         const ownerId = companyId;
 
-        // Current period loads
-        const [curLoads] = await db.select({
+        // Current period loads (truck)
+        const [curLoadsRaw] = await db.select({
           count: sql<number>`count(*)`,
           revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
           miles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)`,
         }).from(loads).where(and(eq(ownerCol, ownerId), gte(loads.createdAt, periodStart)));
 
-        // Previous period loads for change calculation
-        const [prevLoads] = await db.select({
+        // Current period rail & vessel
+        const [curRailLoads] = await db.select({ count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` })
+          .from(railShipments).where(and(eq(railShipments.companyId, ownerId), gte(railShipments.createdAt, periodStart)));
+        const [curVesselLoads] = await db.select({ count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` })
+          .from(vesselShipments).where(and(eq(vesselShipments.shipperId, ownerId), gte(vesselShipments.createdAt, periodStart)));
+
+        const curLoads = {
+          count: (curLoadsRaw?.count || 0) + (curRailLoads?.count || 0) + (curVesselLoads?.count || 0),
+          revenue: (curLoadsRaw?.revenue || 0) + (curRailLoads?.revenue || 0) + (curVesselLoads?.revenue || 0),
+          miles: curLoadsRaw?.miles || 0,
+        };
+
+        // Previous period loads for change calculation (truck)
+        const [prevLoadsRaw] = await db.select({
           count: sql<number>`count(*)`,
           revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
         }).from(loads).where(and(eq(ownerCol, ownerId), gte(loads.createdAt, prevStart), lte(loads.createdAt, prevEnd)));
 
-        // Status breakdowns for current period
-        const [delivered] = await db.select({ count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`, miles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)` })
-          .from(loads).where(and(eq(ownerCol, ownerId), eq(loads.status, 'delivered'), gte(loads.createdAt, periodStart)));
-        const [inTransit] = await db.select({ count: sql<number>`count(*)` })
-          .from(loads).where(and(eq(ownerCol, ownerId), sql`${loads.status} IN ('in_transit','loading','unloading','en_route_pickup','at_pickup','at_delivery')`));
-        const [pending] = await db.select({ count: sql<number>`count(*)` })
-          .from(loads).where(and(eq(ownerCol, ownerId), sql`${loads.status} IN ('posted','bidding','draft')`));
-        const [cancelled] = await db.select({ count: sql<number>`count(*)` })
-          .from(loads).where(and(eq(ownerCol, ownerId), eq(loads.status, 'cancelled'), gte(loads.createdAt, periodStart)));
+        // Previous period rail & vessel
+        const [prevRailLoads] = await db.select({ count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` })
+          .from(railShipments).where(and(eq(railShipments.companyId, ownerId), gte(railShipments.createdAt, prevStart), lte(railShipments.createdAt, prevEnd)));
+        const [prevVesselLoads] = await db.select({ count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` })
+          .from(vesselShipments).where(and(eq(vesselShipments.shipperId, ownerId), gte(vesselShipments.createdAt, prevStart), lte(vesselShipments.createdAt, prevEnd)));
 
-        // All-time loads for the company (for total metrics)
-        const [allTimeLoads] = await db.select({
+        const prevLoads = {
+          count: (prevLoadsRaw?.count || 0) + (prevRailLoads?.count || 0) + (prevVesselLoads?.count || 0),
+          revenue: (prevLoadsRaw?.revenue || 0) + (prevRailLoads?.revenue || 0) + (prevVesselLoads?.revenue || 0),
+        };
+
+        // Status breakdowns for current period (truck)
+        const [deliveredTruck] = await db.select({ count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`, miles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)` })
+          .from(loads).where(and(eq(ownerCol, ownerId), eq(loads.status, 'delivered'), gte(loads.createdAt, periodStart)));
+        const [deliveredRail] = await db.select({ count: sql<number>`count(*)` })
+          .from(railShipments).where(and(eq(railShipments.companyId, ownerId), sql`${railShipments.status} IN ('unloaded','invoiced','settled')`, gte(railShipments.createdAt, periodStart)));
+        const [deliveredVessel] = await db.select({ count: sql<number>`count(*)` })
+          .from(vesselShipments).where(and(eq(vesselShipments.shipperId, ownerId), sql`${vesselShipments.status} IN ('delivered','invoiced','settled')`, gte(vesselShipments.createdAt, periodStart)));
+        const delivered = { count: (deliveredTruck?.count || 0) + (deliveredRail?.count || 0) + (deliveredVessel?.count || 0), revenue: deliveredTruck?.revenue || 0, miles: deliveredTruck?.miles || 0 };
+
+        const [inTransitTruck] = await db.select({ count: sql<number>`count(*)` })
+          .from(loads).where(and(eq(ownerCol, ownerId), sql`${loads.status} IN ('in_transit','loading','unloading','en_route_pickup','at_pickup','at_delivery')`));
+        const [inTransitRail] = await db.select({ count: sql<number>`count(*)` })
+          .from(railShipments).where(and(eq(railShipments.companyId, ownerId), sql`${railShipments.status} IN ('in_transit','loading','departed','at_interchange','in_yard')`));
+        const [inTransitVessel] = await db.select({ count: sql<number>`count(*)` })
+          .from(vesselShipments).where(and(eq(vesselShipments.shipperId, ownerId), sql`${vesselShipments.status} IN ('in_transit','departed','loaded_on_vessel','transshipment')`));
+        const inTransit = { count: (inTransitTruck?.count || 0) + (inTransitRail?.count || 0) + (inTransitVessel?.count || 0) };
+
+        const [pendingTruck] = await db.select({ count: sql<number>`count(*)` })
+          .from(loads).where(and(eq(ownerCol, ownerId), sql`${loads.status} IN ('posted','bidding','draft')`));
+        const [pendingRail] = await db.select({ count: sql<number>`count(*)` })
+          .from(railShipments).where(and(eq(railShipments.companyId, ownerId), sql`${railShipments.status} IN ('requested','car_ordered')`));
+        const [pendingVessel] = await db.select({ count: sql<number>`count(*)` })
+          .from(vesselShipments).where(and(eq(vesselShipments.shipperId, ownerId), sql`${vesselShipments.status} IN ('booking_requested','booking_confirmed','documentation')`));
+        const pending = { count: (pendingTruck?.count || 0) + (pendingRail?.count || 0) + (pendingVessel?.count || 0) };
+
+        const [cancelledTruck] = await db.select({ count: sql<number>`count(*)` })
+          .from(loads).where(and(eq(ownerCol, ownerId), eq(loads.status, 'cancelled'), gte(loads.createdAt, periodStart)));
+        const [cancelledRail] = await db.select({ count: sql<number>`count(*)` })
+          .from(railShipments).where(and(eq(railShipments.companyId, ownerId), eq(railShipments.status, 'cancelled'), gte(railShipments.createdAt, periodStart)));
+        const [cancelledVessel] = await db.select({ count: sql<number>`count(*)` })
+          .from(vesselShipments).where(and(eq(vesselShipments.shipperId, ownerId), eq(vesselShipments.status, 'cancelled'), gte(vesselShipments.createdAt, periodStart)));
+        const cancelled = { count: (cancelledTruck?.count || 0) + (cancelledRail?.count || 0) + (cancelledVessel?.count || 0) };
+
+        // All-time loads for the company (for total metrics) — all modes
+        const [allTimeTruck] = await db.select({
           count: sql<number>`count(*)`,
           revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
           miles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)`,
         }).from(loads).where(eq(ownerCol, ownerId));
+        const [allTimeRail] = await db.select({ count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` })
+          .from(railShipments).where(eq(railShipments.companyId, ownerId));
+        const [allTimeVessel] = await db.select({ count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` })
+          .from(vesselShipments).where(eq(vesselShipments.shipperId, ownerId));
+        const allTimeLoads = {
+          count: (allTimeTruck?.count || 0) + (allTimeRail?.count || 0) + (allTimeVessel?.count || 0),
+          revenue: (allTimeTruck?.revenue || 0) + (allTimeRail?.revenue || 0) + (allTimeVessel?.revenue || 0),
+          miles: allTimeTruck?.miles || 0,
+        };
 
         // On-time delivery rate (delivered loads where actualDeliveryDate <= estimatedDeliveryDate)
         const [onTimeData] = await db.select({
@@ -547,15 +653,23 @@ export const analyticsRouter = router({
         const [activeUsers] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isActive, true));
         const [newUsers] = await db.select({ count: sql<number>`count(*)` }).from(users).where(gte(users.createdAt, monthStart));
         const [totalLoads] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads);
+        const [totalRailLoads] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` }).from(railShipments);
+        const [totalVesselLoads] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` }).from(vesselShipments);
         const [completed] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'delivered'));
+        const [completedRail] = await db.select({ count: sql<number>`count(*)` }).from(railShipments).where(sql`${railShipments.status} IN ('unloaded','invoiced','settled')`);
+        const [completedVessel] = await db.select({ count: sql<number>`count(*)` }).from(vesselShipments).where(sql`${vesselShipments.status} IN ('delivered','invoiced','settled')`);
         const [inProgress] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'in_transit'));
-        const totalLoadCount = totalLoads?.count || 0;
-        const gmv = Math.round(totalLoads?.rev || 0);
+        const [inProgressRail] = await db.select({ count: sql<number>`count(*)` }).from(railShipments).where(sql`${railShipments.status} IN ('in_transit','departed','loading','at_interchange')`);
+        const [inProgressVessel] = await db.select({ count: sql<number>`count(*)` }).from(vesselShipments).where(sql`${vesselShipments.status} IN ('in_transit','departed','loaded_on_vessel','transshipment')`);
+        const totalLoadCount = (totalLoads?.count || 0) + (totalRailLoads?.count || 0) + (totalVesselLoads?.count || 0);
+        const gmv = Math.round((totalLoads?.rev || 0) + (totalRailLoads?.rev || 0) + (totalVesselLoads?.rev || 0));
         const avgValue = totalLoadCount > 0 ? Math.round(gmv / totalLoadCount) : 0;
+        const totalCompleted = (completed?.count || 0) + (completedRail?.count || 0) + (completedVessel?.count || 0);
+        const totalInProgress = (inProgress?.count || 0) + (inProgressRail?.count || 0) + (inProgressVessel?.count || 0);
         return {
           period: input.period,
           users: { total: totalUsers?.count || 0, active: activeUsers?.count || 0, newThisPeriod: newUsers?.count || 0, churnRate: 0 },
-          loads: { total: totalLoadCount, completed: completed?.count || 0, inProgress: inProgress?.count || 0, avgValue },
+          loads: { total: totalLoadCount, completed: totalCompleted, inProgress: totalInProgress, avgValue },
           revenue: { gmv, platformFees: Math.round(gmv * 0.05), change: 0 },
           engagement: { dailyActiveUsers: 0, avgSessionDuration: 0, loadPostToBookRatio: 0 },
         };
@@ -572,8 +686,18 @@ export const analyticsRouter = router({
       if (!db) return { period: input.period, data: [], totals: { revenue: 0, loads: 0, avgPerLoad: 0 } };
       try {
         const fmt = input.granularity === 'day' ? '%Y-%m-%d' : input.granularity === 'week' ? '%Y-W%u' : '%Y-%m';
-        const rows = await db.select({ period: sql<string>`DATE_FORMAT(${loads.createdAt}, ${fmt})`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`, count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'delivered')).groupBy(sql`DATE_FORMAT(${loads.createdAt}, ${fmt})`).orderBy(sql`DATE_FORMAT(${loads.createdAt}, ${fmt}) DESC`).limit(30);
-        const data = rows.reverse().map(r => ({ period: r.period, revenue: Math.round(r.rev || 0), loads: r.count || 0, avgPerLoad: r.count ? Math.round((r.rev || 0) / r.count) : 0 }));
+        const truckRows = await db.select({ period: sql<string>`DATE_FORMAT(${loads.createdAt}, ${fmt})`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`, count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'delivered')).groupBy(sql`DATE_FORMAT(${loads.createdAt}, ${fmt})`).orderBy(sql`DATE_FORMAT(${loads.createdAt}, ${fmt}) DESC`).limit(30);
+        const railRowsD = await db.select({ period: sql<string>`DATE_FORMAT(${railShipments.createdAt}, ${fmt})`, rev: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)`, count: sql<number>`count(*)` }).from(railShipments).where(sql`${railShipments.status} IN ('unloaded','invoiced','settled')`).groupBy(sql`DATE_FORMAT(${railShipments.createdAt}, ${fmt})`).orderBy(sql`DATE_FORMAT(${railShipments.createdAt}, ${fmt}) DESC`).limit(30);
+        const vesselRowsD = await db.select({ period: sql<string>`DATE_FORMAT(${vesselShipments.createdAt}, ${fmt})`, rev: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)`, count: sql<number>`count(*)` }).from(vesselShipments).where(sql`${vesselShipments.status} IN ('delivered','invoiced','settled')`).groupBy(sql`DATE_FORMAT(${vesselShipments.createdAt}, ${fmt})`).orderBy(sql`DATE_FORMAT(${vesselShipments.createdAt}, ${fmt}) DESC`).limit(30);
+
+        // Merge all modes by period
+        const merged: Record<string, { rev: number; count: number }> = {};
+        for (const r of [...truckRows, ...railRowsD, ...vesselRowsD]) {
+          if (!merged[r.period]) merged[r.period] = { rev: 0, count: 0 };
+          merged[r.period].rev += (r.rev || 0);
+          merged[r.period].count += (r.count || 0);
+        }
+        const data = Object.entries(merged).sort(([a], [b]) => a.localeCompare(b)).slice(-30).map(([period, r]) => ({ period, revenue: Math.round(r.rev), loads: r.count, avgPerLoad: r.count ? Math.round(r.rev / r.count) : 0 }));
         const totalRev = data.reduce((s, d) => s + d.revenue, 0);
         const totalLoads = data.reduce((s, d) => s + d.loads, 0);
         return { period: input.period, data, totals: { revenue: totalRev, loads: totalLoads, avgPerLoad: totalLoads > 0 ? Math.round(totalRev / totalLoads) : 0 } };
@@ -772,7 +896,11 @@ export const analyticsRouter = router({
     if (!db) return { revenue: 0, revenueChange: 0, loads: 0, loadsChange: 0, milesLogged: 0, avgLoadTime: 0, totalReports: 0, mostPopular: '' };
     try {
       const [total] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(eq(loads.status, 'delivered'));
-      return { revenue: Math.round(total?.rev || 0), revenueChange: 0, loads: total?.count || 0, loadsChange: 0, milesLogged: 0, avgLoadTime: 0, totalReports: total?.count || 0, mostPopular: '' };
+      const [railPerf] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` }).from(railShipments).where(sql`${railShipments.status} IN ('unloaded','invoiced','settled')`);
+      const [vesselPerf] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` }).from(vesselShipments).where(sql`${vesselShipments.status} IN ('delivered','invoiced','settled')`);
+      const perfRev = Math.round((total?.rev || 0) + (railPerf?.rev || 0) + (vesselPerf?.rev || 0));
+      const perfCount = (total?.count || 0) + (railPerf?.count || 0) + (vesselPerf?.count || 0);
+      return { revenue: perfRev, revenueChange: 0, loads: perfCount, loadsChange: 0, milesLogged: 0, avgLoadTime: 0, totalReports: perfCount, mostPopular: '' };
     } catch { return { revenue: 0, revenueChange: 0, loads: 0, loadsChange: 0, milesLogged: 0, avgLoadTime: 0, totalReports: 0, mostPopular: '' }; }
   }),
   getPerformanceTrends: protectedProcedure.input(z.object({ metric: z.string(), period: z.string().optional() })).query(async () => {
@@ -789,9 +917,15 @@ export const analyticsRouter = router({
     if (!db) return { avgLoadTime: 0, totalReports: 0, mostPopular: '', revenue: 0, loads: 0, loadsCompleted: 0, avgMargin: 0, onTimeRate: 0, milesLogged: 0 };
     try {
       const [total] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads);
+      const [railRpt] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` }).from(railShipments);
+      const [vesselRpt] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` }).from(vesselShipments);
       const [delivered] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'delivered'));
-      const t = total?.count || 0; const d = delivered?.count || 0;
-      return { avgLoadTime: 0, totalReports: t, mostPopular: '', revenue: Math.round(total?.rev || 0), loads: t, loadsCompleted: d, avgMargin: 0, onTimeRate: t > 0 ? Math.round((d / t) * 100) : 0, milesLogged: 0 };
+      const [deliveredRailRpt] = await db.select({ count: sql<number>`count(*)` }).from(railShipments).where(sql`${railShipments.status} IN ('unloaded','invoiced','settled')`);
+      const [deliveredVesselRpt] = await db.select({ count: sql<number>`count(*)` }).from(vesselShipments).where(sql`${vesselShipments.status} IN ('delivered','invoiced','settled')`);
+      const t = (total?.count || 0) + (railRpt?.count || 0) + (vesselRpt?.count || 0);
+      const d = (delivered?.count || 0) + (deliveredRailRpt?.count || 0) + (deliveredVesselRpt?.count || 0);
+      const rptRev = Math.round((total?.rev || 0) + (railRpt?.rev || 0) + (vesselRpt?.rev || 0));
+      return { avgLoadTime: 0, totalReports: t, mostPopular: '', revenue: rptRev, loads: t, loadsCompleted: d, avgMargin: 0, onTimeRate: t > 0 ? Math.round((d / t) * 100) : 0, milesLogged: 0 };
     } catch { return { avgLoadTime: 0, totalReports: 0, mostPopular: '', revenue: 0, loads: 0, loadsCompleted: 0, avgMargin: 0, onTimeRate: 0, milesLogged: 0 }; }
   }),
   getReportsTrends: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => {
@@ -830,15 +964,26 @@ export const analyticsRouter = router({
       const [totalUsers] = await db.select({ count: sql<number>`count(*)` }).from(users);
       const [activeUsers] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isActive, true));
       const [totalLoads] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads);
-      const rev = Math.round(totalLoads?.rev || 0);
-      return { dailyActiveUsers: 0, monthlyActiveUsers: activeUsers?.count || 0, totalLoads: totalLoads?.count || 0, totalRevenue: rev, revenue: rev, totalUsers: totalUsers?.count || 0, usersChange: 0, usersChangeType: 'stable', loadsChange: 0, loadsChangeType: 'stable', revenueChange: 0, revenueChangeType: 'stable' };
+      const [totalRailS] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` }).from(railShipments);
+      const [totalVesselS] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` }).from(vesselShipments);
+      const allLoadsCount = (totalLoads?.count || 0) + (totalRailS?.count || 0) + (totalVesselS?.count || 0);
+      const rev = Math.round((totalLoads?.rev || 0) + (totalRailS?.rev || 0) + (totalVesselS?.rev || 0));
+      return { dailyActiveUsers: 0, monthlyActiveUsers: activeUsers?.count || 0, totalLoads: allLoadsCount, totalRevenue: rev, revenue: rev, totalUsers: totalUsers?.count || 0, usersChange: 0, usersChangeType: 'stable', loadsChange: 0, loadsChangeType: 'stable', revenueChange: 0, revenueChangeType: 'stable' };
     } catch { return { dailyActiveUsers: 0, monthlyActiveUsers: 0, totalLoads: 0, totalRevenue: 0, revenue: 0, totalUsers: 0, usersChange: 0, usersChangeType: 'stable', loadsChange: 0, loadsChangeType: 'stable', revenueChange: 0, revenueChangeType: 'stable' }; }
   }),
   getPlatformTrends: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => {
     const db = await getDb(); if (!db) return [];
     try {
-      const rows = await db.select({ month: sql<string>`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`, count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).groupBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`).orderBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m') DESC`).limit(12);
-      return rows.map(r => ({ period: r.month, loads: r.count || 0, revenue: Math.round(r.revenue || 0) }));
+      const truckPT = await db.select({ month: sql<string>`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`, count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).groupBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`).orderBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m') DESC`).limit(12);
+      const railPT = await db.select({ month: sql<string>`DATE_FORMAT(${railShipments.createdAt}, '%Y-%m')`, count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` }).from(railShipments).groupBy(sql`DATE_FORMAT(${railShipments.createdAt}, '%Y-%m')`).orderBy(sql`DATE_FORMAT(${railShipments.createdAt}, '%Y-%m') DESC`).limit(12);
+      const vesselPT = await db.select({ month: sql<string>`DATE_FORMAT(${vesselShipments.createdAt}, '%Y-%m')`, count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` }).from(vesselShipments).groupBy(sql`DATE_FORMAT(${vesselShipments.createdAt}, '%Y-%m')`).orderBy(sql`DATE_FORMAT(${vesselShipments.createdAt}, '%Y-%m') DESC`).limit(12);
+      const mergedPT: Record<string, { count: number; revenue: number }> = {};
+      for (const r of [...truckPT, ...railPT, ...vesselPT]) {
+        if (!mergedPT[r.month]) mergedPT[r.month] = { count: 0, revenue: 0 };
+        mergedPT[r.month].count += (r.count || 0);
+        mergedPT[r.month].revenue += (r.revenue || 0);
+      }
+      return Object.entries(mergedPT).sort(([a], [b]) => a.localeCompare(b)).slice(-12).map(([period, r]) => ({ period, loads: r.count, revenue: Math.round(r.revenue) }));
     } catch (e) { return []; }
   }),
   getPlatformTopUsers: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ input }) => {
@@ -864,9 +1009,15 @@ export const analyticsRouter = router({
     if (!db) return { avgLoadTime: 0, totalReports: 0, mostPopular: '', revenue: 0, loads: 0, onTimeRate: 0 };
     try {
       const [total] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads);
+      const [railPS] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)), 0)` }).from(railShipments);
+      const [vesselPS] = await db.select({ count: sql<number>`count(*)`, rev: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)), 0)` }).from(vesselShipments);
       const [delivered] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'delivered'));
-      const t = total?.count || 0; const d = delivered?.count || 0;
-      return { avgLoadTime: 0, totalReports: t, mostPopular: '', revenue: Math.round(total?.rev || 0), loads: t, onTimeRate: t > 0 ? Math.round((d / t) * 100) : 0 };
+      const [deliveredRailPS] = await db.select({ count: sql<number>`count(*)` }).from(railShipments).where(sql`${railShipments.status} IN ('unloaded','invoiced','settled')`);
+      const [deliveredVesselPS] = await db.select({ count: sql<number>`count(*)` }).from(vesselShipments).where(sql`${vesselShipments.status} IN ('delivered','invoiced','settled')`);
+      const t = (total?.count || 0) + (railPS?.count || 0) + (vesselPS?.count || 0);
+      const d = (delivered?.count || 0) + (deliveredRailPS?.count || 0) + (deliveredVesselPS?.count || 0);
+      const psRev = Math.round((total?.rev || 0) + (railPS?.rev || 0) + (vesselPS?.rev || 0));
+      return { avgLoadTime: 0, totalReports: t, mostPopular: '', revenue: psRev, loads: t, onTimeRate: t > 0 ? Math.round((d / t) * 100) : 0 };
     } catch { return { avgLoadTime: 0, totalReports: 0, mostPopular: '', revenue: 0, loads: 0, onTimeRate: 0 }; }
   }),
 
@@ -895,6 +1046,10 @@ export const analyticsRouter = router({
           drivers: sql<number>`COUNT(DISTINCT ${loads.driverId})`,
         }).from(loads).where(gte(loads.createdAt, currentStart));
 
+        // Rail & vessel for current period
+        const [curRailKPI] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)),0)`, cnt: sql<number>`COUNT(*)`, del: sql<number>`SUM(CASE WHEN ${railShipments.status} IN ('unloaded','invoiced','settled') THEN 1 ELSE 0 END)` }).from(railShipments).where(gte(railShipments.createdAt, currentStart));
+        const [curVesselKPI] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)),0)`, cnt: sql<number>`COUNT(*)`, del: sql<number>`SUM(CASE WHEN ${vesselShipments.status} IN ('delivered','invoiced','settled') THEN 1 ELSE 0 END)` }).from(vesselShipments).where(gte(vesselShipments.createdAt, currentStart));
+
         const [prev] = await db.select({
           rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)),0)`,
           cnt: sql<number>`COUNT(*)`,
@@ -903,10 +1058,17 @@ export const analyticsRouter = router({
           drivers: sql<number>`COUNT(DISTINCT ${loads.driverId})`,
         }).from(loads).where(and(gte(loads.createdAt, prevStart), lte(loads.createdAt, currentStart)));
 
+        // Rail & vessel for previous period
+        const [prevRailKPI] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${railShipments.rate} AS DECIMAL)),0)`, cnt: sql<number>`COUNT(*)`, del: sql<number>`SUM(CASE WHEN ${railShipments.status} IN ('unloaded','invoiced','settled') THEN 1 ELSE 0 END)` }).from(railShipments).where(and(gte(railShipments.createdAt, prevStart), lte(railShipments.createdAt, currentStart)));
+        const [prevVesselKPI] = await db.select({ rev: sql<number>`COALESCE(SUM(CAST(${vesselShipments.rate} AS DECIMAL)),0)`, cnt: sql<number>`COUNT(*)`, del: sql<number>`SUM(CASE WHEN ${vesselShipments.status} IN ('delivered','invoiced','settled') THEN 1 ELSE 0 END)` }).from(vesselShipments).where(and(gte(vesselShipments.createdAt, prevStart), lte(vesselShipments.createdAt, currentStart)));
+
         const pct = (c: number, p: number) => p > 0 ? Math.round(((c - p) / p) * 100) : 0;
-        const cRev = cur?.rev || 0, pRev = prev?.rev || 0;
-        const cCnt = cur?.cnt || 0, pCnt = prev?.cnt || 0;
-        const cDel = cur?.del || 0, pDel = prev?.del || 0;
+        const cRev = (cur?.rev || 0) + (curRailKPI?.rev || 0) + (curVesselKPI?.rev || 0);
+        const pRev = (prev?.rev || 0) + (prevRailKPI?.rev || 0) + (prevVesselKPI?.rev || 0);
+        const cCnt = (cur?.cnt || 0) + (curRailKPI?.cnt || 0) + (curVesselKPI?.cnt || 0);
+        const pCnt = (prev?.cnt || 0) + (prevRailKPI?.cnt || 0) + (prevVesselKPI?.cnt || 0);
+        const cDel = (cur?.del || 0) + (curRailKPI?.del || 0) + (curVesselKPI?.del || 0);
+        const pDel = (prev?.del || 0) + (prevRailKPI?.del || 0) + (prevVesselKPI?.del || 0);
         const cRPM = +(cur?.avgRPM || 0).toFixed(2), pRPM = +(prev?.avgRPM || 0).toFixed(2);
         const cDrv = cur?.drivers || 0, pDrv = prev?.drivers || 0;
         const cOT = cCnt > 0 ? Math.round((cDel / cCnt) * 100) : 0;
@@ -938,14 +1100,19 @@ export const analyticsRouter = router({
       try {
         const since = new Date(Date.now() - (input?.lookbackDays || 30) * 86400000);
 
-        // Status breakdown
+        // Status breakdown (truck)
         const statuses = await db.select({ status: loads.status, count: sql<number>`COUNT(*)` })
           .from(loads).where(gte(loads.createdAt, since)).groupBy(loads.status);
 
+        // Rail & vessel counts for operational totals
+        const [railOpsTotal] = await db.select({ count: sql<number>`COUNT(*)`, cancelled: sql<number>`SUM(CASE WHEN ${railShipments.status}='cancelled' THEN 1 ELSE 0 END)`, delivered: sql<number>`SUM(CASE WHEN ${railShipments.status} IN ('unloaded','invoiced','settled') THEN 1 ELSE 0 END)`, rev: sql<number>`COALESCE(SUM(CASE WHEN ${railShipments.status} IN ('unloaded','invoiced','settled') THEN CAST(${railShipments.rate} AS DECIMAL) ELSE 0 END),0)` }).from(railShipments).where(gte(railShipments.createdAt, since));
+        const [vesselOpsTotal] = await db.select({ count: sql<number>`COUNT(*)`, cancelled: sql<number>`SUM(CASE WHEN ${vesselShipments.status}='cancelled' THEN 1 ELSE 0 END)`, delivered: sql<number>`SUM(CASE WHEN ${vesselShipments.status} IN ('delivered','invoiced','settled') THEN 1 ELSE 0 END)`, rev: sql<number>`COALESCE(SUM(CASE WHEN ${vesselShipments.status} IN ('delivered','invoiced','settled') THEN CAST(${vesselShipments.rate} AS DECIMAL) ELSE 0 END),0)` }).from(vesselShipments).where(gte(vesselShipments.createdAt, since));
+
         // Cancellation rate
-        const totalLoads = statuses.reduce((s, r) => s + (r.count || 0), 0);
-        const cancelledCount = statuses.find((s: any) => s.status === 'cancelled')?.count || 0;
-        const deliveredCount = statuses.find((s: any) => s.status === 'delivered')?.count || 0;
+        const truckTotal = statuses.reduce((s, r) => s + (r.count || 0), 0);
+        const totalLoads = truckTotal + (railOpsTotal?.count || 0) + (vesselOpsTotal?.count || 0);
+        const cancelledCount = (statuses.find((s: any) => s.status === 'cancelled')?.count || 0) + (railOpsTotal?.cancelled || 0) + (vesselOpsTotal?.cancelled || 0);
+        const deliveredCount = (statuses.find((s: any) => s.status === 'delivered')?.count || 0) + (railOpsTotal?.delivered || 0) + (vesselOpsTotal?.delivered || 0);
 
         // Bid acceptance
         const [bidStats] = await db.select({
@@ -953,13 +1120,15 @@ export const analyticsRouter = router({
           accepted: sql<number>`SUM(CASE WHEN ${bids.status}='accepted' THEN 1 ELSE 0 END)`,
         }).from(bids).where(gte(bids.createdAt, since));
 
-        // Revenue per driver
+        // Revenue per driver (truck delivered + rail/vessel delivered revenue)
         const [driverStats] = await db.select({
           rev: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)),0)`,
           drivers: sql<number>`COUNT(DISTINCT ${loads.driverId})`,
           loads: sql<number>`COUNT(*)`,
         }).from(loads).where(and(gte(loads.createdAt, since), eq(loads.status, 'delivered')));
 
+        const totalDeliveredRev = (driverStats?.rev || 0) + (railOpsTotal?.rev || 0) + (vesselOpsTotal?.rev || 0);
+        const totalDeliveredLoads = (driverStats?.loads || 0) + (railOpsTotal?.delivered || 0) + (vesselOpsTotal?.delivered || 0);
         const drvCount = driverStats?.drivers || 1;
 
         return {
@@ -968,8 +1137,8 @@ export const analyticsRouter = router({
           emptyMileRatio: 0,
           loadCancelRate: totalLoads > 0 ? Math.round((cancelledCount / totalLoads) * 100) : 0,
           bidAcceptRate: (bidStats?.total || 0) > 0 ? Math.round(((bidStats?.accepted || 0) / bidStats.total) * 100) : 0,
-          revenuePerDriver: Math.round((driverStats?.rev || 0) / drvCount),
-          loadsPerDriver: Math.round((driverStats?.loads || 0) / drvCount * 10) / 10,
+          revenuePerDriver: Math.round(totalDeliveredRev / drvCount),
+          loadsPerDriver: Math.round(totalDeliveredLoads / drvCount * 10) / 10,
           statusBreakdown: statuses.map((s: any) => ({ status: s.status || "unknown", count: s.count || 0 })),
         };
       } catch { return empty; }
