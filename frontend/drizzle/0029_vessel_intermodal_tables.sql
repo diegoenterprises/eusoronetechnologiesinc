@@ -457,10 +457,81 @@ CREATE TABLE IF NOT EXISTS `dvir_defect_items` (
 );
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- SAFETY INCIDENTS TABLE (terminal/facility-level)
+-- ════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS `safety_incidents` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `companyId` INT,
+  `facilityId` INT,
+  `vehicleId` INT,
+  `driverId` INT,
+  `reportedBy` INT,
+  `incidentType` ENUM('slip_fall','equipment_failure','chemical_spill','fire','collision','near_miss','ergonomic','security','weather','other') NOT NULL,
+  `severity` ENUM('minor','moderate','major','critical','fatal') NOT NULL,
+  `occurredAt` TIMESTAMP NOT NULL,
+  `location` VARCHAR(255),
+  `description` TEXT,
+  `rootCause` TEXT,
+  `correctiveAction` TEXT,
+  `injuryCount` INT DEFAULT 0,
+  `propertyDamageEstimate` DECIMAL(10,2),
+  `oshaReportable` TINYINT DEFAULT 0,
+  `oshaRecordNumber` VARCHAR(50),
+  `status` ENUM('reported','investigating','corrective_action','closed') DEFAULT 'reported',
+  `closedAt` TIMESTAMP NULL,
+  `closedBy` INT,
+  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `si_company_idx` (`companyId`),
+  INDEX `si_type_idx` (`incidentType`),
+  INDEX `si_status_idx` (`status`)
+);
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- ESCORT CERTIFICATIONS TABLE (pilot car operator state certs)
+-- ════════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS `escort_certifications` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `userId` INT NOT NULL,
+  `certType` VARCHAR(50) NOT NULL,
+  `certNumber` VARCHAR(100),
+  `issuingState` VARCHAR(5) NOT NULL,
+  `issuingAuthority` VARCHAR(255),
+  `issueDate` TIMESTAMP NULL,
+  `expirationDate` TIMESTAMP NULL,
+  `status` ENUM('active','expired','suspended','revoked') DEFAULT 'active',
+  `heightPoleCertified` TINYINT DEFAULT 0,
+  `nightOperationsCertified` TINYINT DEFAULT 0,
+  `hazmatEscortCertified` TINYINT DEFAULT 0,
+  `documentUrl` VARCHAR(500),
+  `notes` TEXT,
+  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `ec_user_idx` (`userId`),
+  INDEX `ec_state_idx` (`issuingState`),
+  INDEX `ec_status_idx` (`status`),
+  INDEX `ec_expiry_idx` (`expirationDate`)
+);
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- FIX: Add 'dvir' to inspections type enum (49 CFR 396.11 compliance)
 -- ════════════════════════════════════════════════════════════════════════════
 
 ALTER TABLE `inspections` MODIFY COLUMN `type` ENUM('pre_trip', 'post_trip', 'dvir', 'roadside', 'annual', 'dot') NOT NULL;
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- FIX: Add 'surety_bond' and 'trust_fund' to insurance_policies policyType enum
+-- ════════════════════════════════════════════════════════════════════════════
+
+ALTER TABLE `insurance_policies` MODIFY COLUMN `policyType` ENUM(
+  'auto_liability', 'general_liability', 'cargo', 'workers_compensation',
+  'umbrella_excess', 'pollution_liability', 'environmental_impairment',
+  'motor_truck_cargo', 'physical_damage', 'non_trucking_liability',
+  'trailer_interchange', 'reefer_breakdown', 'hazmat_endorsement',
+  'surety_bond', 'trust_fund', 'other'
+) NOT NULL;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- INDEXES for performance

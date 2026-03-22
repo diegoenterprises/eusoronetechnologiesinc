@@ -1532,6 +1532,70 @@ export type Incident = typeof incidents.$inferSelect;
 export type InsertIncident = typeof incidents.$inferInsert;
 
 // ============================================================================
+// SAFETY INCIDENTS (terminal/facility-level safety tracking)
+// ============================================================================
+
+export const safetyIncidents = mysqlTable("safety_incidents", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId"),
+  facilityId: int("facilityId"),
+  vehicleId: int("vehicleId"),
+  driverId: int("driverId"),
+  reportedBy: int("reportedBy"),
+  incidentType: mysqlEnum("incidentType", [
+    "slip_fall", "equipment_failure", "chemical_spill", "fire",
+    "collision", "near_miss", "ergonomic", "security", "weather", "other"
+  ]).notNull(),
+  severity: mysqlEnum("severity", ["minor", "moderate", "major", "critical", "fatal"]).notNull(),
+  occurredAt: timestamp("occurredAt").notNull(),
+  location: varchar("location", { length: 255 }),
+  description: text("description"),
+  rootCause: text("rootCause"),
+  correctiveAction: text("correctiveAction"),
+  injuryCount: int("injuryCount").default(0),
+  propertyDamageEstimate: decimal("propertyDamageEstimate", { precision: 10, scale: 2 }),
+  oshaReportable: tinyint("oshaReportable").default(0),
+  oshaRecordNumber: varchar("oshaRecordNumber", { length: 50 }),
+  status: mysqlEnum("status", ["reported", "investigating", "corrective_action", "closed"]).default("reported"),
+  closedAt: timestamp("closedAt"),
+  closedBy: int("closedBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  companyIdx: index("si_company_idx").on(table.companyId),
+  typeIdx: index("si_type_idx").on(table.incidentType),
+  statusIdx: index("si_status_idx").on(table.status),
+}));
+
+// ============================================================================
+// ESCORT CERTIFICATIONS (pilot car operator state certifications)
+// ============================================================================
+
+export const escortCertifications = mysqlTable("escort_certifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  certType: varchar("certType", { length: 50 }).notNull(),
+  certNumber: varchar("certNumber", { length: 100 }),
+  issuingState: varchar("issuingState", { length: 5 }).notNull(),
+  issuingAuthority: varchar("issuingAuthority", { length: 255 }),
+  issueDate: timestamp("issueDate"),
+  expirationDate: timestamp("expirationDate"),
+  status: mysqlEnum("status", ["active", "expired", "suspended", "revoked"]).default("active"),
+  heightPoleCertified: tinyint("heightPoleCertified").default(0),
+  nightOperationsCertified: tinyint("nightOperationsCertified").default(0),
+  hazmatEscortCertified: tinyint("hazmatEscortCertified").default(0),
+  documentUrl: varchar("documentUrl", { length: 500 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("ec_user_idx").on(table.userId),
+  stateIdx: index("ec_state_idx").on(table.issuingState),
+  statusIdx: index("ec_status_idx").on(table.status),
+  expiryIdx: index("ec_expiry_idx").on(table.expirationDate),
+}));
+
+// ============================================================================
 // CERTIFICATIONS
 // ============================================================================
 
@@ -3910,7 +3974,8 @@ export const insurancePolicies = mysqlTable(
       "auto_liability", "general_liability", "cargo", "workers_compensation",
       "umbrella_excess", "pollution_liability", "environmental_impairment",
       "motor_truck_cargo", "physical_damage", "non_trucking_liability",
-      "trailer_interchange", "reefer_breakdown", "hazmat_endorsement", "other"
+      "trailer_interchange", "reefer_breakdown", "hazmat_endorsement",
+      "surety_bond", "trust_fund", "other"
     ]).notNull(),
     coverageType: mysqlEnum("coverageType", ["primary", "excess", "umbrella"]).default("primary"),
     effectiveDate: timestamp("effectiveDate").notNull(),
