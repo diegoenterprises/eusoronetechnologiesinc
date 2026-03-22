@@ -685,7 +685,7 @@ export const dashboardRouter = router({
     const db = await getDb();
     if (!db) return { catalysts: [], totalAvailable: 0, avgRate: 0 };
     try {
-      const [total] = await db.select({ count: sql<number>`count(*)` }).from(companies).where(sql`JSON_CONTAINS(${companies.roles}, '"CATALYST"') OR ${companies.role} = 'CATALYST'`);
+      const [total] = await db.select({ count: sql<number>`count(*)` }).from(companies).where(sql`JSON_CONTAINS(roles, '"CATALYST"') OR role = 'CATALYST'`);
       const [avgRate] = await db.select({ avg: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)),0)` }).from(loads).where(eq(loads.status, 'delivered'));
       return { catalysts: [], totalAvailable: total?.count || 0, avgRate: Math.round((avgRate?.avg || 0) * 100) / 100 };
     } catch { return { catalysts: [], totalAvailable: 0, avgRate: 0 }; }
@@ -2002,8 +2002,8 @@ async function getAdminStats(db: any) {
 
 // ── ESCORT ──
 async function getEscortStats(db: any, userId: number) {
-  const [active] = await db.select({ count: sql<number>`count(*)` }).from(escortAssignments).where(and(eq(escortAssignments.escortId, userId), sql`${escortAssignments.status} IN ('accepted','en_route','on_site','escorting')`));
-  const [completed] = await db.select({ count: sql<number>`count(*)` }).from(escortAssignments).where(and(eq(escortAssignments.escortId, userId), eq(escortAssignments.status, 'completed')));
+  const [active] = await db.select({ count: sql<number>`count(*)` }).from(escortAssignments).where(and(eq(escortAssignments.escortUserId, userId), sql`${escortAssignments.status} IN ('accepted','en_route','on_site','escorting')`));
+  const [completed] = await db.select({ count: sql<number>`count(*)` }).from(escortAssignments).where(and(eq(escortAssignments.escortUserId, userId), eq(escortAssignments.status, 'completed')));
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const [earnings] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)),0)` }).from(loads).where(and(eq(loads.catalystId, userId), eq(loads.status, 'delivered'), gte(loads.updatedAt, monthStart)));
   return { activeJobs: active?.count || 0, completedJobs: completed?.count || 0, monthlyEarnings: earnings?.sum || 0, safetyRecord: 100, nextAssignment: null };
@@ -2012,9 +2012,9 @@ async function getEscortStats(db: any, userId: number) {
 // ── FACTORING ──
 async function getFactoringStats(db: any, userId: number, companyId: number) {
   // Query settlements as proxy for factoring invoices
-  const [totalSettlements] = await db.select({ count: sql<number>`count(*)`, sum: sql<number>`COALESCE(SUM(amount),0)` }).from(settlements).where(eq(settlements.companyId, companyId));
-  const [pending] = await db.select({ count: sql<number>`count(*)` }).from(settlements).where(and(eq(settlements.companyId, companyId), eq(settlements.status, 'pending')));
-  const [paid] = await db.select({ count: sql<number>`count(*)` }).from(settlements).where(and(eq(settlements.companyId, companyId), eq(settlements.status, 'paid')));
+  const [totalSettlements] = await db.select({ count: sql<number>`count(*)`, sum: sql<number>`COALESCE(SUM(CAST(carrierPayment AS DECIMAL)),0)` }).from(settlements).where(eq(settlements.carrierId, userId));
+  const [pending] = await db.select({ count: sql<number>`count(*)` }).from(settlements).where(and(eq(settlements.carrierId, userId), eq(settlements.status, 'pending')));
+  const [paid] = await db.select({ count: sql<number>`count(*)` }).from(settlements).where(and(eq(settlements.carrierId, userId), eq(settlements.status, 'paid')));
   const approvalRate = (totalSettlements?.count || 0) > 0 ? Math.round(((paid?.count || 0) / totalSettlements.count) * 100) : 0;
   return { totalPortfolioValue: totalSettlements?.sum || 0, fundsAdvanced: 0, activeInvoices: pending?.count || 0, approvalRate, chargebacksThisMonth: 0 };
 }

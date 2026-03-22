@@ -71,7 +71,6 @@ export const railShipmentsRouter = router({
         carType: input.carType as any,
         commodity: input.commodity,
         hazmatClass: input.hazmatClass,
-        stccCode: input.stccCode,
         weightLbs: input.weightLbs ? String(input.weightLbs) : undefined,
         numberOfCars: input.numberOfCars,
         specialInstructions: input.specialInstructions,
@@ -342,7 +341,7 @@ export const railShipmentsRouter = router({
       if (input.carType) conditions.push(eq(railcars.carType, input.carType as any));
       if (input.status) conditions.push(eq(railcars.status, input.status as any));
       if (input.yardId) conditions.push(eq(railcars.currentYardId, input.yardId));
-      if (input.carrierId) conditions.push(eq(railcars.ownerCarrierId, input.carrierId));
+      if (input.carrierId) conditions.push(eq(railcars.owner, String(input.carrierId)));
 
       const where = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -389,8 +388,8 @@ export const railShipmentsRouter = router({
       if (!db) throw new Error("Database unavailable");
 
       const [result] = await db.insert(trainConsists).values({
-        trainId: input.trainId,
-        carrierId: input.carrierId,
+        consistNumber: input.trainId || `CONSIST-${Date.now()}`,
+        railroadId: input.carrierId,
         originYardId: input.originYardId,
         destinationYardId: input.destinationYardId,
         totalCars: input.railcarIds.length,
@@ -424,8 +423,8 @@ export const railShipmentsRouter = router({
       const db = await getDb();
       if (!db) return [];
 
-      let conditions: any[] = [eq(railYards.isActive, true)];
-      if (input.railroadId) conditions.push(eq(railYards.ownerRailroadId, input.railroadId));
+      let conditions: any[] = [eq(railYards.status, "active" as any)];
+      if (input.railroadId) conditions.push(eq(railYards.railroadId, input.railroadId));
       if (input.state) conditions.push(eq(railYards.state, input.state));
       if (input.country) conditions.push(eq(railYards.country, input.country as any));
       if (input.yardType) conditions.push(eq(railYards.yardType, input.yardType as any));
