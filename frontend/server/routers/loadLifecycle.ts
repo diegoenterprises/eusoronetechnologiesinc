@@ -31,6 +31,7 @@ import { loads, vehicles, escortAssignments, settlements, settlementDocuments, w
 import type { Load, User } from "../../drizzle/schema";
 import { eq, and, ne, sql, inArray } from "drizzle-orm";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
+import { BlockchainService } from "../services/BlockchainService";
 import { analyzeLoadDimensions, checkTravelWindow } from "../services/oversizeEnforcement";
 import { validateWorkersComp } from "../services/workersCompCompliance";
 import { checkCabotage, runMXPreDispatchChecks } from "../services/mxCrossBorderEnforcement";
@@ -2031,6 +2032,24 @@ async function logTransition(
          ${JSON.stringify(guardsPassed)}, ${JSON.stringify(effectsExecuted)},
          ${JSON.stringify(metadata || {})}, ${success}, ${errorMessage || null})
     `);
+    // ── BLOCKCHAIN AUDIT — immutable hash-chain log for compliance ──
+    try {
+      await BlockchainService.logEvent(loadId, `STATE_TRANSITION:${fromState}_TO_${toState}`, {
+        transitionId: transition.id,
+        trigger: transition.trigger,
+        triggerEvent: transition.triggerEvent,
+        actorUserId: userId,
+        actorRole: userRole,
+        guardsPassed,
+        effectsExecuted,
+        success,
+        errorMessage: errorMessage || null,
+        metadata: metadata || {},
+        timestamp: new Date().toISOString(),
+      });
+    } catch (bcErr) {
+      logger.warn(`[BlockchainAudit] logEvent failed for load ${loadId}:`, (bcErr as Error).message);
+    }
   } catch (e) {
     logger.error(`[LoadLifecycle] Audit log effect FAILED for load ${loadId} (${fromState} → ${toState}):`, (e as Error).message);
     try {
@@ -2415,6 +2434,15 @@ export const loadLifecycleRouter = router({
                 totalShipperCharge: totalShipperCharge.toFixed(2),
                 status: "pending",
               });
+
+              // ── BLOCKCHAIN AUDIT — settlement creation ──
+              try {
+                await BlockchainService.logEvent(numericLoadId, "SETTLEMENT_CREATED", {
+                  loadRate: loadRate.toFixed(2), platformFee: platformFee.toFixed(2),
+                  carrierPay: carrierPay.toFixed(2), totalShipperCharge: totalShipperCharge.toFixed(2),
+                  carrierId, shipperId: load.shipperId, timestamp: new Date().toISOString(),
+                });
+              } catch { /* best-effort */ }
 
               // Credit carrier wallet
               if (carrierId) {

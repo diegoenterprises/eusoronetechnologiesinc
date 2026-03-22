@@ -271,4 +271,135 @@ export const inspectionsRouter = router({
       return results.map(r => ({ id: String(r.id), type: r.type, date: r.completedAt?.toISOString()?.split("T")[0] || "", status: r.status || "pending", defects: r.defectsFound || 0 }));
     } catch { return []; }
   }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DVIR — Driver Vehicle Inspection Reports (49 CFR 396.11)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  createDVIR: protectedProcedure
+    .input(z.object({
+      vehicleId: z.number(),
+      reportType: z.enum(["pre_trip", "post_trip", "en_route"]),
+      odometerMiles: z.number().optional(),
+      overallCondition: z.enum(["satisfactory", "defects_noted", "out_of_service"]),
+      defects: z.array(z.object({
+        category: z.string(),
+        description: z.string(),
+        severity: z.enum(["minor", "major", "out_of_service"]).default("minor"),
+        photoUrl: z.string().optional(),
+      })).default([]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable" };
+      const driverId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+      try {
+        const [result] = await db.execute(sql`
+          INSERT INTO dvir_reports (vehicleId, driverId, reportType, reportDate, odometerMiles, overallCondition, defectsFound, defects, status, companyId)
+          VALUES (${input.vehicleId}, ${driverId}, ${input.reportType}, CURDATE(), ${input.odometerMiles || null},
+            ${input.overallCondition}, ${input.defects.length > 0 ? 1 : 0}, ${JSON.stringify(input.defects)},
+            'submitted', ${ctx.user?.companyId || null})
+        `);
+        const dvirId = (result as any).insertId;
+
+        // Insert individual defect items
+        for (const defect of input.defects) {
+          await db.execute(sql`
+            INSERT INTO dvir_defect_items (dvirId, category, description, severity, photoUrl)
+            VALUES (${dvirId}, ${defect.category}, ${defect.description}, ${defect.severity}, ${defect.photoUrl || null})
+          `);
+        }
+
+        return { success: true, dvirId, reportType: input.reportType, defectsCount: input.defects.length };
+      } catch (e) { return { success: false, error: (e as Error).message }; }
+    }),
+
+  getDVIRHistory: protectedProcedure
+    .input(z.object({
+      vehicleId: z.number().optional(),
+      limit: z.number().default(20),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const driverId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+      try {
+        const [rows] = await db.execute(sql`
+          SELECT d.*, v.unitNumber, v.make, v.model
+          FROM dvir_reports d
+          LEFT JOIN vehicles v ON v.id = d.vehicleId
+          WHERE d.driverId = ${driverId}
+            ${input.vehicleId ? sql`AND d.vehicleId = ${input.vehicleId}` : sql``}
+          ORDER BY d.createdAt DESC
+          LIMIT ${input.limit}
+        `) as any;
+        return rows || [];
+      } catch { return []; }
+    }),
+
+  reviewDVIR: protectedProcedure
+    .input(z.object({
+      dvirId: z.number(),
+      mechanicNotes: z.string().optional(),
+      repairsRequired: z.boolean().default(false),
+      repairsCompleted: z.boolean().default(false),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false };
+      const mechanicId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+      try {
+        await db.execute(sql`
+          UPDATE dvir_reports
+          SET mechanicReview = 1, mechanicId = ${mechanicId}, mechanicSignedAt = NOW(),
+              mechanicNotes = ${input.mechanicNotes || null},
+              repairsRequired = ${input.repairsRequired ? 1 : 0},
+              repairsCompleted = ${input.repairsCompleted ? 1 : 0},
+              status = ${input.repairsCompleted ? 'repaired' : input.repairsRequired ? 'reviewed' : 'reviewed'}
+          WHERE id = ${input.dvirId}
+        `);
+        return { success: true };
+      } catch { return { success: false }; }
+    }),
+
+  // DVIR defect categories per 49 CFR 396.11(a)(1)
+  getDVIRCategories: protectedProcedure.query(() => {
+    return [
+      { id: "air_compressor", label: "Air Compressor", group: "engine" },
+      { id: "air_lines", label: "Air Lines", group: "brakes" },
+      { id: "battery", label: "Battery", group: "electrical" },
+      { id: "body", label: "Body", group: "exterior" },
+      { id: "brake_accessories", label: "Brake Accessories", group: "brakes" },
+      { id: "brakes", label: "Brakes (Service/Parking)", group: "brakes" },
+      { id: "coupling_devices", label: "Coupling Devices", group: "trailer" },
+      { id: "defroster_heater", label: "Defroster/Heater", group: "cab" },
+      { id: "drive_line", label: "Drive Line", group: "drivetrain" },
+      { id: "engine", label: "Engine", group: "engine" },
+      { id: "exhaust", label: "Exhaust", group: "engine" },
+      { id: "fifth_wheel", label: "Fifth Wheel", group: "trailer" },
+      { id: "fluid_levels", label: "Fluid Levels", group: "engine" },
+      { id: "frame_assembly", label: "Frame and Assembly", group: "chassis" },
+      { id: "front_axle", label: "Front Axle", group: "chassis" },
+      { id: "fuel_tanks", label: "Fuel Tanks", group: "engine" },
+      { id: "horn", label: "Horn", group: "safety" },
+      { id: "lights_head", label: "Headlights", group: "lights" },
+      { id: "lights_stop", label: "Stop Lights", group: "lights" },
+      { id: "lights_tail", label: "Tail Lights", group: "lights" },
+      { id: "lights_turn", label: "Turn Indicators", group: "lights" },
+      { id: "lights_clearance", label: "Clearance Lights", group: "lights" },
+      { id: "mirrors", label: "Mirrors", group: "cab" },
+      { id: "muffler", label: "Muffler", group: "engine" },
+      { id: "oil_pressure", label: "Oil Pressure", group: "engine" },
+      { id: "radiator", label: "Radiator", group: "engine" },
+      { id: "reflectors", label: "Reflectors", group: "safety" },
+      { id: "safety_equipment", label: "Safety Equipment (triangles, extinguisher)", group: "safety" },
+      { id: "springs", label: "Suspension Springs", group: "chassis" },
+      { id: "steering", label: "Steering", group: "chassis" },
+      { id: "tires", label: "Tires", group: "wheels" },
+      { id: "transmission", label: "Transmission", group: "drivetrain" },
+      { id: "wheels_rims", label: "Wheels and Rims", group: "wheels" },
+      { id: "windows", label: "Windows", group: "cab" },
+      { id: "windshield_wipers", label: "Windshield Wipers", group: "cab" },
+    ];
+  }),
 });
