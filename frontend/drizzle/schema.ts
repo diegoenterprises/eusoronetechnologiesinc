@@ -1233,7 +1233,7 @@ export const inspections = mysqlTable(
     vehicleId: int("vehicleId").notNull(),
     driverId: int("driverId").notNull(),
     companyId: int("companyId").notNull(),
-    type: mysqlEnum("type", ["pre_trip", "post_trip", "roadside", "annual", "dot"]).notNull(),
+    type: mysqlEnum("type", ["pre_trip", "post_trip", "dvir", "roadside", "annual", "dot"]).notNull(),
     status: mysqlEnum("status", ["passed", "failed", "pending"]).default("pending"),
     location: varchar("location", { length: 255 }),
     defectsFound: int("defectsFound").default(0),

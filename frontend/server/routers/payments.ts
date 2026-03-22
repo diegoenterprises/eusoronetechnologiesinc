@@ -13,6 +13,7 @@ import { getDb } from "../db";
 import { payments, loads, users } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
 import { requireAccess } from "../services/security/rbac/access-check";
+import { BlockchainService } from "../services/BlockchainService";
 import { unsafeCast } from "../_core/types/unsafe";
 
 // Helper: safe Stripe call (returns null if Stripe not configured)
@@ -520,6 +521,7 @@ export const paymentsRouter = router({
           paymentMethod: input.method || "card",
         });
         try { emitPaymentSent(ctx.user.id, { type: "load_payment", amount: input.amount, currency: "USD", timestamp: new Date().toISOString() }); } catch (e) { logger.warn("[Payments] processPayment event emission failed:", e); }
+        try { await BlockchainService.logEvent(0, "PAYMENT_PROCESSED", { payerId: ctx.user.id, amount: input.amount, currency: "USD", method: input.method || "card", timestamp: new Date().toISOString() }); } catch { /* best-effort */ }
         return { success: true, transactionId: `txn_${unsafeCast(row).insertId || Date.now()}` };
       }
       return { success: false, transactionId: null };

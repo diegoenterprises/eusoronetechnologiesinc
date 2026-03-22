@@ -24,6 +24,7 @@ import { settlementBatches, settlementBatchItems, settlements, loads, notificati
 import { eq, and, sql, inArray } from "drizzle-orm";
 import { emitDispatchEvent, emitNotification } from "../_core/websocket";
 import { unsafeCast } from "../_core/types/unsafe";
+import { BlockchainService } from "../services/BlockchainService";
 
 function generateBatchNumber(type: string): string {
   const prefix = type === "shipper_payable" ? "SP" : type === "carrier_receivable" ? "CR" : "DP";
@@ -126,6 +127,9 @@ export const settlementBatchingRouter = router({
           totalAmount: total,
         };
       });
+
+      // Blockchain audit — settlement batch created
+      try { await BlockchainService.logEvent(0, "SETTLEMENT_BATCH_CREATED", { batchId: result.batchId, batchNumber, totalLoads: result.totalLoads, totalAmount: result.totalAmount, createdBy: ctx.user?.id, timestamp: new Date().toISOString() }); } catch { /* best-effort */ }
 
       return {
         batchId: result.batchId,

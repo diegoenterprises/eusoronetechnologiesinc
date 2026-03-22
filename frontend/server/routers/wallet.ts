@@ -29,6 +29,7 @@ import { feeCalculator } from "../services/feeCalculator";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { stripe } from "../stripe/service";
 import { withTimeout } from "../services/apiUtils";
+import { BlockchainService } from "../services/BlockchainService";
 
 // Safe Stripe call — returns null if Stripe not configured or API not available
 async function safeStripeCall<T>(fn: () => Promise<T>): Promise<T | null> {
@@ -882,6 +883,9 @@ export const walletRouter = router({
         completedAt: input.transferType !== "scheduled" ? new Date() : undefined,
       });
 
+      // Blockchain audit — P2P transfer
+      try { await BlockchainService.logEvent(0, "P2P_TRANSFER", { senderId: senderWallet.userId, recipientId: recipientWallet.userId, amount: input.amount, fee, transferType: input.transferType, timestamp: new Date().toISOString() }); } catch { /* best-effort */ }
+
       // Record fee collection for platform revenue tracking
       if (fee > 0) {
         try {
@@ -1102,6 +1106,9 @@ export const walletRouter = router({
         status: "pending",
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       });
+
+      // Blockchain audit — cash advance
+      try { await BlockchainService.logEvent(input.loadId || 0, "CASH_ADVANCE", { userId, amount: input.amount, fee, totalRepayment, timestamp: new Date().toISOString() }); } catch { /* best-effort */ }
 
       // Record fee collection for platform revenue tracking
       try {
