@@ -2670,11 +2670,24 @@ Format as a professional business report with sections, key metrics, trends, and
     async ({ province, gvwKg, hasHazmat, tdgClass }) => {
       try {
         const { runFullCanadianComplianceCheck } = await import("./canadianCompliance");
+        const now = new Date();
+        const isWinter = now.getMonth() >= 10 || now.getMonth() <= 2; // Nov-Mar
         const result = runFullCanadianComplianceCheck({
-          province: province as any,
-          gvwKg,
-          hasHazmat: hasHazmat ?? false,
+          provinces: [province as any],
+          gvw_kg: gvwKg,
+          isWinter,
+          hasDangerousGoods: hasHazmat ?? false,
           tdgClass,
+          hasShippingDoc: true,
+          hasPlacards: hasHazmat ?? false,
+          hasERAP: false,
+          driverTDGTrained: hasHazmat ?? false,
+          hasInsurance: true,
+          insuranceAmount_CAD: 2000000,
+          hasACIeManifest: true,
+          hasPARS: true,
+          hasCCI: true,
+          hasB3: true,
         });
         return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
       } catch (e: any) {
