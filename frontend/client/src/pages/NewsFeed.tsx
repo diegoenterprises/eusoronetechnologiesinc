@@ -433,13 +433,15 @@ export default function NewsFeed() {
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-[11px] text-slate-500 flex items-center">{article.source}{getTierBadge(article.source)}</span>
                             <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild>
-                                <a href={article.link} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3.5 h-3.5" /></a>
-                              </Button>
-                              <Button variant="ghost" size="sm" className={cn("h-7 w-7 p-0", savedIds.has(article.id) && "text-yellow-400")} onClick={() => toggleBookmark(article.id)}>
-                                {savedIds.has(article.id) ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { navigator.clipboard.writeText(article.link); toast.success("Link copied"); }}><Share2 className="w-3.5 h-3.5" /></Button>
+                              <a href={article.link} target="_blank" rel="noopener noreferrer" className="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" title="Open article">
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                              <button className={cn("h-8 w-8 flex items-center justify-center rounded-md transition-colors", savedIds.has(article.id) ? "text-yellow-400 hover:text-yellow-300 bg-yellow-500/10" : "text-slate-400 hover:text-yellow-400 hover:bg-slate-700")} onClick={() => toggleBookmark(article.id)} title={savedIds.has(article.id) ? "Remove bookmark" : "Bookmark"}>
+                                {savedIds.has(article.id) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+                              </button>
+                              <button className="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:text-cyan-400 hover:bg-slate-700 transition-colors" onClick={() => { navigator.clipboard.writeText(article.link); toast.success("Link copied to clipboard"); }} title="Copy link">
+                                <Share2 className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
                         </div>
