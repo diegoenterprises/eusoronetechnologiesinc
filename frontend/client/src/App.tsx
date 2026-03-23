@@ -809,7 +809,7 @@ function Router() {
       <Route path={"/detention"} component={guard([...TERM, ...CARR, ...SHIP], <DetentionTrackingPage />)} />
       <Route path={"/relay"} component={guard([...TERM, ...CARR, ...SHIP, ...DISP], <RelayModePage />)} />
       <Route path={"/predictive-pricing"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP], <PredictiveLoadPricingPage />)} />
-      <Route path={"/accessorials"} component={guard([...TERM, ...CARR, ...SHIP, ...DISP, ...ADMN], <AccessorialManagement />)} />
+      <Route path={"/accessorials"} component={guard([...TERM, ...CARR, ...SHIP, ...DISP, ...ADMN], <DetentionAccessorialsPage />)} />
       <Route path={"/euso-ticket"} component={guard(TERM, <EusoTicket />)} />
       <Route path={"/run-tickets"} component={guard(TERM, <EusoTicket />)} />
       <Route path={"/inbound"} component={guard(TERM, <InboundDashboard />)} />
