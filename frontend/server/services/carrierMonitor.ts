@@ -282,23 +282,25 @@ export async function getCarrierSnapshot(dotNumber: string): Promise<CarrierSnap
   if (!pool) return null;
 
   try {
+    // Split into separate indexed lookups instead of one slow 3-table JOIN + ORDER BY
     const [censusRows]: any = await pool.query(
-      `SELECT c.*, a.authority_status, a.docket_number,
-              s.unsafe_driving_percentile, s.hos_percentile, s.vehicle_maintenance_percentile,
-              s.controlled_substances_percentile, s.driver_fitness_percentile,
-              s.crash_indicator_percentile, s.hazmat_percentile,
-              s.unsafe_driving_alert, s.hos_alert, s.vehicle_maintenance_alert,
-              s.controlled_substances_alert, s.driver_fitness_alert,
-              s.crash_indicator_alert, s.hazmat_alert
-       FROM fmcsa_census c
-       LEFT JOIN fmcsa_authority a ON c.dot_number = a.dot_number
-       LEFT JOIN fmcsa_sms_scores s ON c.dot_number = s.dot_number
-       WHERE c.dot_number = ?
-       ORDER BY s.run_date DESC, a.fetched_at DESC
-       LIMIT 1`,
-      [dotNumber]
+      `SELECT * FROM fmcsa_census WHERE dot_number = ? LIMIT 1`, [dotNumber]
     );
     if (!censusRows?.length) return null;
+
+    // Parallel lookups for authority and SMS scores (each uses indexed dot_number)
+    const [[authRows], [smsRows]]: any = await Promise.all([
+      pool.query(`SELECT authority_status, docket_number FROM fmcsa_authority WHERE dot_number = ? LIMIT 1`, [dotNumber]),
+      pool.query(`SELECT unsafe_driving_percentile, hos_percentile, vehicle_maintenance_percentile,
+              controlled_substances_percentile, driver_fitness_percentile,
+              crash_indicator_percentile, hazmat_percentile,
+              unsafe_driving_alert, hos_alert, vehicle_maintenance_alert,
+              controlled_substances_alert, driver_fitness_alert,
+              crash_indicator_alert, hazmat_alert
+       FROM fmcsa_sms_scores WHERE dot_number = ? ORDER BY run_date DESC LIMIT 1`, [dotNumber]),
+    ]);
+    // Merge results
+    Object.assign(censusRows[0], authRows?.[0] || {}, smsRows?.[0] || {});
     const c = censusRows[0];
 
     // Insurance

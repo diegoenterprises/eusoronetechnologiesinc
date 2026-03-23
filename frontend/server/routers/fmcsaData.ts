@@ -87,13 +87,13 @@ export const fmcsaRouter = router({
     .input(z.object({ dotNumber: z.string() }))
     .query(async ({ input }) => {
       try {
-        // 15s global timeout — never hang forever even if DB or API is stuck
+        // 30s global timeout — allow time for 3-table JOIN on large FMCSA dataset
         const snap = await Promise.race([
           getCarrierSnapshot(input.dotNumber),
           new Promise<null>((resolve) => setTimeout(() => {
             logger.warn(`[fmcsaData.getSnapshot] Timeout for DOT# ${input.dotNumber}`);
             resolve(null);
-          }, 15000)),
+          }, 30000)),
         ]);
         if (!snap) return null;
         // Convert Date fields to strings so React doesn't crash on render
