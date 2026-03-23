@@ -460,7 +460,7 @@ export default function DetentionAccessorials() {
                   <CardContent>
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-zinc-800">
+                        <TableRow className={isLight ? "border-slate-200" : "border-zinc-800"}>
                           <TableHead className="text-xs">Facility</TableHead>
                           <TableHead className="text-xs text-right">Events</TableHead>
                           <TableHead className="text-xs text-right">Avg Wait</TableHead>
@@ -469,7 +469,7 @@ export default function DetentionAccessorials() {
                       </TableHeader>
                       <TableBody>
                         {dash.worstOffenders.slice(0, 5).map((f: any, i: number) => (
-                          <TableRow key={i} className="border-zinc-800/50">
+                          <TableRow key={i} className={isLight ? "border-slate-100" : "border-zinc-800/50"}>
                             <TableCell className="text-sm">
                               <div className="flex items-center gap-2">
                                 <span className="text-amber-400 font-bold text-xs w-5">#{i + 1}</span>
@@ -503,7 +503,7 @@ export default function DetentionAccessorials() {
                   <CardContent>
                     <Table>
                       <TableHeader>
-                        <TableRow className="border-zinc-800">
+                        <TableRow className={isLight ? "border-slate-200" : "border-zinc-800"}>
                           <TableHead className="text-xs">Load</TableHead>
                           <TableHead className="text-xs">Facility</TableHead>
                           <TableHead className="text-xs">Status</TableHead>
@@ -513,7 +513,7 @@ export default function DetentionAccessorials() {
                       </TableHeader>
                       <TableBody>
                         {dash.recentEvents.map((evt: any) => (
-                          <TableRow key={evt.id} className="border-zinc-800/50">
+                          <TableRow key={evt.id} className={isLight ? "border-slate-100" : "border-zinc-800/50"}>
                             <TableCell className="text-sm">#{evt.loadId}</TableCell>
                             <TableCell className="text-sm">{evt.facilityName}</TableCell>
                             <TableCell>
@@ -580,7 +580,7 @@ export default function DetentionAccessorials() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {(activeDetentionsQuery.data?.detentions || []).map((det: any) => (
-                <Card key={det.id} className="bg-zinc-900/60 border-amber-500/20">
+                <Card key={det.id} className={cn(isLight ? "bg-amber-50/50 border-amber-200" : "bg-zinc-900/60 border-amber-500/20")}>
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Load #{det.loadId}</span>
@@ -632,7 +632,7 @@ export default function DetentionAccessorials() {
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-zinc-800">
+                    <TableRow className={isLight ? "border-slate-200" : "border-zinc-800"}>
                       <TableHead className="text-xs">Rank</TableHead>
                       <TableHead className="text-xs">Facility</TableHead>
                       <TableHead className="text-xs text-right">Events</TableHead>
@@ -646,7 +646,7 @@ export default function DetentionAccessorials() {
                   </TableHeader>
                   <TableBody>
                     {(facilityQuery.data?.facilities || []).map((f: any) => (
-                      <TableRow key={f.rank} className="border-zinc-800/50">
+                      <TableRow key={f.rank} className={isLight ? "border-slate-100" : "border-zinc-800/50"}>
                         <TableCell>
                           <span className={`text-sm font-bold ${f.rank <= 3 ? "text-red-400" : "text-zinc-400"}`}>
                             #{f.rank}
@@ -697,7 +697,7 @@ export default function DetentionAccessorials() {
                 placeholder="Search charges..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-zinc-900 border-zinc-700"
+                className={cn("pl-9", isLight ? "bg-white border-slate-200" : "bg-zinc-900 border-zinc-700")}
               />
             </div>
           </div>
@@ -709,7 +709,7 @@ export default function DetentionAccessorials() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {(catalogQuery.data?.items || []).map((item: any) => (
-                <Card key={item.code} className="bg-zinc-900/60 border-zinc-800 hover:border-amber-500/30 transition-colors">
+                <Card key={item.code} className={cn(isLight ? "bg-white border-slate-200 shadow-sm hover:border-amber-500/40" : "bg-zinc-900/60 border-zinc-800 hover:border-amber-500/30", "transition-colors")}>
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -725,16 +725,16 @@ export default function DetentionAccessorials() {
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">{item.description}</p>
-                    <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
+                    <div className={cn("flex items-center justify-between pt-2 border-t", isLight ? "border-slate-200" : "border-zinc-800")}>
                       <span className="text-xs text-muted-foreground">Rate</span>
-                      <span className="text-sm font-bold text-amber-400">
+                      <span className={cn("text-sm font-bold", isLight ? "text-amber-600" : "text-amber-400")}>
                         {item.defaultRate > 0 ? `$${item.defaultRate}` : "Receipt"} / {item.unit}
                       </span>
                     </div>
                     {item.freeTime > 0 && (
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">Free Time</span>
-                        <span className="text-xs text-zinc-300">{formatMinutes(item.freeTime)}</span>
+                        <span className={cn("text-xs", isLight ? "text-slate-700" : "text-zinc-300")}>{formatMinutes(item.freeTime)}</span>
                       </div>
                     )}
                   </CardContent>
@@ -781,7 +781,7 @@ export default function DetentionAccessorials() {
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-zinc-800">
+                    <TableRow className={isLight ? "border-slate-200" : "border-zinc-800"}>
                       <TableHead className="text-xs">Load</TableHead>
                       <TableHead className="text-xs">Carrier</TableHead>
                       <TableHead className="text-xs">Shipper</TableHead>
@@ -792,7 +792,7 @@ export default function DetentionAccessorials() {
                   </TableHeader>
                   <TableBody>
                     {(tonuQuery.data?.tonus || []).map((t: any) => (
-                      <TableRow key={t.id} className="border-zinc-800/50">
+                      <TableRow key={t.id} className={isLight ? "border-slate-100" : "border-zinc-800/50"}>
                         <TableCell className="text-sm">#{t.loadId}</TableCell>
                         <TableCell className="text-sm">{t.carrierName}</TableCell>
                         <TableCell className="text-sm">{t.shipperName}</TableCell>
@@ -859,7 +859,7 @@ export default function DetentionAccessorials() {
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-zinc-800">
+                    <TableRow className={isLight ? "border-slate-200" : "border-zinc-800"}>
                       <TableHead className="text-xs">Container</TableHead>
                       <TableHead className="text-xs">Facility</TableHead>
                       <TableHead className="text-xs">Days Held</TableHead>
@@ -870,7 +870,7 @@ export default function DetentionAccessorials() {
                   </TableHeader>
                   <TableBody>
                     {(demurrageQuery.data?.containers || []).map((c: any) => (
-                      <TableRow key={c.id} className="border-zinc-800/50">
+                      <TableRow key={c.id} className={isLight ? "border-slate-100" : "border-zinc-800/50"}>
                         <TableCell className="text-sm font-mono">{c.containerNumber}</TableCell>
                         <TableCell className="text-sm">{c.facilityName}</TableCell>
                         <TableCell className="text-sm text-orange-400">{c.daysHeld}d</TableCell>
@@ -927,7 +927,7 @@ export default function DetentionAccessorials() {
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-zinc-800">
+                    <TableRow className={isLight ? "border-slate-200" : "border-zinc-800"}>
                       <TableHead className="text-xs">ID</TableHead>
                       <TableHead className="text-xs">Load</TableHead>
                       <TableHead className="text-xs">Type</TableHead>
@@ -940,7 +940,7 @@ export default function DetentionAccessorials() {
                   </TableHeader>
                   <TableBody>
                     {(disputesQuery.data?.disputes || []).map((d: any) => (
-                      <TableRow key={d.id} className="border-zinc-800/50">
+                      <TableRow key={d.id} className={isLight ? "border-slate-100" : "border-zinc-800/50"}>
                         <TableCell className="text-sm">#{d.id}</TableCell>
                         <TableCell className="text-sm">#{d.loadId}</TableCell>
                         <TableCell className="text-sm">{chargeTypeLabel(d.type)}</TableCell>
@@ -1018,7 +1018,7 @@ export default function DetentionAccessorials() {
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-zinc-800">
+                    <TableRow className={isLight ? "border-slate-200" : "border-zinc-800"}>
                       <TableHead className="text-xs">Load</TableHead>
                       <TableHead className="text-xs">Type</TableHead>
                       <TableHead className="text-xs">Facility</TableHead>
@@ -1029,7 +1029,7 @@ export default function DetentionAccessorials() {
                   </TableHeader>
                   <TableBody>
                     {(billingQuery.data?.pendingCharges || []).map((c: any) => (
-                      <TableRow key={c.id} className="border-zinc-800/50">
+                      <TableRow key={c.id} className={isLight ? "border-slate-100" : "border-zinc-800/50"}>
                         <TableCell className="text-sm">#{c.loadId}</TableCell>
                         <TableCell className="text-sm">{chargeTypeLabel(c.type)}</TableCell>
                         <TableCell className="text-sm">{c.facilityName}</TableCell>
@@ -1254,7 +1254,7 @@ export default function DetentionAccessorials() {
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-zinc-800">
+                    <TableRow className={isLight ? "border-slate-200" : "border-zinc-800"}>
                       <TableHead className="text-xs">Load</TableHead>
                       <TableHead className="text-xs">Facility</TableHead>
                       <TableHead className="text-xs">Type</TableHead>
@@ -1266,7 +1266,7 @@ export default function DetentionAccessorials() {
                   </TableHeader>
                   <TableBody>
                     {(historyQuery.data?.events || []).map((evt: any) => (
-                      <TableRow key={evt.id} className="border-zinc-800/50">
+                      <TableRow key={evt.id} className={isLight ? "border-slate-100" : "border-zinc-800/50"}>
                         <TableCell className="text-sm">#{evt.loadId}</TableCell>
                         <TableCell className="text-sm">{evt.facilityName}</TableCell>
                         <TableCell className="text-sm">{evt.locationType}</TableCell>
