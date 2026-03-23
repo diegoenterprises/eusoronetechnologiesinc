@@ -270,8 +270,9 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
   const markReadMutation = (trpc as any).notifications.markAsRead.useMutation({ onSuccess: () => { summaryQuery.refetch(); listQuery.refetch(); } });
   const markAllReadMutation = (trpc as any).notifications.markAllAsRead.useMutation({ onSuccess: () => { summaryQuery.refetch(); listQuery.refetch(); } });
 
+  const [dismissed, setDismissed] = useState<Set<number>>(new Set());
   const unread = summaryQuery.data?.unread || 0;
-  const items = listQuery.data?.notifications || [];
+  const items = (listQuery.data?.notifications || []).filter((n: any) => !dismissed.has(n.id));
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -293,9 +294,9 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
       <DropdownMenuContent align="end" className="w-80 max-h-[400px] overflow-y-auto rounded-2xl border-0 bg-white dark:bg-[#0c1222] ring-1 ring-slate-200 dark:ring-white/[0.08] shadow-2xl dark:shadow-black/50 p-1.5">
         <div className="px-3 py-2 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
           <span className="text-sm font-bold text-slate-900 dark:text-white">Notifications</span>
-          {unread > 0 && (
-            <button onClick={() => markAllReadMutation.mutate({})} className="text-[10px] font-semibold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent hover:opacity-80">
-              Mark all read
+          {items.length > 0 && (
+            <button onClick={() => { markAllReadMutation.mutate({}); setDismissed(new Set(items.map((n: any) => n.id))); }} className="text-[10px] font-semibold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent hover:opacity-80">
+              Clear all
             </button>
           )}
         </div>
@@ -306,7 +307,7 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
             <DropdownMenuItem
               key={n.id}
               className={`flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all focus:bg-transparent ${!n.isRead ? "bg-gradient-to-r from-purple-500/5 to-blue-500/5 dark:from-purple-500/10 dark:to-blue-500/10" : "hover:bg-slate-50 dark:hover:bg-white/[0.04]"}`}
-              onClick={() => { if (!n.isRead) markReadMutation.mutate({ id: n.id }); }}
+              onClick={() => { markReadMutation.mutate({ id: n.id }); setDismissed(prev => new Set([...prev, n.id])); }}
             >
               <div className="flex items-center gap-2 w-full">
                 {!n.isRead && <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#BE01FF] to-[#1473FF] flex-shrink-0" />}
