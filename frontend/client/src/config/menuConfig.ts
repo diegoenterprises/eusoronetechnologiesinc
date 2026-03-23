@@ -2293,15 +2293,16 @@ export const menuConfigs: Record<string, MenuItem[]> = {
 export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   const raw = !role ? menuConfigs.default : (menuConfigs[String(role).toUpperCase() as UserRole] || menuConfigs.default);
 
-  // Deduplicate: remove top-level items whose label matches a shared footer item,
+  // Deduplicate: remove top-level items whose label OR path matches a shared footer item,
   // then append the canonical shared footer items at the end.
   const SHARED_LABELS = new Set(SHARED_FOOTER_ITEMS.map(i => i.label));
+  const SHARED_PATHS = new Set(SHARED_FOOTER_ITEMS.map(i => i.path));
   const SHARED_CHILD_PATHS = new Set(["/hazmat/incident-report", "/support"]);
 
   const roleItems: MenuItem[] = [];
   for (const item of raw) {
-    // Skip items that match a shared footer label (Messages, EusoWallet, Settings, News, Report Incident, Support)
-    if (SHARED_LABELS.has(item.label)) continue;
+    // Skip items that match a shared footer label or path
+    if (SHARED_LABELS.has(item.label) || SHARED_PATHS.has(item.path)) continue;
 
     // For "More" menus: strip out shared children (Report Incident, Support) but keep role-specific ones
     if (item.label === "More" && item.children) {
