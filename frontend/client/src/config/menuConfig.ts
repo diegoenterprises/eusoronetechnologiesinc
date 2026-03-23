@@ -102,6 +102,20 @@ export const SHARED_FOOTER_ITEMS: MenuItem[] = [
     badge: 0,
     description: "Profile, preferences & security"
   },
+  {
+    icon: "Truck",
+    label: "The Haul",
+    path: "/the-haul",
+    badge: 0,
+    description: "Digital truck stop — lobby, missions, rewards & leaderboard",
+    children: [
+      { icon: "MessageCircle", label: "The Lobby", path: "/the-haul", badge: 0, description: "Live community chat & announcements" },
+      { icon: "Target", label: "Missions", path: "/missions", badge: 0, description: "Complete missions to earn XP & rewards" },
+      { icon: "Trophy", label: "Leaderboard", path: "/leaderboard", badge: 0, description: "Rankings & competition" },
+      { icon: "Gift", label: "Rewards", path: "/rewards", badge: 0, description: "Redeem XP for rewards" },
+      { icon: "Gamepad2", label: "Advanced", path: "/advanced-gamification", badge: 0, description: "Guilds, prestige, tournaments & achievements" },
+    ],
+  },
   { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
   { icon: "Flag", label: "Report Incident", path: "/hazmat/incident-report", badge: 0, description: "Report a safety, cargo, or roadside incident" },
   { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & documentation" },
