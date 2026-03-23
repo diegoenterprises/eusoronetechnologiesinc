@@ -94,7 +94,6 @@ export const SHARED_FOOTER_ITEMS: MenuItem[] = [
       { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
       { icon: "Landmark", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "EusoWallet™ advanced financial management & reporting" },
       { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
-      { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
     ],
   },
   {
@@ -211,8 +210,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
         { icon: "Landmark", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "EusoWallet™ advanced financial management & reporting" },
         { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
-        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
-      ],
+        ],
     },
     {
       icon: "Shield",
@@ -369,8 +367,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
         { icon: "Landmark", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "EusoWallet™ advanced financial management & reporting" },
         { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
-        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
-      ],
+        ],
     },
     {
       icon: "Truck",
@@ -508,8 +505,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
         { icon: "Landmark", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "EusoWallet™ advanced financial management & reporting" },
         { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
-        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
-      ],
+        ],
     },
     {
       icon: "Settings",
@@ -633,8 +629,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "DollarSign", label: "Settlement History", path: "/driver/settlement-history", badge: 0, description: "Weekly/bi-weekly settlement statements" },
         { icon: "Scale", label: "Rate Sheet", path: "/rate-sheet", badge: 0, description: "Per-barrel rates & surcharges" },
         { icon: "Brain", label: "Predictive Pricing", path: "/predictive-pricing", badge: 0, description: "ML-powered rate predictions & demand forecasts" },
-        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
-      ],
+        ],
     },
     {
       icon: "MessageSquare",
@@ -812,8 +807,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
         { icon: "Landmark", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "EusoWallet™ advanced financial management & reporting" },
         { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
-        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
-      ],
+        ],
     },
     {
       icon: "Trophy",
@@ -962,8 +956,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Wallet", label: "Balance & Payments", path: "/wallet", badge: 0, description: "Account balance, earnings & payouts" },
         { icon: "Clock", label: "Demurrage Charges", path: "/demurrage-charges", badge: 0, description: "Automated demurrage & detention charge generation, review & approval" },
         { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
-        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
-      ],
+        ],
     },
     {
       icon: "Settings",
@@ -1160,8 +1153,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Receipt", label: "Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention, lumper, TONU & accessorial fees" },
         { icon: "Clock", label: "Demurrage Charges", path: "/demurrage-charges", badge: 0, description: "Automated demurrage & detention charge generation, review & approval" },
         { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
-        { icon: "Timer", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention time tracking & accessorial charge management" },
-      ],
+        ],
     },
     {
       icon: "Settings",
@@ -1478,7 +1470,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       children: [
         { icon: "TrendingUp", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "Multi-currency, 1099, revenue recognition & collections" },
         { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
-        { icon: "Clock", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention tracking, lumper, TONU & accessorial billing" },
         { icon: "Landmark", label: "Broker Management", path: "/broker-management", badge: 0, description: "Scorecard, carrier pool, commission & 3PL SLA" },
         { icon: "Sparkles", label: "Smart Pricing", path: "/contextual-pricing", badge: 0, description: "AI-enriched dynamic pricing with real-time market signals" },
         { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
@@ -1680,7 +1671,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Wallet", label: "EusoWallet", path: "/wallet", badge: 0, description: "Platform wallet & all payments" },
         { icon: "TrendingUp", label: "Advanced Financials", path: "/advanced-financials", badge: 0, description: "Multi-currency, 1099, revenue recognition & collections" },
         { icon: "FileWarning", label: "Freight Claims", path: "/freight-claims", badge: 0, description: "Cargo claims, disputes & resolution tracking" },
-        { icon: "Clock", label: "Detention & Accessorials", path: "/detention-accessorials", badge: 0, description: "Detention tracking, lumper, TONU & accessorial billing" },
         { icon: "Landmark", label: "Broker Management", path: "/broker-management", badge: 0, description: "Scorecard, carrier pool, commission & 3PL SLA" },
         { icon: "Sparkles", label: "Smart Pricing", path: "/contextual-pricing", badge: 0, description: "AI-enriched dynamic pricing with real-time market signals" },
         { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, commodities, hot zones & demand heatmaps" },
