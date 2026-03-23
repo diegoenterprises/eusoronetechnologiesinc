@@ -183,7 +183,7 @@ export default function SatelliteIntelligenceMap({
   const hoverInfoRef = useRef<any>(null);
 
   const [mapsReady, setMapsReady] = useState(false);
-  const [mapType, setMapType] = useState<string>("hybrid");
+  const [mapType, setMapType] = useState<string>("roadmap");
   const [visibleLayers, setVisibleLayers] = useState<string[]>(() => getDefaultLayers(roleCtx?.perspective));
   const [cursorPos, setCursorPos] = useState<{ lat: number; lng: number } | null>(null);
   const [showPanel, setShowPanel] = useState(true);
