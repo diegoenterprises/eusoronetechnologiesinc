@@ -106,7 +106,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
   const [equipFilter, setEquipFilter] = useState<string>("");
   const [showLayers, setShowLayers] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [mapMode, setMapMode] = useState<"svg" | "satellite">("svg");
+  const [mapMode] = useState<"svg" | "satellite">("satellite");
   const mapRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, refetch } = trpc.hotZones.getRateFeed.useQuery(
@@ -281,25 +281,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                 </select>
                 <Filter className={`absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none ${equipFilter ? "text-[#1473FF]" : isLight ? "text-slate-400" : "text-white/40"}`} />
               </div>
-              {/* Map mode toggle */}
-              <div className={`flex items-center rounded-xl overflow-hidden border ${isLight ? "border-slate-200" : "border-white/[0.08]"}`}>
-                <button onClick={() => setMapMode("svg")}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-all ${
-                    mapMode === "svg"
-                      ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
-                      : isLight ? "bg-slate-50 text-slate-500 hover:bg-slate-100" : "bg-white/[0.04] text-white/40 hover:bg-white/[0.08]"
-                  }`}>
-                  <MapIcon className="w-3.5 h-3.5" /> SVG
-                </button>
-                <button onClick={() => setMapMode("satellite")}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-all ${
-                    mapMode === "satellite"
-                      ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
-                      : isLight ? "bg-slate-50 text-slate-500 hover:bg-slate-100" : "bg-white/[0.04] text-white/40 hover:bg-white/[0.08]"
-                  }`}>
-                  <Satellite className="w-3.5 h-3.5" /> Satellite
-                </button>
-              </div>
+              {/* Map is always Google Maps satellite — no toggle needed */}
               <button onClick={handleForceRefresh} disabled={isRefreshing}
                 className={`p-2 rounded-xl transition-all ${isRefreshing ? "opacity-60 cursor-wait" : ""} ${isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.06] text-white/40 hover:bg-white/[0.1]"}`}>
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
@@ -468,27 +450,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
       {/* ── INTERACTIVE HEATMAP ── */}
       {!isLoading && zones.length > 0 && (
         <div className="max-w-[1600px] mx-auto px-6 pt-6">
-          {/* Map mode toolbar — always visible (including embedded mode) */}
-          <div className="flex items-center justify-end gap-2 mb-3">
-            <div className={`flex items-center rounded-xl overflow-hidden border ${isLight ? "border-slate-200" : "border-white/[0.08]"}`}>
-              <button onClick={() => setMapMode("svg")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-all ${
-                  mapMode === "svg"
-                    ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
-                    : isLight ? "bg-white text-slate-500 hover:bg-slate-50" : "bg-white/[0.03] text-white/40 hover:bg-white/[0.06]"
-                }`}>
-                <MapIcon className="w-3 h-3" /> Map
-              </button>
-              <button onClick={() => setMapMode("satellite")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium transition-all ${
-                  mapMode === "satellite"
-                    ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
-                    : isLight ? "bg-white text-slate-500 hover:bg-slate-50" : "bg-white/[0.03] text-white/40 hover:bg-white/[0.06]"
-                }`}>
-                <Satellite className="w-3 h-3" /> Satellite
-              </button>
-            </div>
-          </div>
+          {/* Map renders directly — satellite/Google Maps is the default */}
           {mapMode === "satellite" ? (
             <SatelliteIntelligenceMap
               zones={sortedZones}

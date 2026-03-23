@@ -57,14 +57,38 @@ const SEVERITY: Record<string, { fill: string; stroke: string; weight: number }>
   MODERATE: { fill: "#22C55E30", stroke: "#22C55E", weight: 2 },
 };
 
-// ── DARK MAP STYLE (for non-satellite modes) ──
+// ── GOOGLE MAPS DARK STYLE — matches EusoTrip dark theme ──
 const DARK_STYLE: any[] = [
   { elementType: "geometry", stylers: [{ color: "#0f172a" }] },
   { elementType: "labels.text.stroke", stylers: [{ color: "#0f172a" }] },
   { elementType: "labels.text.fill", stylers: [{ color: "#64748b" }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#1e293b" }] },
+  { featureType: "administrative.land_parcel", elementType: "labels.text.fill", stylers: [{ color: "#475569" }] },
   { featureType: "road", elementType: "geometry", stylers: [{ color: "#1e293b" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#64748b" }] },
   { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#1e3a5f" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#0f2942" }] },
+  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#94a3b8" }] },
   { featureType: "water", elementType: "geometry", stylers: [{ color: "#0c1929" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#334155" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#0f1729" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+];
+
+// ── GOOGLE MAPS LIGHT STYLE — clean, modern, minimal ──
+const LIGHT_STYLE: any[] = [
+  { elementType: "geometry", stylers: [{ color: "#f8fafc" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#475569" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#cbd5e1" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#e2e8f0" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#bfdbfe" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#93c5fd" }] },
+  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#334155" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#dbeafe" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#64748b" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#f1f5f9" }] },
   { featureType: "poi", stylers: [{ visibility: "off" }] },
   { featureType: "transit", stylers: [{ visibility: "off" }] },
 ];
@@ -110,10 +134,8 @@ const FACILITY_ICONS: Record<string, { color: string; label: string }> = {
 
 // ── MAP TYPE OPTIONS ──
 const MAP_TYPES = [
-  { id: "satellite", label: "Satellite", icon: Satellite },
-  { id: "hybrid", label: "Hybrid", icon: Eye },
-  { id: "terrain", label: "Terrain", icon: Mountain },
-  { id: "roadmap", label: "Road", icon: Map },
+  { id: "hybrid", label: "Satellite", icon: Satellite },
+  { id: "roadmap", label: "Map", icon: Map },
 ] as const;
 
 // ── LAYER DEFINITIONS ──
@@ -224,7 +246,7 @@ export default function SatelliteIntelligenceMap({
       zoomControl: false,
       gestureHandling: "greedy",
       tilt: 0,
-      styles: mapType === "roadmap" && !isLight ? DARK_STYLE : undefined,
+      styles: mapType === "roadmap" ? (isLight ? LIGHT_STYLE : DARK_STYLE) : undefined,
     });
     mapRef.current = map;
 
@@ -241,7 +263,7 @@ export default function SatelliteIntelligenceMap({
     const map = mapRef.current;
     if (!map) return;
     map.setMapTypeId(mapType);
-    map.setOptions({ styles: mapType === "roadmap" && !isLight ? DARK_STYLE : undefined });
+    map.setOptions({ styles: mapType === "roadmap" ? (isLight ? LIGHT_STYLE : DARK_STYLE) : undefined });
   }, [mapType, isLight]);
 
   const toggleLayer = useCallback((id: string) => {
