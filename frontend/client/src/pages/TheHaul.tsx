@@ -469,25 +469,9 @@ export default function TheHaul() {
         </div>
       )}
 
-      {/* ═══ TABS ═══ */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={cn("rounded-xl p-1 h-auto flex-wrap", isLight ? "bg-slate-100 border border-slate-200" : "bg-slate-800/60 border border-slate-700/30")}>
-          <TabsTrigger value="lobby" className="rounded-lg text-sm gap-1.5 data-[state=active]:shadow-sm">
-            <MessageCircle className="w-4 h-4" />Lobby
-            {msgs.length > 0 && <span className={cn("text-[9px] px-1.5 py-0 rounded-full font-semibold", isLight ? "bg-green-100 text-green-600" : "bg-green-500/20 text-green-400")}>{recentUsers.size}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="missions" className="rounded-lg text-sm gap-1.5 data-[state=active]:shadow-sm">
-            <Target className="w-4 h-4" />Missions
-            {activeM.length > 0 && <span className={cn("text-[9px] px-1.5 py-0 rounded-full font-semibold", isLight ? "bg-yellow-100 text-yellow-600" : "bg-yellow-500/20 text-yellow-400")}>{activeM.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="rewards" className="rounded-lg text-sm gap-1.5 data-[state=active]:shadow-sm">
-            <Gift className="w-4 h-4" />Rewards
-            {crates.length > 0 && <span className={cn("text-[9px] px-1.5 py-0 rounded-full font-semibold", isLight ? "bg-purple-100 text-purple-600" : "bg-purple-500/20 text-purple-400")}>{crates.length}</span>}
-          </TabsTrigger>
-          <TabsTrigger value="leaderboard" className="rounded-lg text-sm gap-1.5 data-[state=active]:shadow-sm">
-            <Trophy className="w-4 h-4" />Leaderboard
-          </TabsTrigger>
-        </TabsList>
+      {/* ═══ LOBBY ═══ */}
+      <Tabs value="lobby" onValueChange={() => {}}>
+        <TabsList className="sr-only"><TabsTrigger value="lobby">Lobby</TabsTrigger></TabsList>
 
         {/* ═══════════ LOBBY TAB ═══════════ */}
         <TabsContent value="lobby" className="mt-4">
