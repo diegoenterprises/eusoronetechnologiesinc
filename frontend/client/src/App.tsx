@@ -962,7 +962,7 @@ function Router() {
       <Route path="/rfp-manager" component={guard([...SHIP, ...BROK, ...COMP], <RFPManagerPage />)} />
       <Route path="/bid-review" component={guard([...SHIP, ...BROK, ...COMP], <BidReviewPage />)} />
       <Route path="/photo-inspection" component={guard([...CARR, ...DRIV, ...COMP, ...SAFE], <PhotoInspectionPage />)} />
-      <Route path="/contextual-pricing" component={guard([...SHIP, ...CARR, ...BROK, ...DISP], <ContextualPricingPage />)} />
+      <Route path="/contextual-pricing" component={guard([...SHIP, ...CARR, ...BROK, ...DISP], <PredictiveLoadPricingPage />)} />
       <Route path="/compliance-rules" component={guard([...COMP, ...SAFE, ...CARR, ...ADMN], <ComplianceRulesPage />)} />
       <Route path="/anomaly-monitor" component={guard([...ADMN, ...COMP, ...SAFE], <AnomalyMonitorPage />)} />
       <Route path="/mission-balancer" component={guard([...DISP, ...CARR, ...ADMN], <MissionBalancerPage />)} />
