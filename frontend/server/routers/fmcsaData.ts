@@ -583,48 +583,30 @@ export const fmcsaRouter = router({
     .query(async () => {
       const pool = getPool();
       if (!pool) return null;
-      
-      // Whitelist of known FMCSA tables for safe counting
-      const ALLOWED_FMCSA_TABLES = new Set([
-        "fmcsa_census", "fmcsa_authority", "fmcsa_insurance", "fmcsa_crashes",
-        "fmcsa_inspections", "fmcsa_violations", "fmcsa_sms_scores",
-        "fmcsa_monitored_carriers", "fmcsa_oos_orders", "fmcsa_boc3",
-        "fmcsa_revocations", "fmcsa_etl_log",
-      ]);
 
-      // Safe count helper — returns 0 if table doesn't exist yet
-      const safeCount = async (table: string): Promise<number> => {
-        try {
-          if (!ALLOWED_FMCSA_TABLES.has(table)) {
-            throw new Error(`Table not in FMCSA whitelist: ${table}`);
-          }
-          const [rows]: any = await pool.query(`SELECT COUNT(*) as count FROM \`${table}\``);
-          return rows[0]?.count || 0;
-        } catch {
-          return 0; // Table doesn't exist yet — ETL will create it
-        }
-      };
-      
-      // Active census = carriers with at least 1 power unit (excludes shell/defunct)
-      const safeActiveCensusCount = async (): Promise<number> => {
+      // Use information_schema for instant approximate row counts (no full table scan)
+      // This returns in <50ms vs 30+ seconds for COUNT(*) on 3.8M rows
+      const fastCount = async (table: string): Promise<number> => {
         try {
           const [rows]: any = await pool.query(
-            `SELECT COUNT(*) as count FROM fmcsa_census WHERE nbr_power_unit > 0`
+            `SELECT TABLE_ROWS as count FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`, [table]
           );
           return rows[0]?.count || 0;
         } catch {
           return 0;
         }
       };
+
       const [census, authority, insurance, crashes, inspections, violations, sms, monitored] = await Promise.all([
-        safeActiveCensusCount(),
-        safeCount("fmcsa_authority"),
-        safeCount("fmcsa_insurance"),
-        safeCount("fmcsa_crashes"),
-        safeCount("fmcsa_inspections"),
-        safeCount("fmcsa_violations"),
-        safeCount("fmcsa_sms_scores"),
-        safeCount("fmcsa_monitored_carriers"),
+        fastCount("fmcsa_census"),
+        fastCount("fmcsa_authority"),
+        fastCount("fmcsa_insurance"),
+        fastCount("fmcsa_crashes"),
+        fastCount("fmcsa_inspections"),
+        fastCount("fmcsa_violations"),
+        fastCount("fmcsa_sms_scores"),
+        fastCount("fmcsa_monitored_carriers"),
       ]);
       
       let lastSync: any[] = [];
