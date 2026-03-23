@@ -144,6 +144,7 @@ const SAT_LAYERS = [
   { id: "zones", label: "Zone Circles", icon: Crosshair, color: "#F97316" },
   { id: "facilities", label: "Facilities", icon: Factory, color: "#8B5CF6" },
   { id: "fleet", label: "Fleet Pings", icon: Truck, color: "#22C55E" },
+  { id: "roads", label: "Euso Roads", icon: Navigation, color: "#A855F7" },
   { id: "weather", label: "Weather", icon: CloudRain, color: "#3B82F6" },
   { id: "hazards", label: "Hazards", icon: AlertTriangle, color: "#EF4444" },
 ] as const;
@@ -151,16 +152,16 @@ const SAT_LAYERS = [
 // ── ROLE → DEFAULT LAYERS ──
 function getDefaultLayers(perspective?: string): string[] {
   switch (perspective) {
-    case "freight_demand":       return ["heat", "zones", "facilities", "fleet"];
-    case "catalyst_availability": return ["heat", "fleet", "weather", "zones"];
-    case "driver_opportunity":    return ["heat", "weather", "fleet", "zones"];
-    case "spread_opportunity":    return ["heat", "zones", "facilities"];
-    case "dispatch_intelligence": return ["fleet", "weather", "zones", "heat"];
+    case "freight_demand":       return ["heat", "zones", "facilities", "fleet", "roads"];
+    case "catalyst_availability": return ["heat", "fleet", "weather", "zones", "roads"];
+    case "driver_opportunity":    return ["heat", "weather", "fleet", "zones", "roads"];
+    case "spread_opportunity":    return ["heat", "zones", "facilities", "roads"];
+    case "dispatch_intelligence": return ["fleet", "weather", "zones", "heat", "roads"];
     case "facility_throughput":   return ["facilities", "fleet", "zones", "heat"];
-    case "safety_risk":           return ["hazards", "weather", "zones"];
+    case "safety_risk":           return ["hazards", "weather", "zones", "roads"];
     case "compliance_risk":       return ["hazards", "zones", "facilities"];
-    case "oversized_demand":      return ["heat", "zones", "facilities"];
-    default:                      return ["heat", "zones", "facilities", "fleet"];
+    case "oversized_demand":      return ["heat", "zones", "facilities", "roads"];
+    default:                      return ["heat", "zones", "facilities", "fleet", "roads"];
   }
 }
 
@@ -525,6 +526,74 @@ export default function SatelliteIntelligenceMap({
         });
 
         overlaysRef.current.push(marker);
+        pointCount++;
+      });
+    }
+
+    // ── 4B. EUSOROADS — Driven route segments ──
+    if (visibleLayers.includes("roads") && roadIntel?.segments) {
+      roadIntel.segments.forEach((seg: any) => {
+        if (!seg.startLat || !seg.startLng || !seg.endLat || !seg.endLng) return;
+
+        // Color by traversal frequency: more traversals = brighter
+        const count = seg.traversalCount || 1;
+        const opacity = Math.min(0.9, 0.3 + (count / 20) * 0.6);
+        const color = seg.congestion === "heavy" ? "#EF4444"
+          : seg.congestion === "moderate" ? "#F59E0B"
+          : seg.surfaceQuality === "poor" ? "#F97316"
+          : "#A855F7"; // Default EusoRoads purple
+
+        // Use encoded polyline if available, otherwise simple start→end line
+        let path: any[];
+        if (seg.polyline && g.geometry?.encoding) {
+          try {
+            path = g.geometry.encoding.decodePath(seg.polyline);
+          } catch {
+            path = [{ lat: seg.startLat, lng: seg.startLng }, { lat: seg.endLat, lng: seg.endLng }];
+          }
+        } else {
+          path = [{ lat: seg.startLat, lng: seg.startLng }, { lat: seg.endLat, lng: seg.endLng }];
+        }
+
+        const polyline = new g.Polyline({
+          path,
+          map,
+          strokeColor: color,
+          strokeOpacity: opacity,
+          strokeWeight: Math.min(5, 2 + count * 0.3),
+          zIndex: 5,
+        });
+
+        // Hover tooltip
+        polyline.addListener("mouseover", (e: any) => {
+          if (hoverInfoRef.current) hoverInfoRef.current.close();
+          const bg = isLight ? "#ffffff" : "#0c1222";
+          const tp = isLight ? "#0f172a" : "#f1f5f9";
+          const ts = isLight ? "#64748b" : "#94a3b8";
+          const info = new g.InfoWindow({
+            content: `
+              <div style="font-family:'Inter',system-ui,sans-serif;padding:8px 10px;background:${bg};border-radius:8px">
+                <strong style="font-size:12px;color:${tp}">${seg.roadName || "EusoRoad Segment"}</strong>
+                <div style="font-size:10px;color:${ts};margin-top:2px">
+                  ${count} traversal${count !== 1 ? "s" : ""} · ${seg.uniqueDrivers || 1} driver${(seg.uniqueDrivers || 1) !== 1 ? "s" : ""}
+                  ${seg.avgSpeed ? ` · ${seg.avgSpeed.toFixed(0)} mph avg` : ""}
+                  ${seg.lengthMiles ? ` · ${seg.lengthMiles.toFixed(1)} mi` : ""}
+                </div>
+                ${seg.congestion ? `<div style="font-size:10px;color:${seg.congestion === "heavy" ? "#EF4444" : "#F59E0B"};margin-top:2px">Congestion: ${seg.congestion}</div>` : ""}
+                ${seg.surfaceQuality ? `<div style="font-size:10px;color:${ts};margin-top:1px">Surface: ${seg.surfaceQuality}</div>` : ""}
+              </div>
+            `,
+            position: e.latLng,
+            disableAutoPan: true,
+          });
+          info.open(map);
+          hoverInfoRef.current = info;
+        });
+        polyline.addListener("mouseout", () => {
+          if (hoverInfoRef.current) { hoverInfoRef.current.close(); hoverInfoRef.current = null; }
+        });
+
+        overlaysRef.current.push(polyline);
         pointCount++;
       });
     }
