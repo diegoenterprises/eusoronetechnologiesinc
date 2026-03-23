@@ -1197,12 +1197,25 @@ async function runInspectionEtl(): Promise<EtlLogEntry> {
   
   const stats = { recordsFetched: 0, recordsInserted: 0, recordsUpdated: 0 };
   
+  let recordsSkipped = 0;
+  let fieldNamesLogged = false;
   try {
     for await (const page of fetchSodaPages(dataset.id)) {
       const batch: Record<string, any>[] = [];
       for (const raw of page) {
+        // Log field names from first record so we can verify SODA response shape
+        if (!fieldNamesLogged) {
+          logger.info(`[FMCSA ETL] Inspection SODA fields: ${Object.keys(raw).join(', ')}`);
+          fieldNamesLogged = true;
+        }
         const record = transformInspectionRecord(raw);
-        if (!record.dot_number || !record.inspection_id) continue;
+        if (!record.dot_number || !record.inspection_id) {
+          recordsSkipped++;
+          if (recordsSkipped <= 3) {
+            logger.warn(`[FMCSA ETL] Skipping inspection: dot_number=${record.dot_number}, inspection_id=${record.inspection_id}. Raw keys: ${Object.keys(raw).slice(0, 10).join(',')}`);
+          }
+          continue;
+        }
         batch.push(record);
         stats.recordsFetched++;
       }
@@ -1215,7 +1228,7 @@ async function runInspectionEtl(): Promise<EtlLogEntry> {
     }
     
     await logEtlComplete(logId, { completedAt: new Date(), ...stats, recordsDeleted: 0, status: "SUCCESS" });
-    logger.info(`[FMCSA ETL] Inspections complete: ${stats.recordsFetched.toLocaleString()} records`);
+    logger.info(`[FMCSA ETL] Inspections complete: ${stats.recordsFetched.toLocaleString()} loaded, ${recordsSkipped.toLocaleString()} skipped`);
     return { datasetName: dataset.name, syncType: "FULL", startedAt, ...stats, recordsDeleted: 0, status: "SUCCESS", sourceUrl: "" };
     
   } catch (err: any) {
@@ -1241,12 +1254,25 @@ async function runViolationEtl(): Promise<EtlLogEntry> {
   
   const stats = { recordsFetched: 0, recordsInserted: 0, recordsUpdated: 0 };
   
+  let violSkipped = 0;
+  let violFieldsLogged = false;
   try {
     for await (const page of fetchSodaPages(dataset.id)) {
       const batch: Record<string, any>[] = [];
       for (const raw of page) {
+        if (!violFieldsLogged) {
+          logger.info(`[FMCSA ETL] Violation SODA fields: ${Object.keys(raw).join(', ')}`);
+          violFieldsLogged = true;
+        }
         const record = transformViolationRecord(raw);
-        if (!record.dot_number || !record.inspection_id) continue;
+        // Violations may not have dot_number — only require inspection_id
+        if (!record.inspection_id) {
+          violSkipped++;
+          if (violSkipped <= 3) {
+            logger.warn(`[FMCSA ETL] Skipping violation: inspection_id=${record.inspection_id}. Raw keys: ${Object.keys(raw).slice(0, 10).join(',')}`);
+          }
+          continue;
+        }
         batch.push(record);
         stats.recordsFetched++;
       }
