@@ -453,6 +453,8 @@ function UserSupportView() {
   const kbCategories = ["All", "Getting Started", "Loads", "Bidding", "Agreements", "Billing", "Compliance", "Fleet", "ESANG AI", "Facilities", "Documents", "Security", "Messages", "Market"];
   const [kbCategory, setKbCategory] = useState("All");
   const [kbSearch, setKbSearch] = useState("");
+  const supportConfigQuery = (trpc as any).support?.getSupportConfig?.useQuery?.(undefined, { staleTime: 300_000 }) || { data: null };
+  const supportConfig = supportConfigQuery.data;
   const [expandedArticle, setExpandedArticle] = useState<number | null>(null);
 
   const filteredArticles = kbArticles.filter(a => {
@@ -469,9 +471,11 @@ function UserSupportView() {
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('support.center', 'Support Center')}</h1>
           <p className={mt}>{t('support.subtitle', 'Get help, manage tickets & explore the knowledge base')}</p>
-          <a href="tel:+18553876874" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors mt-2">
-            <Phone className="h-4 w-4" /> Call: 1-855-EUSO-TRIP
-          </a>
+          {supportConfig?.supportPhone && (
+            <a href={`tel:${supportConfig.supportPhone.replace(/[^\d+]/g, '')}`} className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors mt-2">
+              <Phone className="h-4 w-4" /> Call: {supportConfig.supportPhone}
+            </a>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className={cn("rounded-xl", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setActiveTab("kb")}>

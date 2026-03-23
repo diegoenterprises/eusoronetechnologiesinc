@@ -588,4 +588,55 @@ export const supportRouter = router({
   getCompletedSurveys: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => ({ surveys: [], total: 0, avgRating: 0 })),
   getSurveyDetail: protectedProcedure.input(z.object({ surveyId: z.string() })).query(async ({ input }) => ({ surveyId: input.surveyId, title: "", description: "", questions: [] })),
   submitSurvey: protectedProcedure.input(z.object({ surveyId: z.string(), responses: z.array(z.object({ questionId: z.string(), answer: z.any() })) })).mutation(async ({ input }) => ({ success: true, surveyId: input.surveyId })),
+
+  // ═══════════════════════════════════════════════════════════════
+  // SUPPORT CONFIG — Admin-configurable support contact info
+  // ═══════════════════════════════════════════════════════════════
+  getSupportConfig: publicProcedure.query(async () => {
+    const pool = getPool();
+    if (!pool) return { supportPhone: "", supportEmail: "support@eusotrip.com", supportHours: "Mon-Fri 8am-6pm CT" };
+    try {
+      // Ensure table exists
+      await pool.query(`CREATE TABLE IF NOT EXISTS platform_config (
+        config_key VARCHAR(100) PRIMARY KEY,
+        config_value TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )`);
+      const [rows]: any = await pool.query("SELECT config_key, config_value FROM platform_config WHERE config_key IN ('support_phone', 'support_email', 'support_hours')");
+      const config: Record<string, string> = {};
+      for (const r of rows || []) config[r.config_key] = r.config_value;
+      return {
+        supportPhone: config.support_phone || "",
+        supportEmail: config.support_email || "support@eusotrip.com",
+        supportHours: config.support_hours || "Mon-Fri 8am-6pm CT",
+      };
+    } catch { return { supportPhone: "", supportEmail: "support@eusotrip.com", supportHours: "Mon-Fri 8am-6pm CT" }; }
+  }),
+
+  updateSupportConfig: protectedProcedure
+    .input(z.object({
+      supportPhone: z.string().optional(),
+      supportEmail: z.string().email().optional(),
+      supportHours: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const role = ((ctx.user as any)?.role || "").toUpperCase();
+      if (role !== "ADMIN" && role !== "SUPER_ADMIN") throw new Error("Admin access required");
+      const pool = getPool();
+      if (!pool) throw new Error("Database unavailable");
+      await pool.query(`CREATE TABLE IF NOT EXISTS platform_config (
+        config_key VARCHAR(100) PRIMARY KEY, config_value TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )`);
+      if (input.supportPhone !== undefined) {
+        await pool.query("INSERT INTO platform_config (config_key, config_value) VALUES ('support_phone', ?) ON DUPLICATE KEY UPDATE config_value = ?", [input.supportPhone, input.supportPhone]);
+      }
+      if (input.supportEmail !== undefined) {
+        await pool.query("INSERT INTO platform_config (config_key, config_value) VALUES ('support_email', ?) ON DUPLICATE KEY UPDATE config_value = ?", [input.supportEmail, input.supportEmail]);
+      }
+      if (input.supportHours !== undefined) {
+        await pool.query("INSERT INTO platform_config (config_key, config_value) VALUES ('support_hours', ?) ON DUPLICATE KEY UPDATE config_value = ?", [input.supportHours, input.supportHours]);
+      }
+      return { success: true };
+    }),
 });

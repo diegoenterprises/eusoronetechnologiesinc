@@ -835,11 +835,11 @@ export default function DashboardLayout({
           </motion.button>
         </div>
 
-        {/* Phone Support */}
+        {/* Support link */}
         {sidebarOpen && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-2 px-4 pb-2">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-2 px-4 pb-2 cursor-pointer hover:text-slate-300 transition-colors" onClick={() => window.location.href = "/support"}>
             <Phone className="h-3 w-3" />
-            <span>Support: 1-855-EUSO-TRIP</span>
+            <span>Support</span>
           </div>
         )}
 
