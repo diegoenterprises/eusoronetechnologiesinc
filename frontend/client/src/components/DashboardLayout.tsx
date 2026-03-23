@@ -835,14 +835,6 @@ export default function DashboardLayout({
           </motion.button>
         </div>
 
-        {/* Support link */}
-        {sidebarOpen && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-2 px-4 pb-2 cursor-pointer hover:text-slate-300 transition-colors" onClick={() => window.location.href = "/support"}>
-            <Phone className="h-3 w-3" />
-            <span>Support</span>
-          </div>
-        )}
-
         {/* User Profile Footer */}
         <div className={`p-3 border-t ${theme === "light" ? "border-slate-200/80" : "border-gray-800/50"}`}>
           <DropdownMenu>
