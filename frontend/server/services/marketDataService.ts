@@ -306,7 +306,7 @@ let _yCookies: string = "";
 let _yCrumbTs = 0;
 
 async function ensureYahooCrumb(): Promise<boolean> {
-  if (_yCrumb && Date.now() - _yCrumbTs < 6 * 3600 * 1000) return true;
+  if (_yCrumb && Date.now() - _yCrumbTs < 10 * 60 * 1000) return true; // 10 min (Yahoo crumbs expire in ~15 min)
   try {
     // Step 1: Get session cookies from Yahoo
     const r1 = await fetch("https://fc.yahoo.com/", {

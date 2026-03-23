@@ -1635,6 +1635,14 @@ async function runSchemaSync(db: ReturnType<typeof drizzle>) {
     await addColIfMissing("loads", "destCountry", "ENUM('US','CA','MX') DEFAULT 'US'");
     await addColIfMissing("loads", "isCrossBorder", "BOOLEAN DEFAULT FALSE");
 
+    // Performance indexes for FMCSA heavy queries (HotZones, Market Intelligence)
+    try { await pool.query("CREATE INDEX IF NOT EXISTS idx_fmcsa_census_state_power ON fmcsa_census(phy_state, nbr_power_unit)"); } catch {}
+    try { await pool.query("CREATE INDEX IF NOT EXISTS idx_fmcsa_crashes_date ON fmcsa_crashes(report_date)"); } catch {}
+    try { await pool.query("CREATE INDEX IF NOT EXISTS idx_fmcsa_crashes_state_date ON fmcsa_crashes(state, report_date)"); } catch {}
+    try { await pool.query("CREATE INDEX IF NOT EXISTS idx_fmcsa_insp_date ON fmcsa_inspections(inspection_date)"); } catch {}
+    try { await pool.query("CREATE INDEX IF NOT EXISTS idx_fmcsa_insp_state_date ON fmcsa_inspections(report_state, inspection_date)"); } catch {}
+    try { await pool.query("CREATE INDEX IF NOT EXISTS idx_loads_cargo_date ON loads(cargoType, createdAt)"); } catch {}
+
     // --- Phase 4: Settlement Documents table ---
     await ensureTable("settlement_documents", `CREATE TABLE IF NOT EXISTS settlement_documents (
       id INT AUTO_INCREMENT PRIMARY KEY,
