@@ -108,7 +108,7 @@ const ACTIVE_LOAD_STATUSES = [
 ] as const;
 
 async function generateActiveMission(userId: number): Promise<ActiveMission | null> {
-  const db = await getDb();
+  const db = await getDb() as any;
   const [activeLoad] = await db
     .select()
     .from(loads)
@@ -177,7 +177,7 @@ async function generateActiveMission(userId: number): Promise<ActiveMission | nu
 }
 
 async function generateHOS(userId: number): Promise<HOSSummary> {
-  const db = await getDb();
+  const db = await getDb() as any;
 
   // Query current HOS state for this driver
   const [state] = await db
@@ -235,7 +235,7 @@ async function generateHOS(userId: number): Promise<HOSSummary> {
 }
 
 async function generateDocuments(userId: number, activeLoadId?: number): Promise<DocumentChecklist> {
-  const db = await getDb();
+  const db = await getDb() as any;
 
   // Standard checklist template
   const template = [
@@ -282,7 +282,7 @@ async function generateDocuments(userId: number, activeLoadId?: number): Promise
 }
 
 async function generateEarnings(userId: number): Promise<EarningsTracker> {
-  const db = await getDb();
+  const db = await getDb() as any;
 
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -365,7 +365,7 @@ async function generateEarnings(userId: number): Promise<EarningsTracker> {
 }
 
 async function generateUpcoming(userId: number): Promise<UpcomingAssignment[]> {
-  const db = await getDb();
+  const db = await getDb() as any;
 
   const upcomingStatuses = ["accepted", "assigned", "confirmed"] as const;
 
@@ -420,7 +420,8 @@ export async function getMobileCommandData(userId: number): Promise<MobileComman
   // For documents, pass the active load's DB id if available
   let activeLoadDbId: number | undefined;
   if (mission) {
-    const db = await getDb();
+    const db = await getDb() as any;
+    if (!db) return { mission, hos, documents, earnings, upcoming };
     const [row] = await db
       .select({ id: loads.id })
       .from(loads)
