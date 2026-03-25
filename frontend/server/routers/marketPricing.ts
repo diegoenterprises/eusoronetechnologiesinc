@@ -207,8 +207,8 @@ async function getFreightIndices(): Promise<typeof FREIGHT_INDICES_SEED> {
       GROUP BY cargoType
     `);
 
-    const rows = (Array.isArray(currentRows) ? currentRows[0] ?? currentRows : currentRows) as Array<Record<string, unknown>>;
-    const prev = (Array.isArray(prevRows) ? prevRows[0] ?? prevRows : prevRows) as Array<Record<string, unknown>>;
+    const rows = (Array.isArray(currentRows) ? currentRows[0] ?? currentRows : currentRows) as unknown as Array<Record<string, unknown>>;
+    const prev = (Array.isArray(prevRows) ? prevRows[0] ?? prevRows : prevRows) as unknown as Array<Record<string, unknown>>;
 
     // Build prev lookup by equipment key
     const prevByEquip: Record<string, number> = {};
@@ -322,8 +322,8 @@ async function getLaneBenchmarksFromDB(): Promise<LaneBenchmark[]> {
       GROUP BY originState, destState, cargoType
     `);
 
-    const rows = (Array.isArray(currentRows) ? currentRows[0] ?? currentRows : currentRows) as Array<Record<string, unknown>>;
-    const prev = (Array.isArray(prevRows) ? prevRows[0] ?? prevRows : prevRows) as Array<Record<string, unknown>>;
+    const rows = (Array.isArray(currentRows) ? currentRows[0] ?? currentRows : currentRows) as unknown as Array<Record<string, unknown>>;
+    const prev = (Array.isArray(prevRows) ? prevRows[0] ?? prevRows : prevRows) as unknown as Array<Record<string, unknown>>;
 
     if (!Array.isArray(rows) || rows.length === 0) return LANE_BENCHMARKS_SEED;
 
@@ -400,7 +400,7 @@ async function getDBFuelIndex(): Promise<typeof FUEL_INDEX_FALLBACK> {
       ORDER BY report_date DESC
       LIMIT 50
     `);
-    const fRows = (Array.isArray(fuelRows) ? fuelRows[0] ?? fuelRows : fuelRows) as Array<Record<string, unknown>>;
+    const fRows = (Array.isArray(fuelRows) ? fuelRows[0] ?? fuelRows : fuelRows) as unknown as Array<Record<string, unknown>>;
     const latestDiesel = Array.isArray(fRows) && fRows.length > 0 ? Number(fRows[0]?.avgDiesel) || 0 : 0;
 
     if (latestDiesel > 0) {
@@ -413,7 +413,7 @@ async function getDBFuelIndex(): Promise<typeof FUEL_INDEX_FALLBACK> {
         ORDER BY report_date DESC
         LIMIT 50
       `);
-      const pw = (Array.isArray(prevWeekRows) ? prevWeekRows[0] ?? prevWeekRows : prevWeekRows) as Array<Record<string, unknown>>;
+      const pw = (Array.isArray(prevWeekRows) ? prevWeekRows[0] ?? prevWeekRows : prevWeekRows) as unknown as Array<Record<string, unknown>>;
       const weekAgo = Array.isArray(pw) && pw.length > 0 ? Number(pw[0]?.avgDiesel) || latestDiesel : latestDiesel;
 
       const surchargePerMile = Math.max(0, +((latestDiesel - 1.25) / 6).toFixed(3));
@@ -435,7 +435,7 @@ async function getDBFuelIndex(): Promise<typeof FUEL_INDEX_FALLBACK> {
       WHERE pricePerGallon > 0
         AND transactionDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     `);
-    const ft = (Array.isArray(ftRows) ? ftRows[0] ?? ftRows : ftRows) as Array<Record<string, unknown>>;
+    const ft = (Array.isArray(ftRows) ? ftRows[0] ?? ftRows : ftRows) as unknown as Array<Record<string, unknown>>;
     const avgPrice = Array.isArray(ft) && ft.length > 0 ? Number(ft[0]?.avgPrice) || 0 : 0;
 
     if (avgPrice > 0) {
