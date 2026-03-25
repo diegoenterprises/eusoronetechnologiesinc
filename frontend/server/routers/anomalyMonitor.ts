@@ -21,7 +21,7 @@ export const anomalyMonitorRouter = router({
   getByCategory: protectedProcedure
     .input(z.object({ category: z.enum(["delivery", "pricing", "safety", "compliance", "operational", "financial"]) }))
     .query(async ({ input }) => {
-      const dash = getAnomalyDashboard();
+      const dash = await getAnomalyDashboard();
       return dash.anomalies.filter(a => a.category === input.category);
     }),
 
@@ -48,7 +48,7 @@ export const anomalyMonitorRouter = router({
    * Get top risks forecast
    */
   getTopRisks: protectedProcedure.query(async () => {
-    const dash = getAnomalyDashboard();
+    const dash = await getAnomalyDashboard();
     return dash.topRisks;
   }),
 });

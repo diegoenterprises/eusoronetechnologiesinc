@@ -191,7 +191,7 @@ export default function AdminApprovalQueue() {
               Reset to Pending
             </Button>
           </div>
-          <p className="text-[10px] text-gray-600 mt-1.5">Resets approval status to pending_review. Users will appear in queue for re-approval.</p>
+          <p className="text-xs text-gray-600 mt-1.5">Resets approval status to pending_review. Users will appear in queue for re-approval.</p>
         </div>
       )}
 
@@ -347,7 +347,7 @@ export default function AdminApprovalQueue() {
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
                             {Object.entries(user.registrationData).map(([key, val]: [string, any]) => (
                               <div key={key} className="bg-gray-800/40 rounded-lg p-2">
-                                <span className="text-gray-500 block text-[10px] uppercase tracking-wider">{key.replace(/([A-Z])/g, " $1").trim()}</span>
+                                <span className="text-gray-500 block text-xs uppercase tracking-wider">{key.replace(/([A-Z])/g, " $1").trim()}</span>
                                 <span className="text-gray-300">
                                   {typeof val === "object" ? JSON.stringify(val) : String(val || "—")}
                                 </span>
@@ -489,7 +489,7 @@ function ComplianceBadge({ label, value, color }: { label: string; value: string
 
   return (
     <div className={`rounded-lg border p-2.5 ${colorMap[color] || colorMap.gray}`}>
-      <div className="text-[10px] uppercase tracking-wider opacity-70 mb-1">{label}</div>
+      <div className="text-xs uppercase tracking-wider opacity-70 mb-1">{label}</div>
       <div className="text-xs font-medium">{value}</div>
     </div>
   );

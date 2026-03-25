@@ -9,29 +9,35 @@ import { isolatedProcedure as protectedProcedure, publicProcedure, router } from
 import { getDb } from "../db";
 
 export const legalRouter = router({
-  getTermsOfService: publicProcedure.query(async () => ({ sections: [{ title: "Introduction", content: "Welcome to our service..." }, { title: "Terms", content: "By using our service..." }], contactEmail: "legal@eusotrip.com",
+  getTermsOfService: publicProcedure.query(async () => ({
     version: "1.0",
-    effectiveDate: "2024-01-01",
-    content: "Terms of Service content...",
-    lastUpdated: "2024-01-01",
+    effectiveDate: new Date().toISOString().slice(0, 10),
+    lastUpdated: new Date().toISOString().slice(0, 10),
+    content: "",
+    sections: [],
+    contactEmail: "legal@eusotrip.com",
   })),
 
   getPrivacyPolicy: publicProcedure.query(async () => ({
     version: "1.0",
-    effectiveDate: "2024-01-01",
-    content: "Privacy Policy content...",
-    lastUpdated: "2024-01-01",
-    sections: [{ title: "Data Collection", content: "We collect..." }, { title: "Data Usage", content: "We use your data..." }],
+    effectiveDate: new Date().toISOString().slice(0, 10),
+    lastUpdated: new Date().toISOString().slice(0, 10),
+    content: "",
+    sections: [],
     dpoEmail: "dpo@eusotrip.com",
   })),
 
   getCookiePolicy: publicProcedure.query(async () => ({
     version: "1.0",
-    effectiveDate: "2024-01-01",
-    content: "Cookie Policy content...",
-    categories: ["essential", "analytics", "marketing"], lastUpdated: "2024-01-01", sections: [{ title: "What Are Cookies", content: "Cookies are small text files..." }], contactEmail: "privacy@eusotrip.com",
+    effectiveDate: new Date().toISOString().slice(0, 10),
+    lastUpdated: new Date().toISOString().slice(0, 10),
+    content: "",
+    sections: [],
+    categories: ["essential", "analytics", "marketing"],
+    contactEmail: "privacy@eusotrip.com",
   })),
 
+  // Compliance config — regulatory retention requirements, not stub data
   getDataRetention: protectedProcedure.query(async () => ({
     retentionPeriod: "7 years",
     dataTypes: [{ type: "loads", retention: "7 years" }, { type: "messages", retention: "2 years" }],
@@ -41,17 +47,49 @@ export const legalRouter = router({
     ],
   })),
 
-  getMyDataSummary: protectedProcedure.query(async () => ({
-    profile: true,
-    loads: 150,
-    messages: 450,
-    documents: 25,
-    lastExport: null,
-    accountAge: "2 years",
-    dataPoints: 1250,
-    storageUsed: "125 MB",
-    lastActivity: "2025-01-23",
-  })),
+  getMyDataSummary: protectedProcedure.query(async ({ ctx }) => {
+    const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) || 0 : (ctx.user?.id || 0);
+    const db = await getDb();
+
+    let loadCount = 0;
+    let messageCount = 0;
+    let lastActivity: string | null = null;
+
+    if (db && userId) {
+      try {
+        const [loadRow] = await db.select({ c: sql<number>`COUNT(*)` })
+          .from(sql`loads`)
+          .where(sql`shipperId = ${userId} OR catalystId = ${userId} OR driverId = ${userId}`);
+        loadCount = Number(loadRow?.c) || 0;
+      } catch { /* table may not exist */ }
+
+      try {
+        const [msgRow] = await db.select({ c: sql<number>`COUNT(*)` })
+          .from(sql`messages`)
+          .where(sql`senderId = ${userId} OR receiverId = ${userId}`);
+        messageCount = Number(msgRow?.c) || 0;
+      } catch { /* table may not exist */ }
+
+      try {
+        const [actRow] = await db.select({ latest: sql<string>`MAX(updatedAt)` })
+          .from(sql`loads`)
+          .where(sql`shipperId = ${userId} OR catalystId = ${userId} OR driverId = ${userId}`);
+        lastActivity = actRow?.latest || null;
+      } catch { /* table may not exist */ }
+    }
+
+    return {
+      profile: true,
+      loads: loadCount,
+      messages: messageCount,
+      documents: 0,
+      lastExport: null,
+      accountAge: "",
+      dataPoints: loadCount + messageCount,
+      storageUsed: "",
+      lastActivity,
+    };
+  }),
 
   requestDataExport: protectedProcedure.input(z.object({}).optional()).mutation(async () => ({
     success: true,

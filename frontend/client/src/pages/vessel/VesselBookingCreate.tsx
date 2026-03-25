@@ -159,7 +159,7 @@ export default function VesselBookingCreate() {
         <div className="flex items-center justify-between mb-1.5">
           <Label className={lbl}>Cargo Type *</Label>
           {selectedVertical && (
-            <button onClick={() => setSelectedVertical("")} className="text-[10px] text-slate-500 hover:text-slate-300 underline transition-colors">Show all cargo types</button>
+            <button onClick={() => setSelectedVertical("")} className="text-xs text-slate-500 hover:text-slate-300 underline transition-colors">Show all cargo types</button>
           )}
         </div>
         <Select value={form.cargoType} onValueChange={(v) => set("cargoType", v)}>

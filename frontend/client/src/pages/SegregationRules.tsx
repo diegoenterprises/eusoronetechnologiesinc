@@ -227,7 +227,7 @@ export default function SegregationRules() {
                     )} onClick={() => setSelectedClass(selectedClass === row ? null : row)}>
                       <div>
                         <span>{row}</span>
-                        <span className={cn("block text-[9px] font-normal", isLight ? "text-slate-400" : "text-slate-500")}>
+                        <span className={cn("block text-xs font-normal", isLight ? "text-slate-400" : "text-slate-500")}>
                           {CLASS_NAMES[row]?.substring(0, 12)}
                         </span>
                       </div>

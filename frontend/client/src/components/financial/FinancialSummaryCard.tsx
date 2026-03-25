@@ -65,7 +65,7 @@ function LineItem({ icon, label, amount, currency, detail, variant = "normal" }:
         <span className="text-gray-500">{icon}</span>
         <div>
           <p className="text-sm text-gray-300">{label}</p>
-          {detail && <p className="text-[10px] text-gray-600">{detail}</p>}
+          {detail && <p className="text-xs text-gray-600">{detail}</p>}
         </div>
       </div>
       <span className={`text-sm font-mono font-medium tabular-nums ${colorMap[variant]}`}>
@@ -113,12 +113,12 @@ export default function FinancialSummaryCard({
           </div>
           <div>
             <h3 className="text-sm font-semibold text-white">Financial Summary</h3>
-            <p className="text-[10px] text-gray-500">{distance > 0 ? `${distance.toFixed(0)} mi` : "—"}</p>
+            <p className="text-xs text-gray-500">{distance > 0 ? `${distance.toFixed(0)} mi` : "—"}</p>
           </div>
         </div>
         <div className="text-right">
           <p className="text-xl font-mono font-bold text-white tabular-nums">{fmt(totalCharges, currency)}</p>
-          <p className="text-[10px] text-gray-500">Total</p>
+          <p className="text-xs text-gray-500">Total</p>
         </div>
       </div>
 
@@ -130,7 +130,7 @@ export default function FinancialSummaryCard({
           transition={{ duration: 2, repeat: Infinity }}
         >
           <Clock size={12} className="text-red-400 flex-shrink-0" />
-          <span className="text-[11px] text-red-300">
+          <span className="text-xs text-red-300">
             {activeTimers.length} active timer{activeTimers.length > 1 ? "s" : ""} —{" "}
             {activeTimers.map(t => `${t.type} ${fmt(t.currentCharge)}`).join(", ")}
           </span>
@@ -177,7 +177,7 @@ export default function FinancialSummaryCard({
               <Receipt size={14} />
               Accessorial Charges
               {hasAccessorials && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-900/40 text-amber-300 font-medium">
+                <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-900/40 text-amber-300 font-medium">
                   {fmt(totalAccessorials)}
                 </span>
               )}
@@ -244,7 +244,7 @@ export default function FinancialSummaryCard({
           </span>
         </div>
         {hasAccessorials && (
-          <p className="text-[10px] text-gray-500 mt-0.5 text-right">
+          <p className="text-xs text-gray-500 mt-0.5 text-right">
             Includes {fmt(totalAccessorials)} in accessorials
           </p>
         )}

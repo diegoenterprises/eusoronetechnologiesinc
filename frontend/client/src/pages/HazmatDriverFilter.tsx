@@ -149,13 +149,13 @@ export default function HazmatDriverFilter() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{driver.name}</p>
-                        <Badge className={cn("text-[9px] border", st.bg, st.color, "border-current/20")}>{st.label}</Badge>
+                        <Badge className={cn("text-xs border", st.bg, st.color, "border-current/20")}>{st.label}</Badge>
                       </div>
                       <div className="flex items-center gap-3 mt-1 flex-wrap">
-                        {driver.hazmatEndorsement && <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-[8px]">H — Hazmat</Badge>}
-                        {driver.tankerEndorsement && <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 text-[8px]">N — Tanker</Badge>}
-                        {driver.twicCard && <Badge className="bg-purple-500/15 text-purple-400 border-purple-500/30 text-[8px]">TWIC</Badge>}
-                        <span className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>CDL-{driver.cdlClass} · {driver.equipment} · {driver.experience}</span>
+                        {driver.hazmatEndorsement && <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-xs">H — Hazmat</Badge>}
+                        {driver.tankerEndorsement && <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 text-xs">N — Tanker</Badge>}
+                        {driver.twicCard && <Badge className="bg-purple-500/15 text-purple-400 border-purple-500/30 text-xs">TWIC</Badge>}
+                        <span className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>CDL-{driver.cdlClass} · {driver.equipment} · {driver.experience}</span>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
@@ -163,7 +163,7 @@ export default function HazmatDriverFilter() {
                         <Star className="w-3 h-3 text-yellow-500" />
                         <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{driver.safetyScore}</p>
                       </div>
-                      <p className={cn("text-[10px] flex items-center gap-1 justify-end mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>
+                      <p className={cn("text-xs flex items-center gap-1 justify-end mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>
                         <MapPin className="w-3 h-3" /> {driver.milesAway} mi
                       </p>
                     </div>

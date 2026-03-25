@@ -104,7 +104,7 @@ export default function DemurrageChargesPage() {
         >
           <FileText className="w-4 h-4 mr-1" />Charges
           {charges.length > 0 && (
-            <span className="ml-1 bg-amber-500/30 text-amber-400 text-[8px] rounded-full px-1.5">
+            <span className="ml-1 bg-amber-500/30 text-amber-400 text-xs rounded-full px-1.5">
               {charges.length}
             </span>
           )}
@@ -140,18 +140,18 @@ export default function DemurrageChargesPage() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-white">Charge Batch</p>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-xs text-slate-500">
                       {batch.dateRange.from} — {batch.dateRange.to}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="text-center">
-                    <p className="text-[9px] text-slate-500 uppercase">Charges</p>
+                    <p className="text-xs text-slate-500 uppercase">Charges</p>
                     <p className="text-lg font-bold font-mono text-white">{batch.totalCharges}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[9px] text-slate-500 uppercase">Total Amount</p>
+                    <p className="text-xs text-slate-500 uppercase">Total Amount</p>
                     <p className="text-lg font-bold font-mono text-amber-400">
                       ${batch.totalAmount.toLocaleString()}
                     </p>
@@ -160,7 +160,7 @@ export default function DemurrageChargesPage() {
                     {Object.entries(batch.byType || {}).map(([type, data]: [string, any]) => {
                       const tc = TYPE_CONFIG[type] || TYPE_CONFIG.DEMURRAGE;
                       return (
-                        <Badge key={type} variant="outline" className={cn("text-[8px]", tc.color)}>
+                        <Badge key={type} variant="outline" className={cn("text-xs", tc.color)}>
                           {tc.label}: {data.count} (${data.amount.toFixed(0)})
                         </Badge>
                       );
@@ -173,19 +173,19 @@ export default function DemurrageChargesPage() {
 
           {/* Batch Actions */}
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={selectAll} className="text-[10px] border-slate-600 text-slate-300">
+            <Button size="sm" variant="outline" onClick={selectAll} className="text-xs border-slate-600 text-slate-300">
               {selectedCharges.size === charges.length ? "Deselect All" : "Select All"}
             </Button>
             {selectedCharges.size > 0 && (
               <>
                 <Button
                   size="sm"
-                  className="bg-emerald-600 text-white text-[10px]"
+                  className="bg-emerald-600 text-white text-xs"
                   onClick={() => batchApproveMutation.mutate({ chargeIds: Array.from(selectedCharges) })}
                 >
                   <ThumbsUp className="w-3 h-3 mr-1" />Approve {selectedCharges.size}
                 </Button>
-                <span className="text-[9px] text-slate-500">{selectedCharges.size} selected</span>
+                <span className="text-xs text-slate-500">{selectedCharges.size} selected</span>
               </>
             )}
           </div>
@@ -223,11 +223,11 @@ export default function DemurrageChargesPage() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className={tc.color}>{tc.icon}</span>
-                            <Badge variant="outline" className={cn("text-[8px]", tc.color)}>
+                            <Badge variant="outline" className={cn("text-xs", tc.color)}>
                               {tc.label}
                             </Badge>
-                            <span className="text-[10px] text-slate-400 font-mono">{charge.id}</span>
-                            <Badge variant="outline" className={cn("text-[8px]", sc.color, sc.bg)}>
+                            <span className="text-xs text-slate-400 font-mono">{charge.id}</span>
+                            <Badge variant="outline" className={cn("text-xs", sc.color, sc.bg)}>
                               {sc.label}
                             </Badge>
                           </div>
@@ -239,30 +239,30 @@ export default function DemurrageChargesPage() {
                         {/* Details Grid */}
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                           <div className="p-1.5 rounded-md bg-slate-900/30">
-                            <p className="text-[8px] text-slate-500">Load</p>
-                            <p className="text-[10px] text-white font-mono">{charge.loadReference}</p>
+                            <p className="text-xs text-slate-500">Load</p>
+                            <p className="text-xs text-white font-mono">{charge.loadReference}</p>
                           </div>
                           <div className="p-1.5 rounded-md bg-slate-900/30">
-                            <p className="text-[8px] text-slate-500">Total Wait</p>
-                            <p className="text-[10px] text-white font-mono">{formatMinutes(charge.totalWaitMinutes)}</p>
+                            <p className="text-xs text-slate-500">Total Wait</p>
+                            <p className="text-xs text-white font-mono">{formatMinutes(charge.totalWaitMinutes)}</p>
                           </div>
                           <div className="p-1.5 rounded-md bg-slate-900/30">
-                            <p className="text-[8px] text-slate-500">Free Time</p>
-                            <p className="text-[10px] text-emerald-400 font-mono">{formatMinutes(charge.freeTimeMinutes)}</p>
+                            <p className="text-xs text-slate-500">Free Time</p>
+                            <p className="text-xs text-emerald-400 font-mono">{formatMinutes(charge.freeTimeMinutes)}</p>
                           </div>
                           <div className="p-1.5 rounded-md bg-slate-900/30">
-                            <p className="text-[8px] text-slate-500">Billable</p>
-                            <p className="text-[10px] text-red-400 font-mono">{formatMinutes(charge.billableMinutes)}</p>
+                            <p className="text-xs text-slate-500">Billable</p>
+                            <p className="text-xs text-red-400 font-mono">{formatMinutes(charge.billableMinutes)}</p>
                           </div>
                           <div className="p-1.5 rounded-md bg-slate-900/30">
-                            <p className="text-[8px] text-slate-500">Rate</p>
-                            <p className="text-[10px] text-white font-mono">${charge.hourlyRate}/hr</p>
+                            <p className="text-xs text-slate-500">Rate</p>
+                            <p className="text-xs text-white font-mono">${charge.hourlyRate}/hr</p>
                           </div>
                         </div>
 
                         {/* Location & Parties */}
                         <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-3 text-[9px] text-slate-500">
+                          <div className="flex items-center gap-3 text-xs text-slate-500">
                             <div className="flex items-center gap-1">
                               <Building2 className="w-3 h-3" />
                               <span>{charge.locationType === "pickup" ? "Pickup" : "Delivery"}</span>
@@ -282,7 +282,7 @@ export default function DemurrageChargesPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 px-2 text-[9px] text-emerald-400 hover:bg-emerald-500/10"
+                              className="h-6 px-2 text-xs text-emerald-400 hover:bg-emerald-500/10"
                               onClick={() => approveMutation.mutate({ chargeId: charge.id })}
                             >
                               <ThumbsUp className="w-3 h-3 mr-0.5" />Approve
@@ -290,7 +290,7 @@ export default function DemurrageChargesPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 px-2 text-[9px] text-red-400 hover:bg-red-500/10"
+                              className="h-6 px-2 text-xs text-red-400 hover:bg-red-500/10"
                               onClick={() => disputeMutation.mutate({ chargeId: charge.id, reason: "Under review" })}
                             >
                               <ThumbsDown className="w-3 h-3 mr-0.5" />Dispute
@@ -310,7 +310,7 @@ export default function DemurrageChargesPage() {
               <CardContent className="p-8 text-center">
                 <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
                 <p className="text-sm text-emerald-400 font-semibold">No Pending Charges</p>
-                <p className="text-[10px] text-slate-500 mt-1">All demurrage/detention events are within free time</p>
+                <p className="text-xs text-slate-500 mt-1">All demurrage/detention events are within free time</p>
               </CardContent>
             </Card>
           )}
@@ -332,7 +332,7 @@ export default function DemurrageChargesPage() {
                 <CardContent className="p-3 text-center">
                   <div className={cn("inline-flex p-2 rounded-lg bg-slate-900/30 mb-1", kpi.color)}>{kpi.icon}</div>
                   <p className="text-lg font-bold font-mono text-white">{kpi.value}</p>
-                  <p className="text-[9px] text-slate-500">{kpi.label}</p>
+                  <p className="text-xs text-slate-500">{kpi.label}</p>
                 </CardContent>
               </Card>
             ))}
@@ -354,10 +354,10 @@ export default function DemurrageChargesPage() {
                       <div key={t.type} className="p-2 rounded-lg bg-slate-900/30 border border-slate-700/30">
                         <div className="flex items-center gap-1.5 mb-1">
                           <span className={tc.color}>{tc.icon}</span>
-                          <span className={cn("text-[10px] font-semibold", tc.color)}>{tc.label}</span>
+                          <span className={cn("text-xs font-semibold", tc.color)}>{tc.label}</span>
                         </div>
                         <p className="text-sm font-bold font-mono text-white">{t.count}</p>
-                        <p className="text-[9px] text-slate-500">${t.totalAmount.toLocaleString()} • Avg {formatMinutes(t.avgMinutes)}</p>
+                        <p className="text-xs text-slate-500">${t.totalAmount.toLocaleString()} • Avg {formatMinutes(t.avgMinutes)}</p>
                       </div>
                     );
                   })}
@@ -378,16 +378,16 @@ export default function DemurrageChargesPage() {
                 <div className="space-y-1.5">
                   {analytics.topOffenders.map((o: any, i: number) => (
                     <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-slate-900/20">
-                      <span className="text-[10px] font-bold text-slate-500 w-5">#{i + 1}</span>
+                      <span className="text-xs font-bold text-slate-500 w-5">#{i + 1}</span>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-semibold text-white">{o.name || `Location ${i + 1}`}</span>
-                          <Badge variant="outline" className="text-[7px] border-slate-600/50 text-slate-400">{o.type}</Badge>
+                          <span className="text-xs font-semibold text-white">{o.name || `Location ${i + 1}`}</span>
+                          <Badge variant="outline" className="text-xs border-slate-600/50 text-slate-400">{o.type}</Badge>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] font-bold font-mono text-amber-400">${o.totalAmount.toLocaleString()}</p>
-                        <p className="text-[8px] text-slate-500">{o.charges} charges • Avg {formatMinutes(o.avgWait)}</p>
+                        <p className="text-xs font-bold font-mono text-amber-400">${o.totalAmount.toLocaleString()}</p>
+                        <p className="text-xs text-slate-500">{o.charges} charges • Avg {formatMinutes(o.avgWait)}</p>
                       </div>
                     </div>
                   ))}
@@ -417,7 +417,7 @@ export default function DemurrageChargesPage() {
                           title={`${d.date}: $${d.amount} (${d.charges} charges)`}
                         />
                         {i % Math.max(1, Math.floor(analytics.trend.length / 6)) === 0 && (
-                          <span className="text-[7px] text-slate-600">{d.date.substring(5)}</span>
+                          <span className="text-xs text-slate-600">{d.date.substring(5)}</span>
                         )}
                       </div>
                     );
@@ -431,13 +431,13 @@ export default function DemurrageChargesPage() {
           <div className="grid grid-cols-2 gap-3">
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardContent className="p-3 text-center">
-                <p className="text-[9px] text-slate-500 uppercase">Avg Billable Time</p>
+                <p className="text-xs text-slate-500 uppercase">Avg Billable Time</p>
                 <p className="text-2xl font-bold font-mono text-white">{formatMinutes(analytics.avgBillableMinutes)}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardContent className="p-3 text-center">
-                <p className="text-[9px] text-slate-500 uppercase">Avg Charge</p>
+                <p className="text-xs text-slate-500 uppercase">Avg Charge</p>
                 <p className="text-2xl font-bold font-mono text-amber-400">${analytics.avgChargeAmount.toFixed(2)}</p>
               </CardContent>
             </Card>

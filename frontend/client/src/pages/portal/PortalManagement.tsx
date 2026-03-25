@@ -81,15 +81,15 @@ export default function PortalManagement() {
       {/* Analytics Summary */}
       <div className="grid grid-cols-3 gap-3 px-4 py-3 border-b border-white/[0.06] bg-slate-900/30">
         <div className="rounded-lg bg-purple-500/5 border border-purple-500/10 p-3 text-center">
-          <div className="text-[10px] text-slate-500 uppercase">Active Tokens</div>
+          <div className="text-xs text-slate-500 uppercase">Active Tokens</div>
           <div className="text-xl font-bold text-purple-400">{activeCount}</div>
         </div>
         <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-3 text-center">
-          <div className="text-[10px] text-slate-500 uppercase">Total Linked Loads</div>
+          <div className="text-xs text-slate-500 uppercase">Total Linked Loads</div>
           <div className="text-xl font-bold text-blue-400">{totalLoads}</div>
         </div>
         <div className="rounded-lg bg-green-500/5 border border-green-500/10 p-3 text-center">
-          <div className="text-[10px] text-slate-500 uppercase">Total Tokens</div>
+          <div className="text-xs text-slate-500 uppercase">Total Tokens</div>
           <div className="text-xl font-bold text-green-400">{tokens.length}</div>
         </div>
       </div>
@@ -104,15 +104,15 @@ export default function PortalManagement() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] text-slate-500 uppercase mb-1 block">Customer Name</label>
+                <label className="text-xs text-slate-500 uppercase mb-1 block">Customer Name</label>
                 <Input value={form.customerName} onChange={e => setForm(p => ({ ...p, customerName: e.target.value }))} className="h-8 text-xs bg-white/[0.04] border-white/[0.08] text-white" placeholder="e.g. Permian Basin Oil Co." />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 uppercase mb-1 block">Customer Email</label>
+                <label className="text-xs text-slate-500 uppercase mb-1 block">Customer Email</label>
                 <Input type="email" value={form.customerEmail} onChange={e => setForm(p => ({ ...p, customerEmail: e.target.value }))} className="h-8 text-xs bg-white/[0.04] border-white/[0.08] text-white" placeholder="customer@example.com" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 uppercase mb-1 block">Expires In (days)</label>
+                <label className="text-xs text-slate-500 uppercase mb-1 block">Expires In (days)</label>
                 <Input type="number" value={form.expiresInDays} onChange={e => setForm(p => ({ ...p, expiresInDays: Number(e.target.value) }))} className="h-8 text-xs bg-white/[0.04] border-white/[0.08] text-white" />
               </div>
             </div>
@@ -133,7 +133,7 @@ export default function PortalManagement() {
               <button onClick={() => setLinkTokenId(null)}><X className="w-4 h-4 text-slate-500" /></button>
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase mb-1 block">Load IDs (comma-separated)</label>
+              <label className="text-xs text-slate-500 uppercase mb-1 block">Load IDs (comma-separated)</label>
               <Input value={linkLoadIds} onChange={e => setLinkLoadIds(e.target.value)} className="h-8 text-xs bg-white/[0.04] border-white/[0.08] text-white" placeholder="e.g. 101, 102, 103" />
             </div>
             <Button size="sm" className="h-8 w-full text-xs bg-blue-600 hover:bg-blue-700"
@@ -152,7 +152,7 @@ export default function PortalManagement() {
       <div className="flex-1 overflow-auto">
         <table className="w-full text-xs">
           <thead className="sticky top-0 z-10">
-            <tr className="text-[10px] text-slate-500 uppercase border-b border-white/[0.06] bg-slate-900">
+            <tr className="text-xs text-slate-500 uppercase border-b border-white/[0.06] bg-slate-900">
               <th className="px-3 py-2 text-left">Customer</th>
               <th className="px-3 py-2 text-left">Email</th>
               <th className="px-3 py-2 text-left">Created</th>
@@ -178,10 +178,10 @@ export default function PortalManagement() {
                 <td className="px-3 py-2 text-slate-300">{t.expiresAt ? new Date(t.expiresAt).toLocaleDateString() : "—"}</td>
                 <td className="px-3 py-2 text-slate-300">{t.lastAccessAt ? new Date(t.lastAccessAt).toLocaleString() : "Never"}</td>
                 <td className="px-3 py-2 text-center">
-                  <Badge className="bg-blue-500/10 text-blue-400 border-0 text-[10px]">{t.loadCount}</Badge>
+                  <Badge className="bg-blue-500/10 text-blue-400 border-0 text-xs">{t.loadCount}</Badge>
                 </td>
                 <td className="px-3 py-2 text-center">
-                  <Badge className={cn("border-0 text-[10px]", t.isActive ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400")}>
+                  <Badge className={cn("border-0 text-xs", t.isActive ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400")}>
                     {t.isActive ? "Active" : "Revoked"}
                   </Badge>
                 </td>

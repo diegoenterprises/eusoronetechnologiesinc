@@ -59,7 +59,7 @@ export default function DriverDashboard() {
   // Card style helper
   const card = cn("rounded-2xl border backdrop-blur-sm", isLight ? "bg-white/80 border-slate-200/60 shadow-sm" : "bg-white/[0.03] border-white/[0.06]");
   const subcard = cn("rounded-xl p-3", isLight ? "bg-slate-50/80" : "bg-white/[0.03]");
-  const label = cn("text-[11px] font-medium tracking-wide uppercase", isLight ? "text-slate-500" : "text-slate-500");
+  const label = cn("text-xs font-medium tracking-wide uppercase", isLight ? "text-slate-500" : "text-slate-500");
   const heading = cn("font-semibold", isLight ? "text-slate-900" : "text-white");
   const muted = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
 
@@ -98,7 +98,7 @@ export default function DriverDashboard() {
                 {d.carrier.city && d.carrier.state && <span className={cn("text-xs", muted)}>{d.carrier.city}, {d.carrier.state}</span>}
               </div>
             </div>
-            <Badge className={cn("shrink-0 border-0 text-[10px] font-bold", isLight ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/15 text-emerald-400")}>
+            <Badge className={cn("shrink-0 border-0 text-xs font-bold", isLight ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/15 text-emerald-400")}>
               <Shield className="w-3 h-3 mr-1" />Active
             </Badge>
           </div>
@@ -115,7 +115,7 @@ export default function DriverDashboard() {
             </div>
             <div className="flex items-center gap-2">
               {d?.hos?.violations?.length > 0 && (
-                <Badge className="bg-red-500/15 text-red-500 border-0 text-[10px]">
+                <Badge className="bg-red-500/15 text-red-500 border-0 text-xs">
                   <AlertTriangle className="w-3 h-3 mr-1" />{d.hos.violations.length} Violation{d.hos.violations.length > 1 ? "s" : ""}
                 </Badge>
               )}
@@ -126,17 +126,17 @@ export default function DriverDashboard() {
             <div className={subcard}>
               <p className={label}>Driving</p>
               <p className={cn("text-lg font-bold mt-0.5", d?.hos?.canDrive ? (isLight ? "text-emerald-600" : "text-emerald-400") : "text-red-500")}>{d?.hos?.drivingRemaining || "11h 00m"}</p>
-              <p className={cn("text-[10px] mt-0.5", isLight ? "text-slate-400" : "text-slate-600")}>of 11h limit</p>
+              <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-600")}>of 11h limit</p>
             </div>
             <div className={subcard}>
               <p className={label}>On-Duty</p>
               <p className={cn("text-lg font-bold mt-0.5", isLight ? "text-blue-600" : "text-blue-400")}>{d?.hos?.onDutyRemaining || "14h 00m"}</p>
-              <p className={cn("text-[10px] mt-0.5", isLight ? "text-slate-400" : "text-slate-600")}>of 14h window</p>
+              <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-600")}>of 14h window</p>
             </div>
             <div className={subcard}>
               <p className={label}>70h Cycle</p>
               <p className={cn("text-lg font-bold mt-0.5", isLight ? "text-purple-600" : "text-purple-400")}>{d?.hos?.cycleRemaining || "70h 00m"}</p>
-              <p className={cn("text-[10px] mt-0.5", isLight ? "text-slate-400" : "text-slate-600")}>8-day rolling</p>
+              <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-600")}>8-day rolling</p>
             </div>
           </div>
         </div>
@@ -150,7 +150,7 @@ export default function DriverDashboard() {
               <Package className={cn("w-4 h-4", isLight ? "text-blue-600" : "text-blue-400")} />
               <span className={cn("font-semibold text-sm", heading)}>{d.currentLoad.loadNumber}</span>
             </div>
-            <Badge className={cn("border-0 text-[10px] font-bold", isLight ? "bg-white/80 shadow-sm" : "bg-white/[0.06]", LOAD_STATUS[d.currentLoad.status]?.color || "text-slate-400")}>
+            <Badge className={cn("border-0 text-xs font-bold", isLight ? "bg-white/80 shadow-sm" : "bg-white/[0.06]", LOAD_STATUS[d.currentLoad.status]?.color || "text-slate-400")}>
               {LOAD_STATUS[d.currentLoad.status]?.label || d.currentLoad.status.replace(/_/g, " ")}
             </Badge>
           </div>
@@ -292,7 +292,7 @@ export default function DriverDashboard() {
                 <p className={cn("font-medium text-sm", heading)}>CDL {d?.driver?.cdlNumber || "—"}</p>
                 <div className="flex items-center gap-2">
                   {d?.driver?.hazmatEndorsement && (
-                    <Badge className={cn("border-0 text-[10px]", isLight ? "bg-orange-100 text-orange-700" : "bg-orange-500/15 text-orange-400")}>H Endorsement</Badge>
+                    <Badge className={cn("border-0 text-xs", isLight ? "bg-orange-100 text-orange-700" : "bg-orange-500/15 text-orange-400")}>H Endorsement</Badge>
                   )}
                   <span className={cn("text-xs", muted)}>Class A</span>
                 </div>
@@ -326,7 +326,7 @@ export default function DriverDashboard() {
                 </div>
                 <div className="text-right shrink-0 ml-3">
                   <p className={cn("text-sm font-semibold", heading)}>${load.rate.toLocaleString()}</p>
-                  <p className={cn("text-[10px]", LOAD_STATUS[load.status]?.color || muted)}>{LOAD_STATUS[load.status]?.label || load.status}</p>
+                  <p className={cn("text-xs", LOAD_STATUS[load.status]?.color || muted)}>{LOAD_STATUS[load.status]?.label || load.status}</p>
                 </div>
               </div>
             ))}

@@ -56,7 +56,7 @@ export default function ETADisplay({ loadId, compact = false }: ETADisplayProps)
         <span className="font-medium">
           ETA: {etaDate ? etaDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--:--"}
         </span>
-        <Badge className={`${confStyle.bg} ${confStyle.color} border-0 text-[10px]`}>
+        <Badge className={`${confStyle.bg} ${confStyle.color} border-0 text-xs`}>
           {(eta.confidence || "").toUpperCase()}
         </Badge>
       </div>
@@ -83,12 +83,12 @@ export default function ETADisplay({ loadId, compact = false }: ETADisplayProps)
           <div className="flex items-center justify-center gap-3 mt-3">
             <div className="text-center">
               <p className="text-lg font-semibold">{hours}h {mins}m</p>
-              <p className="text-[10px] text-muted-foreground">Remaining</p>
+              <p className="text-xs text-muted-foreground">Remaining</p>
             </div>
             <div className="h-8 w-px bg-border" />
             <div className="text-center">
               <p className="text-lg font-semibold">{eta.remainingMiles || 0}</p>
-              <p className="text-[10px] text-muted-foreground">Miles</p>
+              <p className="text-xs text-muted-foreground">Miles</p>
             </div>
           </div>
 
@@ -97,13 +97,13 @@ export default function ETADisplay({ loadId, compact = false }: ETADisplayProps)
               {(eta.confidence || "MEDIUM").toUpperCase()} Confidence
             </Badge>
             {etaTrend === "later" && (
-              <Badge variant="outline" className="text-red-500 text-[10px]">
+              <Badge variant="outline" className="text-red-500 text-xs">
                 <TrendingUp className="h-3 w-3 mr-0.5" />
                 Delayed
               </Badge>
             )}
             {etaTrend === "earlier" && (
-              <Badge variant="outline" className="text-green-500 text-[10px]">
+              <Badge variant="outline" className="text-green-500 text-xs">
                 <TrendingDown className="h-3 w-3 mr-0.5" />
                 Ahead
               </Badge>
@@ -114,17 +114,17 @@ export default function ETADisplay({ loadId, compact = false }: ETADisplayProps)
         {/* ETA History */}
         {history.length > 1 && (
           <div className="mt-4 border-t pt-3">
-            <p className="text-[10px] text-muted-foreground mb-2">Recent ETA Changes</p>
+            <p className="text-xs text-muted-foreground mb-2">Recent ETA Changes</p>
             <div className="space-y-1">
               {history.slice(0, 5).map((h: any, i: number) => (
-                <div key={h.id || i} className="flex items-center justify-between text-[10px]">
+                <div key={h.id || i} className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">
                     {h.createdAt ? new Date(h.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
                   </span>
                   <span className="font-medium">
                     {h.predictedEta ? new Date(h.predictedEta).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--"}
                   </span>
-                  <Badge variant="outline" className="text-[8px]">{h.confidence}</Badge>
+                  <Badge variant="outline" className="text-xs">{h.confidence}</Badge>
                 </div>
               ))}
             </div>

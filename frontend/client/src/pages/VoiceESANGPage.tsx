@@ -137,19 +137,19 @@ export default function VoiceESANGPage() {
           <p className="text-slate-400 text-sm mt-0.5">Talk to ESANG — voice commands & AI conversation</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost" className={cn("text-[10px]", ttsEnabled ? "text-cyan-400" : "text-slate-500")} onClick={() => { setTtsEnabled(!ttsEnabled); if (isSpeaking) window.speechSynthesis?.cancel(); }}>
+          <Button size="sm" variant="ghost" className={cn("text-xs", ttsEnabled ? "text-cyan-400" : "text-slate-500")} onClick={() => { setTtsEnabled(!ttsEnabled); if (isSpeaking) window.speechSynthesis?.cancel(); }}>
             {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </Button>
-          <Badge variant="outline" className="text-[9px] border-cyan-500/30 text-cyan-400"><Radio className="w-3 h-3 mr-1" />Voice AI</Badge>
+          <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400"><Radio className="w-3 h-3 mr-1" />Voice AI</Badge>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1 w-fit flex-shrink-0">
-        <Button size="sm" variant={tab === "voice" ? "default" : "ghost"} className={cn("rounded-md text-[11px]", tab === "voice" ? "bg-cyan-600" : "text-slate-400")} onClick={() => setTab("voice")}>
+        <Button size="sm" variant={tab === "voice" ? "default" : "ghost"} className={cn("rounded-md text-xs", tab === "voice" ? "bg-cyan-600" : "text-slate-400")} onClick={() => setTab("voice")}>
           <Mic className="w-3.5 h-3.5 mr-1" />Voice Chat
         </Button>
-        <Button size="sm" variant={tab === "help" ? "default" : "ghost"} className={cn("rounded-md text-[11px]", tab === "help" ? "bg-blue-600" : "text-slate-400")} onClick={() => setTab("help")}>
+        <Button size="sm" variant={tab === "help" ? "default" : "ghost"} className={cn("rounded-md text-xs", tab === "help" ? "bg-blue-600" : "text-slate-400")} onClick={() => setTab("help")}>
           <HelpCircle className="w-3.5 h-3.5 mr-1" />Commands
         </Button>
       </div>
@@ -168,7 +168,7 @@ export default function VoiceESANGPage() {
                 <p className="text-sm text-slate-400 mt-1 max-w-sm">Tap the mic or type a command. I can navigate the app, search loads, check rates, and more.</p>
                 <div className="flex flex-wrap gap-2 mt-4 justify-center max-w-md">
                   {["Find loads from Houston to Dallas", "What's my load status?", "Go to the dashboard", "Help"].map(s => (
-                    <button key={s} onClick={() => processText(s)} className="px-3 py-1.5 rounded-full bg-slate-800/70 border border-slate-700/50 text-[10px] text-slate-300 hover:border-cyan-500/30 hover:text-white transition-all">
+                    <button key={s} onClick={() => processText(s)} className="px-3 py-1.5 rounded-full bg-slate-800/70 border border-slate-700/50 text-xs text-slate-300 hover:border-cyan-500/30 hover:text-white transition-all">
                       "{s}"
                     </button>
                   ))}
@@ -182,11 +182,11 @@ export default function VoiceESANGPage() {
                   {entry.role === "assistant" && entry.intent && (
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className={INTENT_COLORS[entry.intent] || "text-slate-400"}>{INTENT_ICONS[entry.intent] || <Zap className="w-3.5 h-3.5" />}</span>
-                      <Badge variant="outline" className={cn("text-[7px]", INTENT_COLORS[entry.intent] || "text-slate-400")}>{entry.intent}</Badge>
+                      <Badge variant="outline" className={cn("text-xs", INTENT_COLORS[entry.intent] || "text-slate-400")}>{entry.intent}</Badge>
                     </div>
                   )}
                   <p className="text-sm text-white whitespace-pre-wrap">{entry.text}</p>
-                  <p className="text-[8px] text-slate-500 mt-1">{entry.timestamp.toLocaleTimeString()}</p>
+                  <p className="text-xs text-slate-500 mt-1">{entry.timestamp.toLocaleTimeString()}</p>
                 </div>
               </div>
             ))}
@@ -250,7 +250,7 @@ export default function VoiceESANGPage() {
           {isSpeaking && (
             <div className="flex items-center justify-center gap-2 py-1 flex-shrink-0">
               <Volume2 className="w-4 h-4 text-cyan-400 animate-pulse" />
-              <span className="text-[10px] text-cyan-400">ESANG is speaking...</span>
+              <span className="text-xs text-cyan-400">ESANG is speaking...</span>
             </div>
           )}
         </div>
@@ -269,8 +269,8 @@ export default function VoiceESANGPage() {
                   {cat.commands.map((cmd: any, i: number) => (
                     <button key={i} onClick={() => { setTab("voice"); processText(cmd.phrase); }} className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-900/30 border border-slate-700/30 hover:border-cyan-500/30 transition-all group">
                       <div>
-                        <p className="text-[11px] text-cyan-300 font-mono group-hover:text-white transition-colors">"{cmd.phrase}"</p>
-                        <p className="text-[9px] text-slate-500">{cmd.description}</p>
+                        <p className="text-xs text-cyan-300 font-mono group-hover:text-white transition-colors">"{cmd.phrase}"</p>
+                        <p className="text-xs text-slate-500">{cmd.description}</p>
                       </div>
                       <ArrowRight className="w-3 h-3 text-slate-600 group-hover:text-cyan-400 transition-colors" />
                     </button>

@@ -174,7 +174,7 @@ export default function FindLoads() {
             </h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
               <Target className="w-3 h-3 text-emerald-500" />
-              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Marketplace</span>
+              <span className="text-xs font-bold text-emerald-500 uppercase tracking-wider">Marketplace</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>
@@ -211,7 +211,7 @@ export default function FindLoads() {
           <div key={k.l} className={cn("rounded-2xl p-3 bg-gradient-to-br border", `${k.b} border-slate-200/60 dark:border-slate-700/30`)}>
             <k.I className={cn("w-4 h-4 mb-1", k.c)} />
             <p className={cn("text-xl font-bold", k.c)}>{k.v}</p>
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{k.l}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{k.l}</p>
           </div>
         ))}
       </div>
@@ -256,9 +256,9 @@ export default function FindLoads() {
           <div className="flex items-center gap-2">
             <p className={cn("text-sm font-semibold", L ? "text-slate-700" : "text-white")}>{formatMonthYear(selectedDate)}</p>
             {dateFilterActive ? (
-              <button onClick={() => setDateFilterActive(false)} className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-medium">Show All</button>
+              <button onClick={() => setDateFilterActive(false)} className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-medium">Show All</button>
             ) : (
-              <button onClick={() => setDateFilterActive(true)} className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", L ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-slate-700")}>Showing All</button>
+              <button onClick={() => setDateFilterActive(true)} className={cn("text-xs px-2 py-0.5 rounded-full font-medium border", L ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-slate-700")}>Showing All</button>
             )}
           </div>
           <button onClick={() => shiftWeek(1)} aria-label="Next week" className={cn("p-1.5 rounded-lg transition-colors", L ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
@@ -271,7 +271,7 @@ export default function FindLoads() {
             const isToday = isSameDay(day, new Date());
             return (
               <button key={i} onClick={() => { setSelectedDate(day); setDateFilterActive(true); }} className={cn("flex flex-col items-center py-2 rounded-xl transition-all text-center", isSelected ? "bg-gradient-to-b from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-purple-500/25" : isToday ? L ? "bg-slate-100 text-slate-800" : "bg-slate-700 text-white" : L ? "hover:bg-slate-50 text-slate-600" : "hover:bg-slate-700/50 text-slate-400")}>
-                <span className="text-[10px] font-medium mb-0.5">{DAY_LABELS[day.getDay()]}</span>
+                <span className="text-xs font-medium mb-0.5">{DAY_LABELS[day.getDay()]}</span>
                 <span className={cn("text-base font-bold", isSelected ? "text-white" : "")}>{day.getDate()}</span>
               </button>
             );
@@ -295,14 +295,14 @@ export default function FindLoads() {
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="w-4 h-4 text-purple-400" />
             <span className={cn("text-xs font-bold uppercase tracking-wider", L ? "text-purple-600" : "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent")}>ESANG AI Demand Intelligence</span>
-            {mlStatus.data && <span className="ml-auto text-[10px] text-slate-500">{mlStatus.data.totalLoadsAnalyzed} loads analyzed / {mlStatus.data.totalLanes} lanes</span>}
+            {mlStatus.data && <span className="ml-auto text-xs text-slate-500">{mlStatus.data.totalLoadsAnalyzed} loads analyzed / {mlStatus.data.totalLanes} lanes</span>}
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {mlDemand.data.topLanes.slice(0, 6).map((lane: any, i: number) => (
               <div key={i} className={cn("flex-shrink-0 px-3 py-2 rounded-lg border text-center min-w-[100px]", L ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
                 <p className={cn("text-xs font-bold", L ? "text-slate-700" : "text-white")}>{lane.lane}</p>
-                <p className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-400")}>{lane.volume} loads</p>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${lane.trend === "RISING" ? "bg-green-500/15 text-green-500" : lane.trend === "DECLINING" ? "bg-red-500/15 text-red-500" : "bg-slate-500/15 text-slate-400"}`}>
+                <p className={cn("text-xs", L ? "text-slate-500" : "text-slate-400")}>{lane.volume} loads</p>
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${lane.trend === "RISING" ? "bg-green-500/15 text-green-500" : lane.trend === "DECLINING" ? "bg-red-500/15 text-red-500" : "bg-slate-500/15 text-slate-400"}`}>
                   {lane.trend}
                 </span>
               </div>
@@ -347,11 +347,11 @@ export default function FindLoads() {
                     <span className={cn("text-sm font-bold truncate", L ? "text-slate-800" : "text-white")}>{dc}{ds ? `, ${ds}` : ""}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] text-slate-400 font-mono">#{load.loadNumber || load.id.slice(0, 6)}</span>
-                    {load.distance > 0 && <span className="text-[10px] text-slate-400">{load.distance} mi</span>}
-                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-bold", L ? "bg-slate-100 text-slate-500" : "bg-slate-700 text-slate-300")}>{getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass)}</span>
-                    {load.hazmatClass && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-red-500/15 text-red-500">HM {load.hazmatClass}</span>}
-                    {isPreferredLane(load) && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold bg-pink-500/15 text-pink-500 flex items-center gap-0.5"><Heart className="w-2.5 h-2.5" />My Lane</span>}
+                    <span className="text-xs text-slate-400 font-mono">#{load.loadNumber || load.id.slice(0, 6)}</span>
+                    {load.distance > 0 && <span className="text-xs text-slate-400">{load.distance} mi</span>}
+                    <span className={cn("text-xs px-1.5 py-0.5 rounded font-bold", L ? "bg-slate-100 text-slate-500" : "bg-slate-700 text-slate-300")}>{getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass)}</span>
+                    {load.hazmatClass && <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-red-500/15 text-red-500">HM {load.hazmatClass}</span>}
+                    {isPreferredLane(load) && <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-pink-500/15 text-pink-500 flex items-center gap-0.5"><Heart className="w-2.5 h-2.5" />My Lane</span>}
                   </div>
                 </div>
                 {/* Rate Column */}
@@ -361,8 +361,8 @@ export default function FindLoads() {
                     {t('findLoads.netAfterFee', 'Net after fee')}: ~{formatCurrency(Number(load.rate) * 0.92)}
                   </p>
                   <div className="flex items-center gap-2 justify-end">
-                    {rpm && <span className="text-[10px] font-semibold text-emerald-500">{formatCurrency(Number(rpm))}/{t('findLoads.mile', 'mi')}</span>}
-                    {est > 0 && <span className="text-[10px] text-slate-400">~{formatCurrency(est)} {t('findLoads.net', 'net')}</span>}
+                    {rpm && <span className="text-xs font-semibold text-emerald-500">{formatCurrency(Number(rpm))}/{t('findLoads.mile', 'mi')}</span>}
+                    {est > 0 && <span className="text-xs text-slate-400">~{formatCurrency(est)} {t('findLoads.net', 'net')}</span>}
                   </div>
                 </div>
                 {/* Actions */}
@@ -432,8 +432,8 @@ export default function FindLoads() {
                         {bm ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
                       </button>
                       <div className={cn("text-right px-3 py-1.5 rounded-xl", L ? "bg-slate-50" : "bg-slate-900/40")}>
-                        <p className={cn("text-[11px] font-mono font-bold tracking-tight", L ? "text-slate-500" : "text-slate-400")}>#{load.loadNumber || `LD-${String(load.id).slice(0, 8)}`}</p>
-                        <Badge className="bg-emerald-500/15 text-emerald-500 border-0 text-[9px] font-bold uppercase tracking-wider">Available</Badge>
+                        <p className={cn("text-xs font-mono font-bold tracking-tight", L ? "text-slate-500" : "text-slate-400")}>#{load.loadNumber || `LD-${String(load.id).slice(0, 8)}`}</p>
+                        <Badge className="bg-emerald-500/15 text-emerald-500 border-0 text-xs font-bold uppercase tracking-wider">Available</Badge>
                       </div>
                     </div>
                   </div>
@@ -448,7 +448,7 @@ export default function FindLoads() {
                         </div>
                         <div className="min-w-0">
                           <p className={cn("text-sm font-bold truncate", L ? "text-slate-800" : "text-white")}>{oc}</p>
-                          {os && <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{os}</p>}
+                          {os && <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{os}</p>}
                         </div>
                       </div>
 
@@ -459,7 +459,7 @@ export default function FindLoads() {
                           <div className={cn("px-2.5 py-1 rounded-lg", L ? "bg-white shadow-sm border border-slate-200" : "bg-slate-800 border border-slate-700/50")}>
                             <div className="flex items-center gap-1">
                               <Navigation className="w-3 h-3 text-[#8B5CF6]" />
-                              <span className={cn("text-[10px] font-bold", L ? "text-slate-600" : "text-slate-300")}>{load.distance > 0 ? `${load.distance.toLocaleString()} mi` : "--"}</span>
+                              <span className={cn("text-xs font-bold", L ? "text-slate-600" : "text-slate-300")}>{load.distance > 0 ? `${load.distance.toLocaleString()} mi` : "--"}</span>
                             </div>
                           </div>
                           <div className="w-10 h-[2px] rounded-full" style={{ background: 'linear-gradient(to right, #8B5CF6, #BE01FF)' }} />
@@ -470,7 +470,7 @@ export default function FindLoads() {
                       <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end">
                         <div className="min-w-0 text-right">
                           <p className={cn("text-sm font-bold truncate", L ? "text-slate-800" : "text-white")}>{dc}</p>
-                          {ds && <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{ds}</p>}
+                          {ds && <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{ds}</p>}
                         </div>
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#8B5CF6] to-[#BE01FF] flex items-center justify-center shadow-md shadow-purple-500/20 flex-shrink-0">
                           <Building2 className="w-4 h-4 text-white" />
@@ -482,21 +482,21 @@ export default function FindLoads() {
                   {/* ── Tags / Badges ── */}
                   <div className="px-5 mb-3 flex items-center gap-1.5 flex-wrap">
                     {(load.commodity || load.commodityName) && (
-                      <span className={cn("text-[11px] px-2.5 py-1 rounded-lg font-bold border", L ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-blue-500/15 border-blue-500/30 text-blue-400")}>{load.commodity || load.commodityName}</span>
+                      <span className={cn("text-xs px-2.5 py-1 rounded-lg font-bold border", L ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-blue-500/15 border-blue-500/30 text-blue-400")}>{load.commodity || load.commodityName}</span>
                     )}
                     {load.cargoType && load.cargoType !== 'general' && (
-                      <span className={cn("text-[11px] px-2.5 py-1 rounded-lg font-medium border", L ? "bg-purple-50 border-purple-200 text-purple-600" : "bg-purple-500/15 border-purple-500/30 text-purple-400")}>{load.cargoType.charAt(0).toUpperCase() + load.cargoType.slice(1)}</span>
+                      <span className={cn("text-xs px-2.5 py-1 rounded-lg font-medium border", L ? "bg-purple-50 border-purple-200 text-purple-600" : "bg-purple-500/15 border-purple-500/30 text-purple-400")}>{load.cargoType.charAt(0).toUpperCase() + load.cargoType.slice(1)}</span>
                     )}
                     {load.hazmatClass && (
-                      <span className="text-[11px] px-2.5 py-1 rounded-lg font-bold bg-red-500/15 text-red-500 border border-red-500/30 animate-pulse">
+                      <span className="text-xs px-2.5 py-1 rounded-lg font-bold bg-red-500/15 text-red-500 border border-red-500/30 animate-pulse">
                         <Flame className="w-3 h-3 inline mr-0.5 -mt-[1px]" />Hazmat Class {load.hazmatClass}
                       </span>
                     )}
                     {load.weight > 0 && (
-                      <span className={cn("text-[11px] px-2.5 py-1 rounded-lg font-medium border", L ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>{Number(load.weight).toLocaleString()} {load.weightUnit || "lbs"}</span>
+                      <span className={cn("text-xs px-2.5 py-1 rounded-lg font-medium border", L ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>{Number(load.weight).toLocaleString()} {load.weightUnit || "lbs"}</span>
                     )}
                     {isPreferredLane(load) && (
-                      <span className="text-[11px] px-2.5 py-1 rounded-lg font-bold bg-pink-500/15 text-pink-500 border border-pink-500/30 flex items-center gap-1">
+                      <span className="text-xs px-2.5 py-1 rounded-lg font-bold bg-pink-500/15 text-pink-500 border border-pink-500/30 flex items-center gap-1">
                         <Heart className="w-3 h-3" />Preferred Lane
                       </span>
                     )}
@@ -515,15 +515,15 @@ export default function FindLoads() {
                         <p className="text-xs text-slate-400 mt-0.5">
                           {t('findLoads.netAfterFee', 'Net after fee')}: ~{formatCurrency(Number(load.rate) * 0.92)}
                         </p>
-                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{t('findLoads.totalRate', 'Total Rate')}</p>
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-0.5">{t('findLoads.totalRate', 'Total Rate')}</p>
                       </div>
                       <div className={cn("text-center border-x", L ? "border-slate-200/60" : "border-slate-700/40")}>
                         <p className={cn("text-2xl font-extrabold", rpm ? "text-emerald-500" : "text-slate-400")}>{rpm ? formatCurrency(Number(rpm)) : "--"}</p>
-                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{t('findLoads.perMile', 'Per Mile')}</p>
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-0.5">{t('findLoads.perMile', 'Per Mile')}</p>
                       </div>
                       <div className="text-center">
                         <p className={cn("text-2xl font-extrabold", estNet > 0 ? (L ? "text-slate-800" : "text-white") : "text-slate-400")}>{estNet > 0 ? formatCurrency(estNet) : "--"}</p>
-                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{t('findLoads.estNet', 'Est. Net')} <span className="normal-case">({Math.round(PLATFORM_FEE_PCT * 100)}% {t('findLoads.fee', 'fee')})</span></p>
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-0.5">{t('findLoads.estNet', 'Est. Net')} <span className="normal-case">({Math.round(PLATFORM_FEE_PCT * 100)}% {t('findLoads.fee', 'fee')})</span></p>
                       </div>
                     </div>
                   </div>

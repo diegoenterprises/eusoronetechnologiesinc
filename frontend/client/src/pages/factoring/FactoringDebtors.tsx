@@ -160,7 +160,7 @@ export default function FactoringDebtors() {
                       <div className="min-w-0">
                         <p className={cn("font-semibold truncate", isLight ? "text-slate-800" : "text-white")}>{d.name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <Badge className={cn("rounded-full px-2 py-0 text-[10px] border", d.type === "shipper" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : "bg-purple-500/10 text-purple-500 border-purple-500/20")}>
+                          <Badge className={cn("rounded-full px-2 py-0 text-xs border", d.type === "shipper" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : "bg-purple-500/10 text-purple-500 border-purple-500/20")}>
                             {d.type}
                           </Badge>
                           <span className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
@@ -176,7 +176,7 @@ export default function FactoringDebtors() {
                         </p>
                         <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>outstanding</p>
                       </div>
-                      <Badge className={cn("rounded-full px-2 py-0.5 text-[10px] border", getRiskBadge(d.riskLevel))}>
+                      <Badge className={cn("rounded-full px-2 py-0.5 text-xs border", getRiskBadge(d.riskLevel))}>
                         {d.riskLevel}
                       </Badge>
                       <ChevronRight className={cn("w-4 h-4", isLight ? "text-slate-300" : "text-slate-600")} />

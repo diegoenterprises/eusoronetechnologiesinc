@@ -8,7 +8,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { loads, users } from "../../drizzle/schema";
+import { loads, users, companies, vehicles } from "../../drizzle/schema";
 import { eq, sql, desc, and, gte, lte, count, sum, avg, or, isNotNull } from "drizzle-orm";
 import { unsafeCast } from "../_core/types/unsafe";
 
@@ -19,12 +19,6 @@ const VERTICALS = ["General Freight", "Hazmat", "Refrigerated", "Tanker", "Flatb
 
 function pct(num: number, den: number): number {
   return den === 0 ? 0 : Math.round((num / den) * 10000) / 100;
-}
-
-function randInRange(min: number, max: number, seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  const r = x - Math.floor(x);
-  return Math.round((min + r * (max - min)) * 100) / 100;
 }
 
 async function resolveNumericUserId(ctxUser: any): Promise<number> {
@@ -103,27 +97,38 @@ export const competitiveIntelRouter = router({
           totalRevenue = Number(stats?.rev) || 0;
           avgRate = Number(stats?.avgR) || 0;
         }
-        const seed = region.length + 42;
+        // Get carrier and shipper counts from real data
+        let totalCarriers = 0;
+        let totalShippers = 0;
+        if (db) {
+          const [carrierCount] = await db.select({ cnt: count() }).from(companies).where(eq(companies.companyCategory, "motor_carrier"));
+          totalCarriers = Number(carrierCount?.cnt) || 0;
+          const [shipperCount] = await db.select({ cnt: count() }).from(users).where(eq(users.role, "SHIPPER"));
+          totalShippers = Number(shipperCount?.cnt) || 0;
+        }
+
+        // Calculate growth rate from real data: compare last 30d vs previous 30d
+        let growthRate = 0;
+        if (db) {
+          const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000).toISOString();
+          const [prev] = await db.select({ rev: sum(loads.rate) }).from(loads)
+            .where(and(gte(loads.createdAt, new Date(sixtyDaysAgo)), lte(loads.createdAt, new Date(thirtyDaysAgo))));
+          const prevRevenue = Number(prev?.rev) || 0;
+          if (prevRevenue > 0) {
+            growthRate = Math.round(pct(totalRevenue - prevRevenue, prevRevenue) * 100) / 100;
+          }
+        }
+
         return {
           region,
-          marketSize: totalRevenue > 0 ? totalRevenue * 12 : randInRange(50000000, 200000000, seed),
-          growthRate: randInRange(2.1, 8.5, seed + 1),
-          totalCarriers: Math.max(totalLoads * 3, Math.round(randInRange(1200, 4500, seed + 2))),
-          totalShippers: Math.max(totalLoads, Math.round(randInRange(400, 1800, seed + 3))),
-          avgRatePerMile: avgRate > 0 ? Math.round(avgRate * 100) / 100 : randInRange(2.15, 3.85, seed + 4),
+          marketSize: totalRevenue > 0 ? totalRevenue * 12 : 0,
+          growthRate,
+          totalCarriers,
+          totalShippers,
+          avgRatePerMile: avgRate > 0 ? Math.round(avgRate * 100) / 100 : 0,
           activeLoadsLast30d: totalLoads,
-          trends: [
-            { label: "Spot rates", direction: "up" as const, delta: randInRange(1.2, 6.8, seed + 5) },
-            { label: "Capacity", direction: "down" as const, delta: randInRange(-4.2, -0.5, seed + 6) },
-            { label: "Fuel costs", direction: "up" as const, delta: randInRange(2.0, 8.0, seed + 7) },
-            { label: "Driver availability", direction: "down" as const, delta: randInRange(-5.0, -1.0, seed + 8) },
-            { label: "E-commerce freight", direction: "up" as const, delta: randInRange(8.0, 15.0, seed + 9) },
-          ],
-          topGrowthVerticals: [
-            { vertical: "Refrigerated", growth: randInRange(6, 12, seed + 10) },
-            { vertical: "Hazmat", growth: randInRange(4, 9, seed + 11) },
-            { vertical: "Last Mile", growth: randInRange(10, 18, seed + 12) },
-          ],
+          trends: [] as Array<{ label: string; direction: "up" | "down"; delta: number }>,
+          topGrowthVerticals: [] as Array<{ vertical: string; growth: number }>,
         };
       } catch (e) {
         logger.error("[competitiveIntel] getMarketOverview error:", e);
@@ -134,25 +139,83 @@ export const competitiveIntelRouter = router({
   // ── 2. Competitor Analysis ─────────────────────────────────────────────────
   getCompetitorAnalysis: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(50).optional() }).optional())
-    .query(async ({ input }) => {
-      const limit = input?.limit || 10;
-      const competitors = [
-        { name: "National Freight Co", dotNumber: "1234567", mcNumber: "MC-987654", fleetSize: 2400, safetyRating: "Satisfactory", insuranceOnFile: true, strengths: ["Nationwide coverage", "Advanced TMS", "High capacity"], weaknesses: ["Higher rates", "Slow claims processing"], estimatedRevenue: 180000000, operatingRatio: 92.4, serviceArea: "48 states" },
-        { name: "Regional Express LLC", dotNumber: "2345678", mcNumber: "MC-876543", fleetSize: 850, safetyRating: "Satisfactory", insuranceOnFile: true, strengths: ["Regional expertise", "Fast transit", "Competitive rates"], weaknesses: ["Limited coverage", "Smaller fleet"], estimatedRevenue: 65000000, operatingRatio: 88.7, serviceArea: "Southeast, Midwest" },
-        { name: "Hazmat Specialists Inc", dotNumber: "3456789", mcNumber: "MC-765432", fleetSize: 320, safetyRating: "Satisfactory", insuranceOnFile: true, strengths: ["Hazmat expertise", "Safety record", "Specialized equipment"], weaknesses: ["Niche market", "Premium pricing"], estimatedRevenue: 42000000, operatingRatio: 90.1, serviceArea: "Southwest, West" },
-        { name: "Cold Chain Logistics", dotNumber: "4567890", mcNumber: "MC-654321", fleetSize: 600, safetyRating: "Satisfactory", insuranceOnFile: true, strengths: ["Reefer fleet", "Temperature monitoring", "FDA compliance"], weaknesses: ["Seasonal demand variance", "High maintenance costs"], estimatedRevenue: 55000000, operatingRatio: 91.3, serviceArea: "Nationwide" },
-        { name: "Flatbed Haulers Group", dotNumber: "5678901", mcNumber: "MC-543210", fleetSize: 450, safetyRating: "Conditional", insuranceOnFile: true, strengths: ["Oversized expertise", "Pilot car network", "Permit services"], weaknesses: ["Conditional safety rating", "Limited reefer capacity"], estimatedRevenue: 38000000, operatingRatio: 93.5, serviceArea: "West, Northwest" },
-        { name: "Metro Express Transport", dotNumber: "6789012", mcNumber: "MC-432109", fleetSize: 1100, safetyRating: "Satisfactory", insuranceOnFile: true, strengths: ["Urban delivery", "Same-day service", "Technology integration"], weaknesses: ["No long-haul", "Urban congestion delays"], estimatedRevenue: 78000000, operatingRatio: 89.2, serviceArea: "Northeast, Midwest" },
-        { name: "Tanker Transport Corp", dotNumber: "7890123", mcNumber: "MC-321098", fleetSize: 280, safetyRating: "Satisfactory", insuranceOnFile: true, strengths: ["Liquid bulk", "Chemical handling", "Tank wash network"], weaknesses: ["Specialized only", "Capital intensive"], estimatedRevenue: 35000000, operatingRatio: 87.8, serviceArea: "Southwest, Southeast" },
-        { name: "Alliance Freight Systems", dotNumber: "8901234", mcNumber: "MC-210987", fleetSize: 1800, safetyRating: "Satisfactory", insuranceOnFile: true, strengths: ["Intermodal capability", "Warehouse network", "EDI integration"], weaknesses: ["Complex pricing", "Slower onboarding"], estimatedRevenue: 145000000, operatingRatio: 91.0, serviceArea: "48 states" },
-        { name: "Quick Haul Partners", dotNumber: "9012345", mcNumber: "MC-109876", fleetSize: 550, safetyRating: "Satisfactory", insuranceOnFile: true, strengths: ["Fast lanes", "Driver retention", "Fuel efficiency"], weaknesses: ["Limited hazmat", "Fewer terminals"], estimatedRevenue: 48000000, operatingRatio: 90.5, serviceArea: "Midwest, Southeast" },
-        { name: "Pacific Coast Carriers", dotNumber: "0123456", mcNumber: "MC-098765", fleetSize: 720, safetyRating: "Satisfactory", insuranceOnFile: true, strengths: ["Port access", "Import/export", "Chassis pool"], weaknesses: ["West Coast only", "Port congestion exposure"], estimatedRevenue: 62000000, operatingRatio: 89.9, serviceArea: "West, Northwest" },
-      ];
-      return competitors.slice(0, limit).map((c, i) => ({
-        ...c,
-        rank: i + 1,
-        threatLevel: c.estimatedRevenue > 100000000 ? "high" : c.estimatedRevenue > 50000000 ? "medium" : "low",
-      }));
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const lim = input?.limit || 10;
+      const results: Array<{
+        name: string; dotNumber: string | null; mcNumber: string | null; fleetSize: number;
+        safetyRating: string; insuranceOnFile: boolean; strengths: string[]; weaknesses: string[];
+        estimatedRevenue: number; operatingRatio: number; serviceArea: string;
+        rank: number; threatLevel: string;
+      }> = [];
+      try {
+        if (db) {
+          const userCompanyId = await getUserCompanyId(ctx.user);
+          // Get motor carriers from companies table, excluding the user's own company
+          const carriers = await db.select({
+            id: companies.id,
+            name: companies.name,
+            dotNumber: companies.dotNumber,
+            mcNumber: companies.mcNumber,
+            state: companies.state,
+            complianceStatus: companies.complianceStatus,
+            insuranceExpiry: companies.insuranceExpiry,
+          }).from(companies)
+            .where(eq(companies.companyCategory, "motor_carrier"))
+            .limit(lim + 5); // fetch extra to exclude own company
+
+          for (const carrier of carriers) {
+            if (carrier.id === userCompanyId) continue;
+            if (results.length >= lim) break;
+
+            // Get fleet size from vehicles table
+            const [fleetCount] = await db.select({ cnt: count() }).from(vehicles)
+              .where(eq(vehicles.companyId, carrier.id));
+            const fleetSize = Number(fleetCount?.cnt) || 0;
+
+            // Get revenue from loads where this company's drivers handled loads
+            // Find users belonging to this company, then sum their load revenue
+            const companyUsers = await db.select({ id: users.id }).from(users)
+              .where(eq(users.companyId, carrier.id)).limit(200);
+            const companyUserIds = companyUsers.map(u => u.id);
+
+            let estimatedRevenue = 0;
+            if (companyUserIds.length > 0) {
+              const loadRows = await db.select({ rev: sum(loads.rate) }).from(loads)
+                .where(or(...companyUserIds.map(uid => or(eq(loads.catalystId, uid), eq(loads.shipperId, uid)))));
+              estimatedRevenue = Number(loadRows[0]?.rev) || 0;
+            }
+
+            const hasInsurance = carrier.insuranceExpiry ? new Date(carrier.insuranceExpiry).getTime() > Date.now() : false;
+
+            results.push({
+              name: carrier.name,
+              dotNumber: carrier.dotNumber,
+              mcNumber: carrier.mcNumber,
+              fleetSize,
+              safetyRating: carrier.complianceStatus === "compliant" ? "Satisfactory" : carrier.complianceStatus === "pending" ? "Not Rated" : "Conditional",
+              insuranceOnFile: hasInsurance,
+              strengths: [],
+              weaknesses: [],
+              estimatedRevenue,
+              operatingRatio: 0,
+              serviceArea: carrier.state || "Unknown",
+              rank: 0,
+              threatLevel: "low",
+            });
+          }
+
+          // Sort by estimated revenue descending and assign ranks
+          results.sort((a, b) => b.estimatedRevenue - a.estimatedRevenue);
+          results.forEach((c, i) => {
+            c.rank = i + 1;
+            c.threatLevel = c.estimatedRevenue > 100000000 ? "high" : c.estimatedRevenue > 50000000 ? "medium" : "low";
+          });
+        }
+      } catch (e) {
+        logger.error("[competitiveIntel] getCompetitorAnalysis error:", e);
+      }
+      return results;
     }),
 
   // ── 3. Market Share Estimate ───────────────────────────────────────────────
@@ -427,10 +490,18 @@ export const competitiveIntelRouter = router({
             if (risk === "critical") intervention = "Offer rate discount + dedicated account manager";
             else if (risk === "high") intervention = "Send satisfaction survey + offer lane commitment pricing";
 
+            // Get actual last load date for this shipper
+            const [lastLoad] = await db.select({ createdAt: loads.createdAt })
+              .from(loads).where(eq(loads.shipperId, shipper.id))
+              .orderBy(desc(loads.createdAt)).limit(1);
+            const lastDate = lastLoad?.createdAt
+              ? (lastLoad.createdAt instanceof Date ? lastLoad.createdAt : new Date(unsafeCast(lastLoad.createdAt))).toISOString().split("T")[0]
+              : "N/A";
+
             atRisk.push({
               customerId: shipper.id,
               name: shipper.name || shipper.email || `Shipper #${shipper.id}`,
-              lastLoadDate: new Date(Date.now() - Math.round(randInRange(5, 45, shipper.id)) * 86400000).toISOString().split("T")[0],
+              lastLoadDate: lastDate,
               loadFrequencyDrop: drop,
               churnProbability: prob,
               riskLevel: risk,
@@ -499,10 +570,11 @@ export const competitiveIntelRouter = router({
       logger.error("[competitiveIntel] getCustomerLifetimeValue error:", e);
     }
     if (segments.length === 0) {
+      // Return empty tier structure when no data is available
       segments.push(
-        { segment: "Enterprise", avgCLV: 450000, avgTenureMonths: 36, avgMonthlyRevenue: 12500, customerCount: 15, retentionRate: 92 },
-        { segment: "Mid-Market", avgCLV: 120000, avgTenureMonths: 24, avgMonthlyRevenue: 5000, customerCount: 45, retentionRate: 78 },
-        { segment: "SMB", avgCLV: 35000, avgTenureMonths: 14, avgMonthlyRevenue: 2500, customerCount: 120, retentionRate: 65 },
+        { segment: "Enterprise", avgCLV: 0, avgTenureMonths: 0, avgMonthlyRevenue: 0, customerCount: 0, retentionRate: 0 },
+        { segment: "Mid-Market", avgCLV: 0, avgTenureMonths: 0, avgMonthlyRevenue: 0, customerCount: 0, retentionRate: 0 },
+        { segment: "SMB", avgCLV: 0, avgTenureMonths: 0, avgMonthlyRevenue: 0, customerCount: 0, retentionRate: 0 },
       );
     }
     return segments;
@@ -622,16 +694,16 @@ export const competitiveIntelRouter = router({
       logger.error("[competitiveIntel] getTerritoryAnalysis error:", e);
     }
     if (territories.length === 0) {
+      // Return empty structure per region when no load data is available
       for (const r of REGIONS) {
-        const seed = r.length * 7;
         territories.push({
           region: r,
-          loadCount: Math.round(randInRange(200, 1500, seed)),
-          revenue: Math.round(randInRange(500000, 5000000, seed + 1)),
-          penetration: randInRange(2, 25, seed + 2),
-          topLanes: [`${r.slice(0, 2).toUpperCase()}-TX`, `${r.slice(0, 2).toUpperCase()}-CA`],
-          growthPotential: "medium",
-          recommendedAction: "Assess market conditions",
+          loadCount: 0,
+          revenue: 0,
+          penetration: 0,
+          topLanes: [],
+          growthPotential: "high",
+          recommendedAction: "No data — expand into this region",
         });
       }
     }
@@ -957,31 +1029,82 @@ export const competitiveIntelRouter = router({
       vertical: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
+      const db = await getDb();
       const market = input?.targetMarket || "Southeast";
       const vertical = input?.vertical || "General Freight";
-      const seed = (market + vertical).length;
+
+      // Resolve which states belong to the target region
+      const statesInRegion: string[] = [];
+      const stateRegionMap: Record<string, string> = {
+        ME: "Northeast", NH: "Northeast", VT: "Northeast", MA: "Northeast", RI: "Northeast",
+        CT: "Northeast", NY: "Northeast", NJ: "Northeast", PA: "Northeast", DE: "Northeast", MD: "Northeast",
+        VA: "Southeast", WV: "Southeast", NC: "Southeast", SC: "Southeast", GA: "Southeast",
+        FL: "Southeast", AL: "Southeast", MS: "Southeast", TN: "Southeast", KY: "Southeast", LA: "Southeast", AR: "Southeast",
+        OH: "Midwest", MI: "Midwest", IN: "Midwest", IL: "Midwest", WI: "Midwest",
+        MN: "Midwest", IA: "Midwest", MO: "Midwest", ND: "Midwest", SD: "Midwest", NE: "Midwest", KS: "Midwest",
+        TX: "Southwest", OK: "Southwest", NM: "Southwest", AZ: "Southwest",
+        CA: "West", NV: "West", UT: "West", CO: "West", HI: "West",
+        WA: "Northwest", OR: "Northwest", ID: "Northwest", MT: "Northwest", WY: "Northwest",
+      };
+      for (const [st, reg] of Object.entries(stateRegionMap)) {
+        if (reg === market) statesInRegion.push(st);
+      }
+
+      let marketRevenue = 0;
+      let competitorCount = 0;
+      try {
+        if (db) {
+          // Count carriers operating in the target region (by company state)
+          if (statesInRegion.length > 0) {
+            const [cc] = await db.select({ cnt: count() }).from(companies)
+              .where(and(
+                eq(companies.companyCategory, "motor_carrier"),
+                or(...statesInRegion.map(st => eq(companies.state, st)))
+              ));
+            competitorCount = Number(cc?.cnt) || 0;
+          }
+
+          // Estimate market size from loads originating in the region (last 12 months)
+          const oneYearAgo = new Date(Date.now() - 365 * 86400000).toISOString();
+          const regionLoads = await db.select({
+            rate: loads.rate,
+            pickupLocation: loads.pickupLocation,
+          }).from(loads).where(gte(loads.createdAt, new Date(oneYearAgo))).limit(10000);
+
+          for (const ld of regionLoads) {
+            const state = extractState(ld.pickupLocation);
+            if (statesInRegion.includes(state)) {
+              marketRevenue += Number(ld.rate) || 0;
+            }
+          }
+        }
+      } catch (e) {
+        logger.error("[competitiveIntel] getMarketEntryAnalysis error:", e);
+      }
 
       return {
         targetMarket: market,
         vertical,
-        marketSize: Math.round(randInRange(80000000, 500000000, seed)),
-        competitors: Math.round(randInRange(45, 200, seed + 1)),
+        marketSize: marketRevenue > 0 ? marketRevenue : null,
+        competitors: competitorCount,
         entryBarriers: [
           { barrier: "Existing carrier relationships", severity: "high", mitigation: "Competitive pricing on initial contracts" },
           { barrier: "Terminal/facility requirements", severity: "medium", mitigation: "Partner with local 3PL for facilities" },
           { barrier: "State-specific permits and regulations", severity: "medium", mitigation: "Engage compliance consultant" },
           { barrier: "Driver recruitment in new region", severity: "high", mitigation: "Sign-on bonuses and referral programs" },
         ],
-        estimatedInvestment: Math.round(randInRange(500000, 2000000, seed + 2)),
-        timeToBreakEven: `${Math.round(randInRange(12, 24, seed + 3))} months`,
+        estimatedInvestment: null,
+        timeToBreakEven: null,
         revenueProjection: {
-          year1: Math.round(randInRange(2000000, 8000000, seed + 4)),
-          year2: Math.round(randInRange(5000000, 15000000, seed + 5)),
-          year3: Math.round(randInRange(10000000, 25000000, seed + 6)),
+          year1: null,
+          year2: null,
+          year3: null,
         },
-        recommendation: `The ${market} ${vertical} market shows strong growth potential. Recommend phased entry starting with 2-3 high-volume lanes, expanding to full coverage over 18 months.`,
-        goNoGo: "go",
-        confidence: Math.round(randInRange(65, 88, seed + 7)),
+        recommendation: marketRevenue > 0
+          ? `The ${market} ${vertical} market has $${Math.round(marketRevenue).toLocaleString()} in observed load revenue with ${competitorCount} carriers. Further analysis needed for entry projections.`
+          : `No load data available for the ${market} ${vertical} market. Gather market intelligence before proceeding.`,
+        goNoGo: null,
+        confidence: null,
       };
     }),
 

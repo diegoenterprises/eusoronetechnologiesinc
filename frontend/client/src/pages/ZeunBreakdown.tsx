@@ -303,7 +303,7 @@ export default function ZeunBreakdown() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">ZEUN Mechanics</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
               <Zap className="w-3 h-3 text-purple-500" />
-              <span className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">AI Powered</span>
+              <span className="text-xs font-bold text-purple-500 uppercase tracking-wider">AI Powered</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>Vehicle diagnostics, equipment intelligence & load-ready matching</p>
@@ -386,7 +386,7 @@ export default function ZeunBreakdown() {
                   <ol className="space-y-2">
                     {(emergencyProcQuery.data.steps || emergencyProcQuery.data.instructions || []).map((s: string, i: number) => (
                       <li key={i} className={cn("flex gap-2 text-sm", L ? "text-yellow-900" : "text-yellow-200")}>
-                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-yellow-500/20 flex items-center justify-center text-[10px] font-bold text-yellow-600">{i + 1}</span>
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-yellow-500/20 flex items-center justify-center text-xs font-bold text-yellow-600">{i + 1}</span>
                         {s}
                       </li>
                     ))}
@@ -455,7 +455,7 @@ export default function ZeunBreakdown() {
             {dtcQuery.data && (
               <div className={cn("p-4 rounded-xl border space-y-3", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                 <div className="flex items-center gap-2">
-                  <Badge className="border-0 bg-purple-500/15 text-purple-500 text-[10px] font-bold font-mono">{dtcQuery.data.code}</Badge>
+                  <Badge className="border-0 bg-purple-500/15 text-purple-500 text-xs font-bold font-mono">{dtcQuery.data.code}</Badge>
                   <span className={cn("font-bold text-sm", L ? "text-slate-800" : "text-white")}>{dtcQuery.data.description || dtcQuery.data.title}</span>
                 </div>
                 {dtcQuery.data.system && <p className="text-xs text-slate-400">System: {dtcQuery.data.system}</p>}
@@ -472,7 +472,7 @@ export default function ZeunBreakdown() {
                   </div>
                 )}
                 {dtcQuery.data.severity && (
-                  <Badge className={cn("border-0 text-[10px] font-bold",
+                  <Badge className={cn("border-0 text-xs font-bold",
                     dtcQuery.data.severity === "CRITICAL" ? "bg-red-500/15 text-red-500" :
                     dtcQuery.data.severity === "HIGH" ? "bg-orange-500/15 text-orange-500" :
                     "bg-yellow-500/15 text-yellow-500"
@@ -506,8 +506,8 @@ export default function ZeunBreakdown() {
                       <p className="text-xs text-slate-400 mt-0.5">{b.symptoms?.slice(0, 2).join(", ")}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={cn("border-0 text-[10px] font-bold", b.status === "RESOLVED" ? "bg-green-500/15 text-green-500" : "bg-yellow-500/15 text-yellow-500")}>{b.status}</Badge>
-                      <Badge className={cn("border-0 text-[10px] font-bold", b.severity === "CRITICAL" ? "bg-red-500/15 text-red-500" : "bg-slate-500/15 text-slate-400")}>{b.severity}</Badge>
+                      <Badge className={cn("border-0 text-xs font-bold", b.status === "RESOLVED" ? "bg-green-500/15 text-green-500" : "bg-yellow-500/15 text-yellow-500")}>{b.status}</Badge>
+                      <Badge className={cn("border-0 text-xs font-bold", b.severity === "CRITICAL" ? "bg-red-500/15 text-red-500" : "bg-slate-500/15 text-slate-400")}>{b.severity}</Badge>
                     </div>
                   </div>
                 ))}
@@ -565,7 +565,7 @@ export default function ZeunBreakdown() {
                         <p className={cn("font-semibold text-sm", L ? "text-slate-800" : "text-white")}>{v.unitNumber}</p>
                         <p className="text-xs text-slate-400">{v.year} {v.make} {v.model} {v.type ? `- ${ESCORT_VEHICLE_LABELS[v.type] || v.type.replace(/_/g, " ")}` : ""}</p>
                       </div>
-                      <Badge className={cn("border-0 text-[10px] font-bold flex-shrink-0",
+                      <Badge className={cn("border-0 text-xs font-bold flex-shrink-0",
                         v.status === "active" ? "bg-green-500/15 text-green-500" :
                         v.status === "maintenance" ? "bg-yellow-500/15 text-yellow-500" :
                         "bg-slate-500/15 text-slate-400"
@@ -645,7 +645,7 @@ export default function ZeunBreakdown() {
                 </div>
                 <div>
                   <p className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>Zeun Visual Scan</p>
-                  <p className="text-[10px] text-slate-400">Take a photo of the issue — AI diagnoses from the image</p>
+                  <p className="text-xs text-slate-400">Take a photo of the issue — AI diagnoses from the image</p>
                 </div>
               </div>
 
@@ -658,7 +658,7 @@ export default function ZeunBreakdown() {
                   )}>
                   <ImageIcon className={cn("w-8 h-8", L ? "text-slate-400" : "text-slate-500")} />
                   <span className={cn("text-sm font-medium", L ? "text-slate-600" : "text-slate-300")}>Tap to photograph the issue</span>
-                  <span className="text-[10px] text-slate-400">Camera will open — point at the broken part</span>
+                  <span className="text-xs text-slate-400">Camera will open — point at the broken part</span>
                 </button>
               ) : (
                 <div className="space-y-3">
@@ -680,7 +680,7 @@ export default function ZeunBreakdown() {
                     <div className={cn("p-4 rounded-xl border text-center", L ? "bg-purple-50 border-purple-200" : "bg-purple-500/10 border-purple-500/20")}>
                       <RefreshCw className="h-5 w-5 mx-auto mb-2 text-purple-500 animate-spin" />
                       <p className={cn("text-sm font-medium", L ? "text-purple-700" : "text-purple-300")}>VIGA analyzing image...</p>
-                      <p className="text-[10px] text-slate-400 mt-1">Multi-pass visual reasoning in progress</p>
+                      <p className="text-xs text-slate-400 mt-1">Multi-pass visual reasoning in progress</p>
                     </div>
                   )}
 
@@ -689,14 +689,14 @@ export default function ZeunBreakdown() {
                       <div className="flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 text-emerald-500" />
                         <p className={cn("text-sm font-bold", L ? "text-emerald-700" : "text-emerald-400")}>Visual Diagnosis Complete</p>
-                        <Badge className="border-0 bg-emerald-500/15 text-emerald-500 text-[10px] font-bold ml-auto">
+                        <Badge className="border-0 bg-emerald-500/15 text-emerald-500 text-xs font-bold ml-auto">
                           {((vigaResult.data.confidence || 0) * 100).toFixed(0)}% confidence
                         </Badge>
                       </div>
 
                       <div className={cn("p-3 rounded-lg", L ? "bg-white/80" : "bg-slate-800/50")}>
                         <p className={cn("font-bold text-sm", L ? "text-slate-800" : "text-white")}>{vigaResult.data.component}</p>
-                        <Badge className={cn("border-0 text-[10px] font-bold mt-1",
+                        <Badge className={cn("border-0 text-xs font-bold mt-1",
                           vigaResult.data.condition === "FAILED" || vigaResult.data.condition === "CRITICAL" ? "bg-red-500/15 text-red-500" :
                           vigaResult.data.condition === "DAMAGED" ? "bg-orange-500/15 text-orange-500" :
                           vigaResult.data.condition === "WORN" ? "bg-yellow-500/15 text-yellow-500" :
@@ -706,17 +706,17 @@ export default function ZeunBreakdown() {
 
                       {vigaResult.data.defects?.length > 0 && (
                         <div>
-                          <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1.5">Defects Identified</p>
+                          <p className="text-xs text-slate-400 uppercase tracking-wider font-bold mb-1.5">Defects Identified</p>
                           {vigaResult.data.defects.map((d: any, i: number) => (
                             <div key={i} className={cn("flex items-start gap-2 text-sm p-2 rounded-lg mb-1", L ? "bg-white/60" : "bg-slate-800/30")}>
-                              <Badge className={cn("border-0 text-[9px] font-bold flex-shrink-0 mt-0.5",
+                              <Badge className={cn("border-0 text-xs font-bold flex-shrink-0 mt-0.5",
                                 d.severity === "CRITICAL" ? "bg-red-500/15 text-red-500" :
                                 d.severity === "HIGH" ? "bg-orange-500/15 text-orange-500" :
                                 "bg-yellow-500/15 text-yellow-500"
                               )}>{d.severity}</Badge>
                               <div>
                                 <p className={cn("font-medium text-xs", L ? "text-slate-700" : "text-slate-200")}>{d.description}</p>
-                                {d.location && <p className="text-[10px] text-slate-400">Location: {d.location}</p>}
+                                {d.location && <p className="text-xs text-slate-400">Location: {d.location}</p>}
                               </div>
                             </div>
                           ))}
@@ -725,18 +725,18 @@ export default function ZeunBreakdown() {
 
                       {vigaResult.data.repairRecommendation && (
                         <div className={cn("p-3 rounded-lg", L ? "bg-blue-50 border border-blue-200" : "bg-blue-500/10 border border-blue-500/20")}>
-                          <p className="text-[10px] text-blue-500 uppercase tracking-wider font-bold mb-1">Repair Recommendation</p>
+                          <p className="text-xs text-blue-500 uppercase tracking-wider font-bold mb-1">Repair Recommendation</p>
                           <p className={cn("text-sm", L ? "text-blue-800" : "text-blue-200")}>{vigaResult.data.repairRecommendation}</p>
                         </div>
                       )}
 
                       {vigaResult.data.repairSteps?.length > 0 && (
                         <div>
-                          <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1.5">Repair Steps</p>
+                          <p className="text-xs text-slate-400 uppercase tracking-wider font-bold mb-1.5">Repair Steps</p>
                           <ol className="space-y-1">
                             {vigaResult.data.repairSteps.map((s: string, i: number) => (
                               <li key={i} className={cn("flex gap-2 text-xs", L ? "text-slate-600" : "text-slate-300")}>
-                                <span className="flex-shrink-0 w-4 h-4 rounded-full bg-purple-500/20 flex items-center justify-center text-[9px] font-bold text-purple-500">{i + 1}</span>
+                                <span className="flex-shrink-0 w-4 h-4 rounded-full bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-500">{i + 1}</span>
                                 {s}
                               </li>
                             ))}
@@ -746,24 +746,24 @@ export default function ZeunBreakdown() {
 
                       {vigaResult.data.partsNeeded?.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
-                          <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold w-full mb-0.5">Parts Needed</span>
+                          <span className="text-xs text-slate-400 uppercase tracking-wider font-bold w-full mb-0.5">Parts Needed</span>
                           {vigaResult.data.partsNeeded.map((p: string, i: number) => (
-                            <Badge key={i} className={cn("border text-[10px]", L ? "bg-teal-50 border-teal-200 text-teal-700" : "bg-teal-500/10 border-teal-500/20 text-teal-400")}>{p}</Badge>
+                            <Badge key={i} className={cn("border text-xs", L ? "bg-teal-50 border-teal-200 text-teal-700" : "bg-teal-500/10 border-teal-500/20 text-teal-400")}>{p}</Badge>
                           ))}
                         </div>
                       )}
 
                       <div className={cn("flex items-center gap-2 pt-1 border-t", L ? "border-slate-200" : "border-slate-700/30")}>
-                        <Badge className={cn("border-0 text-[10px] font-bold",
+                        <Badge className={cn("border-0 text-xs font-bold",
                           vigaResult.data.safetyRisk === "IMMEDIATE_DANGER" || vigaResult.data.safetyRisk === "HIGH" ? "bg-red-500/15 text-red-500" :
                           vigaResult.data.safetyRisk === "MODERATE" ? "bg-orange-500/15 text-orange-500" :
                           "bg-green-500/15 text-green-500"
                         )}>Safety: {vigaResult.data.safetyRisk}</Badge>
-                        <Badge className={cn("border-0 text-[10px] font-bold",
+                        <Badge className={cn("border-0 text-xs font-bold",
                           vigaResult.data.canContinueDriving ? "bg-green-500/15 text-green-500" : "bg-red-500/15 text-red-500"
                         )}>{vigaResult.data.canContinueDriving ? "Can drive (limited)" : "Cannot drive"}</Badge>
                         {vigaResult.data.estimatedRepairTime && (
-                          <Badge className="border-0 bg-slate-500/15 text-slate-400 text-[10px] font-bold ml-auto">
+                          <Badge className="border-0 bg-slate-500/15 text-slate-400 text-xs font-bold ml-auto">
                             <Clock className="w-3 h-3 mr-1" />{vigaResult.data.estimatedRepairTime}
                           </Badge>
                         )}
@@ -819,7 +819,7 @@ export default function ZeunBreakdown() {
                 return (
                   <button key={option.value} onClick={() => setSeverity(option.value)}
                     className={cn("w-full p-3.5 rounded-xl border-2 text-left transition-all", sel ? colors[option.value] || "border-blue-500" : L ? "border-slate-200 hover:border-slate-300" : "border-slate-700/50 hover:border-slate-600")}>
-                    <Badge className={cn("border-0 text-[10px] font-bold", option.color)}>{option.label}</Badge>
+                    <Badge className={cn("border-0 text-xs font-bold", option.color)}>{option.label}</Badge>
                   </button>
                 );
               })}
@@ -901,18 +901,18 @@ export default function ZeunBreakdown() {
                 <h3 className={cn("font-bold text-lg", L ? "text-slate-800" : "text-white")}>{reportResult.diagnosis.issue}</h3>
                 <p className="text-sm text-slate-400 mt-1">{reportResult.diagnosis.description}</p>
                 <div className="mt-3 flex items-center gap-3">
-                  <Badge className={cn("border-0 text-[10px] font-bold", reportResult.diagnosis.severity === "CRITICAL" ? "bg-red-500/15 text-red-500" : "bg-yellow-500/15 text-yellow-500")}>{reportResult.diagnosis.severity}</Badge>
+                  <Badge className={cn("border-0 text-xs font-bold", reportResult.diagnosis.severity === "CRITICAL" ? "bg-red-500/15 text-red-500" : "bg-yellow-500/15 text-yellow-500")}>{reportResult.diagnosis.severity}</Badge>
                   <span className="text-xs text-slate-400">Confidence: <strong className="text-blue-500">{(reportResult.diagnosis.probability * 100).toFixed(0)}%</strong></span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className={cn("p-4 rounded-xl border text-center", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider">Estimated Cost</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Estimated Cost</p>
                   <p className={cn("text-xl font-bold mt-1", L ? "text-slate-800" : "text-white")}>${reportResult.estimatedCost.min} - ${reportResult.estimatedCost.max}</p>
                 </div>
                 <div className={cn("p-4 rounded-xl border text-center", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider">Can Drive</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Can Drive</p>
                   <p className={cn("text-lg font-bold mt-1 flex items-center justify-center gap-1.5", reportResult.canDrive ? "text-green-500" : "text-red-500")}>
                     {reportResult.canDrive ? <><CheckCircle className="h-4 w-4" /> Limited</> : <><XCircle className="h-4 w-4" /> Need Tow</>}
                   </p>
@@ -934,7 +934,7 @@ export default function ZeunBreakdown() {
                     <div key={provider.id} className={cn("p-4 rounded-xl border transition-all",
                       index === 0 ? (L ? "border-blue-300 bg-blue-50/50" : "border-blue-500/30 bg-blue-500/5") : (L ? "border-slate-200" : "border-slate-700/30")
                     )}>
-                      {index === 0 && <Badge className="border-0 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[10px] font-bold mb-2">Recommended</Badge>}
+                      {index === 0 && <Badge className="border-0 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs font-bold mb-2">Recommended</Badge>}
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className={cn("font-bold text-sm", L ? "text-slate-800" : "text-white")}>{provider.name}</h4>
@@ -970,19 +970,19 @@ export default function ZeunBreakdown() {
               <CardContent className="p-4 space-y-3">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">Make / Model</p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider">Make / Model</p>
                     <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.make} {selectedVehicle.model}</p>
                   </div>
                   <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">Year</p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider">Year</p>
                     <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.year}</p>
                   </div>
                   <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">Unit #</p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider">Unit #</p>
                     <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.unitNumber}</p>
                   </div>
                   <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">Type</p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider">Type</p>
                     <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.type || "N/A"}</p>
                   </div>
                 </div>
@@ -1032,7 +1032,7 @@ export default function ZeunBreakdown() {
                     <div key={i} className={cn("flex items-center justify-between p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                       <div>
                         <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{d.issue}</p>
-                        <Badge className={cn("border-0 text-[10px] font-bold mt-1",
+                        <Badge className={cn("border-0 text-xs font-bold mt-1",
                           d.severity === "CRITICAL" ? "bg-red-500/15 text-red-500" :
                           d.severity === "HIGH" ? "bg-orange-500/15 text-orange-500" :
                           "bg-yellow-500/15 text-yellow-500"
@@ -1071,7 +1071,7 @@ export default function ZeunBreakdown() {
                 <BookOpen className="w-4 h-4 text-emerald-500" />
                 <span className={cn("text-sm font-semibold", L ? "text-emerald-700" : "text-emerald-400")}>Self-Repair Guide</span>
                 {selfRepairQuery.data?.difficulty && (
-                  <Badge className={cn("border-0 text-[10px] font-bold",
+                  <Badge className={cn("border-0 text-xs font-bold",
                     selfRepairQuery.data.difficulty === "EASY" ? "bg-green-500/15 text-green-500" :
                     selfRepairQuery.data.difficulty === "MODERATE" ? "bg-yellow-500/15 text-yellow-500" :
                     "bg-red-500/15 text-red-500"
@@ -1127,7 +1127,7 @@ export default function ZeunBreakdown() {
                           {selfRepairQuery.data.steps.map((s: any, i: number) => (
                             <li key={i} className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                               <div className="flex items-start gap-2">
-                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-[10px] font-bold text-white">{i + 1}</span>
+                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-xs font-bold text-white">{i + 1}</span>
                                 <div>
                                   <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{typeof s === "string" ? s : s.title || s.instruction}</p>
                                   {typeof s !== "string" && s.detail && <p className="text-xs text-slate-400 mt-0.5">{s.detail}</p>}

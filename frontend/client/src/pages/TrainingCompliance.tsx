@@ -178,7 +178,7 @@ function StatCard({ label, value, icon: Icon, trend, color, L }: { label: string
       <div className="flex items-center justify-between mb-2">
         <div className={cn("p-2 rounded-lg", c)}><Icon className="w-4 h-4" /></div>
         {trend !== undefined && (
-          <span className={cn("flex items-center gap-0.5 text-[10px] font-bold", trend >= 0 ? "text-green-500" : "text-red-500")}>
+          <span className={cn("flex items-center gap-0.5 text-xs font-bold", trend >= 0 ? "text-green-500" : "text-red-500")}>
             {trend >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
             {Math.abs(trend)}%
           </span>
@@ -198,7 +198,7 @@ function RiskBadge({ level, L }: { level: string; L: boolean }) {
     low: "bg-green-500/10 text-green-500 border-green-500/30",
   };
   return (
-    <Badge variant="outline" className={cn("text-[10px] uppercase font-bold border", colors[level] || colors.medium)}>
+    <Badge variant="outline" className={cn("text-xs uppercase font-bold border", colors[level] || colors.medium)}>
       {level}
     </Badge>
   );
@@ -365,8 +365,8 @@ function TrainingTab({ cardCls, titleCls, subtitleCls, L, searchTerm }: TabProps
             <Card key={course.id} className={cn(cardCls, "hover:border-blue-500/40 transition-all cursor-pointer group")}>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-start justify-between">
-                  <Badge className={cn("text-[10px]", catColors[course.category] || catColors.safety)}>{course.category}</Badge>
-                  {course.required && <Badge variant="outline" className="text-[10px] border-red-500/30 text-red-500">Required</Badge>}
+                  <Badge className={cn("text-xs", catColors[course.category] || catColors.safety)}>{course.category}</Badge>
+                  {course.required && <Badge variant="outline" className="text-xs border-red-500/30 text-red-500">Required</Badge>}
                 </div>
                 <h4 className={cn("text-sm font-semibold leading-tight", L ? "text-slate-800" : "text-white")}>{course.title}</h4>
                 <p className={cn("text-xs line-clamp-2", L ? "text-slate-500" : "text-slate-400")}>{course.description}</p>
@@ -540,7 +540,7 @@ function InsuranceTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
               <div key={p.id} className={cn("p-4 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/30")}>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>{p.type}</h4>
-                  <Badge variant="outline" className={cn("text-[10px]", p.status === "active" ? "border-green-500/30 text-green-500" : "border-amber-500/30 text-amber-500")}>
+                  <Badge variant="outline" className={cn("text-xs", p.status === "active" ? "border-green-500/30 text-green-500" : "border-amber-500/30 text-amber-500")}>
                     {p.status}
                   </Badge>
                 </div>
@@ -579,7 +579,7 @@ function InsuranceTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
                   <p className={cn("text-xs", L ? "text-slate-500" : "text-slate-400")}>{c.policyType} - {new Date(c.date).toLocaleDateString()}</p>
                 </div>
                 <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>${c.amount.toLocaleString()}</span>
-                <Badge variant="outline" className={cn("text-[10px]", c.status === "open" ? "border-red-500/30 text-red-500" : "border-green-500/30 text-green-500")}>
+                <Badge variant="outline" className={cn("text-xs", c.status === "open" ? "border-red-500/30 text-red-500" : "border-green-500/30 text-green-500")}>
                   {c.status}
                 </Badge>
               </div>
@@ -666,7 +666,7 @@ function DrugAlcoholTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className={titleCls}>Recent Test Results</h3>
-              <Badge variant="outline" className={cn("text-[10px]", "border-green-500/30 text-green-500")}>
+              <Badge variant="outline" className={cn("text-xs", "border-green-500/30 text-green-500")}>
                 {results.summary?.complianceRate}% Pass Rate
               </Badge>
             </div>
@@ -730,7 +730,7 @@ function SafetyTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
                       <span className={cn("text-sm font-bold", overThreshold ? "text-red-500" : "text-green-500")}>{basic.score}%</span>
                       <span className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>/ {basic.threshold}%</span>
                       {overThreshold && <AlertTriangle className="w-3.5 h-3.5 text-red-500" />}
-                      <Badge variant="outline" className={cn("text-[10px]",
+                      <Badge variant="outline" className={cn("text-xs",
                         basic.trend === "improving" ? "border-green-500/30 text-green-500" : basic.trend === "worsening" ? "border-red-500/30 text-red-500" : "border-slate-500/30 text-slate-500"
                       )}>
                         {basic.trend}
@@ -814,7 +814,7 @@ function RegulatoryTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <RiskBadge level={change.impactLevel} L={L} />
-                    <Badge variant="outline" className={cn("text-[10px]", statusColors[change.status] || statusColors.proposed)}>
+                    <Badge variant="outline" className={cn("text-xs", statusColors[change.status] || statusColors.proposed)}>
                       {change.status.replace("_", " ")}
                     </Badge>
                     <span className={cn("text-xs", L ? "text-slate-500" : "text-slate-400")}>{change.agency}</span>
@@ -897,7 +897,7 @@ function AuditTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
                       <XCircle className={cn("w-4 h-4 shrink-0", item.priority === "critical" ? "text-red-500" : "text-amber-500")} />
                     )}
                     <span className={cn("text-sm flex-1", L ? "text-slate-700" : "text-slate-300")}>{item.item}</span>
-                    <Badge variant="outline" className={cn("text-[10px]",
+                    <Badge variant="outline" className={cn("text-xs",
                       item.priority === "critical" ? "border-red-500/30 text-red-500" : item.priority === "high" ? "border-amber-500/30 text-amber-500" : "border-slate-500/30 text-slate-500"
                     )}>
                       {item.priority}
@@ -961,7 +961,7 @@ function CoursesTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
         <CardContent className="p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className={titleCls}>DQ File Status</h3>
-            <Badge variant="outline" className={cn("text-[10px]", d?.isCompliant ? "border-green-500/30 text-green-500" : "border-red-500/30 text-red-500")}>
+            <Badge variant="outline" className={cn("text-xs", d?.isCompliant ? "border-green-500/30 text-green-500" : "border-red-500/30 text-red-500")}>
               {d?.isCompliant ? "COMPLIANT" : "NON-COMPLIANT"}
             </Badge>
           </div>
@@ -974,8 +974,8 @@ function CoursesTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
                   <p className={cn("text-sm", L ? "text-slate-800" : "text-white")}>{doc.name}</p>
                   {doc.notes && <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{doc.notes}</p>}
                 </div>
-                {doc.required && <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-500">Required</Badge>}
-                <Badge variant="outline" className={cn("text-[10px]",
+                {doc.required && <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-500">Required</Badge>}
+                <Badge variant="outline" className={cn("text-xs",
                   doc.status === "on_file" ? "border-green-500/30 text-green-500"
                     : doc.status === "missing" || doc.status === "pending" ? "border-red-500/30 text-red-500"
                     : doc.status === "not_applicable" ? "border-slate-500/30 text-slate-500"
@@ -1082,7 +1082,7 @@ function FilingsTab({ cardCls, titleCls, subtitleCls, L }: TabProps) {
               <div key={quarter.quarter} className={cn("p-4 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/30")}>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Q{quarter.quarter}</h4>
-                  <Badge variant="outline" className={cn("text-[10px]",
+                  <Badge variant="outline" className={cn("text-xs",
                     quarter.filingStatus === "filed" ? "border-green-500/30 text-green-500"
                     : quarter.filingStatus === "due" ? "border-amber-500/30 text-amber-500"
                     : "border-slate-500/30 text-slate-500"

@@ -128,7 +128,7 @@ function LiveDetentionTimer({ arrivalTime, freeTimeMinutes }: { arrivalTime: str
           {formatMinutes(elapsed)}
         </span>
         {isBillable && (
-          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]">
+          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
             {formatMinutes(billable)} billable
           </Badge>
         )}
@@ -137,7 +137,7 @@ function LiveDetentionTimer({ arrivalTime, freeTimeMinutes }: { arrivalTime: str
         value={pctFreeUsed}
         className="h-1.5"
       />
-      <p className="text-[10px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         Free time: {formatMinutes(freeTimeMinutes)} | {pctFreeUsed}% used
       </p>
     </div>
@@ -434,7 +434,7 @@ export default function DetentionAccessorials() {
                                 className="h-5 rounded bg-amber-500/30 flex items-center px-2"
                                 style={{ width: `${maxAmount > 0 ? (ct.totalAmount / maxAmount) * 100 : 0}%`, minWidth: "40px" }}
                               >
-                                <span className="text-[10px] text-amber-300 font-medium">
+                                <span className="text-xs text-amber-300 font-medium">
                                   {formatCurrency(ct.totalAmount)}
                                 </span>
                               </div>
@@ -517,7 +517,7 @@ export default function DetentionAccessorials() {
                             <TableCell className="text-sm">#{evt.loadId}</TableCell>
                             <TableCell className="text-sm">{evt.facilityName}</TableCell>
                             <TableCell>
-                              <Badge className={`text-[10px] ${statusColor(evt.status)}`}>
+                              <Badge className={`text-xs ${statusColor(evt.status)}`}>
                                 {evt.status}
                               </Badge>
                             </TableCell>
@@ -584,7 +584,7 @@ export default function DetentionAccessorials() {
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Load #{det.loadId}</span>
-                      <Badge className={`text-[10px] ${statusColor(det.status)}`}>{det.locationType}</Badge>
+                      <Badge className={`text-xs ${statusColor(det.status)}`}>{det.locationType}</Badge>
                     </div>
                     <div className="flex items-center gap-2">
                       <Building2 className="h-3.5 w-3.5 text-zinc-400" />
@@ -660,7 +660,7 @@ export default function DetentionAccessorials() {
                         <TableCell className="text-sm text-right">{formatCurrency(f.avgCharge)}</TableCell>
                         <TableCell className="text-sm text-right">
                           {f.disputeCount > 0 ? (
-                            <Badge className="bg-red-500/20 text-red-400 text-[10px]">{f.disputeCount}</Badge>
+                            <Badge className="bg-red-500/20 text-red-400 text-xs">{f.disputeCount}</Badge>
                           ) : (
                             <span className="text-zinc-500">0</span>
                           )}
@@ -713,10 +713,10 @@ export default function DetentionAccessorials() {
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] font-mono">{item.code}</Badge>
+                        <Badge variant="outline" className="text-xs font-mono">{item.code}</Badge>
                         <span className="text-sm font-medium">{item.name}</span>
                       </div>
-                      <Badge className={`text-[10px] ${
+                      <Badge className={`text-xs ${
                         item.category === "time" ? "bg-blue-500/20 text-blue-400" :
                         item.category === "flat" ? "bg-amber-500/20 text-amber-400" :
                         "bg-green-500/20 text-green-400"
@@ -798,7 +798,7 @@ export default function DetentionAccessorials() {
                         <TableCell className="text-sm">{t.shipperName}</TableCell>
                         <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">{t.reason}</TableCell>
                         <TableCell>
-                          <Badge className={`text-[10px] ${statusColor(t.status)}`}>{t.status}</Badge>
+                          <Badge className={`text-xs ${statusColor(t.status)}`}>{t.status}</Badge>
                         </TableCell>
                         <TableCell className="text-sm text-right font-medium text-amber-400">
                           {formatCurrency(t.amount)}
@@ -876,7 +876,7 @@ export default function DetentionAccessorials() {
                         <TableCell className="text-sm text-orange-400">{c.daysHeld}d</TableCell>
                         <TableCell className="text-sm">{formatCurrency(c.perDiemRate)}/day</TableCell>
                         <TableCell>
-                          <Badge className={`text-[10px] ${statusColor(c.status)}`}>{c.status}</Badge>
+                          <Badge className={`text-xs ${statusColor(c.status)}`}>{c.status}</Badge>
                         </TableCell>
                         <TableCell className="text-sm text-right font-medium text-amber-400">
                           {formatCurrency(c.totalCharge)}
@@ -948,7 +948,7 @@ export default function DetentionAccessorials() {
                         <TableCell className="text-sm">{d.shipperName}</TableCell>
                         <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">{d.reason}</TableCell>
                         <TableCell>
-                          <Badge className={`text-[10px] ${statusColor(d.status)}`}>{d.status}</Badge>
+                          <Badge className={`text-xs ${statusColor(d.status)}`}>{d.status}</Badge>
                         </TableCell>
                         <TableCell className="text-sm text-right font-medium text-red-400">
                           {formatCurrency(d.disputedAmount)}
@@ -1035,7 +1035,7 @@ export default function DetentionAccessorials() {
                         <TableCell className="text-sm">{c.facilityName}</TableCell>
                         <TableCell className="text-sm">{c.shipperName}</TableCell>
                         <TableCell>
-                          <Badge className={`text-[10px] ${statusColor(c.status)}`}>{c.status}</Badge>
+                          <Badge className={`text-xs ${statusColor(c.status)}`}>{c.status}</Badge>
                         </TableCell>
                         <TableCell className="text-sm text-right font-medium text-amber-400">
                           {formatCurrency(c.amount)}
@@ -1090,7 +1090,7 @@ export default function DetentionAccessorials() {
                                 className="h-6 rounded bg-gradient-to-r from-amber-500/40 to-orange-500/40 flex items-center px-2"
                                 style={{ width: `${maxAmt > 0 ? (t.totalAmount / maxAmt) * 100 : 0}%`, minWidth: "60px" }}
                               >
-                                <span className="text-[10px] text-amber-200 font-medium">{formatCurrency(t.totalAmount)}</span>
+                                <span className="text-xs text-amber-200 font-medium">{formatCurrency(t.totalAmount)}</span>
                               </div>
                             </div>
                             <span className="text-xs text-muted-foreground w-16 text-right">{t.count} charges</span>
@@ -1116,12 +1116,12 @@ export default function DetentionAccessorials() {
                         const height = maxAmt > 0 ? (m.totalAmount / maxAmt) * 100 : 0;
                         return (
                           <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                            <span className="text-[9px] text-amber-400">{formatCurrency(m.totalAmount)}</span>
+                            <span className="text-xs text-amber-400">{formatCurrency(m.totalAmount)}</span>
                             <div
                               className="w-full rounded-t bg-gradient-to-t from-amber-600/60 to-orange-500/40"
                               style={{ height: `${Math.max(height, 4)}%` }}
                             />
-                            <span className="text-[9px] text-muted-foreground">{m.month?.slice(5)}</span>
+                            <span className="text-xs text-muted-foreground">{m.month?.slice(5)}</span>
                           </div>
                         );
                       })}
@@ -1140,10 +1140,10 @@ export default function DetentionAccessorials() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {(analyticsQuery.data?.byStatus || []).map((s: any, i: number) => (
                         <div key={i} className={cn("flex items-center gap-2 p-2 rounded", isLight ? "bg-slate-100" : "bg-zinc-800/50")}>
-                          <Badge className={`text-[10px] ${statusColor(s.status)}`}>{s.status}</Badge>
+                          <Badge className={`text-xs ${statusColor(s.status)}`}>{s.status}</Badge>
                           <div>
                             <p className="text-sm font-medium">{s.count}</p>
-                            <p className="text-[10px] text-muted-foreground">{formatCurrency(s.totalAmount)}</p>
+                            <p className="text-xs text-muted-foreground">{formatCurrency(s.totalAmount)}</p>
                           </div>
                         </div>
                       ))}
@@ -1210,16 +1210,16 @@ export default function DetentionAccessorials() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge variant="outline" className="text-[10px]">{rule.triggerType}</Badge>
+                        <Badge variant="outline" className="text-xs">{rule.triggerType}</Badge>
                         {rule.freeTimeMinutes > 0 && (
                           <span className="text-xs text-muted-foreground">
                             Free: {formatMinutes(rule.freeTimeMinutes)}
                           </span>
                         )}
                         {rule.autoCreateClaim && (
-                          <Badge className="bg-blue-500/20 text-blue-400 text-[10px]">Auto-claim</Badge>
+                          <Badge className="bg-blue-500/20 text-blue-400 text-xs">Auto-claim</Badge>
                         )}
-                        <Badge className={`text-[10px] ${rule.enabled ? "bg-green-500/20 text-green-400" : "bg-zinc-500/20 text-zinc-400"}`}>
+                        <Badge className={`text-xs ${rule.enabled ? "bg-green-500/20 text-green-400" : "bg-zinc-500/20 text-zinc-400"}`}>
                           {rule.enabled ? "Enabled" : "Disabled"}
                         </Badge>
                       </div>
@@ -1273,7 +1273,7 @@ export default function DetentionAccessorials() {
                         <TableCell className="text-sm text-orange-400">{formatMinutes(evt.totalMinutes)}</TableCell>
                         <TableCell className="text-sm text-amber-400">{formatMinutes(evt.billableMinutes)}</TableCell>
                         <TableCell>
-                          <Badge className={`text-[10px] ${statusColor(evt.billingStatus)}`}>{evt.billingStatus}</Badge>
+                          <Badge className={`text-xs ${statusColor(evt.billingStatus)}`}>{evt.billingStatus}</Badge>
                         </TableCell>
                         <TableCell className="text-sm text-right font-medium text-amber-400">
                           {formatCurrency(evt.totalCharge)}

@@ -197,7 +197,7 @@ export function ModeBadge() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 4 }}
         transition={{ duration: 0.2 }}
-        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+        className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
           theme === "light"
             ? "bg-slate-100 text-slate-600"
             : "bg-gray-800 text-gray-300"

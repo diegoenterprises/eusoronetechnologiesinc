@@ -182,7 +182,7 @@ export default function RailTracking() {
                         </div>
                       )}
                       {ev.timestamp && (
-                        <div className={cn("text-[10px] mt-1", isLight ? "text-slate-400" : "text-slate-500")}>
+                        <div className={cn("text-xs mt-1", isLight ? "text-slate-400" : "text-slate-500")}>
                           {new Date(ev.timestamp).toLocaleString()}
                         </div>
                       )}

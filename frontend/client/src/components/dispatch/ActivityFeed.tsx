@@ -90,22 +90,22 @@ export default function ActivityFeed({
         >
           <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" aria-hidden="true" />
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-medium text-red-400">{exceptionCount} Active Exception{exceptionCount > 1 ? "s" : ""}</p>
-            <p className="text-[9px] text-red-400/60">Requires attention</p>
+            <p className="text-xs font-medium text-red-400">{exceptionCount} Active Exception{exceptionCount > 1 ? "s" : ""}</p>
+            <p className="text-xs text-red-400/60">Requires attention</p>
           </div>
         </button>
       )}
 
       {/* Quick Actions */}
       <div className="p-3 border-b border-white/[0.06]">
-        <h3 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
           <Zap className="w-3 h-3 text-yellow-400" aria-hidden="true" />
           Quick Actions
         </h3>
         <div className="grid grid-cols-2 gap-1.5">
           <Button
             size="sm"
-            className="h-8 text-[10px] bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-md justify-start gap-1.5"
+            className="h-8 text-xs bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-md justify-start gap-1.5"
             onClick={onQuickLoad}
           >
             <Plus className="w-3 h-3" aria-hidden="true" />Quick Load
@@ -113,7 +113,7 @@ export default function ActivityFeed({
           <Button
             size="sm"
             variant="outline"
-            className="h-8 text-[10px] border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] rounded-md justify-start gap-1.5"
+            className="h-8 text-xs border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] rounded-md justify-start gap-1.5"
             onClick={onBroadcast}
           >
             <MessageSquare className="w-3 h-3" aria-hidden="true" />Broadcast
@@ -121,7 +121,7 @@ export default function ActivityFeed({
           <Button
             size="sm"
             variant="outline"
-            className="h-8 text-[10px] border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] rounded-md justify-start gap-1.5"
+            className="h-8 text-xs border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] rounded-md justify-start gap-1.5"
             onClick={onViewSettlements}
           >
             <DollarSign className="w-3 h-3" aria-hidden="true" />Settlements
@@ -130,7 +130,7 @@ export default function ActivityFeed({
             size="sm"
             variant="outline"
             className={cn(
-              "h-8 text-[10px] border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] rounded-md justify-start gap-1.5",
+              "h-8 text-xs border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] rounded-md justify-start gap-1.5",
               checkCallsDue > 0 && "border-yellow-500/30 bg-yellow-500/5"
             )}
             onClick={onViewCheckCalls}
@@ -138,7 +138,7 @@ export default function ActivityFeed({
             <Phone className="w-3 h-3" aria-hidden="true" />
             Check Calls
             {checkCallsDue > 0 && (
-              <Badge className="bg-yellow-500/20 text-yellow-400 border-0 text-[8px] px-1 py-0 ml-auto">
+              <Badge className="bg-yellow-500/20 text-yellow-400 border-0 text-xs px-1 py-0 ml-auto">
                 {checkCallsDue}
               </Badge>
             )}
@@ -149,7 +149,7 @@ export default function ActivityFeed({
       {/* Activity Feed */}
       <div className="flex-1 overflow-y-auto">
         <div className="px-3 pt-3 pb-1">
-          <h3 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
             <Bell className="w-3 h-3 text-cyan-400" aria-hidden="true" />
             Activity
           </h3>
@@ -158,7 +158,7 @@ export default function ActivityFeed({
         {events.length === 0 ? (
           <div className="text-center py-8 px-3">
             <Bell className="w-6 h-6 text-slate-600 mx-auto mb-2" />
-            <p className="text-[10px] text-slate-500">No recent activity</p>
+            <p className="text-xs text-slate-500">No recent activity</p>
           </div>
         ) : (
           <div className="px-3 pb-3" role="log" aria-label="Dispatch activity feed" aria-live="polite">
@@ -175,8 +175,8 @@ export default function ActivityFeed({
                 >
                   <div className={cn("mt-0.5 shrink-0", cfg.color)}>{cfg.icon}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] text-slate-300 leading-relaxed">{event.message}</p>
-                    <p className="text-[9px] text-slate-600 mt-0.5">
+                    <p className="text-xs text-slate-300 leading-relaxed">{event.message}</p>
+                    <p className="text-xs text-slate-600 mt-0.5">
                       {formatTimeAgo(event.timestamp)}
                       {event.loadNumber && <span className="ml-1.5">#{event.loadNumber}</span>}
                     </p>

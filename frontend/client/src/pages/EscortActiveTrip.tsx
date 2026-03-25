@@ -163,7 +163,7 @@ function CargoExceptionBanner({ status }: { status: string }) {
         <div>
           <p className="text-red-300 font-bold">{meta.label}</p>
           <p className="text-red-400/80 text-xs mt-0.5 leading-relaxed">{meta.desc}</p>
-          <p className="text-red-500/60 text-[10px] mt-1.5">Convoy may be paused until exception is resolved.</p>
+          <p className="text-red-500/60 text-xs mt-1.5">Convoy may be paused until exception is resolved.</p>
         </div>
       </div>
     </div>
@@ -214,7 +214,7 @@ function HOSCompactPanel() {
         <div className="flex items-center gap-2 mb-3">
           <Gauge className="w-4 h-4 text-zinc-400" />
           <span className="text-zinc-300 font-medium text-sm">HOS Status</span>
-          <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${
+          <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${
             currentStatus === "driving" ? "bg-emerald-500/20 text-emerald-300" :
             currentStatus === "on_duty" ? "bg-blue-500/20 text-blue-300" :
             currentStatus === "sleeper" ? "bg-purple-500/20 text-purple-300" :
@@ -229,7 +229,7 @@ function HOSCompactPanel() {
               <button key={btn.status} onClick={() => !isActive && handleDutyChange(btn.status)} disabled={isActive || changeStatusMut?.isPending}
                 className={`rounded-xl py-2 px-1 flex flex-col items-center gap-1 transition-all text-center border ${isActive ? btn.active + " border" : "border-zinc-800 bg-zinc-900/40 hover:bg-zinc-800/60"}`}>
                 <Icon className={`w-4 h-4 ${isActive ? btn.text : "text-zinc-500"}`} />
-                <span className={`text-[9px] font-medium leading-tight ${isActive ? btn.text : "text-zinc-500"}`}>{btn.label}</span>
+                <span className={`text-xs font-medium leading-tight ${isActive ? btn.text : "text-zinc-500"}`}>{btn.label}</span>
               </button>
             );
           })}
@@ -247,11 +247,11 @@ function HOSCompactPanel() {
                     <circle cx="22" cy="22" r="19" fill="none" stroke={isLow ? "#ef4444" : g.color} strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(pct / 100) * 119.4} ${119.4 - (pct / 100) * 119.4}`} opacity={0.8} />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className={`text-[11px] font-bold tabular-nums ${isLow ? "text-red-400" : "text-white"}`}>{remaining.toFixed(remaining < 10 ? 1 : 0)}</span>
+                    <span className={`text-xs font-bold tabular-nums ${isLow ? "text-red-400" : "text-white"}`}>{remaining.toFixed(remaining < 10 ? 1 : 0)}</span>
                   </div>
                 </div>
-                <p className="text-[10px] text-zinc-500 mt-1">{g.label}</p>
-                <p className="text-[9px] text-zinc-600">{g.used.toFixed(1)}h/{g.max}h</p>
+                <p className="text-xs text-zinc-500 mt-1">{g.label}</p>
+                <p className="text-xs text-zinc-600">{g.used.toFixed(1)}h/{g.max}h</p>
               </div>
             );
           })}
@@ -260,7 +260,7 @@ function HOSCompactPanel() {
           <div className="mt-3 flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <Coffee className="w-4 h-4 text-amber-400 flex-shrink-0" />
             <div className="flex-1"><p className="text-amber-300 text-xs font-medium">30-min break required</p></div>
-            <button onClick={() => handleDutyChange("off_duty")} className="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[10px] font-medium hover:bg-amber-500/30 transition-colors">Take Break</button>
+            <button onClick={() => handleDutyChange("off_duty")} className="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-medium hover:bg-amber-500/30 transition-colors">Take Break</button>
           </div>
         )}
       </CardContent>
@@ -303,7 +303,7 @@ function ConvoyProximityPanel() {
         <div className="flex items-center gap-2 mb-3">
           <Radar className={cn("w-5 h-5", cfg.text)} />
           <span className="text-white font-semibold text-sm">Convoy Proximity</span>
-          <Badge className={cn("ml-auto border-0 text-[10px] font-bold", cfg.bg, cfg.text)}>{cfg.label}</Badge>
+          <Badge className={cn("ml-auto border-0 text-xs font-bold", cfg.bg, cfg.text)}>{cfg.label}</Badge>
         </div>
 
         {/* Proximity gauge */}
@@ -334,15 +334,15 @@ function ConvoyProximityPanel() {
         {/* Position & speed info */}
         <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-700/50">
           <div className="text-center">
-            <p className="text-[10px] text-slate-500">Position</p>
+            <p className="text-xs text-slate-500">Position</p>
             <p className="text-white text-xs font-medium capitalize">{proximity.position === "lead" ? "Lead Escort" : "Rear Escort"}</p>
           </div>
           <div className="text-center">
-            <p className="text-[10px] text-slate-500">Convoy Speed</p>
+            <p className="text-xs text-slate-500">Convoy Speed</p>
             <p className="text-white text-xs font-medium">{proximity.escortLocation?.speed?.toFixed(0) || 0} mph</p>
           </div>
           <div className="text-center">
-            <p className="text-[10px] text-slate-500">Max Speed</p>
+            <p className="text-xs text-slate-500">Max Speed</p>
             <p className="text-white text-xs font-medium">{proximity.convoyMaxSpeed} mph</p>
           </div>
         </div>
@@ -353,7 +353,7 @@ function ConvoyProximityPanel() {
             <AlertOctagon className="w-5 h-5 text-red-400 flex-shrink-0" />
             <div>
               <p className="text-red-300 text-xs font-bold">SEPARATION ALERT</p>
-              <p className="text-red-400/80 text-[10px] mt-0.5">You have exceeded the maximum distance from the convoy. Reduce distance immediately or contact dispatch.</p>
+              <p className="text-red-400/80 text-xs mt-0.5">You have exceeded the maximum distance from the convoy. Reduce distance immediately or contact dispatch.</p>
             </div>
           </div>
         )}
@@ -361,7 +361,7 @@ function ConvoyProximityPanel() {
         {status === "warning" && (
           <div className="mt-3 flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <Radio className="w-4 h-4 text-amber-400 flex-shrink-0" />
-            <p className="text-amber-300 text-[10px] font-medium">Approaching maximum separation distance. Maintain position.</p>
+            <p className="text-amber-300 text-xs font-medium">Approaching maximum separation distance. Maintain position.</p>
           </div>
         )}
       </CardContent>
@@ -394,9 +394,9 @@ function RouteRestrictionWarnings() {
         <CardTitle className="text-white text-lg flex items-center gap-2">
           <AlertTriangle className="w-5 h-5 text-amber-400" />
           Route Restrictions
-          {restrictions.isSuperload && <Badge className="border-0 bg-red-500/20 text-red-400 text-[10px] font-bold ml-2">SUPERLOAD</Badge>}
-          {restrictions.isOversize && !restrictions.isSuperload && <Badge className="border-0 bg-amber-500/20 text-amber-400 text-[10px] font-bold ml-2">OVERSIZE</Badge>}
-          {restrictions.isHazmat && <Badge className="border-0 bg-purple-500/20 text-purple-400 text-[10px] font-bold ml-2">HAZMAT</Badge>}
+          {restrictions.isSuperload && <Badge className="border-0 bg-red-500/20 text-red-400 text-xs font-bold ml-2">SUPERLOAD</Badge>}
+          {restrictions.isOversize && !restrictions.isSuperload && <Badge className="border-0 bg-amber-500/20 text-amber-400 text-xs font-bold ml-2">OVERSIZE</Badge>}
+          {restrictions.isHazmat && <Badge className="border-0 bg-purple-500/20 text-purple-400 text-xs font-bold ml-2">HAZMAT</Badge>}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -410,7 +410,7 @@ function RouteRestrictionWarnings() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className={cn("font-semibold text-sm", cfg.title)}>{r.title}</p>
-                    <Badge className={cn("border-0 text-[9px]", cfg.badge)}>{r.severity.toUpperCase()}</Badge>
+                    <Badge className={cn("border-0 text-xs", cfg.badge)}>{r.severity.toUpperCase()}</Badge>
                   </div>
                   <p className={cn("text-xs mt-0.5 leading-relaxed", cfg.desc)}>{r.description}</p>
                 </div>

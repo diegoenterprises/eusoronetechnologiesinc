@@ -342,14 +342,14 @@ export default function DriverCurrentJob() {
                   return (
                     <React.Fragment key={s}>
                       <div className={cn(
-                        "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border",
+                        "px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border",
                         isCurrent ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent" :
                         isPast ? "bg-green-500/15 text-green-400 border-green-500/30" :
                         "bg-slate-800 text-slate-500 border-slate-700"
                       )}>
                         {s.replace(/_/g, ' ')}
                       </div>
-                      {idx < arr.length - 1 && <span className="text-slate-600 text-[8px]">&rarr;</span>}
+                      {idx < arr.length - 1 && <span className="text-slate-600 text-xs">&rarr;</span>}
                     </React.Fragment>
                   );
                 })}
@@ -426,7 +426,7 @@ export default function DriverCurrentJob() {
                     {step.hint && (
                       <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
                         <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
-                        <p className="text-[11px] text-amber-300/90 leading-relaxed">{step.hint}</p>
+                        <p className="text-xs text-amber-300/90 leading-relaxed">{step.hint}</p>
                       </div>
                     )}
                     <Button

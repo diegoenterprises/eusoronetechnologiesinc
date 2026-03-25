@@ -69,7 +69,7 @@ export default function BreadcrumbTrail({ loadId }: BreadcrumbTrailProps) {
             <Route className="h-4 w-4 text-blue-500" />
             Route Trail
           </CardTitle>
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-xs">
             {totalPoints} points
           </Badge>
         </div>
@@ -83,20 +83,20 @@ export default function BreadcrumbTrail({ loadId }: BreadcrumbTrailProps) {
             <div className="grid grid-cols-3 gap-2 text-center mb-3">
               <div className="p-1.5 rounded-md bg-muted/50">
                 <p className="text-xs font-semibold">{Math.round(totalDistance)} mi</p>
-                <p className="text-[9px] text-muted-foreground">Distance</p>
+                <p className="text-xs text-muted-foreground">Distance</p>
               </div>
               <div className="p-1.5 rounded-md bg-muted/50">
                 <p className="text-xs font-semibold">{avgSpeed} mph</p>
-                <p className="text-[9px] text-muted-foreground">Avg Speed</p>
+                <p className="text-xs text-muted-foreground">Avg Speed</p>
               </div>
               <div className="p-1.5 rounded-md bg-muted/50">
                 <p className="text-xs font-semibold">{maxSpeed} mph</p>
-                <p className="text-[9px] text-muted-foreground">Max Speed</p>
+                <p className="text-xs text-muted-foreground">Max Speed</p>
               </div>
             </div>
 
             {/* Speed legend */}
-            <div className="flex items-center gap-2 mb-3 text-[9px] text-muted-foreground">
+            <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
               <span>Speed:</span>
               <span className="flex items-center gap-0.5"><span className="h-2 w-2 rounded-full bg-gray-400" /> 0</span>
               <span className="flex items-center gap-0.5"><span className="h-2 w-2 rounded-full bg-yellow-500" /> &lt;30</span>
@@ -162,24 +162,24 @@ export default function BreadcrumbTrail({ loadId }: BreadcrumbTrailProps) {
                   <div>
                     <MapPin className="h-3 w-3 mx-auto text-blue-500" />
                     <p className="font-medium">{selectedPoint.lat.toFixed(5)}</p>
-                    <p className="text-[9px] text-muted-foreground">{selectedPoint.lng.toFixed(5)}</p>
+                    <p className="text-xs text-muted-foreground">{selectedPoint.lng.toFixed(5)}</p>
                   </div>
                   <div>
                     <Gauge className="h-3 w-3 mx-auto text-blue-500" />
                     <p className="font-medium">{Math.round(selectedPoint.speed)} mph</p>
-                    <p className="text-[9px] text-muted-foreground">Speed</p>
+                    <p className="text-xs text-muted-foreground">Speed</p>
                   </div>
                   <div>
                     <Clock className="h-3 w-3 mx-auto text-blue-500" />
                     <p className="font-medium">
                       {selectedPoint.timestamp ? new Date(selectedPoint.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--"}
                     </p>
-                    <p className="text-[9px] text-muted-foreground">Time</p>
+                    <p className="text-xs text-muted-foreground">Time</p>
                   </div>
                 </div>
                 {selectedPoint.loadState && (
                   <div className="text-center mt-1">
-                    <Badge variant="outline" className="text-[9px] capitalize">{selectedPoint.loadState.replace(/_/g, " ")}</Badge>
+                    <Badge variant="outline" className="text-xs capitalize">{selectedPoint.loadState.replace(/_/g, " ")}</Badge>
                   </div>
                 )}
               </div>

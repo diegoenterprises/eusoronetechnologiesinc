@@ -141,7 +141,7 @@ export default function FireResponse() {
                   Class {displayClass.hazardClass} — {displayClass.name}
                 </p>
                 {activeFireClass?.hazardClass === displayClass.hazardClass && (
-                  <Badge className="bg-red-500/15 text-red-500 border-red-500/30 text-[10px] mt-1">YOUR CURRENT LOAD</Badge>
+                  <Badge className="bg-red-500/15 text-red-500 border-red-500/30 text-xs mt-1">YOUR CURRENT LOAD</Badge>
                 )}
               </div>
             </div>

@@ -285,7 +285,7 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
         >
           <Bell size={18} className="text-gray-400" />
           {unread > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 animate-pulse">
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold px-1 animate-pulse">
               {unread > 99 ? "99+" : unread}
             </span>
           )}
@@ -295,7 +295,7 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
         <div className="px-3 py-2 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
           <span className="text-sm font-bold text-slate-900 dark:text-white">Notifications</span>
           {items.length > 0 && (
-            <button onClick={() => { markAllReadMutation.mutate({}); setDismissed(new Set(items.map((n: any) => n.id))); }} className="text-[10px] font-semibold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent hover:opacity-80">
+            <button onClick={() => { markAllReadMutation.mutate({}); setDismissed(new Set(items.map((n: any) => n.id))); }} className="text-xs font-semibold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent hover:opacity-80">
               Clear all
             </button>
           )}
@@ -312,7 +312,7 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
               <div className="flex items-center gap-2 w-full">
                 {!n.isRead && <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#BE01FF] to-[#1473FF] flex-shrink-0" />}
                 <span className="text-sm text-slate-900 dark:text-white font-medium truncate flex-1">{n.title}</span>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 flex-shrink-0">{n.timeAgo || ""}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0">{n.timeAgo || ""}</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate w-full">{n.message}</p>
             </DropdownMenuItem>
@@ -698,7 +698,7 @@ export default function DashboardLayout({
             return (
               <div key={item.path}>
               {showCategoryHeader && (
-                <div className={`text-[10px] uppercase tracking-wider px-3 pt-4 pb-1 font-semibold ${theme === "light" ? "text-slate-400" : "text-gray-500"}`}>
+                <div className={`text-xs uppercase tracking-wider px-3 pt-4 pb-1 font-semibold ${theme === "light" ? "text-slate-400" : "text-gray-500"}`}>
                   {item.category}
                 </div>
               )}
@@ -762,7 +762,7 @@ export default function DashboardLayout({
                         <motion.span
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center"
+                          className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center"
                         >
                           {item.badge}
                         </motion.span>
@@ -965,7 +965,7 @@ export default function DashboardLayout({
                   </button>
                 )}
                 {!searchFocused && (
-                  <kbd className={`hidden lg:inline-flex text-[10px] rounded px-1.5 py-0.5 font-mono ${theme === "light" ? "text-slate-400 border border-slate-300 bg-slate-50" : "text-gray-500 border border-gray-700"}`}>⌘K</kbd>
+                  <kbd className={`hidden lg:inline-flex text-xs rounded px-1.5 py-0.5 font-mono ${theme === "light" ? "text-slate-400 border border-slate-300 bg-slate-50" : "text-gray-500 border border-gray-700"}`}>⌘K</kbd>
                 )}
               </motion.div>
 
@@ -994,7 +994,7 @@ export default function DashboardLayout({
                         </div>
                       ) : (
                         <>
-                          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider px-2 py-1">
+                          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider px-2 py-1">
                             {results.length} result{results.length !== 1 ? "s" : ""}
                           </p>
                           {results.map((r, i) => (
@@ -1027,7 +1027,7 @@ export default function DashboardLayout({
                                 <p className="text-sm font-medium text-white truncate">{r.title}</p>
                                 <p className="text-xs text-gray-500 truncate">{r.subtitle}</p>
                               </div>
-                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${
                                 r.type === "load" ? "bg-blue-500/10 text-blue-400" :
                                 r.type === "driver" ? "bg-cyan-500/10 text-cyan-400" :
                                 r.type === "catalyst" ? "bg-orange-500/10 text-orange-400" :
@@ -1161,26 +1161,26 @@ export default function DashboardLayout({
               <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-3">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 border border-green-500/20">
                   <Lock className="w-3 h-3 text-green-400" />
-                  <span className="text-[10px] sm:text-xs font-medium text-green-400">TLS 1.3</span>
+                  <span className="text-xs sm:text-xs font-medium text-green-400">TLS 1.3</span>
                 </div>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
                   <Shield className="w-3 h-3 text-blue-400" />
-                  <span className="text-[10px] sm:text-xs font-medium text-blue-400">AES-256</span>
+                  <span className="text-xs sm:text-xs font-medium text-blue-400">AES-256</span>
                 </div>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-500/10 border border-purple-500/20">
                   <ShieldCheck className="w-3 h-3 text-purple-400" />
-                  <span className="text-[10px] sm:text-xs font-medium text-purple-400">RBAC</span>
+                  <span className="text-xs sm:text-xs font-medium text-purple-400">RBAC</span>
                 </div>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20">
                   <CheckCircle className="w-3 h-3 text-cyan-400" />
-                  <span className="text-[10px] sm:text-xs font-medium text-cyan-400">SOC 2</span>
+                  <span className="text-xs sm:text-xs font-medium text-cyan-400">SOC 2</span>
                 </div>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20">
                   <CreditCard className="w-3 h-3 text-amber-400" />
-                  <span className="text-[10px] sm:text-xs font-medium text-amber-400">PCI-DSS</span>
+                  <span className="text-xs sm:text-xs font-medium text-amber-400">PCI-DSS</span>
                 </div>
               </div>
-              <p className="text-center text-[10px] sm:text-xs text-gray-500">
+              <p className="text-center text-xs sm:text-xs text-gray-500">
                 Eusorone Technologies Inc. All rights reserved. Secured with enterprise-grade encryption.
               </p>
             </div>

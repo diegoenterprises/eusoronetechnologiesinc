@@ -160,10 +160,10 @@ export default function TankPressure() {
                     </div>
                     <div>
                       <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{r.compartment}</p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>MAWP: {r.mawpPsi} PSI</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>MAWP: {r.mawpPsi} PSI</p>
                     </div>
                   </div>
-                  <Badge className={cn("text-[9px] border", sc.bg, sc.color, "border-current/20")}>{sc.label}</Badge>
+                  <Badge className={cn("text-xs border", sc.bg, sc.color, "border-current/20")}>{sc.label}</Badge>
                 </div>
 
                 {/* Gauge visual */}
@@ -181,7 +181,7 @@ export default function TankPressure() {
                       style={{ width: `${Math.min(100, pct)}%` }}
                     />
                   </div>
-                  <p className={cn("text-[10px] text-right mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>{pct}% of MAWP</p>
+                  <p className={cn("text-xs text-right mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>{pct}% of MAWP</p>
                 </div>
 
                 {/* Details */}
@@ -192,7 +192,7 @@ export default function TankPressure() {
                     { l: "Temp", v: `${r.temperature}°F` },
                   ].map((d) => (
                     <div key={d.l} className={cn("p-2 rounded-lg text-center", isLight ? "bg-slate-50" : "bg-slate-700/30")}>
-                      <p className={cn("text-[9px] uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>{d.l}</p>
+                      <p className={cn("text-xs uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>{d.l}</p>
                       <p className={cn("text-sm font-bold mt-0.5 tabular-nums", isLight ? "text-slate-700" : "text-white")}>{d.v}</p>
                     </div>
                   ))}
@@ -227,16 +227,16 @@ export default function TankPressure() {
                   </div>
                   <div>
                     <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{test.type}</p>
-                    <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                    <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
                       Last: {new Date(test.date).toLocaleDateString()} · {test.spec}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <Badge className={cn("text-[9px] border", test.result === "Pass" ? "bg-green-500/15 text-green-400 border-green-500/30" : "bg-red-500/15 text-red-400 border-red-500/30")}>
+                  <Badge className={cn("text-xs border", test.result === "Pass" ? "bg-green-500/15 text-green-400 border-green-500/30" : "bg-red-500/15 text-red-400 border-red-500/30")}>
                     {test.result}
                   </Badge>
-                  <p className={cn("text-[10px] mt-0.5", isOverdue ? "text-red-500 font-bold" : isLight ? "text-slate-400" : "text-slate-500")}>
+                  <p className={cn("text-xs mt-0.5", isOverdue ? "text-red-500 font-bold" : isLight ? "text-slate-400" : "text-slate-500")}>
                     Due: {new Date(test.nextDue).toLocaleDateString()}
                   </p>
                 </div>

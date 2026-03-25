@@ -120,7 +120,7 @@ export default function LanguageSettings() {
                   <p className={cn("text-sm font-medium truncate", selectedLang === lang.code ? "text-[#1473FF]" : isLight ? "text-slate-800" : "text-white")}>
                     {lang.name}
                   </p>
-                  <p className={cn("text-[10px] truncate", isLight ? "text-slate-400" : "text-slate-500")}>{lang.native}</p>
+                  <p className={cn("text-xs truncate", isLight ? "text-slate-400" : "text-slate-500")}>{lang.native}</p>
                 </div>
                 {selectedLang === lang.code && <CheckCircle className="w-4 h-4 text-[#1473FF] flex-shrink-0" />}
               </button>
@@ -225,7 +225,7 @@ export default function LanguageSettings() {
                 <p className={cn("text-sm font-bold", measurement === sys.id ? "text-[#1473FF]" : isLight ? "text-slate-700" : "text-slate-200")}>
                   {sys.label}
                 </p>
-                <p className={cn("text-[10px] text-center", isLight ? "text-slate-400" : "text-slate-500")}>{sys.details}</p>
+                <p className={cn("text-xs text-center", isLight ? "text-slate-400" : "text-slate-500")}>{sys.details}</p>
               </button>
             ))}
           </div>

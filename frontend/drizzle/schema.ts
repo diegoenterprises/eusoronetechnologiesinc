@@ -10686,3 +10686,309 @@ export const mfaTokens = mysqlTable("mfa_tokens", {
 }, (table) => ({
   userMethodUnique: uniqueIndex("mfa_user_method").on(table.userId, table.method),
 }));
+
+// ─── YARD MANAGEMENT ────────────────────────────────────────────────
+
+export const yardSpots = mysqlTable("yard_spots", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  locationId: varchar("locationId", { length: 50 }).notNull(),
+  row: int("row").notNull(),
+  col: int("col").notNull(),
+  label: varchar("label", { length: 20 }).notNull(),
+  type: mysqlEnum("type", ["parking", "dock", "staging", "repair"]),
+  status: mysqlEnum("status", ["empty", "occupied", "reserved", "maintenance"]),
+  trailerId: int("trailerId").references(() => vehicles.id),
+  trailerNumber: varchar("trailerNumber", { length: 50 }),
+  reservedFor: varchar("reservedFor", { length: 100 }),
+  notes: text("notes"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  companyIdx: index("yard_spots_company_idx").on(table.companyId),
+  locationIdx: index("yard_spots_location_idx").on(table.locationId),
+  statusIdx: index("yard_spots_status_idx").on(table.status),
+}));
+
+export type YardSpot = typeof yardSpots.$inferSelect;
+
+export const yardMoves = mysqlTable("yard_moves", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  locationId: varchar("locationId", { length: 50 }).notNull(),
+  trailerId: int("trailerId").references(() => vehicles.id),
+  trailerNumber: varchar("trailerNumber", { length: 50 }).notNull(),
+  fromSpot: varchar("fromSpot", { length: 20 }).notNull(),
+  toSpot: varchar("toSpot", { length: 20 }).notNull(),
+  status: mysqlEnum("status", ["pending", "assigned", "in_progress", "completed", "cancelled"]),
+  priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"]).default("normal"),
+  reason: mysqlEnum("reason", ["dock_assignment", "reposition", "outbound_staging", "repair_move", "gate_staging"]),
+  hostlerId: int("hostlerId"),
+  hostlerName: varchar("hostlerName", { length: 100 }),
+  estimatedMinutes: int("estimatedMinutes"),
+  requestedAt: timestamp("requestedAt").defaultNow().notNull(),
+  assignedAt: timestamp("assignedAt"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  companyIdx: index("yard_moves_company_idx").on(table.companyId),
+  locationIdx: index("yard_moves_location_idx").on(table.locationId),
+  statusIdx: index("yard_moves_status_idx").on(table.status),
+  hostlerIdx: index("yard_moves_hostler_idx").on(table.hostlerId),
+}));
+
+export type YardMove = typeof yardMoves.$inferSelect;
+
+// ─── INTERMODAL / CONTAINER & CHASSIS ───────────────────────────────
+
+export const chassisInventory = mysqlTable("chassis_inventory", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  chassisNumber: varchar("chassisNumber", { length: 30 }).notNull(),
+  type: varchar("type", { length: 20 }).notNull(),
+  status: mysqlEnum("status", ["available", "in_use", "maintenance", "out_of_service"]),
+  owner: varchar("owner", { length: 100 }),
+  containerId: int("containerId"),
+  locationId: varchar("locationId", { length: 50 }),
+  condition: mysqlEnum("condition", ["good", "needs_repair", "damaged"]).default("good"),
+  lastInspection: timestamp("lastInspection"),
+  tireCondition: mysqlEnum("tireCondition", ["good", "worn", "replace"]).default("good"),
+  lightStatus: mysqlEnum("lightStatus", ["operational", "partial", "non_operational"]).default("operational"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  companyIdx: index("chassis_inv_company_idx").on(table.companyId),
+  chassisNumIdx: index("chassis_inv_number_idx").on(table.chassisNumber),
+  statusIdx: index("chassis_inv_status_idx").on(table.status),
+}));
+
+export type ChassisInventory = typeof chassisInventory.$inferSelect;
+
+export const containers = mysqlTable("containers", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  containerNumber: varchar("containerNumber", { length: 20 }).notNull(),
+  size: mysqlEnum("size", ["20ft", "40ft", "45ft", "53ft"]),
+  type: mysqlEnum("type", ["standard", "high_cube", "reefer", "open_top", "flat_rack", "tank"]),
+  status: mysqlEnum("status", ["on_chassis", "grounded", "loaded", "empty", "in_transit", "at_port"]),
+  chassisId: int("chassisId").references(() => chassisInventory.id),
+  locationId: varchar("locationId", { length: 50 }),
+  spotId: varchar("spotId", { length: 20 }),
+  steamshipLine: varchar("steamshipLine", { length: 100 }),
+  bookingNumber: varchar("bookingNumber", { length: 50 }),
+  sealNumber: varchar("sealNumber", { length: 50 }),
+  weight: int("weight"),
+  lastFreeDay: timestamp("lastFreeDay"),
+  demurrageRate: decimal("demurrageRate", { precision: 10, scale: 2 }),
+  arrivalTime: timestamp("arrivalTime"),
+  departureTime: timestamp("departureTime"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  companyIdx: index("containers_company_idx").on(table.companyId),
+  containerNumIdx: index("containers_number_idx").on(table.containerNumber),
+  statusIdx: index("containers_status_idx").on(table.status),
+  steamshipIdx: index("containers_steamship_idx").on(table.steamshipLine),
+}));
+
+export type Container = typeof containers.$inferSelect;
+
+// ─── CROSS-DOCK OPERATIONS ──────────────────────────────────────────
+
+export const crossDockOperations = mysqlTable("cross_dock_operations", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  locationId: varchar("locationId", { length: 50 }).notNull(),
+  status: mysqlEnum("status", ["planned", "in_progress", "completed", "cancelled"]),
+  inboundDock: varchar("inboundDock", { length: 20 }),
+  outboundDock: varchar("outboundDock", { length: 20 }),
+  inboundTrailerId: int("inboundTrailerId").references(() => vehicles.id),
+  inboundTrailerNumber: varchar("inboundTrailerNumber", { length: 50 }),
+  outboundTrailerId: int("outboundTrailerId").references(() => vehicles.id),
+  outboundTrailerNumber: varchar("outboundTrailerNumber", { length: 50 }),
+  inboundCarrier: varchar("inboundCarrier", { length: 100 }),
+  outboundCarrier: varchar("outboundCarrier", { length: 100 }),
+  palletCount: int("palletCount").default(0),
+  palletsTransferred: int("palletsTransferred").default(0),
+  priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"]).default("normal"),
+  scheduledStart: timestamp("scheduledStart"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  estimatedCompletion: timestamp("estimatedCompletion"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  companyIdx: index("cross_dock_company_idx").on(table.companyId),
+  locationIdx: index("cross_dock_location_idx").on(table.locationId),
+  statusIdx: index("cross_dock_status_idx").on(table.status),
+}));
+
+export type CrossDockOperation = typeof crossDockOperations.$inferSelect;
+
+// ─── WAREHOUSE INVENTORY ────────────────────────────────────────────
+
+export const warehouseInventory = mysqlTable("warehouse_inventory", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  locationId: varchar("locationId", { length: 50 }).notNull(),
+  sku: varchar("sku", { length: 30 }).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  category: varchar("category", { length: 50 }),
+  quantity: int("quantity").default(0),
+  unit: varchar("unit", { length: 20 }).default("each"),
+  warehouseLocation: varchar("warehouseLocation", { length: 50 }),
+  minLevel: int("minLevel").default(0),
+  maxLevel: int("maxLevel").default(1000),
+  lastReceivedAt: timestamp("lastReceivedAt"),
+  lastShippedAt: timestamp("lastShippedAt"),
+  unitValue: decimal("unitValue", { precision: 10, scale: 2 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  companyIdx: index("wh_inv_company_idx").on(table.companyId),
+  locationIdx: index("wh_inv_location_idx").on(table.locationId),
+  skuIdx: index("wh_inv_sku_idx").on(table.sku),
+  categoryIdx: index("wh_inv_category_idx").on(table.category),
+}));
+
+export type WarehouseInventoryItem = typeof warehouseInventory.$inferSelect;
+
+// ─── RFP (REQUEST FOR PROPOSALS) ────────────────────────────────────
+
+export const rfps = mysqlTable("rfps", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  title: varchar("title", { length: 300 }).notNull(),
+  description: text("description"),
+  status: mysqlEnum("status", ["draft", "published", "in_review", "awarded", "closed", "cancelled"]).default("draft"),
+  responseDeadline: timestamp("responseDeadline"),
+  contractStartDate: varchar("contractStartDate", { length: 20 }),
+  contractEndDate: varchar("contractEndDate", { length: 20 }),
+  carrierRequirements: json("carrierRequirements"),
+  scoringWeights: json("scoringWeights"),
+  distributedTo: int("distributedTo").default(0),
+  responsesReceived: int("responsesReceived").default(0),
+  notes: text("notes"),
+  publishedAt: timestamp("publishedAt"),
+  awardDate: timestamp("awardDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  companyIdx: index("rfps_company_idx").on(table.companyId),
+  statusIdx: index("rfps_status_idx").on(table.status),
+}));
+
+export type Rfp = typeof rfps.$inferSelect;
+
+export const rfpLanes = mysqlTable("rfp_lanes", {
+  id: int("id").autoincrement().primaryKey(),
+  rfpId: int("rfpId").notNull().references(() => rfps.id),
+  originCity: varchar("originCity", { length: 100 }).notNull(),
+  originState: varchar("originState", { length: 10 }).notNull(),
+  destinationCity: varchar("destinationCity", { length: 100 }).notNull(),
+  destinationState: varchar("destinationState", { length: 10 }).notNull(),
+  estimatedDistance: int("estimatedDistance"),
+  annualVolume: int("annualVolume"),
+  volumeUnit: mysqlEnum("volumeUnit", ["loads", "tons", "gallons"]).default("loads"),
+  equipmentRequired: varchar("equipmentRequired", { length: 50 }),
+  hazmat: boolean("hazmat").default(false),
+  temperatureControlled: boolean("temperatureControlled").default(false),
+  targetRate: decimal("targetRate", { precision: 10, scale: 2 }),
+  rateType: mysqlEnum("rateType", ["flat", "per_mile"]).default("flat"),
+  frequencyPerWeek: int("frequencyPerWeek").default(1),
+  specialRequirements: json("specialRequirements").$type<string[]>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  rfpIdx: index("rfp_lanes_rfp_idx").on(table.rfpId),
+}));
+
+export type RfpLane = typeof rfpLanes.$inferSelect;
+
+export const rfpBids = mysqlTable("rfp_bids", {
+  id: int("id").autoincrement().primaryKey(),
+  rfpId: int("rfpId").notNull().references(() => rfps.id),
+  carrierId: int("carrierId").notNull().references(() => companies.id),
+  carrierTier: varchar("carrierTier", { length: 20 }),
+  status: mysqlEnum("status", ["pending", "submitted", "shortlisted", "awarded", "rejected", "declined"]).default("pending"),
+  overallScore: decimal("overallScore", { precision: 5, scale: 2 }),
+  safetyScore: decimal("safetyScore", { precision: 5, scale: 2 }),
+  onTimeRate: decimal("onTimeRate", { precision: 5, scale: 2 }),
+  insuranceCoverage: decimal("insuranceCoverage", { precision: 12, scale: 2 }),
+  fleetSize: int("fleetSize"),
+  submittedAt: timestamp("submittedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  rfpIdx: index("rfp_bids_rfp_idx").on(table.rfpId),
+  carrierIdx: index("rfp_bids_carrier_idx").on(table.carrierId),
+  statusIdx: index("rfp_bids_status_idx").on(table.status),
+}));
+
+export type RfpBid = typeof rfpBids.$inferSelect;
+
+export const rfpLaneBids = mysqlTable("rfp_lane_bids", {
+  id: int("id").autoincrement().primaryKey(),
+  bidId: int("bidId").notNull().references(() => rfpBids.id),
+  laneId: int("laneId").notNull().references(() => rfpLanes.id),
+  bidRate: decimal("bidRate", { precision: 10, scale: 2 }).notNull(),
+  rateType: mysqlEnum("rateType", ["flat", "per_mile"]).default("flat"),
+  transitDays: int("transitDays"),
+  capacityPerWeek: int("capacityPerWeek"),
+  equipmentOffered: varchar("equipmentOffered", { length: 50 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  bidIdx: index("rfp_lane_bids_bid_idx").on(table.bidId),
+  laneIdx: index("rfp_lane_bids_lane_idx").on(table.laneId),
+}));
+
+export type RfpLaneBid = typeof rfpLaneBids.$inferSelect;
+
+export const rfpCounterOffers = mysqlTable("rfp_counter_offers", {
+  id: int("id").autoincrement().primaryKey(),
+  rfpId: int("rfpId").notNull().references(() => rfps.id),
+  laneId: int("laneId").notNull().references(() => rfpLanes.id),
+  carrierId: int("carrierId").notNull().references(() => companies.id),
+  originalRate: decimal("originalRate", { precision: 10, scale: 2 }),
+  counterRate: decimal("counterRate", { precision: 10, scale: 2 }),
+  message: text("message"),
+  status: mysqlEnum("status", ["pending", "accepted", "rejected", "expired"]).default("pending"),
+  carrierResponse: text("carrierResponse"),
+  respondedAt: timestamp("respondedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  rfpIdx: index("rfp_counter_rfp_idx").on(table.rfpId),
+  carrierIdx: index("rfp_counter_carrier_idx").on(table.carrierId),
+  statusIdx: index("rfp_counter_status_idx").on(table.status),
+}));
+
+export type RfpCounterOffer = typeof rfpCounterOffers.$inferSelect;
+
+export const rfpAwards = mysqlTable("rfp_awards", {
+  id: int("id").autoincrement().primaryKey(),
+  rfpId: int("rfpId").notNull().references(() => rfps.id),
+  laneId: int("laneId").notNull().references(() => rfpLanes.id),
+  carrierId: int("carrierId").notNull().references(() => companies.id),
+  awardedRate: decimal("awardedRate", { precision: 10, scale: 2 }).notNull(),
+  rateType: mysqlEnum("rateType", ["flat", "per_mile"]).default("flat"),
+  savingsVsTarget: decimal("savingsVsTarget", { precision: 10, scale: 2 }),
+  savingsVsAvgBid: decimal("savingsVsAvgBid", { precision: 10, scale: 2 }),
+  annualValue: decimal("annualValue", { precision: 14, scale: 2 }),
+  status: mysqlEnum("status", ["pending_review", "shortlisted", "counter_offered", "awarded", "rejected", "declined_by_carrier"]).default("pending_review"),
+  notes: text("notes"),
+  awardedAt: timestamp("awardedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  rfpIdx: index("rfp_awards_rfp_idx").on(table.rfpId),
+  laneIdx: index("rfp_awards_lane_idx").on(table.laneId),
+  carrierIdx: index("rfp_awards_carrier_idx").on(table.carrierId),
+  statusIdx: index("rfp_awards_status_idx").on(table.status),
+}));
+
+export type RfpAward = typeof rfpAwards.$inferSelect;

@@ -311,7 +311,7 @@ export default function ESANGChat() {
               <CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
                 <Zap className="w-4 h-4 text-cyan-400" />
                 Capabilities
-                <Badge className={cn("border-0 text-[9px] ml-auto", isLight ? "bg-blue-50 text-blue-600" : "bg-blue-500/10 text-blue-400")}>{userRole.replace("_", " ")}</Badge>
+                <Badge className={cn("border-0 text-xs ml-auto", isLight ? "bg-blue-50 text-blue-600" : "bg-blue-500/10 text-blue-400")}>{userRole.replace("_", " ")}</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-1.5">
@@ -343,7 +343,7 @@ export default function ESANGChat() {
               <CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
                 <Database className={cn("w-4 h-4", isLight ? "text-blue-600" : "text-blue-400")} />
                 Memory
-                <Badge className={cn("border-0 text-[9px] ml-auto", isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/20 text-blue-400")}>CRE</Badge>
+                <Badge className={cn("border-0 text-xs ml-auto", isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/20 text-blue-400")}>CRE</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -363,7 +363,7 @@ export default function ESANGChat() {
                     <span className={isLight ? "text-slate-500" : "text-slate-400"}>Token Budget</span>
                     <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">{memoryStatsQuery.data?.totalTokens || 0}</span>
                   </div>
-                  <div className={cn("text-[10px] mt-1 flex items-center gap-1", isLight ? "text-slate-400" : "text-slate-500")}>
+                  <div className={cn("text-xs mt-1 flex items-center gap-1", isLight ? "text-slate-400" : "text-slate-500")}>
                     <Sparkles className="w-3 h-3" />
                     <span>Cognitive persistence active</span>
                   </div>
@@ -379,7 +379,7 @@ export default function ESANGChat() {
                 <CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
                   <Brain className={cn("w-4 h-4", isLight ? "text-purple-600" : "text-purple-400")} />
                   Learning
-                  <Badge className={cn("border-0 text-[9px] ml-auto", isLight ? "bg-purple-100 text-purple-600" : "bg-purple-500/20 text-purple-400")}>AI</Badge>
+                  <Badge className={cn("border-0 text-xs ml-auto", isLight ? "bg-purple-100 text-purple-600" : "bg-purple-500/20 text-purple-400")}>AI</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">

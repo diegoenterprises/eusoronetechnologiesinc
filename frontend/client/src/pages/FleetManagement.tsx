@@ -170,7 +170,7 @@ export default function FleetManagement() {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-4">
-                    <p className="text-[10px] text-slate-400 uppercase">Next Service</p>
+                    <p className="text-xs text-slate-400 uppercase">Next Service</p>
                     <p className={valCls}>{vehicle.nextService || "N/A"}</p>
                   </div>
                 </div>

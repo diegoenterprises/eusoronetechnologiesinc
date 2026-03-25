@@ -179,7 +179,7 @@ export default function SpectraMatch() {
               <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>
                 Auto-Detect from {catalog.providerLabel}
               </p>
-              <p className={cn("text-[10px]", isLight ? "text-slate-500" : "text-white/40")}>
+              <p className={cn("text-xs", isLight ? "text-slate-500" : "text-white/40")}>
                 Click a product to auto-populate SpectraMatch parameters
               </p>
             </div>
@@ -204,7 +204,7 @@ export default function SpectraMatch() {
                 {p.spectraMatchReady && <Activity className="w-3 h-3" />}
                 {p.name}
                 {p.percentFull != null && (
-                  <span className={cn("text-[9px] px-1.5 py-0.5 rounded-md",
+                  <span className={cn("text-xs px-1.5 py-0.5 rounded-md",
                     p.percentFull > 60 ? "bg-emerald-500/10 text-emerald-500" : p.percentFull > 20 ? "bg-amber-500/10 text-amber-500" : "bg-red-500/10 text-red-500"
                   )}>
                     {p.percentFull}%
@@ -541,7 +541,7 @@ export default function SpectraMatch() {
             <CardHeader className="pb-3">
               <CardTitle className={cn("flex items-center gap-2 text-base", isLight ? "text-slate-800" : "text-white")}>
                 <BarChart3 className="w-4 h-4 text-purple-500" />SPECTRA-MATCH Learning Stats
-                <Badge className="bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white border-0 text-[10px] ml-auto"><EsangIcon className="w-2.5 h-2.5 mr-0.5" />ESANG AI</Badge>
+                <Badge className="bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white border-0 text-xs ml-auto"><EsangIcon className="w-2.5 h-2.5 mr-0.5" />ESANG AI</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -557,7 +557,7 @@ export default function SpectraMatch() {
                     ].map((s) => (
                       <div key={s.label} className={cn("p-3 rounded-xl text-center", isLight ? "bg-white border border-slate-200" : "bg-slate-800/50")}>
                         <p className={cn("text-2xl font-bold", s.color || "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent")}>{s.value}</p>
-                        <p className={cn("text-[10px]", subtextCls)}>{s.label}</p>
+                        <p className={cn("text-xs", subtextCls)}>{s.label}</p>
                       </div>
                     ))}
                   </div>

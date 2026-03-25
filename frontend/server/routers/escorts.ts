@@ -10,8 +10,8 @@ import { z } from "zod";
 import { escortProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { loads, users, escortAssignments, convoys, locationHistory } from "../../drizzle/schema";
-import { eq, and, desc, asc, sql, gte, or, ne } from "drizzle-orm";
+import { loads, users, escortAssignments, convoys, locationHistory, escortCertifications, incidents, documents, certifications } from "../../drizzle/schema";
+import { eq, and, desc, asc, sql, gte, lte, or, ne, like, isNull } from "drizzle-orm";
 import { unsafeCast } from "../_core/types/unsafe";
 
 const positionSchema = z.enum(["lead", "chase", "both"]);
@@ -559,7 +559,32 @@ export const escortsRouter = router({
       return { success: true, jobId: input.jobId, newStatus: input.status, updatedAt: new Date().toISOString() };
     }),
 
-  getCertifications: protectedProcedure.query(async () => []),
+  getCertifications: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return [];
+      const rows = await db.select().from(escortCertifications)
+        .where(eq(escortCertifications.userId, userId))
+        .orderBy(desc(escortCertifications.createdAt));
+      return rows.map(r => ({
+        id: String(r.id),
+        certType: r.certType,
+        certNumber: r.certNumber || '',
+        issuingState: r.issuingState,
+        issuingAuthority: r.issuingAuthority || '',
+        issueDate: r.issueDate?.toISOString() || '',
+        expirationDate: r.expirationDate?.toISOString() || '',
+        status: r.status || 'active',
+        heightPoleCertified: Boolean(r.heightPoleCertified),
+        nightOperationsCertified: Boolean(r.nightOperationsCertified),
+        hazmatEscortCertified: Boolean(r.hazmatEscortCertified),
+        documentUrl: r.documentUrl || '',
+        notes: r.notes || '',
+      }));
+    } catch (e) { logger.error('[Escorts] getCertifications:', e); return []; }
+  }),
 
   getEarningsHistory: protectedProcedure
     .input(z.object({ period: z.enum(["week", "month", "quarter", "year"]).default("month") }))
@@ -765,11 +790,88 @@ export const escortsRouter = router({
   // PERMITS
   // ═══════════════════════════════════════════════════════════════════════════
 
-  getPermits: protectedProcedure.query(async () => []),
-  getPermitStats: protectedProcedure.query(async () => ({ activePermits: 0, expiringSoon: 0, statesCovered: 0, certifications: 0 })),
-  renewPermit: protectedProcedure.input(z.object({ permitId: z.string() })).mutation(async ({ input }) => ({
-    success: true, permitId: input.permitId, renewalSubmittedAt: new Date().toISOString(), status: "pending_renewal",
-  })),
+  getPermits: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return [];
+      const rows = await db.select().from(certifications)
+        .where(and(eq(certifications.userId, userId), like(certifications.type, '%permit%')))
+        .orderBy(desc(certifications.createdAt));
+      return rows.map(r => ({
+        id: String(r.id),
+        type: r.type,
+        name: r.name,
+        status: r.status || 'active',
+        expiryDate: r.expiryDate?.toISOString() || '',
+        documentUrl: r.documentUrl || '',
+        createdAt: r.createdAt?.toISOString() || '',
+      }));
+    } catch (e) { logger.error('[Escorts] getPermits:', e); return []; }
+  }),
+
+  getPermitStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { activePermits: 0, expiringSoon: 0, statesCovered: 0, certifications: 0 };
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return { activePermits: 0, expiringSoon: 0, statesCovered: 0, certifications: 0 };
+      const thirtyDaysOut = new Date(); thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
+      const now = new Date();
+      // Permits from certifications table
+      const permitRows = await db.select({
+        status: certifications.status,
+        expiryDate: certifications.expiryDate,
+      }).from(certifications)
+        .where(and(eq(certifications.userId, userId), like(certifications.type, '%permit%')));
+      const active = permitRows.filter(r => r.status === 'active').length;
+      const expiring = permitRows.filter(r => r.status === 'active' && r.expiryDate && r.expiryDate >= now && r.expiryDate <= thirtyDaysOut).length;
+      // States covered from escort certifications
+      const [statesResult] = await db.select({ count: sql<number>`COUNT(DISTINCT ${escortCertifications.issuingState})` })
+        .from(escortCertifications)
+        .where(and(eq(escortCertifications.userId, userId), eq(escortCertifications.status, 'active')));
+      // Total certifications count
+      const [certCount] = await db.select({ count: sql<number>`count(*)` })
+        .from(escortCertifications).where(eq(escortCertifications.userId, userId));
+      return {
+        activePermits: active,
+        expiringSoon: expiring,
+        statesCovered: statesResult?.count || 0,
+        certifications: certCount?.count || 0,
+      };
+    } catch (e) { logger.error('[Escorts] getPermitStats:', e); return { activePermits: 0, expiringSoon: 0, statesCovered: 0, certifications: 0 }; }
+  }),
+
+  renewPermit: protectedProcedure.input(z.object({ permitId: z.string() })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database unavailable");
+    const userId = await resolveEscortUserId(ctx.user);
+    if (!userId) throw new Error("Auth required");
+    const permitIdNum = parseInt(input.permitId, 10);
+    if (!permitIdNum) throw new Error("Invalid permit ID");
+    // Verify the permit belongs to this user
+    const [existing] = await db.select().from(certifications)
+      .where(and(eq(certifications.id, permitIdNum), eq(certifications.userId, userId))).limit(1);
+    if (!existing) throw new Error("Permit not found");
+    // Create a renewal entry (new certification row with pending status)
+    const newExpiry = new Date(existing.expiryDate || new Date());
+    newExpiry.setFullYear(newExpiry.getFullYear() + 1);
+    const [inserted] = await db.insert(certifications).values({
+      userId,
+      type: existing.type,
+      name: `${existing.name} (Renewal)`,
+      expiryDate: newExpiry,
+      status: 'pending',
+      documentUrl: existing.documentUrl,
+    }).$returningId();
+    return {
+      success: true,
+      permitId: String(inserted?.id || input.permitId),
+      renewalSubmittedAt: new Date().toISOString(),
+      status: "pending_renewal",
+    };
+  }),
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SCHEDULE & AVAILABILITY
@@ -965,13 +1067,111 @@ export const escortsRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // CERTIFICATIONS (placeholder — no dedicated table yet)
+  // CERTIFICATIONS — wired to escortCertifications table
   // ═══════════════════════════════════════════════════════════════════════════
 
-  getMyCertifications: protectedProcedure.query(async () => []),
-  getCertificationStats: protectedProcedure.input(z.object({ escortId: z.string().optional() }).optional()).query(async () => ({ total: 0, valid: 0, expiring: 0, expired: 0, statesCovered: 0, reciprocity: 0 })),
-  getStateCertifications: protectedProcedure.input(z.object({ escortId: z.string().optional() }).optional()).query(async () => []),
-  uploadCertification: protectedProcedure.input(z.object({ state: z.string(), type: z.string(), expirationDate: z.string() })).mutation(async () => ({ success: true, certId: `cert_${Date.now()}` })),
+  getMyCertifications: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return [];
+      const rows = await db.select().from(escortCertifications)
+        .where(eq(escortCertifications.userId, userId))
+        .orderBy(desc(escortCertifications.createdAt));
+      return rows.map(r => ({
+        id: String(r.id),
+        certType: r.certType,
+        certNumber: r.certNumber || '',
+        issuingState: r.issuingState,
+        issuingAuthority: r.issuingAuthority || '',
+        issueDate: r.issueDate?.toISOString() || '',
+        expirationDate: r.expirationDate?.toISOString() || '',
+        status: r.status || 'active',
+        heightPoleCertified: Boolean(r.heightPoleCertified),
+        nightOperationsCertified: Boolean(r.nightOperationsCertified),
+        hazmatEscortCertified: Boolean(r.hazmatEscortCertified),
+        documentUrl: r.documentUrl || '',
+        notes: r.notes || '',
+      }));
+    } catch (e) { logger.error('[Escorts] getMyCertifications:', e); return []; }
+  }),
+
+  getCertificationStats: protectedProcedure.input(z.object({ escortId: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    const empty = { total: 0, valid: 0, expiring: 0, expired: 0, statesCovered: 0, reciprocity: 0 };
+    if (!db) return empty;
+    try {
+      const userId = input?.escortId ? parseInt(input.escortId, 10) : await resolveEscortUserId(ctx.user);
+      if (!userId) return empty;
+      const now = new Date();
+      const thirtyDaysOut = new Date(); thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
+      const rows = await db.select({
+        status: escortCertifications.status,
+        expirationDate: escortCertifications.expirationDate,
+        issuingState: escortCertifications.issuingState,
+      }).from(escortCertifications).where(eq(escortCertifications.userId, userId));
+      const total = rows.length;
+      const valid = rows.filter(r => r.status === 'active').length;
+      const expired = rows.filter(r => r.status === 'expired' || (r.expirationDate && r.expirationDate < now)).length;
+      const expiring = rows.filter(r => r.status === 'active' && r.expirationDate && r.expirationDate >= now && r.expirationDate <= thirtyDaysOut).length;
+      const uniqueStates = new Set(rows.filter(r => r.status === 'active').map(r => r.issuingState));
+      const statesCovered = uniqueStates.size;
+      // Reciprocity: count states that share reciprocal agreements (estimate: states > 1 means some reciprocity)
+      const reciprocity = statesCovered > 1 ? Math.max(0, statesCovered - 1) : 0;
+      return { total, valid, expiring, expired, statesCovered, reciprocity };
+    } catch (e) { logger.error('[Escorts] getCertificationStats:', e); return empty; }
+  }),
+
+  getStateCertifications: protectedProcedure.input(z.object({ escortId: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const userId = input?.escortId ? parseInt(input.escortId, 10) : await resolveEscortUserId(ctx.user);
+      if (!userId) return [];
+      const rows = await db.select().from(escortCertifications)
+        .where(eq(escortCertifications.userId, userId))
+        .orderBy(asc(escortCertifications.issuingState));
+      // Group by state
+      const stateMap: Record<string, any[]> = {};
+      for (const r of rows) {
+        if (!stateMap[r.issuingState]) stateMap[r.issuingState] = [];
+        stateMap[r.issuingState].push({
+          id: String(r.id),
+          certType: r.certType,
+          certNumber: r.certNumber || '',
+          status: r.status || 'active',
+          issueDate: r.issueDate?.toISOString() || '',
+          expirationDate: r.expirationDate?.toISOString() || '',
+          issuingAuthority: r.issuingAuthority || '',
+        });
+      }
+      return Object.entries(stateMap).map(([state, certs]) => ({
+        state,
+        certifications: certs,
+        count: certs.length,
+        activeCount: certs.filter((c: any) => c.status === 'active').length,
+      }));
+    } catch (e) { logger.error('[Escorts] getStateCertifications:', e); return []; }
+  }),
+
+  uploadCertification: protectedProcedure.input(z.object({ state: z.string(), type: z.string(), expirationDate: z.string() })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database unavailable");
+    const userId = await resolveEscortUserId(ctx.user);
+    if (!userId) throw new Error("Auth required");
+    const [inserted] = await db.insert(escortCertifications).values({
+      userId,
+      certType: input.type,
+      issuingState: input.state,
+      expirationDate: new Date(input.expirationDate),
+      status: 'active',
+    }).$returningId();
+    return { success: true, certId: String(inserted?.id || `cert_${Date.now()}`) };
+  }),
+
+  // State requirements: reference/regulatory data — not stored in DB.
+  // Returns empty array; to be populated when a state-requirements reference table is added.
   getStateRequirements: protectedProcedure.input(z.object({ state: z.string().optional() }).optional()).query(async () => []),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1025,13 +1225,100 @@ export const escortsRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // INCIDENTS & REPORTS (placeholder — no dedicated table yet)
+  // INCIDENTS & REPORTS — wired to incidents + documents tables
   // ═══════════════════════════════════════════════════════════════════════════
 
-  getIncidents: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), severity: z.string().optional() })).query(async () => []),
-  getIncidentStats: protectedProcedure.query(async () => ({ total: 0, open: 0, resolved: 0, critical: 0 })),
-  getReports: protectedProcedure.input(z.object({ type: z.string().optional(), search: z.string().optional(), status: z.string().optional() })).query(async () => []),
-  getReportStats: protectedProcedure.query(async () => ({ total: 0, thisMonth: 0, submitted: 0, drafts: 0 })),
+  getIncidents: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), severity: z.string().optional() })).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return [];
+      const conditions: any[] = [eq(incidents.driverId, userId)];
+      if (input.status) conditions.push(eq(incidents.status, input.status as any));
+      if (input.severity) conditions.push(eq(incidents.severity, input.severity as any));
+      if (input.search) conditions.push(like(incidents.description!, `%${input.search}%`));
+      const rows = await db.select().from(incidents)
+        .where(and(...conditions))
+        .orderBy(desc(incidents.occurredAt)).limit(50);
+      return rows.map(r => ({
+        id: String(r.id),
+        type: r.type,
+        severity: r.severity,
+        occurredAt: r.occurredAt?.toISOString() || '',
+        location: r.location || '',
+        description: r.description || '',
+        injuries: r.injuries || 0,
+        fatalities: r.fatalities || 0,
+        status: r.status || 'reported',
+        createdAt: r.createdAt?.toISOString() || '',
+      }));
+    } catch (e) { logger.error('[Escorts] getIncidents:', e); return []; }
+  }),
+
+  getIncidentStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const empty = { total: 0, open: 0, resolved: 0, critical: 0 };
+    if (!db) return empty;
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return empty;
+      const rows = await db.select({
+        status: incidents.status,
+        severity: incidents.severity,
+      }).from(incidents).where(eq(incidents.driverId, userId));
+      const total = rows.length;
+      const open = rows.filter(r => r.status === 'reported' || r.status === 'investigating').length;
+      const resolved = rows.filter(r => r.status === 'resolved').length;
+      const critical = rows.filter(r => r.severity === 'critical').length;
+      return { total, open, resolved, critical };
+    } catch (e) { logger.error('[Escorts] getIncidentStats:', e); return empty; }
+  }),
+
+  getReports: protectedProcedure.input(z.object({ type: z.string().optional(), search: z.string().optional(), status: z.string().optional() })).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return [];
+      const conditions: any[] = [eq(documents.userId, userId)];
+      if (input.type) conditions.push(eq(documents.type, input.type));
+      if (input.status) conditions.push(eq(documents.status, input.status as any));
+      if (input.search) conditions.push(like(documents.name, `%${input.search}%`));
+      const rows = await db.select().from(documents)
+        .where(and(...conditions))
+        .orderBy(desc(documents.createdAt)).limit(50);
+      return rows.map(r => ({
+        id: String(r.id),
+        type: r.type,
+        name: r.name,
+        fileUrl: r.fileUrl || '',
+        status: r.status || 'active',
+        expiryDate: r.expiryDate?.toISOString() || '',
+        createdAt: r.createdAt?.toISOString() || '',
+      }));
+    } catch (e) { logger.error('[Escorts] getReports:', e); return []; }
+  }),
+
+  getReportStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const empty = { total: 0, thisMonth: 0, submitted: 0, drafts: 0 };
+    if (!db) return empty;
+    try {
+      const userId = await resolveEscortUserId(ctx.user);
+      if (!userId) return empty;
+      const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+      const rows = await db.select({
+        status: documents.status,
+        createdAt: documents.createdAt,
+      }).from(documents).where(eq(documents.userId, userId));
+      const total = rows.length;
+      const thisMonth = rows.filter(r => r.createdAt && r.createdAt >= monthStart).length;
+      const submitted = rows.filter(r => r.status === 'active').length;
+      const drafts = rows.filter(r => r.status === 'pending').length;
+      return { total, thisMonth, submitted, drafts };
+    } catch (e) { logger.error('[Escorts] getReportStats:', e); return empty; }
+  }),
 
   // ═══════════════════════════════════════════════════════════════════════════
   // ACTIVE TRIP — the escort's live operational view

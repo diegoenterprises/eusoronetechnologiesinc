@@ -78,7 +78,7 @@ export default function TerminalOperations() {
           <div key={kpi.label} className={cn("p-5 text-center", cell)}>
             <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-white/[0.04] flex items-center justify-center mx-auto mb-3">{kpi.icon}</div>
             <p className={cn("text-2xl font-bold", kpi.color)}>{kpi.value}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">{kpi.label}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{kpi.label}</p>
           </div>
         ))}
       </div>
@@ -96,8 +96,8 @@ export default function TerminalOperations() {
                 <div key={dock.id} className="rounded-xl border border-slate-200/60 dark:border-white/[0.04] bg-white dark:bg-white/[0.02] p-3 text-center">
                   <div className={cn("w-2.5 h-2.5 rounded-full mx-auto mb-2", getDockStatusColor(dock.status))} />
                   <p className="text-xs font-semibold text-white">{dock.name}</p>
-                  <p className="text-[10px] text-slate-500 capitalize">{dock.status}</p>
-                  {dock.currentLoad && <p className="text-[10px] text-[#1473FF] mt-1 font-mono">#{dock.currentLoad}</p>}
+                  <p className="text-xs text-slate-500 capitalize">{dock.status}</p>
+                  {dock.currentLoad && <p className="text-xs text-[#1473FF] mt-1 font-mono">#{dock.currentLoad}</p>}
                 </div>
               ))}
             </div>
@@ -158,12 +158,12 @@ export default function TerminalOperations() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm text-white truncate">{activity.description}</p>
-                    <p className="text-[10px] text-slate-600 truncate">{activity.details}</p>
+                    <p className="text-xs text-slate-600 truncate">{activity.details}</p>
                   </div>
                 </div>
                 <div className="text-right shrink-0 pl-4">
-                  <p className="text-[11px] text-slate-500">{activity.time}</p>
-                  <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
+                  <p className="text-xs text-slate-500">{activity.time}</p>
+                  <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md",
                     activity.type === "arrival" ? "text-emerald-400 bg-emerald-400/10" : activity.type === "departure" ? "text-[#1473FF] bg-[#1473FF]/10" : "text-amber-400 bg-amber-400/10"
                   )}>{activity.type}</span>
                 </div>

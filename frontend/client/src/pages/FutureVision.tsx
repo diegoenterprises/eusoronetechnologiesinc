@@ -148,7 +148,7 @@ function MetricCard({
           {trend === "up" && <TrendingUp size={12} className="text-emerald-400" />}
           {trend === "down" && <TrendingDown size={12} className="text-rose-400" />}
           {trend === "stable" && <Activity size={12} className="text-amber-400" />}
-          <span className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"}`}>{trend === "up" ? "Improving" : trend === "down" ? "Declining" : "Stable"}</span>
+          <span className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"}`}>{trend === "up" ? "Improving" : trend === "down" ? "Declining" : "Stable"}</span>
         </div>
       )}
     </GlowCard>
@@ -203,7 +203,7 @@ function StatusBadge({ status }: { status: string }) {
   };
   const cls = map[status] || `bg-zinc-500/20 ${neutralText} border-zinc-500/30`;
   return (
-    <Badge variant="outline" className={`text-[10px] uppercase ${cls}`}>
+    <Badge variant="outline" className={`text-xs uppercase ${cls}`}>
       {status.replace(/_/g, " ")}
     </Badge>
   );
@@ -261,7 +261,7 @@ function RadarChart({ scores }: { scores: Record<string, number> }) {
         const p = getPoint(i, 118);
         const label = labels[k] || k;
         return (
-          <text key={i} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" className="fill-zinc-400 text-[9px]">
+          <text key={i} x={p.x} y={p.y} textAnchor="middle" dominantBaseline="middle" className="fill-zinc-400 text-xs">
             {label}
           </text>
         );
@@ -433,16 +433,16 @@ function AutonomousPanel() {
           <div className="space-y-2">
             {(s?.monthlyTrend || []).map((m: any) => (
               <div key={m.month} className="flex items-center gap-3">
-                <span className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} w-16 font-mono`}>{m.month}</span>
+                <span className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} w-16 font-mono`}>{m.month}</span>
                 <div className="flex-1"><ProgressBar value={m.safetyScore} color="emerald" /></div>
                 <span className="text-xs text-emerald-400 font-mono w-12 text-right">{m.safetyScore}%</span>
-                <span className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} w-10 text-right`}>{m.disengagements}d</span>
+                <span className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} w-10 text-right`}>{m.disengagements}d</span>
               </div>
             ))}
           </div>
           {s?.topDisengagementReasons && (
             <div className="mt-4 pt-3 border-t border-zinc-800">
-              <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>Top Disengagement Reasons</p>
+              <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>Top Disengagement Reasons</p>
               {s.topDisengagementReasons.slice(0, 3).map((r: any, i: number) => (
                 <div key={i} className="flex justify-between text-xs py-1">
                   <span className={isLight ? "text-slate-500" : "text-zinc-400"}>{r.reason}</span>
@@ -463,14 +463,14 @@ function AutonomousPanel() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-cyan-400 font-mono text-sm font-bold">{v.unitNumber}</span>
-                  <Badge variant="outline" className="text-[10px] bg-zinc-800 border-cyan-500/30 text-cyan-400">{v.level}</Badge>
+                  <Badge variant="outline" className="text-xs bg-zinc-800 border-cyan-500/30 text-cyan-400">{v.level}</Badge>
                   <StatusBadge status={v.status} />
                 </div>
                 {v.destination && <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} mt-1`}>To: {v.destination} (ETA: {v.eta})</p>}
               </div>
               <div className="text-right">
                 <p className="text-xs text-emerald-400">Safety: {v.safetyScore}%</p>
-                <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"}`}>{v.milesDriven.toLocaleString()} mi</p>
+                <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"}`}>{v.milesDriven.toLocaleString()} mi</p>
               </div>
             </div>
           ))}
@@ -489,7 +489,7 @@ function AutonomousPanel() {
               </div>
               <div className="flex items-center gap-3">
                 <span className={isLight ? "text-slate-500" : "text-zinc-500"}>{c.distance} mi</span>
-                <Badge variant="outline" className="text-[10px] border-teal-500/30 text-teal-400">{c.levelRequired}</Badge>
+                <Badge variant="outline" className="text-xs border-teal-500/30 text-teal-400">{c.levelRequired}</Badge>
                 <StatusBadge status={c.status} />
               </div>
             </div>
@@ -543,7 +543,7 @@ function EvFleetPanel() {
                 </div>
                 <ProgressBar value={v.currentCharge} color={v.currentCharge > 50 ? "emerald" : v.currentCharge > 20 ? "amber" : "rose"} />
               </div>
-              {v.estimatedArrival && <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} mt-2`}>ETA: {v.estimatedArrival}</p>}
+              {v.estimatedArrival && <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} mt-2`}>ETA: {v.estimatedArrival}</p>}
             </div>
           ))}
         </div>
@@ -576,7 +576,7 @@ function EvFleetPanel() {
       <GlowCard className="p-5" glowColor="violet">
         <h3 className="text-sm font-semibold text-violet-400 mb-4 flex items-center gap-2">
           <Flame size={16} /> Hydrogen Fuel Cell Fleet
-          <Badge variant="outline" className="text-[10px] border-violet-500/30 text-violet-400 ml-2">PILOT</Badge>
+          <Badge variant="outline" className="text-xs border-violet-500/30 text-violet-400 ml-2">PILOT</Badge>
         </h3>
         <div className="grid md:grid-cols-3 gap-3">
           {(h?.vehicles || []).map((v: any) => (
@@ -593,7 +593,7 @@ function EvFleetPanel() {
                 </div>
                 <ProgressBar value={v.currentFuel} color="violet" />
               </div>
-              <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} mt-1`}>Range: {v.rangeRemaining} mi</p>
+              <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} mt-1`}>Range: {v.rangeRemaining} mi</p>
             </div>
           ))}
         </div>
@@ -630,8 +630,8 @@ function BlockchainPanel() {
           {(b?.recentTransactions || []).map((tx: any, i: number) => (
             <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-zinc-800/30 text-xs">
               <div className="flex items-center gap-3">
-                <span className="text-cyan-400 font-mono text-[10px]">{tx.txHash}</span>
-                <Badge variant="outline" className={`text-[10px] border-zinc-600 ${isLight ? "text-slate-500" : "text-zinc-400"}`}>{tx.type.replace(/_/g, " ")}</Badge>
+                <span className="text-cyan-400 font-mono text-xs">{tx.txHash}</span>
+                <Badge variant="outline" className={`text-xs border-zinc-600 ${isLight ? "text-slate-500" : "text-zinc-400"}`}>{tx.type.replace(/_/g, " ")}</Badge>
               </div>
               <div className="flex items-center gap-3">
                 <span className={isLight ? "text-slate-500" : "text-zinc-500"}>{tx.loadId}</span>
@@ -655,7 +655,7 @@ function BlockchainPanel() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-teal-400 font-mono font-bold">{c.id}</span>
-                    <Badge variant="outline" className={`text-[10px] border-zinc-600 ${isLight ? "text-slate-500" : "text-zinc-400"}`}>{c.type.replace(/_/g, " ")}</Badge>
+                    <Badge variant="outline" className={`text-xs border-zinc-600 ${isLight ? "text-slate-500" : "text-zinc-400"}`}>{c.type.replace(/_/g, " ")}</Badge>
                     <StatusBadge status={c.status} />
                   </div>
                   <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} mt-1`}>{c.parties.join(" <-> ")}</p>
@@ -670,7 +670,7 @@ function BlockchainPanel() {
                     ) : (
                       <CircleDot size={12} className="text-zinc-600" />
                     )}
-                    <span className={`text-[10px] ${m.completed ? (isLight ? "text-slate-500" : "text-zinc-400") : "text-zinc-600"}`}>{m.name}</span>
+                    <span className={`text-xs ${m.completed ? (isLight ? "text-slate-500" : "text-zinc-400") : "text-zinc-600"}`}>{m.name}</span>
                   </div>
                 ))}
               </div>
@@ -735,17 +735,17 @@ function AiPredictionsPanel() {
           </h3>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className={`p-3 rounded-lg ${isLight ? "bg-slate-100" : "bg-zinc-800/50"}`}>
-              <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>Next Week</p>
+              <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>Next Week</p>
               <p className="text-xl font-bold text-violet-400">{p?.demandForecast?.nextWeek?.totalLoads ?? 0}</p>
-              <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"}`}>{p?.demandForecast?.nextWeek?.confidence}% confidence</p>
+              <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"}`}>{p?.demandForecast?.nextWeek?.confidence}% confidence</p>
             </div>
             <div className={`p-3 rounded-lg ${isLight ? "bg-slate-100" : "bg-zinc-800/50"}`}>
-              <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>Next Month</p>
+              <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>Next Month</p>
               <p className="text-xl font-bold text-violet-400">{p?.demandForecast?.nextMonth?.totalLoads?.toLocaleString() ?? 0}</p>
-              <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"}`}>{p?.demandForecast?.nextMonth?.confidence}% confidence</p>
+              <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"}`}>{p?.demandForecast?.nextMonth?.confidence}% confidence</p>
             </div>
           </div>
-          <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>Hot Lanes</p>
+          <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>Hot Lanes</p>
           {(p?.demandForecast?.hotLanes || []).map((lane: any, i: number) => (
             <div key={i} className="flex justify-between text-xs py-1.5 border-b border-zinc-800/50">
               <span className={isLight ? "text-slate-600" : "text-zinc-300"}>{lane.origin} → {lane.destination}</span>
@@ -823,7 +823,7 @@ function EsgPanel() {
                   <ProgressBar value={data.score} color={data.score >= 70 ? "emerald" : data.score >= 50 ? "amber" : "rose"} />
                   <div className="grid grid-cols-2 gap-x-4 mt-2">
                     {Object.entries(metrics).map(([key, val]) => (
-                      <div key={key} className="flex justify-between text-[10px] py-0.5">
+                      <div key={key} className="flex justify-between text-xs py-0.5">
                         <span className={`${isLight ? "text-slate-500" : "text-zinc-500"} capitalize`}>{key.replace(/([A-Z])/g, " $1")}</span>
                         <span className={isLight ? "text-slate-500" : "text-zinc-400"}>{typeof val === "number" && val > 1000 ? (val as number).toLocaleString() : String(val)}</span>
                       </div>
@@ -851,9 +851,9 @@ function EsgPanel() {
                   <span className={isLight ? "text-slate-600" : "text-zinc-300"}>{goal.name}</span>
                   <StatusBadge status={goal.status} />
                 </div>
-                <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} mb-1`}>{goal.target}</p>
+                <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} mb-1`}>{goal.target}</p>
                 <ProgressBar value={goal.current} max={goal.targetValue} color={goal.status === "on_track" ? "teal" : "amber"} />
-                <div className={`flex justify-between text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} mt-0.5`}>
+                <div className={`flex justify-between text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} mt-0.5`}>
                   <span>{goal.current}{goal.unit === "percent" ? "%" : ` ${goal.unit}`}</span>
                   <span>Target: {goal.targetValue}{goal.unit === "percent" ? "%" : ` ${goal.unit}`}</span>
                 </div>
@@ -868,15 +868,15 @@ function EsgPanel() {
         <h3 className="text-sm font-semibold text-cyan-400 mb-4">Emissions Reporting & Compliance</h3>
         <div className="grid md:grid-cols-3 gap-4">
           <div className={`p-3 rounded-lg ${isLight ? "bg-slate-100" : "bg-zinc-800/50"}`}>
-            <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>Scope 1 (Direct)</p>
+            <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>Scope 1 (Direct)</p>
             <p className="text-lg font-bold text-cyan-400">{(em?.scope1?.tons ?? 0).toLocaleString()} t</p>
           </div>
           <div className={`p-3 rounded-lg ${isLight ? "bg-slate-100" : "bg-zinc-800/50"}`}>
-            <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>Scope 2 (Energy)</p>
+            <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>Scope 2 (Energy)</p>
             <p className="text-lg font-bold text-cyan-400">{(em?.scope2?.tons ?? 0).toLocaleString()} t</p>
           </div>
           <div className={`p-3 rounded-lg ${isLight ? "bg-slate-100" : "bg-zinc-800/50"}`}>
-            <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>Scope 3 (Indirect)</p>
+            <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>Scope 3 (Indirect)</p>
             <p className="text-lg font-bold text-cyan-400">{(em?.scope3?.tons ?? 0).toLocaleString()} t</p>
           </div>
         </div>
@@ -944,7 +944,7 @@ function CarbonPanel() {
           <div className="space-y-2">
             {(c?.monthlyTrend || []).map((m: any) => (
               <div key={m.month} className="flex items-center gap-3">
-                <span className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} w-16 font-mono`}>{m.month}</span>
+                <span className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} w-16 font-mono`}>{m.month}</span>
                 <div className="flex-1"><ProgressBar value={m.tons} max={600} color="emerald" /></div>
                 <span className="text-xs text-emerald-400 font-mono w-14 text-right">{m.tons} t</span>
               </div>
@@ -1023,11 +1023,11 @@ function DigitalTwinPanel() {
             {t?.modeledAssets && Object.entries(t.modeledAssets).map(([key, val]) => (
               <div key={key} className={`p-3 rounded-lg ${isLight ? "bg-slate-100" : "bg-zinc-800/50"} text-center`}>
                 <p className="text-lg font-bold text-cyan-400">{String(val)}</p>
-                <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>{key}</p>
+                <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase`}>{key}</p>
               </div>
             ))}
           </div>
-          <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>Simulations</p>
+          <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>Simulations</p>
           <div className="space-y-2">
             {(t?.simulations || []).map((sim: any) => (
               <div key={sim.id} className="flex items-center justify-between p-2 rounded bg-zinc-800/30 text-xs">
@@ -1055,26 +1055,26 @@ function DigitalTwinPanel() {
           </h3>
           <div className="space-y-4">
             <div className={`p-3 rounded-lg ${isLight ? "bg-slate-100" : "bg-zinc-800/50"}`}>
-              <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>V2X Connections</p>
+              <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>V2X Connections</p>
               <div className="flex justify-between text-sm">
                 <span className="text-emerald-400 font-bold">{inf?.v2xConnections?.active ?? 0} active</span>
                 <span className={isLight ? "text-slate-500" : "text-zinc-500"}>/ {inf?.v2xConnections?.totalInfraPoints ?? 0} points ({inf?.v2xConnections?.coverage ?? 0}%)</span>
               </div>
             </div>
             <div>
-              <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>IoT Sensor Categories</p>
+              <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>IoT Sensor Categories</p>
               {(inf?.iotSensors?.categories || []).map((cat: any) => (
                 <div key={cat.type} className="flex justify-between text-xs py-1.5 border-b border-zinc-800/50">
                   <span className={isLight ? "text-slate-600" : "text-zinc-300"}>{cat.type}</span>
                   <div className="flex items-center gap-3">
                     <span className={isLight ? "text-slate-500" : "text-zinc-500"}>{cat.count} sensors</span>
-                    {cat.alerts24h > 0 && <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-400">{cat.alerts24h} alerts</Badge>}
+                    {cat.alerts24h > 0 && <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400">{cat.alerts24h} alerts</Badge>}
                   </div>
                 </div>
               ))}
             </div>
             <div>
-              <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>Smart Traffic Signals</p>
+              <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} uppercase mb-2`}>Smart Traffic Signals</p>
               {(inf?.smartTrafficSignals || []).map((s: any) => (
                 <div key={s.id} className="flex justify-between text-xs py-1.5 border-b border-zinc-800/50">
                   <span className={isLight ? "text-slate-600" : "text-zinc-300"}>{s.location}</span>
@@ -1186,7 +1186,7 @@ function RoadmapPanel() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-zinc-200 text-sm">{r.name}</span>
-                  <Badge variant="outline" className={`text-[10px] border-zinc-600 ${isLight ? "text-slate-500" : "text-zinc-400"}`}>{r.agency}</Badge>
+                  <Badge variant="outline" className={`text-xs border-zinc-600 ${isLight ? "text-slate-500" : "text-zinc-400"}`}>{r.agency}</Badge>
                 </div>
                 <div className="flex items-center gap-3">
                   <StatusBadge status={r.complianceStatus} />
@@ -1244,7 +1244,7 @@ function DronePanel() {
                   {drone.currentMission && <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-400"} mt-1`}>{drone.currentMission}</p>}
                 </div>
               </div>
-              <div className="mt-2 grid grid-cols-3 gap-2 text-[10px]">
+              <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
                 <div>
                   <span className={isLight ? "text-slate-500" : "text-zinc-500"}>Battery</span>
                   <div className="mt-0.5"><ProgressBar value={drone.batteryLevel} color={drone.batteryLevel > 50 ? "emerald" : drone.batteryLevel > 20 ? "amber" : "rose"} /></div>
@@ -1259,7 +1259,7 @@ function DronePanel() {
                   <p className="text-cyan-400 text-xs font-mono mt-1">{drone.location.altitude} ft</p>
                 </div>
               </div>
-              {drone.eta && <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"} mt-1`}>ETA: {drone.eta}</p>}
+              {drone.eta && <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"} mt-1`}>ETA: {drone.eta}</p>}
             </div>
           ))}
         </div>
@@ -1279,15 +1279,15 @@ function DronePanel() {
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className={`p-2 rounded ${isLight ? "bg-slate-100" : "bg-zinc-800/50"}`}>
-                <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"}`}>Distance</p>
+                <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"}`}>Distance</p>
                 <p className="text-sm text-teal-400 font-mono">{fl?.flightPlan?.distance ?? 0} mi</p>
               </div>
               <div className={`p-2 rounded ${isLight ? "bg-slate-100" : "bg-zinc-800/50"}`}>
-                <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"}`}>Est. Time</p>
+                <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"}`}>Est. Time</p>
                 <p className="text-sm text-teal-400 font-mono">{fl?.flightPlan?.estimatedTime ?? "N/A"}</p>
               </div>
               <div className={`p-2 rounded ${isLight ? "bg-slate-100" : "bg-zinc-800/50"}`}>
-                <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-zinc-500"}`}>Max Alt</p>
+                <p className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-500"}`}>Max Alt</p>
                 <p className="text-sm text-teal-400 font-mono">{fl?.flightPlan?.maxAltitude ?? 0} ft</p>
               </div>
             </div>

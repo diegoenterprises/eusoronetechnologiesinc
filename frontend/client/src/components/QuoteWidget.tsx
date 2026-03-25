@@ -89,7 +89,7 @@ function DemandBadge({ level }: { level: string }) {
     NORMAL: <TrendingDown className="w-3 h-3" />,
   };
   return (
-    <Badge variant="outline" className={`text-[10px] ${colors[level] || colors.NORMAL} gap-1`}>
+    <Badge variant="outline" className={`text-xs ${colors[level] || colors.NORMAL} gap-1`}>
       {icons[level] || icons.NORMAL}
       {level.replace("_", " ")}
     </Badge>
@@ -149,20 +149,20 @@ export default function QuoteWidget({
         <div className="px-5 py-3 bg-slate-800/80 border-b border-slate-700/40 flex items-center gap-2">
           <Zap className="w-4 h-4 text-[#1473FF]" />
           <span className="text-sm font-semibold text-white">Instant Rate Quote</span>
-          <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-[9px] px-2 py-0 ml-auto">HOT ZONES AI</Badge>
+          <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-xs px-2 py-0 ml-auto">HOT ZONES AI</Badge>
         </div>
         <div className="p-5 space-y-4">
           {/* Origin / Destination */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 block">Origin City</Label>
+              <Label className="text-xs text-slate-500 uppercase tracking-wider mb-1 block">Origin City</Label>
               <div className="flex gap-2">
                 <Input value={originCity} onChange={(e) => { setOriginCity(e.target.value); setHasQueried(false); }} placeholder="Houston" className="bg-slate-900/50 border-slate-700/40 text-white text-sm" />
                 <Input value={originState} onChange={(e) => { setOriginState(e.target.value.toUpperCase().slice(0, 2)); setHasQueried(false); }} placeholder="TX" maxLength={2} className="bg-slate-900/50 border-slate-700/40 text-white text-sm w-16" />
               </div>
             </div>
             <div>
-              <Label className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 block">Destination City</Label>
+              <Label className="text-xs text-slate-500 uppercase tracking-wider mb-1 block">Destination City</Label>
               <div className="flex gap-2">
                 <Input value={destCity} onChange={(e) => { setDestCity(e.target.value); setHasQueried(false); }} placeholder="Dallas" className="bg-slate-900/50 border-slate-700/40 text-white text-sm" />
                 <Input value={destState} onChange={(e) => { setDestState(e.target.value.toUpperCase().slice(0, 2)); setHasQueried(false); }} placeholder="TX" maxLength={2} className="bg-slate-900/50 border-slate-700/40 text-white text-sm w-16" />
@@ -173,7 +173,7 @@ export default function QuoteWidget({
           {/* Equipment + Hazmat */}
           <div className={`grid ${compact ? "grid-cols-1" : "grid-cols-2"} gap-4`}>
             <div>
-              <Label className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 block">Equipment Type</Label>
+              <Label className="text-xs text-slate-500 uppercase tracking-wider mb-1 block">Equipment Type</Label>
               <Select value={equipment} onValueChange={(v) => { setEquipment(v); setHasQueried(false); }}>
                 <SelectTrigger className="bg-slate-900/50 border-slate-700/40 text-white text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -219,13 +219,13 @@ export default function QuoteWidget({
           <div className="px-5 py-4 bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-b border-slate-700/40">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider">Estimated Total</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Estimated Total</p>
                 <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                   ${quote.pricing.totalEstimate.toLocaleString()}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider">Rate / Mile</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wider">Rate / Mile</p>
                 <p className="text-2xl font-bold text-white">${quote.pricing.ratePerMile}<span className="text-sm text-slate-400 font-normal">/mi</span></p>
               </div>
             </div>
@@ -233,7 +233,7 @@ export default function QuoteWidget({
               <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{quote.distance} mi</span>
               <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{quote.estimatedTransitTime}</span>
               <span className="flex items-center gap-1"><Truck className="w-3 h-3" />{quote.intelligence.equipmentLabel}</span>
-              {hazmat && <Badge variant="outline" className="text-[9px] border-orange-500/30 text-orange-400">{quote.pricing.hazmatClassLabel}</Badge>}
+              {hazmat && <Badge variant="outline" className="text-xs border-orange-500/30 text-orange-400">{quote.pricing.hazmatClassLabel}</Badge>}
             </div>
           </div>
 
@@ -258,16 +258,16 @@ export default function QuoteWidget({
                 {quote.intelligence.originZone && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/30">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] text-slate-400">Origin:</span>
-                    <span className="text-[10px] text-white font-medium">{quote.intelligence.originZone}</span>
+                    <span className="text-xs text-slate-400">Origin:</span>
+                    <span className="text-xs text-white font-medium">{quote.intelligence.originZone}</span>
                     <DemandBadge level={quote.intelligence.originDemand} />
                   </div>
                 )}
                 {quote.intelligence.destZone && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 border border-slate-700/30">
                     <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    <span className="text-[10px] text-slate-400">Dest:</span>
-                    <span className="text-[10px] text-white font-medium">{quote.intelligence.destZone}</span>
+                    <span className="text-xs text-slate-400">Dest:</span>
+                    <span className="text-xs text-white font-medium">{quote.intelligence.destZone}</span>
                     <DemandBadge level={quote.intelligence.destDemand} />
                   </div>
                 )}
@@ -276,7 +276,7 @@ export default function QuoteWidget({
 
             {/* Market comparison bar */}
             <div>
-              <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                 <span>Market Range</span>
                 <span>{quote.marketComparison.source === "lane_learning" ? "Lane Data" : "National Avg"}</span>
               </div>
@@ -287,7 +287,7 @@ export default function QuoteWidget({
                   style={{ left: `${Math.min(Math.max(((quote.pricing.totalEstimate - quote.marketComparison.low) / (quote.marketComparison.high - quote.marketComparison.low)) * 100, 5), 95)}%` }}
                 />
               </div>
-              <div className="flex items-center justify-between text-[10px] mt-1">
+              <div className="flex items-center justify-between text-xs mt-1">
                 <span className="text-emerald-400">${quote.marketComparison.low.toLocaleString()}</span>
                 <span className="text-slate-400">Avg: ${quote.marketComparison.average.toLocaleString()}</span>
                 <span className="text-red-400">${quote.marketComparison.high.toLocaleString()}</span>
@@ -299,7 +299,7 @@ export default function QuoteWidget({
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-cyan-500/5 border border-cyan-500/15">
                 <BarChart3 className="w-4 h-4 text-cyan-400 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-[10px] text-slate-500">Historical Lane Rate</p>
+                  <p className="text-xs text-slate-500">Historical Lane Rate</p>
                   <p className="text-sm text-white font-semibold">${quote.intelligence.laneAvgRate}/mi
                     {quote.intelligence.laneOnTimePercent && <span className="text-slate-400 font-normal ml-2">{quote.intelligence.laneOnTimePercent}% on-time</span>}
                   </p>
@@ -312,10 +312,10 @@ export default function QuoteWidget({
               <div className="px-3 py-2 rounded-xl bg-amber-500/5 border border-amber-500/15">
                 <div className="flex items-center gap-1.5 mb-1">
                   <CloudRain className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">Weather Alerts</span>
+                  <span className="text-xs text-amber-400 font-semibold uppercase tracking-wider">Weather Alerts</span>
                 </div>
                 {quote.intelligence.weatherAlerts.map((a: string, i: number) => (
-                  <p key={i} className="text-[11px] text-slate-300 leading-tight">{a}</p>
+                  <p key={i} className="text-xs text-slate-300 leading-tight">{a}</p>
                 ))}
               </div>
             )}
@@ -323,7 +323,7 @@ export default function QuoteWidget({
             {/* Expandable breakdown */}
             <button
               onClick={() => setShowBreakdown(!showBreakdown)}
-              className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
             >
               {showBreakdown ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               {showBreakdown ? "Hide" : "Show"} Price Breakdown
@@ -367,10 +367,10 @@ export default function QuoteWidget({
 
           {/* Footer */}
           <div className="px-5 py-3 bg-slate-800/40 border-t border-slate-700/30 flex items-center justify-between">
-            <p className="text-[10px] text-slate-500">Quote ID: {quote.quoteId} | Valid 24h</p>
+            <p className="text-xs text-slate-500">Quote ID: {quote.quoteId} | Valid 24h</p>
             <div className="flex items-center gap-1">
               <Shield className="w-3 h-3 text-emerald-400" />
-              <span className="text-[10px] text-emerald-400 font-medium">Hot Zones Verified</span>
+              <span className="text-xs text-emerald-400 font-medium">Hot Zones Verified</span>
             </div>
           </div>
         </div>

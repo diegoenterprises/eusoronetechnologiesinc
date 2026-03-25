@@ -121,7 +121,7 @@ export default function CorrectiveActions() {
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                 <div>
                   <p className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}</p>
-                  <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                  <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                 </div>
               </div>
             </CardContent>
@@ -159,7 +159,7 @@ export default function CorrectiveActions() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{action.title}</p>
-                          <Badge className={cn("text-[9px] border", priority.cls)}>{priority.label}</Badge>
+                          <Badge className={cn("text-xs border", priority.cls)}>{priority.label}</Badge>
                         </div>
                         <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>
                           {action.id} · Due {new Date(action.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {action.assignee}
@@ -167,7 +167,7 @@ export default function CorrectiveActions() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={cn("text-[9px] border", status.bg, status.color, "border-current/20")}>{status.label}</Badge>
+                      <Badge className={cn("text-xs border", status.bg, status.color, "border-current/20")}>{status.label}</Badge>
                       <ChevronRight className={cn("w-4 h-4 transition-transform", isExpanded && "rotate-90", isLight ? "text-slate-300" : "text-slate-600")} />
                     </div>
                   </div>
@@ -185,7 +185,7 @@ export default function CorrectiveActions() {
                           { l: "Due", v: new Date(action.dueDate).toLocaleDateString() },
                         ].map((d) => (
                           <div key={d.l} className={cn("p-2 rounded-lg", isLight ? "bg-slate-50" : "bg-slate-700/30")}>
-                            <p className={cn("text-[9px] uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>{d.l}</p>
+                            <p className={cn("text-xs uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>{d.l}</p>
                             <p className={cn("text-xs font-medium mt-0.5", isLight ? "text-slate-700" : "text-slate-200")}>{d.v}</p>
                           </div>
                         ))}

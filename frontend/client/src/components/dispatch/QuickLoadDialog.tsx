@@ -211,7 +211,7 @@ export default function QuickLoadDialog({ open, onClose, onSubmit, isSubmitting 
                 </SelectContent>
               </Select>
               {isHazmat && (
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-[10px] text-red-400">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-xs text-red-400">
                   <Flame className="w-3 h-3" aria-hidden="true" />
                   HazMat Class {selectedCargo?.hazmat} — Hazmat endorsement required for driver
                 </div>

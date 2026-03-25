@@ -7,8 +7,9 @@
  * leaderboards, missions, missionProgress, badges, userBadges, userTitles,
  * rewards, drivers, loads, users, auditLogs, seasons tables.
  *
- * TODO: tournaments, seasonal events, social feed, and customization options
- *       need dedicated tables; currently use deterministic in-memory data.
+ * Seasonal events wired to the `seasons` DB table.
+ * Tournaments require a dedicated table (returns empty until built).
+ * Customization options are game-design config constants.
  */
 
 import { z } from "zod";
@@ -99,82 +100,57 @@ const REWARDS_STORE_CATALOG = [
   { id: "rs10", name: "Custom Horn Pack", description: "5 unique horn sounds for your rig", category: "cosmetic" as const, cost: 3_000, image: "/rewards/horns.png", inStock: true, featured: false, prestigeRequired: 0 },
 ];
 
-// TODO: Seasonal events need a dedicated table; using deterministic static data
-const SEASONAL_EVENTS_STATIC = [
-  {
-    id: "se1", name: "Spring Freight Frenzy", description: "Deliver the most loads during the spring rush", season: "spring",
-    startsAt: "2026-03-01T00:00:00Z", endsAt: "2026-03-31T23:59:59Z", status: "active" as const,
-    rewards: [
-      { tier: "bronze", threshold: 10, reward: "500 XP + Spring Badge" },
-      { tier: "silver", threshold: 25, reward: "2,000 XP + Spring Frame" },
-      { tier: "gold", threshold: 50, reward: "5,000 XP + Exclusive Spring Wrap" },
-    ],
-    bannerImage: "/events/spring-frenzy.png",
-    themeColor: "#22c55e",
-  },
-  {
-    id: "se2", name: "Summer Sprint", description: "Race across the country in the heat of summer", season: "summer",
-    startsAt: "2026-06-01T00:00:00Z", endsAt: "2026-08-31T23:59:59Z", status: "upcoming" as const,
-    rewards: [
-      { tier: "bronze", threshold: 5_000, reward: "1,000 XP + Summer Badge" },
-      { tier: "silver", threshold: 15_000, reward: "5,000 XP + Summer Avatar" },
-      { tier: "gold", threshold: 30_000, reward: "15,000 XP + Golden Sunglasses" },
-    ],
-    bannerImage: "/events/summer-sprint.png",
-    themeColor: "#f59e0b",
-  },
-  {
-    id: "se3", name: "Holiday Haul", description: "Keep America's shelves stocked through the holidays", season: "winter",
-    startsAt: "2026-11-15T00:00:00Z", endsAt: "2026-12-31T23:59:59Z", status: "upcoming" as const,
-    rewards: [
-      { tier: "bronze", threshold: 15, reward: "1,500 XP + Holiday Badge" },
-      { tier: "silver", threshold: 35, reward: "4,000 XP + Snowflake Frame" },
-      { tier: "gold", threshold: 60, reward: "10,000 XP + Limited Holiday Wrap" },
-    ],
-    bannerImage: "/events/holiday-haul.png",
-    themeColor: "#ef4444",
-  },
-];
+// Season theme colors by theme name
+const SEASON_THEME_COLORS: Record<string, string> = {
+  spring: "#22c55e", summer: "#f59e0b", fall: "#f97316", winter: "#ef4444",
+};
 
-// TODO: Tournaments need a dedicated table; using deterministic static data
-const TOURNAMENTS_STATIC = [
-  {
-    id: "t1", name: "March Madness Mileage", type: "bracket" as const, status: "active" as const,
-    startsAt: "2026-03-01T00:00:00Z", endsAt: "2026-03-31T23:59:59Z",
-    entryFee: 0, prizePool: "50,000 XP + $500 Fuel Card", maxParticipants: 64, currentParticipants: 52,
-    description: "Single-elimination bracket based on weekly miles. Top 4 get prizes.",
-  },
-  {
-    id: "t2", name: "Fuel Efficiency Challenge", type: "leaderboard" as const, status: "active" as const,
-    startsAt: "2026-03-05T00:00:00Z", endsAt: "2026-03-19T23:59:59Z",
-    entryFee: 500, prizePool: "25,000 XP + PTO Day", maxParticipants: 128, currentParticipants: 87,
-    description: "Best average MPG over 2 weeks. Entry fee goes to prize pool.",
-  },
-  {
-    id: "t3", name: "Coast to Coast Relay", type: "team" as const, status: "upcoming" as const,
-    startsAt: "2026-04-01T00:00:00Z", endsAt: "2026-04-14T23:59:59Z",
-    entryFee: 0, prizePool: "100,000 Guild XP", maxParticipants: 32, currentParticipants: 12,
-    description: "Teams of 4 relay loads coast to coast. Fastest team wins.",
-  },
-];
+/** Fetch seasonal events from the seasons DB table */
+async function getSeasonalEventsFromDb() {
+  const db = await requireDb();
+  const rows = await db
+    .select()
+    .from(seasons)
+    .orderBy(asc(seasons.startsAt));
 
-const TOURNAMENT_BRACKET_STATIC = [
-  { round: 1, matchups: [
-    { id: "tb1", player1: { name: "Jake Morrison", score: 3_200 }, player2: { name: "Maria Santos", score: 2_900 }, winner: "Jake Morrison" },
-    { id: "tb2", player1: { name: "Chen Wei", score: 3_100 }, player2: { name: "DeShawn Williams", score: 3_400 }, winner: "DeShawn Williams" },
-    { id: "tb3", player1: { name: "Sarah Kowalski", score: 2_800 }, player2: { name: "Tom Richards", score: 2_600 }, winner: "Sarah Kowalski" },
-    { id: "tb4", player1: { name: "Alex Kim", score: 3_500 }, player2: { name: "Lisa Chen", score: 3_050 }, winner: "Alex Kim" },
-  ]},
-  { round: 2, matchups: [
-    { id: "tb5", player1: { name: "Jake Morrison", score: 3_500 }, player2: { name: "DeShawn Williams", score: 3_300 }, winner: "Jake Morrison" },
-    { id: "tb6", player1: { name: "Sarah Kowalski", score: 3_000 }, player2: { name: "Alex Kim", score: 3_700 }, winner: "Alex Kim" },
-  ]},
-  { round: 3, matchups: [
-    { id: "tb7", player1: { name: "Jake Morrison", score: null }, player2: { name: "Alex Kim", score: null }, winner: null },
-  ]},
-];
+  const now = Date.now();
+  return rows.map(row => {
+    const start = new Date(row.startsAt).getTime();
+    const end = new Date(row.endsAt).getTime();
+    const status: "active" | "upcoming" | "ended" =
+      row.isActive && now >= start && now <= end ? "active"
+      : now < start ? "upcoming"
+      : "ended";
 
-// TODO: Customization options need a dedicated table
+    // Map DB rewards JSON to tier format expected by the frontend
+    const dbRewards = (row.rewards ?? []) as Array<{ rank: number; reward: { type: string; value: number } }>;
+    const tierNames = ["bronze", "silver", "gold", "platinum", "diamond"];
+    const rewards = dbRewards.map((r, i) => ({
+      tier: tierNames[i] ?? `tier${i + 1}`,
+      threshold: r.rank,
+      reward: `${r.reward.value.toLocaleString()} ${r.reward.type}`,
+    }));
+
+    const seasonKey = (row.theme ?? "").toLowerCase();
+    return {
+      id: `se${row.id}`,
+      name: row.name,
+      description: row.description ?? "",
+      season: seasonKey || "all",
+      startsAt: row.startsAt.toISOString(),
+      endsAt: row.endsAt.toISOString(),
+      status,
+      rewards,
+      bannerImage: `/events/${seasonKey || "season"}-banner.png`,
+      themeColor: SEASON_THEME_COLORS[seasonKey] ?? "#6366f1",
+    };
+  });
+}
+
+// Tournaments require a dedicated DB table — return empty until implemented
+// No fake data with fabricated participant counts or bracket matchups
+
+// Game design config: cosmetic customization catalog (costs, prestige gates)
 const CUSTOMIZATION_OPTIONS = [
   { id: "av1", type: "avatar" as const, name: "Classic Trucker", image: "/avatars/classic.png", cost: 0, prestigeRequired: 0, owned: true, equipped: true },
   { id: "av2", type: "avatar" as const, name: "Night Rider", image: "/avatars/night-rider.png", cost: 1_000, prestigeRequired: 0, owned: true, equipped: false },
@@ -860,8 +836,8 @@ export const advancedGamificationRouter = router({
   // ======================== SEASONAL EVENTS ========================
 
   getSeasonalEvents: protectedProcedure.query(async () => {
-    // TODO: Wire to seasons table when seasonal event data is populated
-    return SEASONAL_EVENTS_STATIC.map(e => ({
+    const events = await getSeasonalEventsFromDb();
+    return events.map(e => ({
       ...e,
       daysRemaining: e.status === "active" ? daysUntil(e.endsAt) : null,
       daysUntilStart: e.status === "upcoming" ? daysUntil(e.startsAt) : null,
@@ -871,7 +847,8 @@ export const advancedGamificationRouter = router({
   getSeasonalProgress: protectedProcedure
     .input(z.object({ eventId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const event = SEASONAL_EVENTS_STATIC.find(e => e.id === input.eventId);
+      const allEvents = await getSeasonalEventsFromDb();
+      const event = allEvents.find(e => e.id === input.eventId);
       if (!event) throw new TRPCError({ code: "NOT_FOUND", message: "Event not found" });
 
       // Derive progress from real load completions in the event period
@@ -933,7 +910,8 @@ export const advancedGamificationRouter = router({
     }),
 
   getSeasonalRewards: protectedProcedure.query(async () => {
-    return SEASONAL_EVENTS_STATIC.flatMap(e =>
+    const events = await getSeasonalEventsFromDb();
+    return events.flatMap(e =>
       e.rewards.map(r => ({
         eventId: e.id,
         eventName: e.name,
@@ -947,61 +925,28 @@ export const advancedGamificationRouter = router({
   // ======================== TOURNAMENTS ========================
 
   getTournaments: protectedProcedure.query(async () => {
-    // TODO: tournament table needed
-    return TOURNAMENTS_STATIC.map(t => ({
-      ...t,
-      daysRemaining: t.status === "active" ? daysUntil(t.endsAt) : null,
-      daysUntilStart: t.status === "upcoming" ? daysUntil(t.startsAt) : null,
-      spotsRemaining: t.maxParticipants - t.currentParticipants,
-      isRegistered: t.status === "active",
-    }));
+    // Tournaments require a dedicated DB table — return empty until implemented
+    return [] as Array<{
+      id: string; name: string; type: string; status: string;
+      startsAt: string; endsAt: string; entryFee: number; prizePool: string;
+      maxParticipants: number; currentParticipants: number; description: string;
+      daysRemaining: number | null; daysUntilStart: number | null;
+      spotsRemaining: number; isRegistered: boolean;
+    }>;
   }),
 
   getTournamentBracket: protectedProcedure
     .input(z.object({ tournamentId: z.string() }))
     .query(async ({ input }) => {
-      // TODO: tournament bracket table needed
-      const tournament = TOURNAMENTS_STATIC.find(t => t.id === input.tournamentId);
-      if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Tournament not found" });
-      return {
-        tournamentId: tournament.id,
-        tournamentName: tournament.name,
-        type: tournament.type,
-        rounds: TOURNAMENT_BRACKET_STATIC,
-        totalRounds: 3,
-        currentRound: 3,
-      };
+      // Tournaments require a dedicated DB table — no bracket data until implemented
+      throw new TRPCError({ code: "NOT_FOUND", message: "Tournament not found" });
     }),
 
   joinTournament: protectedProcedure
     .input(z.object({ tournamentId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      // TODO: tournament participation table needed
-      const tournament = TOURNAMENTS_STATIC.find(t => t.id === input.tournamentId);
-      if (!tournament) throw new TRPCError({ code: "NOT_FOUND", message: "Tournament not found" });
-      if (tournament.currentParticipants >= tournament.maxParticipants) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Tournament is full" });
-      }
-
-      // Log to audit
-      const db = await requireDb();
-      const uid = userId(ctx);
-      await db.insert(auditLogs).values({
-        userId: uid,
-        action: "TOURNAMENT_JOINED",
-        entityType: "tournament",
-        entityId: 0,
-        changes: { tournamentId: tournament.id, tournamentName: tournament.name },
-        severity: "LOW",
-      });
-
-      return {
-        success: true,
-        tournamentId: tournament.id,
-        tournamentName: tournament.name,
-        entryFeeCharged: tournament.entryFee,
-        message: `Successfully registered for ${tournament.name}!`,
-      };
+    .mutation(async ({ input }) => {
+      // Tournaments require a dedicated DB table — cannot join until implemented
+      throw new TRPCError({ code: "NOT_FOUND", message: "No tournaments available" });
     }),
 
   // ======================== ACHIEVEMENTS ========================
@@ -1616,7 +1561,6 @@ export const advancedGamificationRouter = router({
     }),
 
   getCustomizationOptions: protectedProcedure.query(async () => {
-    // TODO: customization options table needed
     return {
       avatars: CUSTOMIZATION_OPTIONS.filter(o => o.type === "avatar"),
       frames: CUSTOMIZATION_OPTIONS.filter(o => o.type === "frame"),
@@ -1630,7 +1574,6 @@ export const advancedGamificationRouter = router({
       itemId: z.string(),
     }))
     .mutation(async ({ input, ctx }) => {
-      // TODO: customization ownership table needed
       const item = CUSTOMIZATION_OPTIONS.find(o => o.id === input.itemId);
       if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
       if (!item.owned) throw new TRPCError({ code: "BAD_REQUEST", message: "You do not own this item" });

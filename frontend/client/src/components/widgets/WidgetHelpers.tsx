@@ -14,7 +14,7 @@ export const MiniStats: React.FC<{ items: { label: string; value: string | numbe
     {items.map((item, i) => (
       <div key={i} className={`p-2.5 rounded-xl ${item.color} border border-white/[0.06] hover:scale-[1.02] transition-all`}>
         <p className="text-lg font-bold text-white tabular-nums">{item.value}</p>
-        <p className="text-[10px] text-gray-500 font-medium tracking-wide mt-0.5">{item.label}</p>
+        <p className="text-xs text-gray-500 font-medium tracking-wide mt-0.5">{item.label}</p>
       </div>
     ))}
   </div>

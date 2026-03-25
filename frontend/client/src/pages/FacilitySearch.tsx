@@ -121,7 +121,7 @@ export default function FacilitySearch() {
           <button
             onClick={() => pipelineSeedMut.mutate()}
             disabled={pipelineSeedMut.isPending}
-            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 text-[11px] font-medium hover:bg-violet-500/20 transition-colors disabled:opacity-50"
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-medium hover:bg-violet-500/20 transition-colors disabled:opacity-50"
           >
             {pipelineSeedMut.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Cylinder className="w-3 h-3" />}
             {pipelineSeedMut.isPending ? "Importing..." : "Seed Pipeline Stations"}
@@ -215,17 +215,17 @@ export default function FacilitySearch() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    <span className="flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
                       {typeIcon(fac.facilityType)}
                       {fac.facilityType}
                     </span>
                     {fac.isEusotripVerified && (
-                      <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         <Shield className="w-3 h-3" /> Verified
                       </span>
                     )}
                     {fac.status !== "OPERATING" && (
-                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
                         {fac.status}
                       </span>
                     )}
@@ -249,7 +249,7 @@ export default function FacilitySearch() {
                   {connectivityBadges(fac).length > 0 && (
                     <div className="flex gap-2 mt-2">
                       {connectivityBadges(fac).map((b, i) => (
-                        <span key={i} className="flex items-center gap-1 text-[10px] text-slate-500 bg-slate-50 dark:bg-white/[0.04] px-1.5 py-0.5 rounded">
+                        <span key={i} className="flex items-center gap-1 text-xs text-slate-500 bg-slate-50 dark:bg-white/[0.04] px-1.5 py-0.5 rounded">
                           {b.icon} {b.label}
                         </span>
                       ))}
@@ -257,7 +257,7 @@ export default function FacilitySearch() {
                   )}
 
                   {/* Meta row */}
-                  <div className="flex items-center gap-3 mt-2 text-[10px] text-slate-600">
+                  <div className="flex items-center gap-3 mt-2 text-xs text-slate-600">
                     {fac.loadingBays && (
                       <span className="flex items-center gap-1"><Fuel className="w-3 h-3" /> {fac.loadingBays} bays</span>
                     )}

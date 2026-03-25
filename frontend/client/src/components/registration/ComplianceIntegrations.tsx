@@ -136,7 +136,7 @@ export function ComplianceIntegrations({ role, complianceIds, onChange }: Compli
         <Label className="text-slate-300 text-sm flex items-center gap-2">
           {meta.label}
           {complianceIds[key]?.trim() && (
-            <Badge className="bg-green-500/20 text-green-400 text-[10px] px-1.5 py-0">Linked</Badge>
+            <Badge className="bg-green-500/20 text-green-400 text-xs px-1.5 py-0">Linked</Badge>
           )}
         </Label>
         <Input
@@ -145,7 +145,7 @@ export function ComplianceIntegrations({ role, complianceIds, onChange }: Compli
           placeholder={meta.placeholder}
           className="bg-slate-700/50 border-slate-600 text-white h-9 text-sm"
         />
-        <p className="text-[11px] text-slate-500">{meta.description}</p>
+        <p className="text-xs text-slate-500">{meta.description}</p>
       </div>
     );
   };
@@ -183,7 +183,7 @@ export function ComplianceIntegrations({ role, complianceIds, onChange }: Compli
           <ShieldCheck className="w-4 h-4 text-slate-400" />
           <span className="text-sm text-slate-300">Compliance Network & Federal IDs (Optional)</span>
           {filledCount > 0 && (
-            <Badge className="bg-blue-500/20 text-blue-400 text-[10px]">{filledCount} linked</Badge>
+            <Badge className="bg-blue-500/20 text-blue-400 text-xs">{filledCount} linked</Badge>
           )}
         </div>
         {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -257,16 +257,16 @@ export function PasswordFields({
         />
         {password.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-1">
-            <Badge className={`text-[10px] ${hasMinLength ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
+            <Badge className={`text-xs ${hasMinLength ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
               8+ characters
             </Badge>
-            <Badge className={`text-[10px] ${hasUppercase ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
+            <Badge className={`text-xs ${hasUppercase ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
               Uppercase
             </Badge>
-            <Badge className={`text-[10px] ${hasNumber ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
+            <Badge className={`text-xs ${hasNumber ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
               Number
             </Badge>
-            <Badge className={`text-[10px] ${hasSpecial ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
+            <Badge className={`text-xs ${hasSpecial ? 'bg-green-500/20 text-green-400' : 'bg-slate-700/50 text-slate-500'}`}>
               Special character
             </Badge>
           </div>

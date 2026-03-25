@@ -263,7 +263,7 @@ export function LoadTracker({ data, onRefresh, onCallDriver, onMessage }: LoadTr
                   milestone.status === "pending" && "bg-slate-700/30 text-slate-500"
                 )}>
                   <p className="font-medium truncate">{milestone.name}</p>
-                  {milestone.time && <p className="text-[10px] opacity-75">{milestone.time}</p>}
+                  {milestone.time && <p className="text-xs opacity-75">{milestone.time}</p>}
                 </div>
                 {idx < data.milestones.length - 1 && (
                   <Navigation className={cn(

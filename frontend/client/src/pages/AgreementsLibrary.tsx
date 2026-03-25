@@ -146,7 +146,7 @@ export default function AgreementsLibrary() {
           { label: "Expired", value: stats.expired, icon: <AlertTriangle className="w-4 h-4" />, color: "text-red-400" },
         ].map(s => (
           <div key={s.label} className={cl}>
-            <div className="flex items-center gap-2 mb-1"><span className={s.color}>{s.icon}</span><span className="text-[10px] uppercase text-slate-400 font-bold">{s.label}</span></div>
+            <div className="flex items-center gap-2 mb-1"><span className={s.color}>{s.icon}</span><span className="text-xs uppercase text-slate-400 font-bold">{s.label}</span></div>
             <p className={cn("text-xl font-bold", vl)}>{s.value}</p>
           </div>
         ))}
@@ -205,8 +205,8 @@ export default function AgreementsLibrary() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className={cn("font-bold text-sm", vl)}>#{ag.agreementNumber || `AG-${ag.id}`}</p>
-                        <Badge className={cn("border text-[10px] font-bold", statusColor(ag.status))}>{ag.status?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Draft"}</Badge>
-                        <Badge className="bg-slate-500/10 text-slate-400 border-slate-500/20 border text-[10px]">{typeLabel(ag.agreementType)}</Badge>
+                        <Badge className={cn("border text-xs font-bold", statusColor(ag.status))}>{ag.status?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Draft"}</Badge>
+                        <Badge className="bg-slate-500/10 text-slate-400 border-slate-500/20 border text-xs">{typeLabel(ag.agreementType)}</Badge>
                       </div>
                       <div className="flex items-center gap-3 mt-1 flex-wrap">
                         <span className="text-xs text-slate-400 flex items-center gap-1"><Building2 className="w-3 h-3" />{ag.partyBCompany || ag.partyBName || (isEscort ? "Client TBD" : isTerminal ? "Shipper TBD" : "Catalyst TBD")}</span>

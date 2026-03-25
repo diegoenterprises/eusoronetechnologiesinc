@@ -78,28 +78,28 @@ export default function DriverQualificationFiles() {
             <CardContent className="p-4 text-center">
               <Users className="w-5 h-5 text-blue-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-blue-400">{complianceReport.summary?.totalDrivers || 0}</p>
-              <p className="text-[9px] text-slate-400 uppercase">Total Drivers</p>
+              <p className="text-xs text-slate-400 uppercase">Total Drivers</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-green-400">{complianceReport.summary?.fullyCompliant || 0}</p>
-              <p className="text-[9px] text-slate-400 uppercase">Fully Compliant</p>
+              <p className="text-xs text-slate-400 uppercase">Fully Compliant</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <AlertTriangle className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-yellow-400">{complianceReport.summary?.partiallyCompliant || 0}</p>
-              <p className="text-[9px] text-slate-400 uppercase">Partial</p>
+              <p className="text-xs text-slate-400 uppercase">Partial</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <Shield className="w-5 h-5 text-purple-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-purple-400">{complianceReport.summary?.complianceRate || 0}%</p>
-              <p className="text-[9px] text-slate-400 uppercase">Compliance Rate</p>
+              <p className="text-xs text-slate-400 uppercase">Compliance Rate</p>
             </CardContent>
           </Card>
         </div>
@@ -120,7 +120,7 @@ export default function DriverQualificationFiles() {
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <FileText className="w-5 h-5 text-[#1473FF]" />
               {overview.driverName || `Driver #${overview.driverId}`}
-              <Badge className={cn("text-[9px] ml-2", STATUS_COLORS[overview.status])}>{overview.status}</Badge>
+              <Badge className={cn("text-xs ml-2", STATUS_COLORS[overview.status])}>{overview.status}</Badge>
               <span className="ml-auto text-sm text-slate-400">Score: {overview.complianceScore}%</span>
             </CardTitle>
           </CardHeader>
@@ -128,23 +128,23 @@ export default function DriverQualificationFiles() {
             <div className="grid grid-cols-5 gap-3 text-center">
               <div className="p-2 rounded-xl bg-slate-900/30 border border-slate-700/20">
                 <p className="text-lg font-bold text-white">{overview.documents?.total || 0}</p>
-                <p className="text-[9px] text-slate-400">Total</p>
+                <p className="text-xs text-slate-400">Total</p>
               </div>
               <div className="p-2 rounded-xl bg-slate-900/30 border border-slate-700/20">
                 <p className="text-lg font-bold text-green-400">{overview.documents?.valid || 0}</p>
-                <p className="text-[9px] text-slate-400">Valid</p>
+                <p className="text-xs text-slate-400">Valid</p>
               </div>
               <div className="p-2 rounded-xl bg-slate-900/30 border border-slate-700/20">
                 <p className="text-lg font-bold text-yellow-400">{overview.documents?.expiringSoon || 0}</p>
-                <p className="text-[9px] text-slate-400">Expiring</p>
+                <p className="text-xs text-slate-400">Expiring</p>
               </div>
               <div className="p-2 rounded-xl bg-slate-900/30 border border-slate-700/20">
                 <p className="text-lg font-bold text-red-400">{overview.documents?.expired || 0}</p>
-                <p className="text-[9px] text-slate-400">Expired</p>
+                <p className="text-xs text-slate-400">Expired</p>
               </div>
               <div className="p-2 rounded-xl bg-slate-900/30 border border-slate-700/20">
                 <p className="text-lg font-bold text-red-400">{overview.documents?.missing || 0}</p>
-                <p className="text-[9px] text-slate-400">Missing</p>
+                <p className="text-xs text-slate-400">Missing</p>
               </div>
             </div>
           </CardContent>
@@ -167,7 +167,7 @@ export default function DriverQualificationFiles() {
                     <p className="text-white text-sm font-medium">{d.name || d.type}</p>
                     <p className="text-xs text-slate-500">{d.type} · Uploaded {d.uploadedAt}</p>
                   </div>
-                  <Badge className={cn("text-[9px]", STATUS_COLORS[d.status])}>{d.status}</Badge>
+                  <Badge className={cn("text-xs", STATUS_COLORS[d.status])}>{d.status}</Badge>
                 </div>
               ))}
             </div>
@@ -181,7 +181,7 @@ export default function DriverQualificationFiles() {
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Briefcase className="w-5 h-5 text-purple-400" />Employment History
-              <Badge className={cn("text-[9px] ml-2", empHistory.compliant ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400")}>
+              <Badge className={cn("text-xs ml-2", empHistory.compliant ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400")}>
                 {empHistory.yearsVerified}/{empHistory.requiredYears} years
               </Badge>
             </CardTitle>
@@ -192,7 +192,7 @@ export default function DriverQualificationFiles() {
                 {empHistory.employers.map((e: any) => (
                   <div key={e.id} className="p-2 rounded-lg bg-slate-900/30 border border-slate-700/20 flex items-center justify-between">
                     <span className="text-sm text-white">{e.name}</span>
-                    <Badge className={cn("text-[9px]", STATUS_COLORS[e.status])}>{e.status}</Badge>
+                    <Badge className={cn("text-xs", STATUS_COLORS[e.status])}>{e.status}</Badge>
                   </div>
                 ))}
               </div>
@@ -209,7 +209,7 @@ export default function DriverQualificationFiles() {
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-red-400" />Expiring Items (Next 60 Days)
-              <Badge className="bg-red-500/20 text-red-400 text-[10px] ml-auto">{expiringItems.length}</Badge>
+              <Badge className="bg-red-500/20 text-red-400 text-xs ml-auto">{expiringItems.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -221,7 +221,7 @@ export default function DriverQualificationFiles() {
                     <p className="text-xs text-slate-500">Driver #{item.driverId} · Expires {item.expiresAt}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={cn("text-[9px]", item.daysRemaining <= 14 ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400")}>
+                    <Badge className={cn("text-xs", item.daysRemaining <= 14 ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400")}>
                       {item.daysRemaining}d
                     </Badge>
                     <Button size="sm" variant="ghost" onClick={() => sendReminderMutation.mutate({ driverId: String(item.driverId), documentType: "medical_card" })} className="h-7 px-2">

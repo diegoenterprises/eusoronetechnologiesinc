@@ -264,7 +264,7 @@ export default function TerminalCreateLoad() {
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-slate-500 font-medium mb-1">Terminal Loading Order</p>
+            <p className="text-xs uppercase tracking-widest text-slate-500 font-medium mb-1">Terminal Loading Order</p>
             <div className="flex items-center gap-3">
               <h1 className={cn("text-[32px] font-semibold tracking-tight tabular-nums", isLight ? "text-slate-900" : "text-white")}>
                 #{orderNumber}
@@ -272,7 +272,7 @@ export default function TerminalCreateLoad() {
               <button onClick={copyOrderNumber} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-colors">
                 <Copy className="w-4 h-4 text-slate-400" />
               </button>
-              <span className={cn("text-[10px] px-2.5 py-1 rounded-full font-semibold uppercase tracking-wide border", statusColors[orderStatus])}>
+              <span className={cn("text-xs px-2.5 py-1 rounded-full font-semibold uppercase tracking-wide border", statusColors[orderStatus])}>
                 {orderStatus}
               </span>
             </div>
@@ -284,16 +284,16 @@ export default function TerminalCreateLoad() {
             isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]"
           )}>
             {tasStatus?.connected ? (
-              <span className="flex items-center gap-1.5 text-emerald-500 text-[11px] font-medium">
+              <span className="flex items-center gap-1.5 text-emerald-500 text-xs font-medium">
                 <Wifi className="w-3.5 h-3.5" />TAS Online
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-slate-400 text-[11px] font-medium">
+              <span className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
                 <WifiOff className="w-3.5 h-3.5" />TAS Offline
               </span>
             )}
             {tasStatus?.provider && (
-              <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#1473FF]/10 text-[#1473FF] font-medium">
+              <span className="text-xs px-2 py-0.5 rounded-md bg-[#1473FF]/10 text-[#1473FF] font-medium">
                 {tasStatus.provider}
               </span>
             )}
@@ -329,7 +329,7 @@ export default function TerminalCreateLoad() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {/* Order Type */}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">Order Type</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">Order Type</label>
                 <div className="relative">
                   <select
                     value={orderType}
@@ -349,7 +349,7 @@ export default function TerminalCreateLoad() {
 
               {/* Scheduled Date — Brand Calendar */}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">
                   <CalendarIcon className="w-3 h-3 inline mr-1" />Scheduled
                 </label>
                 <Popover open={schedCalOpen} onOpenChange={setSchedCalOpen}>
@@ -391,7 +391,7 @@ export default function TerminalCreateLoad() {
 
               {/* Order Date (auto) */}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">
                   <Clock className="w-3 h-3 inline mr-1" />Order Date
                 </label>
                 <div className={cn(
@@ -412,7 +412,7 @@ export default function TerminalCreateLoad() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Position Holder */}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">
                   <Users className="w-3 h-3 inline mr-1" />Position Holder <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
@@ -438,12 +438,12 @@ export default function TerminalCreateLoad() {
                   </select>
                   <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1.5">Marketer or shipper who owns product allocation</p>
+                <p className="text-xs text-slate-400 mt-1.5">Marketer or shipper who owns product allocation</p>
               </div>
 
               {/* Carrier — FMCSA SAFER Lookup */}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">
                   <Truck className="w-3 h-3 inline mr-1" />Carrier
                 </label>
                 {/* Selected carrier display */}
@@ -454,10 +454,10 @@ export default function TerminalCreateLoad() {
                   )}>
                     <div>
                       <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{form.carrierName}</p>
-                      {form.carrierCode && <p className="text-[10px] text-slate-500 font-mono">DOT/MC: {form.carrierCode}</p>}
+                      {form.carrierCode && <p className="text-xs text-slate-500 font-mono">DOT/MC: {form.carrierCode}</p>}
                     </div>
                     <button onClick={() => { update("carrierName", ""); update("carrierCode", ""); update("carrierId", ""); }}
-                      className="text-[10px] text-slate-400 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-500/10">Clear</button>
+                      className="text-xs text-slate-400 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-500/10">Clear</button>
                   </div>
                 ) : (
                   <>
@@ -492,9 +492,9 @@ export default function TerminalCreateLoad() {
                               <Shield className="w-3 h-3 text-emerald-400" />
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
-                              {c.dotNumber && <span className="text-[9px] text-slate-500 font-mono">DOT: {c.dotNumber}</span>}
-                              {c.mcNumber && <span className="text-[9px] text-slate-500 font-mono">MC: {c.mcNumber}</span>}
-                              {(c.phyCity || c.city) && <span className="text-[9px] text-slate-400">{c.phyCity || c.city}, {c.phyState || c.state}</span>}
+                              {c.dotNumber && <span className="text-xs text-slate-500 font-mono">DOT: {c.dotNumber}</span>}
+                              {c.mcNumber && <span className="text-xs text-slate-500 font-mono">MC: {c.mcNumber}</span>}
+                              {(c.phyCity || c.city) && <span className="text-xs text-slate-400">{c.phyCity || c.city}, {c.phyState || c.state}</span>}
                             </div>
                           </button>
                         ))}
@@ -504,14 +504,14 @@ export default function TerminalCreateLoad() {
                     {/* Not Found → Invite */}
                     {carrierNotFound && !showInviteModal && (
                       <div className={cn("mt-2 p-3 rounded-xl border text-center", isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/5 border-amber-500/20")}>
-                        <p className="text-[10px] text-amber-500 font-medium mb-1.5">Carrier not found in FMCSA SAFER database</p>
+                        <p className="text-xs text-amber-500 font-medium mb-1.5">Carrier not found in FMCSA SAFER database</p>
                         <div className="flex gap-2 justify-center">
                           <Button size="sm" onClick={() => setShowInviteModal(true)}
-                            className="h-7 px-3 text-[10px] rounded-lg bg-[#1473FF]/10 text-[#1473FF] hover:bg-[#1473FF]/20 border-0">
+                            className="h-7 px-3 text-xs rounded-lg bg-[#1473FF]/10 text-[#1473FF] hover:bg-[#1473FF]/20 border-0">
                             <UserPlus className="w-3 h-3 mr-1" />Invite Carrier
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => { update("carrierName", carrierSearch); setShowCarrierResults(false); setCarrierNotFound(false); }}
-                            className="h-7 px-3 text-[10px] rounded-lg text-slate-400">
+                            className="h-7 px-3 text-xs rounded-lg text-slate-400">
                             Use Name Anyway
                           </Button>
                         </div>
@@ -528,7 +528,7 @@ export default function TerminalCreateLoad() {
                     />
 
                     {!showCarrierResults && !carrierNotFound && !showInviteModal && (
-                      <p className="text-[9px] text-slate-400 mt-1.5 flex items-center gap-1">
+                      <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
                         <Shield className="w-2.5 h-2.5" />FMCSA SAFER lookup — type carrier name or DOT#
                       </p>
                     )}
@@ -543,7 +543,7 @@ export default function TerminalCreateLoad() {
             "p-5 rounded-2xl border",
             isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]"
           )}>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-3">
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-3">
               <Droplets className="w-3 h-3 inline mr-1" />Product & Tank <span className="text-red-400">*</span>
             </label>
             
@@ -580,7 +580,7 @@ export default function TerminalCreateLoad() {
                         tank.percentFull > 70 ? "bg-emerald-400" : tank.percentFull > 40 ? "bg-blue-400" : "bg-amber-400"
                       )} style={{ width: `${tank.percentFull}%` }} />
                     </div>
-                    <div className="flex items-center justify-between text-[9px]">
+                    <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-500 font-mono">{tank.tankId}</span>
                       <span className={cn("font-semibold",
                         tank.percentFull > 70 ? "text-emerald-500" : tank.percentFull > 40 ? "text-blue-500" : "text-amber-500"
@@ -606,7 +606,7 @@ export default function TerminalCreateLoad() {
                   </span>
                 </div>
                 {selectedTank.hazmatClass && (
-                  <span className="text-[9px] px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 font-medium">
+                  <span className="text-xs px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 font-medium">
                     HAZMAT Class {selectedTank.hazmatClass}
                   </span>
                 )}
@@ -622,7 +622,7 @@ export default function TerminalCreateLoad() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Trailer Number */}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">
                   Trailer # <span className="text-red-400">*</span>
                 </label>
                 <Input
@@ -638,7 +638,7 @@ export default function TerminalCreateLoad() {
 
               {/* Driver Name */}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">
                   Driver Name
                 </label>
                 <Input
@@ -654,7 +654,7 @@ export default function TerminalCreateLoad() {
 
               {/* Quantity */}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">
                   <Gauge className="w-3 h-3 inline mr-1" />Quantity <span className="text-red-400">*</span>
                 </label>
                 <Input
@@ -671,7 +671,7 @@ export default function TerminalCreateLoad() {
 
               {/* Unit */}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">Unit</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">Unit</label>
                 <div className="relative">
                   <select
                     value={form.quantityUnit}
@@ -691,7 +691,7 @@ export default function TerminalCreateLoad() {
             </div>
 
             {selectedTank && form.quantity && (
-              <p className={cn("text-[10px] mt-3",
+              <p className={cn("text-xs mt-3",
                 Number(form.quantity) > selectedTank.currentLevel ? "text-red-400" : "text-emerald-500"
               )}>
                 {Number(form.quantity) > selectedTank.currentLevel
@@ -707,7 +707,7 @@ export default function TerminalCreateLoad() {
             "p-5 rounded-2xl border",
             isLight ? "bg-white border-slate-200" : "bg-white/[0.02] border-white/[0.06]"
           )}>
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-3">
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-3">
               <MapPin className="w-3 h-3 inline mr-1" />Destination <span className="text-red-400">*</span>
             </label>
             <div className="grid grid-cols-6 gap-3">
@@ -757,7 +757,7 @@ export default function TerminalCreateLoad() {
 
             {/* Special Instructions */}
             <div className="mt-4">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-2">Special Instructions</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-2">Special Instructions</label>
               <textarea
                 value={form.specialInstructions}
                 onChange={e => update("specialInstructions", e.target.value)}
@@ -799,7 +799,7 @@ export default function TerminalCreateLoad() {
                 { label: "Destination", value: form.destinationCity && form.destinationState ? `${form.destinationCity}, ${form.destinationState}` : "—", icon: MapPin },
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-white/[0.04] last:border-0">
-                  <span className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                  <span className="text-xs text-slate-500 flex items-center gap-1.5">
                     <row.icon className="w-3 h-3" />{row.label}
                   </span>
                   <span className={cn(
@@ -816,7 +816,7 @@ export default function TerminalCreateLoad() {
             {/* Validation Indicator */}
             {!canSchedule && (
               <div className={cn(
-                "mt-4 p-3 rounded-xl text-[10px]",
+                "mt-4 p-3 rounded-xl text-xs",
                 isLight ? "bg-amber-50 border border-amber-100 text-amber-700" : "bg-amber-500/5 border border-amber-500/10 text-amber-400"
               )}>
                 <AlertTriangle className="w-3.5 h-3.5 inline mr-1" />
@@ -826,7 +826,7 @@ export default function TerminalCreateLoad() {
 
             {canSchedule && (
               <div className={cn(
-                "mt-4 p-3 rounded-xl text-[10px]",
+                "mt-4 p-3 rounded-xl text-xs",
                 isLight ? "bg-emerald-50 border border-emerald-100 text-emerald-700" : "bg-emerald-500/5 border border-emerald-500/10 text-emerald-400"
               )}>
                 <CheckCircle className="w-3.5 h-3.5 inline mr-1" />
@@ -858,7 +858,7 @@ export default function TerminalCreateLoad() {
             </div>
 
             {/* Info Footer */}
-            <p className="text-[9px] text-slate-400 text-center mt-4">
+            <p className="text-xs text-slate-400 text-center mt-4">
               Scheduling generates BOL and updates TAS inventory
             </p>
           </div>

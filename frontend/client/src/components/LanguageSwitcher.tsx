@@ -18,7 +18,7 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
       <div className="flex items-center gap-0.5">
         {LANGS.map(l => (
           <button key={l.code} onClick={() => i18n.changeLanguage(l.code)}
-            className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors",
+            className={cn("px-1.5 py-0.5 rounded text-xs font-bold transition-colors",
               current === l.code ? "bg-white/[0.08] text-white" : "text-slate-600 hover:text-slate-400")}>
             {l.flag}
           </button>
@@ -32,7 +32,7 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
       <Languages className="w-3.5 h-3.5 text-slate-500" />
       {LANGS.map(l => (
         <button key={l.code} onClick={() => i18n.changeLanguage(l.code)}
-          className={cn("flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold transition-colors border",
+          className={cn("flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold transition-colors border",
             current === l.code
               ? "bg-white/[0.06] text-white border-white/[0.12]"
               : "text-slate-500 border-transparent hover:text-slate-300 hover:bg-white/[0.03]")}>

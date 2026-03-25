@@ -201,11 +201,11 @@ export default function TerminalAppointments() {
           {tasConnected ? <Wifi className="w-4 h-4 text-emerald-400" /> : <WifiOff className="w-4 h-4 text-amber-400" />}
           <div>
             <p className={cn("text-xs font-medium", tasConnected ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>{tasConnected ? "TAS Connected" : "TAS Disconnected"}</p>
-            <p className="text-[10px] text-slate-500">{tasStatusQ.data?.provider || "DTN Guardian3 / TABS / TIMS"}{tasStatusQ.data?.environment ? ` — ${tasStatusQ.data.environment}` : ""}</p>
+            <p className="text-xs text-slate-500">{tasStatusQ.data?.provider || "DTN Guardian3 / TABS / TIMS"}{tasStatusQ.data?.environment ? ` — ${tasStatusQ.data.environment}` : ""}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {tasConnected && <span className="text-[10px] text-slate-500">Pre-clearance, credit, allocation & inventory checks active</span>}
+          {tasConnected && <span className="text-xs text-slate-500">Pre-clearance, credit, allocation & inventory checks active</span>}
           <div className={cn("w-2 h-2 rounded-full", tasConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400")} />
         </div>
       </div>
@@ -222,7 +222,7 @@ export default function TerminalAppointments() {
         ].map(k => (
           <div key={k.label} className={cn("p-3 text-center", cell)}>
             <p className={cn("text-xl font-bold", k.color)}>{k.value}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">{k.label}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{k.label}</p>
           </div>
         ))}
       </div>
@@ -232,7 +232,7 @@ export default function TerminalAppointments() {
         <div className="flex gap-1">
           {(["calendar", "list", "pending"] as const).map(v => (
             <button key={v} onClick={() => setView(v)} className={cn(
-              "text-[11px] px-3 py-1.5 rounded-lg font-medium transition-colors",
+              "text-xs px-3 py-1.5 rounded-lg font-medium transition-colors",
               view === v ? "bg-[#1473FF]/15 text-[#1473FF]" : isLight ? "bg-slate-100 text-slate-500 hover:text-slate-700" : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
             )}>{v === "calendar" ? "Calendar" : v === "list" ? "List" : "Pending"}</button>
           ))}
@@ -257,25 +257,25 @@ export default function TerminalAppointments() {
           <table className="w-full text-xs">
             <thead>
               <tr className={`border-b ${isLight ? "border-slate-200" : "border-white/[0.04]"}`}>
-                <th className="py-3 px-4 text-left text-[10px] text-slate-500 uppercase tracking-wider font-semibold w-20">Time</th>
+                <th className="py-3 px-4 text-left text-xs text-slate-500 uppercase tracking-wider font-semibold w-20">Time</th>
                 {racks.length > 0 ? racks.map((r: any) => (
-                  <th key={r.id} className="py-3 px-3 text-center text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                  <th key={r.id} className="py-3 px-3 text-center text-xs text-slate-500 uppercase tracking-wider font-semibold">
                     <span className={`block ${isLight ? "text-slate-900" : "text-white"}`}>{r.name}</span>
-                    <span className={cn("text-[9px] font-medium px-1.5 py-0.5 rounded-md mt-0.5 inline-block",
+                    <span className={cn("text-xs font-medium px-1.5 py-0.5 rounded-md mt-0.5 inline-block",
                       r.status === "available" ? "text-emerald-400 bg-emerald-400/10" :
                       r.status === "in_use" ? "text-blue-400 bg-blue-400/10" :
                       r.status === "maintenance" ? "text-red-400 bg-red-400/10" : "text-slate-400 bg-white/[0.04]"
                     )}>{r.status?.replace("_", " ")}</span>
                   </th>
                 )) : ["Bay 1", "Bay 2", "Bay 3", "Bay 4", "Bay 5", "Bay 6"].map(b => (
-                  <th key={b} className="py-3 px-3 text-center text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{b}</th>
+                  <th key={b} className="py-3 px-3 text-center text-xs text-slate-500 uppercase tracking-wider font-semibold">{b}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {TIME_SLOTS.map(time => (
                 <tr key={time} className={`border-b ${isLight ? "border-slate-100 hover:bg-slate-50" : "border-white/[0.03] hover:bg-white/[0.01]"}`}>
-                  <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">{time}</td>
+                  <td className="py-3 px-4 text-slate-400 font-mono text-xs">{time}</td>
                   {(racks.length > 0 ? racks : [{ id: "bay_1" }, { id: "bay_2" }, { id: "bay_3" }, { id: "bay_4" }, { id: "bay_5" }, { id: "bay_6" }]).map((r: any) => {
                     const appt = getApptForSlot(time, r.id || r.name);
                     return (
@@ -287,8 +287,8 @@ export default function TerminalAppointments() {
                             appt.status === "loading" ? "bg-purple-500/10 border-purple-500/20" :
                             "bg-blue-500/10 border-blue-500/20"
                           )}>
-                            <p className={`text-[10px] font-medium truncate ${isLight ? "text-slate-900" : "text-white"}`}>{appt.driver}</p>
-                            <p className="text-[9px] text-slate-400 truncate">{appt.type}</p>
+                            <p className={`text-xs font-medium truncate ${isLight ? "text-slate-900" : "text-white"}`}>{appt.driver}</p>
+                            <p className="text-xs text-slate-400 truncate">{appt.type}</p>
                           </div>
                         ) : (
                           <div className={`h-8 rounded-lg border border-dashed transition-colors cursor-pointer ${isLight ? "border-slate-200 hover:border-slate-400" : "border-white/[0.04] hover:border-white/[0.08]"}`} onClick={() => { setFormTime(time); setShowCreate(true); }} />
@@ -309,7 +309,7 @@ export default function TerminalAppointments() {
           <div className="flex gap-1.5 mb-3">
             {["all", "scheduled", "checked_in", "loading", "completed", "cancelled"].map(f => (
               <button key={f} onClick={() => setFilter(f)} className={cn(
-                "text-[10px] px-3 py-1.5 rounded-lg font-medium transition-colors",
+                "text-xs px-3 py-1.5 rounded-lg font-medium transition-colors",
                 filter === f ? "bg-[#1473FF]/15 text-[#1473FF]" : isLight ? "bg-slate-100 text-slate-500 hover:text-slate-700" : "bg-white/[0.03] text-slate-500 hover:text-slate-300"
               )}>{f === "all" ? "All" : f.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}</button>
             ))}
@@ -338,34 +338,34 @@ export default function TerminalAppointments() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className={`text-sm font-medium truncate ${isLight ? "text-slate-900" : "text-white"}`}>{a.driver || "Unassigned"}</p>
-                          {a.dock && <span className={`text-[9px] text-slate-500 px-1.5 py-0.5 rounded font-mono ${isLight ? "bg-slate-100" : "bg-white/[0.04]"}`}>{a.dock}</span>}
-                          {a.truckNumber && <span className={`text-[9px] text-slate-500 px-1.5 py-0.5 rounded font-mono ${isLight ? "bg-slate-100" : "bg-white/[0.04]"}`}><Truck className="w-2.5 h-2.5 inline mr-0.5" />{a.truckNumber}</span>}
-                          {a.hazmatClass && <span className="text-[9px] text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded font-medium">HM Class {a.hazmatClass}</span>}
+                          {a.dock && <span className={`text-xs text-slate-500 px-1.5 py-0.5 rounded font-mono ${isLight ? "bg-slate-100" : "bg-white/[0.04]"}`}>{a.dock}</span>}
+                          {a.truckNumber && <span className={`text-xs text-slate-500 px-1.5 py-0.5 rounded font-mono ${isLight ? "bg-slate-100" : "bg-white/[0.04]"}`}><Truck className="w-2.5 h-2.5 inline mr-0.5" />{a.truckNumber}</span>}
+                          {a.hazmatClass && <span className="text-xs text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded font-medium">HM Class {a.hazmatClass}</span>}
                         </div>
                         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                          <span className="text-[11px] text-slate-400"><Clock className="w-3 h-3 inline mr-1" />{time}</span>
-                          <span className="text-[11px] text-slate-500">{a.type}</span>
-                          {a.product && <span className="text-[11px] text-cyan-400"><Fuel className="w-3 h-3 inline mr-0.5" />{a.product}</span>}
-                          {a.quantity && <span className="text-[10px] text-slate-500">{a.quantity} {a.quantityUnit}</span>}
-                          {a.loadId && <span className="text-[10px] text-slate-600">Load #{a.loadId}</span>}
-                          {a.bolNumber && <span className="text-[10px] text-purple-400">BOL: {a.bolNumber}</span>}
+                          <span className="text-xs text-slate-400"><Clock className="w-3 h-3 inline mr-1" />{time}</span>
+                          <span className="text-xs text-slate-500">{a.type}</span>
+                          {a.product && <span className="text-xs text-cyan-400"><Fuel className="w-3 h-3 inline mr-0.5" />{a.product}</span>}
+                          {a.quantity && <span className="text-xs text-slate-500">{a.quantity} {a.quantityUnit}</span>}
+                          {a.loadId && <span className="text-xs text-slate-600">Load #{a.loadId}</span>}
+                          {a.bolNumber && <span className="text-xs text-purple-400">BOL: {a.bolNumber}</span>}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {/* Pre-clearance badge */}
-                      <span className={cn("text-[9px] font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1", pcCls)}>
+                      <span className={cn("text-xs font-medium px-1.5 py-0.5 rounded-md flex items-center gap-1", pcCls)}>
                         {pcStatus === "cleared" ? <ShieldCheck className="w-3 h-3" /> : pcStatus === "denied" ? <XCircle className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
                         {pcStatus.toUpperCase()}
                       </span>
-                      <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md", st.cls)}>{st.label}</span>
+                      <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md", st.cls)}>{st.label}</span>
                       {a.status === "scheduled" && (
-                        <Button size="sm" onClick={() => updateMut.mutate({ appointmentId: a.id, status: "checked_in" })} className="h-7 px-2.5 text-[10px] rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/20 shadow-none">
+                        <Button size="sm" onClick={() => updateMut.mutate({ appointmentId: a.id, status: "checked_in" })} className="h-7 px-2.5 text-xs rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/20 shadow-none">
                           Check In
                         </Button>
                       )}
                       {a.status === "checked_in" && (
-                        <Button size="sm" onClick={() => updateMut.mutate({ appointmentId: a.id, status: "completed" })} className="h-7 px-2.5 text-[10px] rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/20 shadow-none">
+                        <Button size="sm" onClick={() => updateMut.mutate({ appointmentId: a.id, status: "completed" })} className="h-7 px-2.5 text-xs rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/20 shadow-none">
                           Complete
                         </Button>
                       )}
@@ -398,9 +398,9 @@ export default function TerminalAppointments() {
               <div className="flex items-center gap-3">
                 <h2 className={`text-lg font-semibold ${isLight ? "text-slate-900" : "text-white"}`}>New Appointment</h2>
                 <div className="flex items-center gap-1">
-                  <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold", formStep >= 1 ? "bg-[#1473FF] text-white" : isLight ? "bg-slate-200 text-slate-500" : "bg-white/[0.06] text-slate-500")}>1</div>
+                  <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold", formStep >= 1 ? "bg-[#1473FF] text-white" : isLight ? "bg-slate-200 text-slate-500" : "bg-white/[0.06] text-slate-500")}>1</div>
                   <div className={cn("w-8 h-0.5 rounded", formStep >= 2 ? "bg-[#1473FF]" : isLight ? "bg-slate-200" : "bg-white/[0.06]")} />
-                  <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold", formStep >= 2 ? "bg-[#1473FF] text-white" : isLight ? "bg-slate-200 text-slate-500" : "bg-white/[0.06] text-slate-500")}>2</div>
+                  <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold", formStep >= 2 ? "bg-[#1473FF] text-white" : isLight ? "bg-slate-200 text-slate-500" : "bg-white/[0.06] text-slate-500")}>2</div>
                 </div>
               </div>
               <button onClick={() => { setShowCreate(false); resetForm(); }} className={`${isLight ? "text-slate-400 hover:text-slate-700" : "text-slate-500 hover:text-white"}`}><XCircle className="w-5 h-5" /></button>
@@ -410,12 +410,12 @@ export default function TerminalAppointments() {
             {/* Step 1: Appointment Details */}
             {formStep === 1 && (
               <div className="space-y-4">
-                <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Appointment Details</p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Appointment Details</p>
 
                 {/* Type + Product Row */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Type</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Type</label>
                     <select value={formType} onChange={e => setFormType(e.target.value as any)} className={cn("w-full px-3 py-2 text-sm h-10", inp)}>
                       <option value="loading">Loading (Pickup)</option>
                       <option value="unloading">Unloading (Delivery)</option>
@@ -424,7 +424,7 @@ export default function TerminalAppointments() {
                     </select>
                   </div>
                   <div ref={ergSuggestRef} className="relative">
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Product (ERG AI)</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Product (ERG AI)</label>
                     <div className="flex gap-1.5">
                       <div className="relative flex-1">
                         <Search className={cn("absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5", isLight ? "text-slate-400" : "text-slate-500")} />
@@ -444,7 +444,7 @@ export default function TerminalAppointments() {
                     </div>
                     {showErgResults && ergSearch.data?.results?.length > 0 && (
                       <div className={cn("absolute z-50 left-0 right-0 mt-1 rounded-xl border shadow-xl max-h-56 overflow-y-auto", isLight ? "bg-white border-slate-200" : "border-slate-600/50")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>
-                        <div className={cn("px-3 py-1.5 text-[9px] uppercase tracking-wide border-b sticky top-0", isLight ? "text-slate-400 border-slate-100 bg-white" : "text-slate-500 border-slate-700/50")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>ERG 2024 — {ergSearch.data.count} results</div>
+                        <div className={cn("px-3 py-1.5 text-xs uppercase tracking-wide border-b sticky top-0", isLight ? "text-slate-400 border-slate-100 bg-white" : "text-slate-500 border-slate-700/50")} style={isLight ? undefined : { backgroundColor: '#0c0e18' }}>ERG 2024 — {ergSearch.data.count} results</div>
                         {ergSearch.data.results.map((m: any, i: number) => (
                           <button key={`${m.unNumber}-${i}`} className={cn("w-full text-left px-3 py-2 flex items-center justify-between gap-2 border-b last:border-0 transition-colors", isLight ? "hover:bg-slate-50 border-slate-100" : "hover:bg-slate-700/50 border-slate-700/20")} onClick={() => {
                             setFormProduct(`UN${m.unNumber} ${m.name}`);
@@ -456,9 +456,9 @@ export default function TerminalAppointments() {
                               <p className={cn("text-xs font-medium truncate", isLight ? "text-slate-900" : "text-white")}>{m.name}</p>
                             </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
-                              <Badge variant="outline" className="text-[9px] border-cyan-500/30 text-cyan-500">UN{m.unNumber}</Badge>
-                              <Badge variant="outline" className="text-[9px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
-                              <Badge variant="outline" className="text-[9px] border-slate-500/30 text-slate-400">G{m.guide}</Badge>
+                              <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-500">UN{m.unNumber}</Badge>
+                              <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
+                              <Badge variant="outline" className="text-xs border-slate-500/30 text-slate-400">G{m.guide}</Badge>
                             </div>
                           </button>
                         ))}
@@ -475,10 +475,10 @@ export default function TerminalAppointments() {
                 {/* Quantity + Date + Time */}
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Quantity</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Quantity</label>
                     <div className="flex gap-1">
                       <Input type="number" value={formQuantity} onChange={e => setFormQuantity(e.target.value)} placeholder="0" className={cn("h-10 flex-1", inp)} />
-                      <select value={formQuantityUnit} onChange={e => setFormQuantityUnit(e.target.value)} className={cn("px-2 py-2 text-[10px] h-10 w-20", inp)}>
+                      <select value={formQuantityUnit} onChange={e => setFormQuantityUnit(e.target.value)} className={cn("px-2 py-2 text-xs h-10 w-20", inp)}>
                         <option value="barrels">bbl</option>
                         <option value="gallons">gal</option>
                         <option value="metric_tons">MT</option>
@@ -486,11 +486,11 @@ export default function TerminalAppointments() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Date</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Date</label>
                     <DatePicker value={formDate} onChange={setFormDate} placeholder="Select date" />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Time</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Time</label>
                     <select value={formTime} onChange={e => setFormTime(e.target.value)} className={cn("w-full px-3 py-2 text-sm h-10", inp)}>
                       {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
@@ -500,11 +500,11 @@ export default function TerminalAppointments() {
                 {/* Driver + Carrier */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Driver ID</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Driver ID</label>
                     <Input value={formDriverId} onChange={e => setFormDriverId(e.target.value)} placeholder="Driver user ID" className={cn("h-10", inp)} />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Carrier ID</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Carrier ID</label>
                     <Input value={formCarrierId} onChange={e => setFormCarrierId(e.target.value)} placeholder="Carrier company ID" className={cn("h-10", inp)} />
                   </div>
                 </div>
@@ -512,15 +512,15 @@ export default function TerminalAppointments() {
                 {/* Vehicle Info */}
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Truck #</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Truck #</label>
                     <Input value={formTruckNumber} onChange={e => setFormTruckNumber(e.target.value)} placeholder="TRK-001" className={cn("h-10", inp)} />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Trailer #</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Trailer #</label>
                     <Input value={formTrailerNumber} onChange={e => setFormTrailerNumber(e.target.value)} placeholder="TRL-001" className={cn("h-10", inp)} />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Dock / Bay</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Dock / Bay</label>
                     <Input value={formDock} onChange={e => setFormDock(e.target.value)} placeholder="Auto-assign" className={cn("h-10", inp)} />
                   </div>
                 </div>
@@ -528,22 +528,22 @@ export default function TerminalAppointments() {
                 {/* Hazmat + Load Ref + Duration */}
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Hazmat Class</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Hazmat Class</label>
                     <Input value={formHazmatClass} onChange={e => setFormHazmatClass(e.target.value)} placeholder="e.g. 3" className={cn("h-10", inp)} />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Load Reference</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Load Reference</label>
                     <Input value={formLoadId} onChange={e => setFormLoadId(e.target.value)} placeholder="Load ID (optional)" className={cn("h-10", inp)} />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Est. Duration (min)</label>
+                    <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Est. Duration (min)</label>
                     <Input type="number" value={formEstDuration} onChange={e => setFormEstDuration(e.target.value)} placeholder="45" className={cn("h-10", inp)} />
                   </div>
                 </div>
 
                 {/* Notes */}
                 <div>
-                  <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Notes</label>
+                  <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Notes</label>
                   <Input value={formNotes} onChange={e => setFormNotes(e.target.value)} placeholder="Special instructions, access codes..." className={cn("h-10", inp)} />
                 </div>
 
@@ -559,11 +559,11 @@ export default function TerminalAppointments() {
             {/* Step 2: TAS Pre-Clearance Validation */}
             {formStep === 2 && (
               <div className="space-y-4">
-                <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">TAS Pre-Clearance Validation</p>
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">TAS Pre-Clearance Validation</p>
 
                 {/* Summary of appointment */}
                 <div className={cn("p-3 rounded-xl space-y-1.5", isLight ? "bg-slate-50 border border-slate-200" : "bg-white/[0.02] border border-white/[0.04]")}>
-                  <div className="grid grid-cols-3 gap-2 text-[11px]">
+                  <div className="grid grid-cols-3 gap-2 text-xs">
                     <div><span className="text-slate-500">Type:</span> <span className={isLight ? "text-slate-900 font-medium" : "text-white font-medium"}>{formType}</span></div>
                     <div><span className="text-slate-500">Date:</span> <span className={isLight ? "text-slate-900 font-medium" : "text-white font-medium"}>{formDate} {formTime}</span></div>
                     <div><span className="text-slate-500">Quantity:</span> <span className={isLight ? "text-slate-900 font-medium" : "text-white font-medium"}>{formQuantity || "—"} {formQuantityUnit}</span></div>
@@ -582,7 +582,7 @@ export default function TerminalAppointments() {
                     </div>
                     {preClearanceQ.isLoading && <Loader2 className="w-3.5 h-3.5 text-[#1473FF] animate-spin" />}
                     {preClearanceQ.data && (
-                      <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
+                      <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md",
                         preClearanceQ.data.overall === "cleared" ? "text-emerald-400 bg-emerald-400/10" :
                         preClearanceQ.data.overall === "denied" ? "text-red-400 bg-red-400/10" : "text-amber-400 bg-amber-400/10"
                       )}>{preClearanceQ.data.overall === "cleared" ? "ALL CLEAR" : preClearanceQ.data.overall === "denied" ? "ISSUES FOUND" : "WARNINGS"}</span>
@@ -593,7 +593,7 @@ export default function TerminalAppointments() {
                       <div className="p-6 text-center">
                         <Loader2 className="w-6 h-6 text-[#1473FF] animate-spin mx-auto mb-2" />
                         <p className="text-xs text-slate-500">Running TAS validation checks...</p>
-                        <p className="text-[10px] text-slate-600 mt-1">Credit · Allocation · Inventory · Driver Pre-Clearance</p>
+                        <p className="text-xs text-slate-600 mt-1">Credit · Allocation · Inventory · Driver Pre-Clearance</p>
                       </div>
                     ) : preClearanceQ.data?.checks ? (
                       preClearanceQ.data.checks.map((check: any, i: number) => {
@@ -607,10 +607,10 @@ export default function TerminalAppointments() {
                               </div>
                               <div>
                                 <p className={cn("text-xs font-medium", isLight ? "text-slate-900" : "text-white")}>{check.label}</p>
-                                <p className="text-[10px] text-slate-500">{check.detail}</p>
+                                <p className="text-xs text-slate-500">{check.detail}</p>
                               </div>
                             </div>
-                            <div className={cn("flex items-center gap-1.5 text-[10px] font-medium px-2 py-1 rounded-md", colorCls)}>
+                            <div className={cn("flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-md", colorCls)}>
                               {check.status === "pass" && <CheckCircle className="w-3 h-3" />}
                               {check.status === "fail" && <XCircle className="w-3 h-3" />}
                               {check.status === "warn" && <AlertTriangle className="w-3 h-3" />}
@@ -630,7 +630,7 @@ export default function TerminalAppointments() {
                 </div>
 
                 {/* Skip validation toggle */}
-                <label className={cn("flex items-center gap-2 text-[11px] cursor-pointer px-1", isLight ? "text-slate-600" : "text-slate-400")}>
+                <label className={cn("flex items-center gap-2 text-xs cursor-pointer px-1", isLight ? "text-slate-600" : "text-slate-400")}>
                   <input type="checkbox" checked={skipTasValidation} onChange={e => setSkipTasValidation(e.target.checked)} className="rounded border-slate-300 text-[#1473FF]" />
                   Skip TAS validation (bypass pre-clearance checks)
                 </label>

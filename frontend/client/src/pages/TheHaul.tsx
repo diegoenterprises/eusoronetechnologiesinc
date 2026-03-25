@@ -116,7 +116,7 @@ function StatPill({ icon, value, label, color, isLight }: { icon: React.ReactNod
       <div className={cn("p-1.5 rounded-lg", color)}>{icon}</div>
       <div>
         <p className={cn("text-sm font-bold leading-none", isLight ? "text-slate-800" : "text-white")}>{value}</p>
-        <p className="text-[10px] text-slate-400 mt-0.5">{label}</p>
+        <p className="text-xs text-slate-400 mt-0.5">{label}</p>
       </div>
     </div>
   );
@@ -139,7 +139,7 @@ function MissionCard({ m, isLight, onStart, onClaim, onCancel, startPending, cla
       isLight ? "bg-white border-slate-200 shadow-sm hover:shadow-md" : "bg-slate-800/40 border-slate-700/40 hover:border-slate-600/60",
     )}>
       {m.source === "esang_ai" && (
-        <div className="absolute -top-px -right-px px-2 py-0.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-[9px] text-white font-semibold rounded-bl-lg rounded-tr-xl">
+        <div className="absolute -top-px -right-px px-2 py-0.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-xs text-white font-semibold rounded-bl-lg rounded-tr-xl">
           <BrainCircuit className="w-2.5 h-2.5 inline mr-0.5" />AI
         </div>
       )}
@@ -150,17 +150,17 @@ function MissionCard({ m, isLight, onStart, onClaim, onCancel, startPending, cla
           <p className={cn("text-xs mt-1 line-clamp-2", isLight ? "text-slate-500" : "text-slate-400")}>{m.description}</p>
         </div>
         <div className="text-right flex-shrink-0">
-          <p className="text-sm font-bold text-yellow-400">+{m.xpReward}<span className="text-[10px] font-normal ml-0.5">XP</span></p>
-          <Badge className={cn("border text-[9px] mt-1", diff.color)}>{diff.label}</Badge>
+          <p className="text-sm font-bold text-yellow-400">+{m.xpReward}<span className="text-xs font-normal ml-0.5">XP</span></p>
+          <Badge className={cn("border text-xs mt-1", diff.color)}>{diff.label}</Badge>
         </div>
       </div>
 
       {/* Cargo / Hazmat badges */}
       {(m.cargoType || m.equipmentType || (m.category && /tanker|hazmat|liquid|bulk/i.test(m.category))) && (
         <div className="flex flex-wrap gap-1 mt-2">
-          {m.equipmentType && <Badge className="bg-blue-500/10 text-blue-300 border-blue-500/20 text-[9px]"><Truck className="w-2.5 h-2.5 mr-0.5" />{(m.equipmentType || "").replace(/_/g, " ")}</Badge>}
-          {m.cargoType && <Badge className="bg-amber-500/10 text-amber-300 border-amber-500/20 text-[9px]"><Package className="w-2.5 h-2.5 mr-0.5" />{m.cargoType}</Badge>}
-          {m.category && /hazmat/i.test(m.category) && <Badge className="bg-red-500/10 text-red-300 border-red-500/20 text-[9px]"><AlertTriangle className="w-2.5 h-2.5 mr-0.5" />Hazmat</Badge>}
+          {m.equipmentType && <Badge className="bg-blue-500/10 text-blue-300 border-blue-500/20 text-xs"><Truck className="w-2.5 h-2.5 mr-0.5" />{(m.equipmentType || "").replace(/_/g, " ")}</Badge>}
+          {m.cargoType && <Badge className="bg-amber-500/10 text-amber-300 border-amber-500/20 text-xs"><Package className="w-2.5 h-2.5 mr-0.5" />{m.cargoType}</Badge>}
+          {m.category && /hazmat/i.test(m.category) && <Badge className="bg-red-500/10 text-red-300 border-red-500/20 text-xs"><AlertTriangle className="w-2.5 h-2.5 mr-0.5" />Hazmat</Badge>}
         </div>
       )}
 
@@ -168,8 +168,8 @@ function MissionCard({ m, isLight, onStart, onClaim, onCancel, startPending, cla
       {(isActive || isComplete) && m.targetValue > 0 && (
         <div className="mt-3">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-slate-400">{m.currentProgress || 0} / {m.targetValue}</span>
-            <span className={cn("text-[10px] font-semibold", pct >= 100 ? "text-green-400" : "text-blue-400")}>{Math.round(pct)}%</span>
+            <span className="text-xs text-slate-400">{m.currentProgress || 0} / {m.targetValue}</span>
+            <span className={cn("text-xs font-semibold", pct >= 100 ? "text-green-400" : "text-blue-400")}>{Math.round(pct)}%</span>
           </div>
           <div className={cn("h-1.5 rounded-full overflow-hidden", isLight ? "bg-slate-200" : "bg-slate-700/50")}>
             <div className={cn("h-full rounded-full transition-all duration-500", pct >= 100 ? "bg-gradient-to-r from-green-400 to-emerald-500" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF]")} style={{ width: `${Math.min(pct, 100)}%` }} />
@@ -180,8 +180,8 @@ function MissionCard({ m, isLight, onStart, onClaim, onCancel, startPending, cla
       {/* Category + action buttons */}
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-1.5">
-          <Badge className={cn("border text-[9px]", isLight ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-slate-700/50 text-slate-400 border-slate-600/50")}>{m.category}</Badge>
-          {m.hosCompliant && <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-[9px]">HOS</Badge>}
+          <Badge className={cn("border text-xs", isLight ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-slate-700/50 text-slate-400 border-slate-600/50")}>{m.category}</Badge>
+          {m.hosCompliant && <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs">HOS</Badge>}
         </div>
         <div className="flex items-center gap-1.5">
           {isComplete && onClaim && (
@@ -461,7 +461,7 @@ export default function TheHaul() {
         <div className={cn("rounded-xl px-4 py-3", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200/50" : "bg-gradient-to-r from-[#1473FF]/8 to-[#BE01FF]/8 border border-slate-700/30")}>
           <div className="flex items-center justify-between mb-1.5">
             <span className={cn("text-xs font-medium", isLight ? "text-slate-600" : "text-slate-300")}>Level {profile.level} → {profile.level + 1}</span>
-            <span className="text-[11px] text-slate-400">{(profile.currentXp || 0).toLocaleString()} / {(profile.xpToNextLevel || 1000).toLocaleString()} XP</span>
+            <span className="text-xs text-slate-400">{(profile.currentXp || 0).toLocaleString()} / {(profile.xpToNextLevel || 1000).toLocaleString()} XP</span>
           </div>
           <div className={cn("h-2 rounded-full overflow-hidden", isLight ? "bg-blue-100" : "bg-slate-700/50")}>
             <div className="h-full rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] transition-all duration-700" style={{ width: `${Math.min(xpPct, 100)}%` }} />
@@ -491,7 +491,7 @@ export default function TheHaul() {
               </button>
               {showRules && (
                 <div className={cn("px-4 py-3 rounded-xl border space-y-2", isLight ? "bg-amber-50/50 border-amber-200/60" : "bg-amber-500/5 border-amber-500/10")}>
-                  <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg text-[11px] font-semibold mb-1", isLight ? "bg-red-50 text-red-700 border border-red-200" : "bg-red-500/10 text-red-400 border border-red-500/20")}>
+                  <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold mb-1", isLight ? "bg-red-50 text-red-700 border border-red-200" : "bg-red-500/10 text-red-400 border border-red-500/20")}>
                     <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
                     AI-monitored · All messages are analyzed for ToS compliance · Violations are logged with your account
                   </div>
@@ -515,7 +515,7 @@ export default function TheHaul() {
                       </CardTitle>
                       <div className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                        <span className="text-[10px] text-green-400 font-medium">{recentUsers.size} active</span>
+                        <span className="text-xs text-green-400 font-medium">{recentUsers.size} active</span>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => { lobbyQ.refetch?.(); setAutoScroll(true); }} className="text-slate-400 h-7 w-7 p-0">
@@ -555,7 +555,7 @@ export default function TheHaul() {
                               {showDate && (
                                 <div className="flex items-center gap-3 py-3">
                                   <div className={cn("flex-1 h-px", isLight ? "bg-slate-200" : "bg-slate-700/50")} />
-                                  <span className="text-[10px] text-slate-500 font-medium">{new Date(m.createdAt).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
+                                  <span className="text-xs text-slate-500 font-medium">{new Date(m.createdAt).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
                                   <div className={cn("flex-1 h-px", isLight ? "bg-slate-200" : "bg-slate-700/50")} />
                                 </div>
                               )}
@@ -579,17 +579,17 @@ export default function TheHaul() {
                                     {!sameUser && (
                                       <div className="flex items-center gap-2 mb-0.5">
                                         <span className={cn("text-sm font-semibold", ROLE_COLORS[m.userRole] || "text-slate-300")}>{m.userName}</span>
-                                        <Badge className={cn("border text-[8px] px-1 py-0 font-semibold", ROLE_BG[m.userRole] || "bg-slate-500/15 text-slate-400 border-slate-500/20")}>
+                                        <Badge className={cn("border text-xs px-1 py-0 font-semibold", ROLE_BG[m.userRole] || "bg-slate-500/15 text-slate-400 border-slate-500/20")}>
                                           {ROLE_LABEL[m.userRole] || m.userRole}
                                         </Badge>
-                                        <span className="text-[10px] text-slate-500">{formatTime(m.createdAt)}</span>
+                                        <span className="text-xs text-slate-500">{formatTime(m.createdAt)}</span>
                                       </div>
                                     )}
                                     <p className={cn("text-[13px] leading-relaxed break-words", isLight ? "text-slate-700" : "text-slate-200")}>{m.message}</p>
                                   </div>
 
                                   {sameUser && (
-                                    <span className="text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 self-center flex-shrink-0">{formatTime(m.createdAt)}</span>
+                                    <span className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 self-center flex-shrink-0">{formatTime(m.createdAt)}</span>
                                   )}
                                 </div>
                               )}
@@ -641,7 +641,7 @@ export default function TheHaul() {
                   <CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-700" : "text-slate-200")}>
                     <Users className="w-4 h-4 text-green-400" />
                     Active Now
-                    <span className="text-[10px] text-slate-400 font-normal">({recentUsers.size})</span>
+                    <span className="text-xs text-slate-400 font-normal">({recentUsers.size})</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-4 pb-4">
@@ -652,14 +652,14 @@ export default function TheHaul() {
                       {Array.from(recentUsers.entries()).map(([userId, u]) => (
                         <div key={userId} className={cn("flex items-center gap-2.5 px-2.5 py-2 rounded-lg", isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/30")}>
                           <div className="relative">
-                            <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-br", ROLE_AVATAR_GRADIENT[u.role] || "from-slate-500 to-slate-700")}>
+                            <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br", ROLE_AVATAR_GRADIENT[u.role] || "from-slate-500 to-slate-700")}>
                               {(u.name || "?")[0].toUpperCase()}
                             </div>
                             <div className="absolute -bottom-px -right-px w-2.5 h-2.5 rounded-full bg-green-400 border-2 border-slate-800" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className={cn("text-xs font-medium truncate", isLight ? "text-slate-700" : "text-slate-200")}>{u.name}</p>
-                            <p className={cn("text-[10px]", ROLE_COLORS[u.role] || "text-slate-400")}>{ROLE_LABEL[u.role] || u.role}</p>
+                            <p className={cn("text-xs", ROLE_COLORS[u.role] || "text-slate-400")}>{ROLE_LABEL[u.role] || u.role}</p>
                           </div>
                         </div>
                       ))}
@@ -686,7 +686,7 @@ export default function TheHaul() {
                       <div key={s.label} className={cn("flex items-center justify-between px-2.5 py-2 rounded-lg", isLight ? "bg-slate-50" : "bg-slate-700/20")}>
                         <div className="flex items-center gap-2">
                           {s.icon}
-                          <span className="text-[11px] text-slate-400">{s.label}</span>
+                          <span className="text-xs text-slate-400">{s.label}</span>
                         </div>
                         <span className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-white")}>{s.value}</span>
                       </div>
@@ -742,7 +742,7 @@ export default function TheHaul() {
               <h3 className={cn("text-sm font-semibold mb-3 flex items-center gap-2", isLight ? "text-slate-700" : "text-slate-200")}>
                 <Zap className="w-4 h-4 text-yellow-400" />
                 Active Missions
-                <Badge className="bg-yellow-500/15 text-yellow-400 border-yellow-500/20 text-[10px]">{activeM.length}</Badge>
+                <Badge className="bg-yellow-500/15 text-yellow-400 border-yellow-500/20 text-xs">{activeM.length}</Badge>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {activeM.map((m: any) => (
@@ -762,7 +762,7 @@ export default function TheHaul() {
             <h3 className={cn("text-sm font-semibold mb-3 flex items-center gap-2", isLight ? "text-slate-700" : "text-slate-200")}>
               <Target className="w-4 h-4 text-cyan-400" />
               Available Missions
-              <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/20 text-[10px]">{filteredAvail.length}</Badge>
+              <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/20 text-xs">{filteredAvail.length}</Badge>
             </h3>
             {missionsQ.isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}</div>
@@ -834,7 +834,7 @@ export default function TheHaul() {
               <h3 className={cn("text-sm font-semibold mb-3 flex items-center gap-2", isLight ? "text-slate-700" : "text-slate-200")}>
                 <Package className="w-4 h-4 text-yellow-400" />
                 Reward Crates
-                <Badge className="bg-yellow-500/15 text-yellow-400 border-yellow-500/20 text-[10px]">{crates.length}</Badge>
+                <Badge className="bg-yellow-500/15 text-yellow-400 border-yellow-500/20 text-xs">{crates.length}</Badge>
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {crates.map((c: any) => {
@@ -843,10 +843,10 @@ export default function TheHaul() {
                     <div key={c.id} className={cn("p-4 rounded-xl border text-center transition-all hover:scale-[1.02] cursor-pointer", style.border, style.bg, style.glow && `shadow-lg ${style.glow}`)}>
                       <Box className={cn("w-8 h-8 mx-auto mb-2", style.text)} />
                       <p className={cn("text-sm font-semibold capitalize", style.text)}>{c.crateType}</p>
-                      <p className="text-[10px] text-slate-500 capitalize mt-0.5">{c.source?.replace(/_/g, " ")}</p>
+                      <p className="text-xs text-slate-500 capitalize mt-0.5">{c.source?.replace(/_/g, " ")}</p>
                       <Button
                         size="sm"
-                        className="mt-2 h-7 text-[10px] w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90 text-white"
+                        className="mt-2 h-7 text-xs w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90 text-white"
                         onClick={() => openCrateMut.mutate({ crateId: c.id })}
                         disabled={openCrateMut.isPending}
                       >
@@ -876,20 +876,20 @@ export default function TheHaul() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                           <p className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>{r.name}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">{r.description}</p>
+                          <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{r.description}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-sm font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                             {(r.pointsCost || r.cost || 0).toLocaleString()}
                           </p>
-                          <p className="text-[9px] text-slate-500">points</p>
+                          <p className="text-xs text-slate-500">points</p>
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-3">
-                        <Badge className={cn("border text-[9px]", isLight ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-slate-700/50 text-slate-400 border-slate-600/40")}>{r.category}</Badge>
+                        <Badge className={cn("border text-xs", isLight ? "bg-slate-100 text-slate-500 border-slate-200" : "bg-slate-700/50 text-slate-400 border-slate-600/40")}>{r.category}</Badge>
                         <Button
                           size="sm"
-                          className={cn("h-7 text-[10px]", canAfford ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 text-white" : "")}
+                          className={cn("h-7 text-xs", canAfford ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 text-white" : "")}
                           variant={canAfford ? "default" : "outline"}
                           disabled={!canAfford || redeemMut.isPending}
                           onClick={() => redeemMut.mutate({ rewardId: r.id })}
@@ -917,9 +917,9 @@ export default function TheHaul() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{item.name}</p>
-                        <p className="text-[10px] text-slate-500">{timeAgo(item.purchasedAt || item.createdAt)}</p>
+                        <p className="text-xs text-slate-500">{timeAgo(item.purchasedAt || item.createdAt)}</p>
                       </div>
-                      <Badge className="bg-green-500/15 text-green-400 border-green-500/20 text-[9px]">{item.status}</Badge>
+                      <Badge className="bg-green-500/15 text-green-400 border-green-500/20 text-xs">{item.status}</Badge>
                     </div>
                   </div>
                 ))}
@@ -970,15 +970,15 @@ export default function TheHaul() {
                 <div className="flex items-center gap-8">
                   <div className="text-center">
                     <p className="text-2xl font-bold text-cyan-400">#{profile.rank || "—"}</p>
-                    <p className="text-[10px] text-slate-400">Rank</p>
+                    <p className="text-xs text-slate-400">Rank</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-yellow-400">{(profile.totalPoints || 0).toLocaleString()}</p>
-                    <p className="text-[10px] text-slate-400">XP</p>
+                    <p className="text-xs text-slate-400">XP</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-purple-400">Top {Math.max(1, Math.round(100 - (profile.percentile || 0)))}%</p>
-                    <p className="text-[10px] text-slate-400">Percentile</p>
+                    <p className="text-xs text-slate-400">Percentile</p>
                   </div>
                 </div>
               </div>
@@ -1012,9 +1012,9 @@ export default function TheHaul() {
                       #{l.rank}
                     </div>
                     <p className={cn("text-sm font-semibold truncate", isLight ? "text-slate-800" : "text-white")}>{l.name}</p>
-                    <Badge className={cn("border text-[8px] mt-1", ROLE_BG[l.role] || "bg-slate-500/15 text-slate-400 border-slate-500/20")}>{ROLE_LABEL[l.role] || l.role}</Badge>
+                    <Badge className={cn("border text-xs mt-1", ROLE_BG[l.role] || "bg-slate-500/15 text-slate-400 border-slate-500/20")}>{ROLE_LABEL[l.role] || l.role}</Badge>
                     <p className="text-xs font-bold text-yellow-400 mt-2">{(l.totalXp || 0).toLocaleString()} XP</p>
-                    <p className="text-[10px] text-slate-500">Lv.{l.level}</p>
+                    <p className="text-xs text-slate-500">Lv.{l.level}</p>
                   </div>
                 );
               })}
@@ -1062,16 +1062,16 @@ export default function TheHaul() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className={cn("text-sm font-medium truncate", isLight ? "text-slate-800" : "text-white")}>{l.name}</p>
-                            {isYou && <Badge className="bg-[#1473FF]/15 text-[#1473FF] border-[#1473FF]/20 text-[8px]">You</Badge>}
-                            <Badge className={cn("border text-[8px]", ROLE_BG[l.role] || "bg-slate-500/15 text-slate-400 border-slate-500/20")}>{ROLE_LABEL[l.role] || l.role}</Badge>
+                            {isYou && <Badge className="bg-[#1473FF]/15 text-[#1473FF] border-[#1473FF]/20 text-xs">You</Badge>}
+                            <Badge className={cn("border text-xs", ROLE_BG[l.role] || "bg-slate-500/15 text-slate-400 border-slate-500/20")}>{ROLE_LABEL[l.role] || l.role}</Badge>
                           </div>
-                          <p className="text-[10px] text-slate-500">Lv.{l.level} · {l.missionsCompleted || 0} missions</p>
+                          <p className="text-xs text-slate-500">Lv.{l.level} · {l.missionsCompleted || 0} missions</p>
                         </div>
 
                         {/* XP */}
                         <div className="text-right flex-shrink-0">
                           <p className="text-sm font-bold text-yellow-400">{(l.totalXp || 0).toLocaleString()}</p>
-                          <p className="text-[9px] text-slate-500">XP</p>
+                          <p className="text-xs text-slate-500">XP</p>
                         </div>
                       </div>
                     );
@@ -1082,7 +1082,7 @@ export default function TheHaul() {
           </Card>
 
           {leaderboardQ.data?.totalParticipants > 0 && (
-            <p className="text-center text-[10px] text-slate-500">{leaderboardQ.data.totalParticipants} total participants</p>
+            <p className="text-center text-xs text-slate-500">{leaderboardQ.data.totalParticipants} total participants</p>
           )}
         </TabsContent>
       </Tabs>

@@ -9,7 +9,7 @@ const EmptyState = ({ icon: Icon, text, sub }: { icon: any; text: string; sub: s
   <div className="flex flex-col items-center justify-center py-6 text-gray-500">
     <Icon className="w-8 h-8 mb-2 opacity-40" />
     <p className="text-xs">{text}</p>
-    <p className="text-[10px] text-gray-600 mt-1">{sub}</p>
+    <p className="text-xs text-gray-600 mt-1">{sub}</p>
   </div>
 );
 

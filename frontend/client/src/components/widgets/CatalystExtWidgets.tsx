@@ -14,7 +14,7 @@ export const DriverAvailabilityWidget: React.FC = () => {
         <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
           <Users className="w-3 h-3 text-cyan-400 flex-shrink-0" />
           <span className="text-xs text-white flex-1 truncate">{d.name || `Driver ${i+1}`}</span>
-          <Badge className={`border-0 text-[10px] ${d.available ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+          <Badge className={`border-0 text-xs ${d.available ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
             {d.available ? "Available" : d.status || "Off Duty"}
           </Badge>
         </div>
@@ -66,7 +66,7 @@ export const BrokerRelationshipsWidget: React.FC = () => {
         <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
           <Star className="w-3 h-3 text-yellow-400 flex-shrink-0" />
           <span className="text-xs text-white flex-1 truncate">{b.name || `Broker ${i+1}`}</span>
-          <span className="text-[10px] text-green-400">{b.loads || 0} loads</span>
+          <span className="text-xs text-green-400">{b.loads || 0} loads</span>
         </div>
       )} empty="No broker relationships" />
     )}</ResponsiveWidget>

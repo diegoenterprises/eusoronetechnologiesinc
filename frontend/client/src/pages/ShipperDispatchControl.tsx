@@ -211,9 +211,9 @@ export default function ShipperDispatchControl() {
                   )}>
                   <div className="flex items-center justify-between mb-1.5">
                     <p className={cn("font-bold text-xs", vl)}>#{l.loadNumber}</p>
-                    <Badge className={cn("border text-[10px]", statusColor(l.status))}>{l.status?.replace(/_/g, " ").toUpperCase()}</Badge>
+                    <Badge className={cn("border text-xs", statusColor(l.status))}>{l.status?.replace(/_/g, " ").toUpperCase()}</Badge>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
                     <MapPin className="w-3 h-3 flex-shrink-0" />
                     <span className="truncate">{l.origin?.city || l.pickupLocation?.city || "Origin"}, {l.origin?.state || l.pickupLocation?.state || ""}</span>
                     <ChevronRight className="w-3 h-3 flex-shrink-0" />
@@ -247,7 +247,7 @@ export default function ShipperDispatchControl() {
                 <div>
                   <div className="flex items-center gap-2">
                     <p className={cn("font-bold", vl)}>#{load.loadNumber}</p>
-                    <Badge className={cn("border text-[10px]", statusColor(load.status))}>{load.status?.replace(/_/g, " ").toUpperCase()}</Badge>
+                    <Badge className={cn("border text-xs", statusColor(load.status))}>{load.status?.replace(/_/g, " ").toUpperCase()}</Badge>
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">{getLoadTitle(load)} · {load.rate ? `$${parseFloat(load.rate).toLocaleString()}` : "No rate"}</p>
                 </div>
@@ -321,7 +321,7 @@ export default function ShipperDispatchControl() {
                           </div>
                         )}
                         {!isLive && (
-                          <Badge className={cn("ml-auto border text-[10px]", statusColor(load.status))}>{load.status === "posted" ? "Awaiting Catalyst" : load.status?.replace(/_/g, " ").toUpperCase()}</Badge>
+                          <Badge className={cn("ml-auto border text-xs", statusColor(load.status))}>{load.status === "posted" ? "Awaiting Catalyst" : load.status?.replace(/_/g, " ").toUpperCase()}</Badge>
                         )}
                       </CardTitle>
                     </CardHeader>
@@ -433,7 +433,7 @@ export default function ShipperDispatchControl() {
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <CardTitle className={cn("flex items-center gap-2 text-sm", tc)}>
-                            <div className="w-6 h-6 rounded-full bg-purple-500/15 flex items-center justify-center text-[10px] font-bold text-purple-500">{idx + 1}</div>
+                            <div className="w-6 h-6 rounded-full bg-purple-500/15 flex items-center justify-center text-xs font-bold text-purple-500">{idx + 1}</div>
                             Stop
                           </CardTitle>
                           <Button size="sm" variant="ghost" onClick={() => removeStop(s.id)} className="h-7 w-7 p-0"><Trash2 className="w-3.5 h-3.5 text-red-400" /></Button>
@@ -476,7 +476,7 @@ export default function ShipperDispatchControl() {
                     <CardHeader className="pb-2"><CardTitle className={cn("flex items-center gap-2 text-sm", tc)}><Send className="w-4 h-4 text-blue-500" />Dispatch Notes to Catalyst</CardTitle></CardHeader>
                     <CardContent>
                       <textarea value={dispatchNotes} onChange={e => setDispatchNotes(e.target.value)} rows={3} placeholder="Message to catalyst/driver about this change (e.g. 'New delivery location per customer request — GPS coords updated')" className={cn("w-full p-3 text-sm", ic)} />
-                      <p className="text-[10px] text-slate-400 mt-1.5">This note will be appended to load instructions and timestamped for audit trail.</p>
+                      <p className="text-xs text-slate-400 mt-1.5">This note will be appended to load instructions and timestamped for audit trail.</p>
                     </CardContent>
                   </Card>
 

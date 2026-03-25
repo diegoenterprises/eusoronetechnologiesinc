@@ -261,7 +261,7 @@ export default function DispatchExceptions() {
               <s.icon className={cn("w-4 h-4", s.color)} />
             </div>
             <div>
-              <div className="text-[10px] text-slate-500 uppercase">{s.label}</div>
+              <div className="text-xs text-slate-500 uppercase">{s.label}</div>
               <div className={cn("text-lg font-bold", s.value > 0 ? s.color : "text-slate-600")}>{s.value}</div>
             </div>
           </button>
@@ -271,7 +271,7 @@ export default function DispatchExceptions() {
       {/* Filter chips */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.06] bg-slate-900/20">
         <Filter className="w-3 h-3 text-slate-500" />
-        <span className="text-[10px] text-slate-500 uppercase">Source:</span>
+        <span className="text-xs text-slate-500 uppercase">Source:</span>
         {[
           { label: "All", value: "all" },
           { label: "ZEUN Mechanics", value: "zeun" },
@@ -282,14 +282,14 @@ export default function DispatchExceptions() {
             key={f.value}
             onClick={() => setSourceFilter(f.value)}
             className={cn(
-              "text-[10px] px-2 py-1 rounded transition-colors",
+              "text-xs px-2 py-1 rounded transition-colors",
               sourceFilter === f.value ? "bg-orange-500/20 text-orange-400 font-semibold" : "text-slate-500 hover:text-slate-300"
             )}
           >
             {f.label}
           </button>
         ))}
-        <span className="ml-auto text-[10px] text-slate-500">{sorted.length} alert{sorted.length !== 1 ? "s" : ""}</span>
+        <span className="ml-auto text-xs text-slate-500">{sorted.length} alert{sorted.length !== 1 ? "s" : ""}</span>
       </div>
 
       {/* Alert List */}
@@ -328,12 +328,12 @@ export default function DispatchExceptions() {
                     {/* Alert content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <Badge className={cn("border-0 text-[9px] font-bold", sev.bg, sev.text)}>{sev.label}</Badge>
-                        <Badge className={cn("border-0 text-[9px]", src.bg, src.color)}>{src.label}</Badge>
+                        <Badge className={cn("border-0 text-xs font-bold", sev.bg, sev.text)}>{sev.label}</Badge>
+                        <Badge className={cn("border-0 text-xs", src.bg, src.color)}>{src.label}</Badge>
                         <span className="text-xs font-semibold text-white truncate">{alert.title}</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 line-clamp-1">{alert.description}</p>
-                      <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
+                      <p className="text-xs text-slate-400 line-clamp-1">{alert.description}</p>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
                         {alert.driverName && <span className="flex items-center gap-1"><Truck className="w-2.5 h-2.5" />{alert.driverName}</span>}
                         {alert.loadNumber && <span className="flex items-center gap-1"><Package className="w-2.5 h-2.5" />{alert.loadNumber}</span>}
                         {alert.location && <span className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" />{alert.location}</span>}
@@ -345,9 +345,9 @@ export default function DispatchExceptions() {
                     {alert.source === "zeun" && (
                       <div className="shrink-0">
                         {alert.canDrive === false ? (
-                          <Badge className="bg-red-500/20 text-red-400 border-0 text-[9px]">Disabled</Badge>
+                          <Badge className="bg-red-500/20 text-red-400 border-0 text-xs">Disabled</Badge>
                         ) : (
-                          <Badge className="bg-amber-500/20 text-amber-400 border-0 text-[9px]">Can Drive</Badge>
+                          <Badge className="bg-amber-500/20 text-amber-400 border-0 text-xs">Can Drive</Badge>
                         )}
                       </div>
                     )}
@@ -364,17 +364,17 @@ export default function DispatchExceptions() {
                       {alert.source === "zeun" && alert.raw && (
                         <div className="grid grid-cols-3 gap-3 mb-3">
                           <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
-                            <div className="text-[10px] text-slate-500 mb-1">Issue Category</div>
+                            <div className="text-xs text-slate-500 mb-1">Issue Category</div>
                             <div className="text-xs font-semibold text-orange-400">{(alert.raw.issueCategory || "Unknown").replace(/_/g, " ")}</div>
                           </div>
                           <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
-                            <div className="text-[10px] text-slate-500 mb-1">Can Drive</div>
+                            <div className="text-xs text-slate-500 mb-1">Can Drive</div>
                             <div className={cn("text-xs font-semibold", alert.raw.canDrive ? "text-amber-400" : "text-red-400")}>
                               {alert.raw.canDrive ? "Yes — Operable" : "No — Disabled"}
                             </div>
                           </div>
                           <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
-                            <div className="text-[10px] text-slate-500 mb-1">Est. Cost</div>
+                            <div className="text-xs text-slate-500 mb-1">Est. Cost</div>
                             <div className="text-xs font-semibold text-white">
                               {alert.raw.actualCost ? `$${Number(alert.raw.actualCost).toLocaleString()}` : "Pending"}
                             </div>
@@ -386,7 +386,7 @@ export default function DispatchExceptions() {
                       {alert.source === "eld" && alert.raw && (
                         <div className="grid grid-cols-3 gap-3 mb-3">
                           <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
-                            <div className="text-[10px] text-slate-500 mb-1">Drive Time Left</div>
+                            <div className="text-xs text-slate-500 mb-1">Drive Time Left</div>
                             <div className={cn("text-xs font-semibold",
                               (alert.raw.driveTimeRemaining || 0) < 3600 ? "text-red-400" : "text-green-400"
                             )}>
@@ -394,11 +394,11 @@ export default function DispatchExceptions() {
                             </div>
                           </div>
                           <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
-                            <div className="text-[10px] text-slate-500 mb-1">Current Status</div>
+                            <div className="text-xs text-slate-500 mb-1">Current Status</div>
                             <div className="text-xs font-semibold text-cyan-400">{(alert.raw.currentStatus || alert.raw.status || "Unknown").replace(/_/g, " ")}</div>
                           </div>
                           <div className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
-                            <div className="text-[10px] text-slate-500 mb-1">Violation</div>
+                            <div className="text-xs text-slate-500 mb-1">Violation</div>
                             <div className="text-xs font-semibold text-red-400">{alert.raw.hasViolation ? "Active Violation" : "Near Limit"}</div>
                           </div>
                         </div>
@@ -406,35 +406,35 @@ export default function DispatchExceptions() {
 
                       <div className="flex items-center gap-2">
                         {alert.source === "load" && (
-                          <Button variant="ghost" size="sm" className="h-7 px-2.5 text-[10px] text-green-400 hover:text-green-300"
+                          <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs text-green-400 hover:text-green-300"
                             onClick={() => resolveExceptionMutation.mutate({ exceptionId: alert.raw?.id?.toString(), resolution: "Resolved by dispatcher" })}
                             disabled={resolveExceptionMutation.isPending}
                           >
                             <CheckCircle className="w-3 h-3 mr-1" />Resolve
                           </Button>
                         )}
-                        <Button variant="ghost" size="sm" className="h-7 px-2.5 text-[10px] text-cyan-400 hover:text-cyan-300">
+                        <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs text-cyan-400 hover:text-cyan-300">
                           <Phone className="w-3 h-3 mr-1" />Call Driver
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-7 px-2.5 text-[10px] text-violet-400 hover:text-violet-300">
+                        <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs text-violet-400 hover:text-violet-300">
                           <MessageSquare className="w-3 h-3 mr-1" />Message
                         </Button>
                         {alert.source === "zeun" && (
-                          <Button variant="ghost" size="sm" className="h-7 px-2.5 text-[10px] text-orange-400 hover:text-orange-300"
+                          <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs text-orange-400 hover:text-orange-300"
                             onClick={() => navigate("/zeun-breakdown")}
                           >
                             <Wrench className="w-3 h-3 mr-1" />ZEUN Mechanics
                           </Button>
                         )}
                         {alert.source === "eld" && (
-                          <Button variant="ghost" size="sm" className="h-7 px-2.5 text-[10px] text-cyan-400 hover:text-cyan-300"
+                          <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs text-cyan-400 hover:text-cyan-300"
                             onClick={() => navigate("/dispatch/eld")}
                           >
                             <Activity className="w-3 h-3 mr-1" />ELD Intelligence
                           </Button>
                         )}
                         {alert.loadNumber && (
-                          <Button variant="ghost" size="sm" className="h-7 px-2.5 text-[10px] text-slate-400 hover:text-slate-300"
+                          <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs text-slate-400 hover:text-slate-300"
                             onClick={() => navigate(`/loads/${alert.raw?.id}`)}
                           >
                             <Eye className="w-3 h-3 mr-1" />View Load

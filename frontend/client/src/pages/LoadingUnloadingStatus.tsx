@@ -217,7 +217,7 @@ export default function LoadingUnloadingStatus() {
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
                   <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{comp.name}</p>
-                  <Badge className={cn("text-[9px] border", st.bg, st.color, "border-current/20")}>{st.label}</Badge>
+                  <Badge className={cn("text-xs border", st.bg, st.color, "border-current/20")}>{st.label}</Badge>
                 </div>
 
                 {/* Tank visualization */}
@@ -235,7 +235,7 @@ export default function LoadingUnloadingStatus() {
                   </div>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <p className={cn("text-2xl font-black tabular-nums", st.color)}>{pct}%</p>
-                    <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                    <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
                       {comp.currentLevel.toLocaleString()} / {comp.capacity.toLocaleString()} gal
                     </p>
                   </div>

@@ -228,21 +228,21 @@ export default function MyProductsTab() {
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-600/50 text-slate-600 dark:text-slate-300">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-600/50 text-slate-600 dark:text-slate-300">
                           {trailer?.name || product.trailerType}
                         </span>
                         {product.hazmatClass && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-medium">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-medium">
                             Class {product.hazmatClass}
                           </span>
                         )}
                         {product.isCompanyShared && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">Shared</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400">Shared</span>
                         )}
                       </div>
 
                       <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-700/40">
-                        <span className="text-[10px] text-slate-500">{product.usageCount || 0}x used</span>
+                        <span className="text-xs text-slate-500">{product.usageCount || 0}x used</span>
                         <div className="flex items-center gap-1">
                           <button onClick={() => handleEdit(product)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors" title="Edit">
                             <Pencil className="w-3.5 h-3.5 text-slate-400 hover:text-cyan-400" />

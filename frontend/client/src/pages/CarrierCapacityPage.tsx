@@ -123,19 +123,19 @@ export default function CarrierCapacityPage() {
                   <div>
                     <p className="text-sm font-semibold text-white">{cal.companyName}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      {cal.dotNumber && <span className="text-[10px] text-slate-500">DOT# {cal.dotNumber}</span>}
-                      <Badge variant="outline" className="text-[9px] border-cyan-500/30 text-cyan-400">
+                      {cal.dotNumber && <span className="text-xs text-slate-500">DOT# {cal.dotNumber}</span>}
+                      <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">
                         {cal.fleetSize} vehicles
                       </Badge>
                       {cal.hazmatAuthorized && (
-                        <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-400">Hazmat</Badge>
+                        <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400">Hazmat</Badge>
                       )}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {cal.equipmentTypes.map((eq: string) => (
-                    <Badge key={eq} variant="outline" className="text-[9px] border-slate-600/50 text-slate-400 capitalize">
+                    <Badge key={eq} variant="outline" className="text-xs border-slate-600/50 text-slate-400 capitalize">
                       {eq.replace(/_/g, " ")}
                     </Badge>
                   ))}
@@ -154,10 +154,10 @@ export default function CarrierCapacityPage() {
                     Week of {week.weekStart}
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] text-emerald-400">{week.summary.availableDays}d avail</span>
-                    <span className="text-[9px] text-amber-400">{week.summary.partialDays}d partial</span>
-                    <span className="text-[9px] text-red-400">{week.summary.bookedDays}d booked</span>
-                    <Badge variant="outline" className="text-[9px] border-cyan-500/30 text-cyan-400">
+                    <span className="text-xs text-emerald-400">{week.summary.availableDays}d avail</span>
+                    <span className="text-xs text-amber-400">{week.summary.partialDays}d partial</span>
+                    <span className="text-xs text-red-400">{week.summary.bookedDays}d booked</span>
+                    <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">
                       {week.totalAvailableTruckDays} truck-days
                     </Badge>
                   </div>
@@ -170,17 +170,17 @@ export default function CarrierCapacityPage() {
                     return (
                       <div key={si} className={cn("p-2 rounded-lg border border-slate-700/30", sc.bg)}>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-[9px] text-slate-500">{slot.dayOfWeek.substring(0, 3)}</span>
-                          <span className={cn("text-[9px] font-bold", sc.text)}>{slot.availableTrucks}</span>
+                          <span className="text-xs text-slate-500">{slot.dayOfWeek.substring(0, 3)}</span>
+                          <span className={cn("text-xs font-bold", sc.text)}>{slot.availableTrucks}</span>
                         </div>
-                        <p className="text-[10px] text-slate-400">{slot.date.substring(5)}</p>
-                        <Badge variant="outline" className={cn("text-[8px] mt-1", sc.text, `border-${sc.text.replace("text-", "")}/30`)}>
+                        <p className="text-xs text-slate-400">{slot.date.substring(5)}</p>
+                        <Badge variant="outline" className={cn("text-xs mt-1", sc.text, `border-${sc.text.replace("text-", "")}/30`)}>
                           {sc.label}
                         </Badge>
                         {slot.hazmatAvailable && (
-                          <span className="block text-[8px] text-amber-500 mt-0.5">HM OK</span>
+                          <span className="block text-xs text-amber-500 mt-0.5">HM OK</span>
                         )}
-                        {slot.notes && <span className="block text-[8px] text-slate-600 mt-0.5">{slot.notes}</span>}
+                        {slot.notes && <span className="block text-xs text-slate-600 mt-0.5">{slot.notes}</span>}
                       </div>
                     );
                   })}
@@ -210,12 +210,12 @@ export default function CarrierCapacityPage() {
                       <div className="flex items-center gap-2 mt-1">
                         <CarrierTierBadge tier={sim.reference.tier} size="sm" />
                         {sim.reference.dotNumber && (
-                          <span className="text-[10px] text-slate-500">DOT# {sim.reference.dotNumber}</span>
+                          <span className="text-xs text-slate-500">DOT# {sim.reference.dotNumber}</span>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 text-[10px]">
+                  <div className="flex items-center gap-4 text-xs">
                     <div className="text-center">
                       <p className="text-slate-500">Fleet</p>
                       <p className="font-bold text-white">{sim.reference.fleetSize}</p>
@@ -243,7 +243,7 @@ export default function CarrierCapacityPage() {
                   <div className="mt-3 flex items-center gap-1 flex-wrap">
                     <MapPin className="w-3 h-3 text-slate-500" />
                     {sim.reference.topLanes.slice(0, 5).map((l: any) => (
-                      <Badge key={l.lane} variant="outline" className="text-[8px] border-slate-600/50 text-slate-400">
+                      <Badge key={l.lane} variant="outline" className="text-xs border-slate-600/50 text-slate-400">
                         {l.lane} ({l.count})
                       </Badge>
                     ))}
@@ -276,10 +276,10 @@ export default function CarrierCapacityPage() {
                           <div className="flex items-center gap-2 mt-0.5">
                             <CarrierTierBadge tier={result.carrier.tier} size="sm" />
                             {result.carrier.dotNumber && (
-                              <span className="text-[10px] text-slate-500">DOT# {result.carrier.dotNumber}</span>
+                              <span className="text-xs text-slate-500">DOT# {result.carrier.dotNumber}</span>
                             )}
                             {result.carrier.hazmatAuthorized && (
-                              <Badge variant="outline" className="text-[8px] border-amber-500/30 text-amber-400">Hazmat</Badge>
+                              <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400">Hazmat</Badge>
                             )}
                           </div>
                         </div>
@@ -296,33 +296,33 @@ export default function CarrierCapacityPage() {
                         )}>
                           {result.similarityScore}
                         </div>
-                        <p className="text-[9px] text-slate-500 mt-1">Match</p>
+                        <p className="text-xs text-slate-500 mt-1">Match</p>
                       </div>
                     </div>
 
                     {/* Stats Row */}
                     <div className="grid grid-cols-5 gap-2 mt-3">
                       <div className="p-1.5 rounded-lg bg-slate-900/30 text-center">
-                        <p className="text-[9px] text-slate-500">Fleet</p>
-                        <p className="text-[11px] font-bold text-white">{result.carrier.fleetSize}</p>
+                        <p className="text-xs text-slate-500">Fleet</p>
+                        <p className="text-xs font-bold text-white">{result.carrier.fleetSize}</p>
                       </div>
                       <div className="p-1.5 rounded-lg bg-slate-900/30 text-center">
-                        <p className="text-[9px] text-slate-500">Loads</p>
-                        <p className="text-[11px] font-bold text-white">{result.carrier.totalLoads}</p>
+                        <p className="text-xs text-slate-500">Loads</p>
+                        <p className="text-xs font-bold text-white">{result.carrier.totalLoads}</p>
                       </div>
                       <div className="p-1.5 rounded-lg bg-slate-900/30 text-center">
-                        <p className="text-[9px] text-slate-500">On-Time</p>
-                        <p className={cn("text-[11px] font-bold", result.carrier.onTimeRate >= 90 ? "text-emerald-400" : "text-amber-400")}>
+                        <p className="text-xs text-slate-500">On-Time</p>
+                        <p className={cn("text-xs font-bold", result.carrier.onTimeRate >= 90 ? "text-emerald-400" : "text-amber-400")}>
                           {result.carrier.onTimeRate}%
                         </p>
                       </div>
                       <div className="p-1.5 rounded-lg bg-slate-900/30 text-center">
-                        <p className="text-[9px] text-slate-500">Rate/Mi</p>
-                        <p className="text-[11px] font-bold text-cyan-400">${result.carrier.avgRatePerMile.toFixed(2)}</p>
+                        <p className="text-xs text-slate-500">Rate/Mi</p>
+                        <p className="text-xs font-bold text-cyan-400">${result.carrier.avgRatePerMile.toFixed(2)}</p>
                       </div>
                       <div className="p-1.5 rounded-lg bg-slate-900/30 text-center">
-                        <p className="text-[9px] text-slate-500">Safety</p>
-                        <p className={cn("text-[11px] font-bold", result.carrier.safetyScore >= 80 ? "text-emerald-400" : "text-amber-400")}>
+                        <p className="text-xs text-slate-500">Safety</p>
+                        <p className={cn("text-xs font-bold", result.carrier.safetyScore >= 80 ? "text-emerald-400" : "text-amber-400")}>
                           {result.carrier.safetyScore}
                         </p>
                       </div>
@@ -341,7 +341,7 @@ export default function CarrierCapacityPage() {
                               style={{ width: `${dim.score}%` }}
                             />
                           </div>
-                          <span className="text-[8px] text-slate-500">{dim.dimension}</span>
+                          <span className="text-xs text-slate-500">{dim.dimension}</span>
                         </div>
                       ))}
                     </div>
@@ -354,7 +354,7 @@ export default function CarrierCapacityPage() {
                             {result.advantages.slice(0, 2).map((a: string, i: number) => (
                               <div key={i} className="flex items-start gap-1">
                                 <CheckCircle className="w-2.5 h-2.5 text-emerald-400 mt-0.5 flex-shrink-0" />
-                                <span className="text-[9px] text-emerald-300">{a}</span>
+                                <span className="text-xs text-emerald-300">{a}</span>
                               </div>
                             ))}
                           </div>
@@ -364,7 +364,7 @@ export default function CarrierCapacityPage() {
                             {result.tradeoffs.slice(0, 2).map((t: string, i: number) => (
                               <div key={i} className="flex items-start gap-1">
                                 <AlertTriangle className="w-2.5 h-2.5 text-amber-400 mt-0.5 flex-shrink-0" />
-                                <span className="text-[9px] text-amber-300">{t}</span>
+                                <span className="text-xs text-amber-300">{t}</span>
                               </div>
                             ))}
                           </div>
@@ -377,7 +377,7 @@ export default function CarrierCapacityPage() {
                       <div className="mt-2 flex items-center gap-1 flex-wrap">
                         <MapPin className="w-2.5 h-2.5 text-slate-600" />
                         {result.carrier.topLanes.slice(0, 4).map((l: any) => (
-                          <Badge key={l.lane} variant="outline" className="text-[7px] border-slate-700/50 text-slate-500">
+                          <Badge key={l.lane} variant="outline" className="text-xs border-slate-700/50 text-slate-500">
                             {l.lane}
                           </Badge>
                         ))}
@@ -394,7 +394,7 @@ export default function CarrierCapacityPage() {
               <CardContent className="p-8 text-center">
                 <Users className="w-8 h-8 text-slate-600 mx-auto mb-2" />
                 <p className="text-sm text-slate-400">No similar carriers found</p>
-                <p className="text-[10px] text-slate-600 mt-1">Try a carrier with more load history for better matching</p>
+                <p className="text-xs text-slate-600 mt-1">Try a carrier with more load history for better matching</p>
               </CardContent>
             </Card>
           )}
@@ -412,7 +412,7 @@ export default function CarrierCapacityPage() {
             <p className="text-sm text-slate-400 mt-1 max-w-md mx-auto">
               Enter a Carrier ID to view their capacity calendar or find similar carriers using AI-powered multi-dimensional matching.
             </p>
-            <div className="flex items-center justify-center gap-6 mt-6 text-[10px] text-slate-500">
+            <div className="flex items-center justify-center gap-6 mt-6 text-xs text-slate-500">
               <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-cyan-400" /> Weekly availability</div>
               <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 text-blue-400" /> Similar carrier AI</div>
               <div className="flex items-center gap-1.5"><Gauge className="w-3.5 h-3.5 text-emerald-400" /> 10-dimension scoring</div>

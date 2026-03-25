@@ -96,11 +96,11 @@ export default function DetentionClockDisplay({ loadId }: DetentionClockDisplayP
                   </Badge>
                   <div className="flex items-center gap-1 text-orange-600">
                     <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                    <span className="text-[10px] font-medium">ACTIVE</span>
+                    <span className="text-xs font-medium">ACTIVE</span>
                   </div>
                 </div>
                 <LiveTimer enterAt={r.enterAt} />
-                <p className="text-[10px] text-muted-foreground text-center mt-2">
+                <p className="text-xs text-muted-foreground text-center mt-2">
                   Entered: {new Date(r.enterAt).toLocaleString()}
                 </p>
               </div>
@@ -111,7 +111,7 @@ export default function DetentionClockDisplay({ loadId }: DetentionClockDisplayP
               <div key={r.id} className="p-2 rounded-lg border bg-muted/30">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="capitalize text-[10px]">
+                    <Badge variant="outline" className="capitalize text-xs">
                       {r.locationType}
                     </Badge>
                     <span className="text-xs font-medium">
@@ -120,19 +120,19 @@ export default function DetentionClockDisplay({ loadId }: DetentionClockDisplayP
                   </div>
                   <div className="flex items-center gap-1">
                     {r.isBillable ? (
-                      <Badge variant="destructive" className="text-[10px]">
+                      <Badge variant="destructive" className="text-xs">
                         <DollarSign className="h-3 w-3 mr-0.5" />
                         ${r.detentionCharge?.toFixed(2)}
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-green-600 text-[10px]">
+                      <Badge variant="outline" className="text-green-600 text-xs">
                         <CheckCircle2 className="h-3 w-3 mr-0.5" />
                         No Charge
                       </Badge>
                     )}
                   </div>
                 </div>
-                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>In: {new Date(r.enterAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                   <span>Out: {new Date(r.exitAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                   {r.detentionMinutes > 0 && (

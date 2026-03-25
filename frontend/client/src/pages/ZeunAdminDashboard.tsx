@@ -282,7 +282,7 @@ export default function ZeunAdminDashboard() {
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
             Provider Network
-            <Badge className="ml-2 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[10px] px-2">ESANG AI</Badge>
+            <Badge className="ml-2 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs px-2">ESANG AI</Badge>
           </CardTitle>
           <CardDescription>AI-powered repair provider discovery — powered by ESANG AI</CardDescription>
         </CardHeader>
@@ -342,13 +342,13 @@ export default function ZeunAdminDashboard() {
                             <Badge variant="secondary">24/7</Badge>
                           )}
                           {provider.source === "openstreetmap" && (
-                            <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-600"><Globe className="h-3 w-3 mr-1" />OSM</Badge>
+                            <Badge variant="outline" className="text-xs border-green-500/30 text-green-600"><Globe className="h-3 w-3 mr-1" />OSM</Badge>
                           )}
                           {provider.source === "database" && (
-                            <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-500"><Database className="h-3 w-3 mr-1" />DB</Badge>
+                            <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-500"><Database className="h-3 w-3 mr-1" />DB</Badge>
                           )}
                           {provider.aiGenerated && !provider.source && (
-                            <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-500">AI</Badge>
+                            <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-500">AI</Badge>
                           )}
                         </div>
                       </div>

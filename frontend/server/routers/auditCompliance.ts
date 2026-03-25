@@ -581,10 +581,18 @@ export const auditComplianceRouter = router({
         const policy = policies.find((p: any) => p.id === input.policyId);
         if (!policy) return { policy: null, acknowledgments: [], totalRequired: 0, totalAcknowledged: 0 };
         const acks = policy.acknowledgments || [];
+
+        // Query actual team size from users table for this company
+        const [teamRows]: any = await db.query(
+          `SELECT COUNT(*) AS cnt FROM users WHERE company_id = ? AND status = 'active'`,
+          [cid]
+        );
+        const teamSize = teamRows?.[0]?.cnt ?? acks.length;
+
         return {
           policy: { id: policy.id, title: policy.title, version: policy.version },
           acknowledgments: acks,
-          totalRequired: acks.length + 5, // placeholder for total team size
+          totalRequired: teamSize,
           totalAcknowledged: acks.filter((a: any) => a.acknowledged).length,
         };
       } catch (error) {

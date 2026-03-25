@@ -222,7 +222,7 @@ export const DriverSafetyScoresWidget: React.FC = () => {
         <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
           <Award className="w-3 h-3 text-yellow-400 flex-shrink-0" />
           <span className="text-xs text-white flex-1 truncate">{d.name || `Driver ${i+1}`}</span>
-          <Badge className={`border-0 text-[10px] ${(d.score||0)>=90?"bg-green-500/20 text-green-400":(d.score||0)>=70?"bg-yellow-500/20 text-yellow-400":"bg-red-500/20 text-red-400"}`}>
+          <Badge className={`border-0 text-xs ${(d.score||0)>=90?"bg-green-500/20 text-green-400":(d.score||0)>=70?"bg-yellow-500/20 text-yellow-400":"bg-red-500/20 text-red-400"}`}>
             {d.score || 0}
           </Badge>
         </div>
@@ -376,7 +376,7 @@ export const EmergencyProceduresWidget: React.FC = () => {
         <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-red-500/5">
           <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
           <span className="text-xs text-white flex-1 truncate">{p.name || `Procedure ${i+1}`}</span>
-          <Badge className={`border-0 text-[10px] ${p.reviewed ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
+          <Badge className={`border-0 text-xs ${p.reviewed ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
             {p.reviewed ? "Reviewed" : "Pending"}
           </Badge>
         </div>

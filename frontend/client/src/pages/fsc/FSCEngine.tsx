@@ -98,27 +98,27 @@ export default function FSCEngine() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-sm font-semibold text-white">{s.scheduleName}</div>
-                    <div className="text-[10px] text-slate-500">{PADD_LABELS[s.paddRegion] || `PADD ${s.paddRegion}`}</div>
+                    <div className="text-xs text-slate-500">{PADD_LABELS[s.paddRegion] || `PADD ${s.paddRegion}`}</div>
                   </div>
-                  <Badge className={cn("text-[10px] border-0", s.isActive ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-500/20 text-slate-400")}>
+                  <Badge className={cn("text-xs border-0", s.isActive ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-500/20 text-slate-400")}>
                     {s.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="rounded bg-orange-500/5 border border-orange-500/10 py-1.5">
-                    <div className="text-[10px] text-slate-500">Method</div>
+                    <div className="text-xs text-slate-500">Method</div>
                     <div className="text-xs font-bold text-orange-400">{METHOD_LABELS[s.method]}</div>
                   </div>
                   <div className="rounded bg-blue-500/5 border border-blue-500/10 py-1.5">
-                    <div className="text-[10px] text-slate-500">Rate</div>
+                    <div className="text-xs text-slate-500">Rate</div>
                     <div className="text-xs font-bold text-blue-400">
                       {s.method === "cpm" ? `$${Number(s.cpmRate || 0).toFixed(4)}/mi` :
                        s.method === "percentage" ? `${Number(s.percentageRate || 0)}%` : "Table"}
                     </div>
                   </div>
                   <div className="rounded bg-green-500/5 border border-green-500/10 py-1.5">
-                    <div className="text-[10px] text-slate-500">PADD Price</div>
+                    <div className="text-xs text-slate-500">PADD Price</div>
                     <div className="text-xs font-bold text-green-400">
                       {s.lastPaddPrice ? `$${Number(s.lastPaddPrice).toFixed(2)}` : "—"}
                     </div>
@@ -126,14 +126,14 @@ export default function FSCEngine() {
                 </div>
 
                 {s.lastUpdateAt && (
-                  <div className="text-[10px] text-slate-500">Last updated: {new Date(s.lastUpdateAt).toLocaleDateString()}</div>
+                  <div className="text-xs text-slate-500">Last updated: {new Date(s.lastUpdateAt).toLocaleDateString()}</div>
                 )}
 
                 <div className="flex items-center gap-2 pt-1 border-t border-white/[0.04]">
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-cyan-400" onClick={() => setPreviewId(previewId === s.id ? null : s.id)}>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-cyan-400" onClick={() => setPreviewId(previewId === s.id ? null : s.id)}>
                     <Calculator className="w-3 h-3 mr-0.5" />Preview
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-amber-400" onClick={() => setHistoryId(historyId === s.id ? null : s.id)}>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-amber-400" onClick={() => setHistoryId(historyId === s.id ? null : s.id)}>
                     <History className="w-3 h-3 mr-0.5" />History
                   </Button>
                 </div>
@@ -163,17 +163,17 @@ export default function FSCEngine() {
             {createStep === 1 && (
               <div className="space-y-3">
                 <div>
-                  <label className="text-[10px] text-slate-500 uppercase mb-1 block">Schedule Name</label>
+                  <label className="text-xs text-slate-500 uppercase mb-1 block">Schedule Name</label>
                   <Input value={form.scheduleName} onChange={e => setForm(p => ({ ...p, scheduleName: e.target.value }))} className="h-8 text-xs bg-white/[0.04] border-white/[0.08] text-white" placeholder="e.g. Gulf Coast Standard FSC" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 uppercase mb-1 block">PADD Region</label>
+                  <label className="text-xs text-slate-500 uppercase mb-1 block">PADD Region</label>
                   <select value={form.paddRegion} onChange={e => setForm(p => ({ ...p, paddRegion: e.target.value }))} className="w-full h-8 text-xs bg-white/[0.04] border border-white/[0.08] text-white rounded px-2">
                     {Object.entries(PADD_LABELS).map(([k, v]) => <option key={k} value={k} className="bg-slate-900">{v}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 uppercase mb-1 block">Fuel Type</label>
+                  <label className="text-xs text-slate-500 uppercase mb-1 block">Fuel Type</label>
                   <Input value={form.fuelType} onChange={e => setForm(p => ({ ...p, fuelType: e.target.value }))} className="h-8 text-xs bg-white/[0.04] border-white/[0.08] text-white" />
                 </div>
               </div>
@@ -182,11 +182,11 @@ export default function FSCEngine() {
             {/* Step 2: Method Selection */}
             {createStep === 2 && (
               <div className="space-y-3">
-                <label className="text-[10px] text-slate-500 uppercase mb-1 block">Calculation Method</label>
+                <label className="text-xs text-slate-500 uppercase mb-1 block">Calculation Method</label>
                 {(["cpm", "percentage", "table"] as const).map(m => (
                   <div key={m} className={cn("p-3 rounded-lg border cursor-pointer transition-all", form.method === m ? "border-orange-500/50 bg-orange-500/10" : "border-white/[0.06] hover:border-white/[0.12]")} onClick={() => setForm(p => ({ ...p, method: m }))}>
                     <div className="text-xs font-semibold text-white">{METHOD_LABELS[m]}</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">
+                    <div className="text-xs text-slate-400 mt-0.5">
                       {m === "cpm" ? "Cents per mile — distance × rate / 100" :
                        m === "percentage" ? "Percentage of estimated cost" :
                        "Lookup table based on current PADD fuel price"}
@@ -201,21 +201,21 @@ export default function FSCEngine() {
               <div className="space-y-3">
                 {form.method === "cpm" && (
                   <div>
-                    <label className="text-[10px] text-slate-500 uppercase mb-1 block">CPM Rate ($/mile)</label>
+                    <label className="text-xs text-slate-500 uppercase mb-1 block">CPM Rate ($/mile)</label>
                     <Input type="number" step="0.01" value={form.cpmRate} onChange={e => setForm(p => ({ ...p, cpmRate: Number(e.target.value) }))} className="h-8 text-xs bg-white/[0.04] border-white/[0.08] text-white" />
-                    <div className="text-[10px] text-slate-500 mt-1">Example: 0.04 = $0.04/mile → 500 mi = $20 FSC</div>
+                    <div className="text-xs text-slate-500 mt-1">Example: 0.04 = $0.04/mile → 500 mi = $20 FSC</div>
                   </div>
                 )}
                 {form.method === "percentage" && (
                   <div>
-                    <label className="text-[10px] text-slate-500 uppercase mb-1 block">Percentage Rate (%)</label>
+                    <label className="text-xs text-slate-500 uppercase mb-1 block">Percentage Rate (%)</label>
                     <Input type="number" step="0.1" value={form.percentageRate} onChange={e => setForm(p => ({ ...p, percentageRate: Number(e.target.value) }))} className="h-8 text-xs bg-white/[0.04] border-white/[0.08] text-white" />
-                    <div className="text-[10px] text-slate-500 mt-1">Example: 2% of $5000 = $100 FSC</div>
+                    <div className="text-xs text-slate-500 mt-1">Example: 2% of $5000 = $100 FSC</div>
                   </div>
                 )}
                 {form.method === "table" && (
                   <div className="space-y-2">
-                    <label className="text-[10px] text-slate-500 uppercase mb-1 block">Fuel Price Ranges</label>
+                    <label className="text-xs text-slate-500 uppercase mb-1 block">Fuel Price Ranges</label>
                     {form.tableEntries.map((te: any, i: number) => (
                       <div key={i} className="grid grid-cols-4 gap-2 items-center">
                         <Input type="number" step="0.01" value={te.fuelPriceMin} onChange={e => { const nt = [...form.tableEntries]; nt[i].fuelPriceMin = Number(e.target.value); setForm(p => ({ ...p, tableEntries: nt })); }} className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white" placeholder="Min" />
@@ -224,11 +224,11 @@ export default function FSCEngine() {
                         <button onClick={() => { const nt = form.tableEntries.filter((_: any, j: number) => j !== i); setForm(p => ({ ...p, tableEntries: nt })); }} className="text-red-400 text-xs hover:text-red-300">Remove</button>
                       </div>
                     ))}
-                    <Button variant="ghost" size="sm" className="h-6 text-[10px] text-orange-400" onClick={addTableRow}>+ Add Range</Button>
+                    <Button variant="ghost" size="sm" className="h-6 text-xs text-orange-400" onClick={addTableRow}>+ Add Range</Button>
                   </div>
                 )}
                 <div>
-                  <label className="text-[10px] text-slate-500 uppercase mb-1 block">Base Price (optional)</label>
+                  <label className="text-xs text-slate-500 uppercase mb-1 block">Base Price (optional)</label>
                   <Input type="number" step="0.01" value={form.basePrice} onChange={e => setForm(p => ({ ...p, basePrice: Number(e.target.value) }))} className="h-8 text-xs bg-white/[0.04] border-white/[0.08] text-white" />
                 </div>
               </div>
@@ -277,25 +277,25 @@ export default function FSCEngine() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-slate-500 uppercase block">Distance (mi)</label>
+                <label className="text-xs text-slate-500 uppercase block">Distance (mi)</label>
                 <Input type="number" value={previewDist} onChange={e => setPreviewDist(Number(e.target.value))} className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 uppercase block">Est. Cost ($)</label>
+                <label className="text-xs text-slate-500 uppercase block">Est. Cost ($)</label>
                 <Input type="number" value={previewCost} onChange={e => setPreviewCost(Number(e.target.value))} className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white" />
               </div>
               <div className="col-span-2">
-                <label className="text-[10px] text-slate-500 uppercase block">PADD Price ($)</label>
+                <label className="text-xs text-slate-500 uppercase block">PADD Price ($)</label>
                 <Input type="number" step="0.01" value={previewPadd} onChange={e => setPreviewPadd(Number(e.target.value))} className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white" />
               </div>
             </div>
             <div className="text-center py-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-              <div className="text-[10px] text-slate-500 uppercase">Calculated FSC</div>
+              <div className="text-xs text-slate-500 uppercase">Calculated FSC</div>
               <div className="text-2xl font-bold text-orange-400">${previewQuery.data.fsc.toFixed(2)}</div>
-              <div className="text-[10px] text-slate-400 mt-1">{previewQuery.data.method.toUpperCase()} · PADD ${previewQuery.data.paddPrice}</div>
+              <div className="text-xs text-slate-400 mt-1">{previewQuery.data.method.toUpperCase()} · PADD ${previewQuery.data.paddPrice}</div>
             </div>
             {previewQuery.data.calculations?.formula && (
-              <div className="text-[10px] text-slate-400 text-center">{previewQuery.data.calculations.formula}</div>
+              <div className="text-xs text-slate-400 text-center">{previewQuery.data.calculations.formula}</div>
             )}
           </Card>
         </div>

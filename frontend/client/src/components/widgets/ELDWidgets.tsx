@@ -49,7 +49,7 @@ export function ELDFleetPulseWidget() {
           <Activity className="w-4 h-4 text-[#1473FF]" />
           <span className="text-xs font-semibold text-slate-300">ELD Fleet Pulse</span>
         </div>
-        <Badge className={`border-0 text-[9px] font-bold ${eld.connected ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
+        <Badge className={`border-0 text-xs font-bold ${eld.connected ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
           {eld.connected ? <><Wifi className="w-2.5 h-2.5 mr-1" />Connected</> : <><WifiOff className="w-2.5 h-2.5 mr-1" />Offline</>}
         </Badge>
       </div>
@@ -59,16 +59,16 @@ export function ELDFleetPulseWidget() {
         <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5">
           <div className="flex items-center gap-1.5 mb-1">
             <Truck className="w-3 h-3 text-blue-400" />
-            <span className="text-[10px] text-slate-500">Devices</span>
+            <span className="text-xs text-slate-500">Devices</span>
           </div>
           <p className="text-lg font-bold text-white">{eld.activeDevices}<span className="text-xs text-slate-500 font-normal">/{eld.totalDevices}</span></p>
-          <p className="text-[9px] text-slate-500">{eld.offlineDevices} offline</p>
+          <p className="text-xs text-slate-500">{eld.offlineDevices} offline</p>
         </div>
 
         <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5">
           <div className="flex items-center gap-1.5 mb-1">
             <Shield className="w-3 h-3 text-emerald-400" />
-            <span className="text-[10px] text-slate-500">HOS Compliance</span>
+            <span className="text-xs text-slate-500">HOS Compliance</span>
           </div>
           <p className="text-lg font-bold text-emerald-400">{hos.complianceScore}%</p>
           <Progress value={hos.complianceScore} className="h-1 mt-1" />
@@ -77,21 +77,21 @@ export function ELDFleetPulseWidget() {
         <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5">
           <div className="flex items-center gap-1.5 mb-1">
             <Users className="w-3 h-3 text-cyan-400" />
-            <span className="text-[10px] text-slate-500">Live Fleet</span>
+            <span className="text-xs text-slate-500">Live Fleet</span>
           </div>
           <p className="text-lg font-bold text-white">{live.count}</p>
-          <p className="text-[9px] text-slate-500">{fleet.driving} driving · {live.avgSpeedMph} mph avg</p>
+          <p className="text-xs text-slate-500">{fleet.driving} driving · {live.avgSpeedMph} mph avg</p>
         </div>
 
         <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5">
           <div className="flex items-center gap-1.5 mb-1">
             <AlertTriangle className="w-3 h-3 text-amber-400" />
-            <span className="text-[10px] text-slate-500">Violations</span>
+            <span className="text-xs text-slate-500">Violations</span>
           </div>
           <p className={`text-lg font-bold ${hos.violationsThisWeek > 0 ? "text-red-400" : "text-emerald-400"}`}>
             {hos.violationsThisWeek}
           </p>
-          <p className="text-[9px] text-slate-500">this week</p>
+          <p className="text-xs text-slate-500">this week</p>
         </div>
       </div>
 
@@ -99,7 +99,7 @@ export function ELDFleetPulseWidget() {
       <Button
         size="sm"
         variant="ghost"
-        className="w-full h-7 text-[10px] text-[#1473FF] hover:bg-[#1473FF]/10"
+        className="w-full h-7 text-xs text-[#1473FF] hover:bg-[#1473FF]/10"
         onClick={() => navigate("/eld")}
       >
         Open ELD Intelligence <ChevronRight className="w-3 h-3 ml-1" />
@@ -145,7 +145,7 @@ export function ELDNetworkEffectWidget() {
       <div className="flex items-center gap-2">
         <Radio className="w-4 h-4 text-[#BE01FF]" />
         <span className="text-xs font-semibold text-slate-300">ELD Network Effect</span>
-        <Badge className={`ml-auto border-0 text-[9px] font-bold bg-gradient-to-r ${strengthColors[strength]} text-white`}>
+        <Badge className={`ml-auto border-0 text-xs font-bold bg-gradient-to-r ${strengthColors[strength]} text-white`}>
           {strength.toUpperCase()}
         </Badge>
       </div>
@@ -154,25 +154,25 @@ export function ELDNetworkEffectWidget() {
       <div className="grid grid-cols-3 gap-2">
         <div className="text-center p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
           <p className="text-sm font-bold text-white">{data?.totalDevicesConnected || 0}</p>
-          <p className="text-[9px] text-slate-500">Devices</p>
+          <p className="text-xs text-slate-500">Devices</p>
         </div>
         <div className="text-center p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
           <p className="text-sm font-bold text-white">{data?.totalDriversTracked || 0}</p>
-          <p className="text-[9px] text-slate-500">Drivers</p>
+          <p className="text-xs text-slate-500">Drivers</p>
         </div>
         <div className="text-center p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
           <p className="text-sm font-bold text-white">{data?.roadMilesMapped || 0}</p>
-          <p className="text-[9px] text-slate-500">Road Miles</p>
+          <p className="text-xs text-slate-500">Road Miles</p>
         </div>
       </div>
 
       {/* Benefits */}
       {(data?.benefitsUnlocked?.length || 0) > 0 && (
         <div className="space-y-1">
-          <p className="text-[10px] text-slate-500 font-medium">Benefits Unlocked</p>
+          <p className="text-xs text-slate-500 font-medium">Benefits Unlocked</p>
           <div className="flex flex-wrap gap-1">
             {data?.benefitsUnlocked?.slice(0, 5).map((b: string, i: number) => (
-              <Badge key={i} className="border-0 bg-emerald-500/10 text-emerald-400 text-[8px] font-medium">
+              <Badge key={i} className="border-0 bg-emerald-500/10 text-emerald-400 text-xs font-medium">
                 <CheckCircle className="w-2 h-2 mr-0.5" />{b}
               </Badge>
             ))}
@@ -185,8 +185,8 @@ export function ELDNetworkEffectWidget() {
         <div className="flex items-center gap-2 p-2 rounded-lg bg-purple-500/5 border border-purple-500/10">
           <Mountain className="w-3.5 h-3.5 text-purple-400" />
           <div>
-            <p className="text-[10px] text-purple-300 font-medium">{data?.lidarSegmentsEnriched} LiDAR Segments</p>
-            <p className="text-[9px] text-slate-500">Road surface analysis powered by fleet GPS</p>
+            <p className="text-xs text-purple-300 font-medium">{data?.lidarSegmentsEnriched} LiDAR Segments</p>
+            <p className="text-xs text-slate-500">Road surface analysis powered by fleet GPS</p>
           </div>
         </div>
       )}
@@ -194,7 +194,7 @@ export function ELDNetworkEffectWidget() {
       <Button
         size="sm"
         variant="ghost"
-        className="w-full h-7 mt-auto text-[10px] text-[#BE01FF] hover:bg-[#BE01FF]/10"
+        className="w-full h-7 mt-auto text-xs text-[#BE01FF] hover:bg-[#BE01FF]/10"
         onClick={() => navigate("/eld")}
       >
         Explore ELD Intelligence <ChevronRight className="w-3 h-3 ml-1" />
@@ -241,46 +241,46 @@ export function ELDRoadIntelligenceWidget() {
         <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5">
           <div className="flex items-center gap-1.5 mb-1">
             <MapPin className="w-3 h-3 text-blue-400" />
-            <span className="text-[10px] text-slate-500">Road Segments</span>
+            <span className="text-xs text-slate-500">Road Segments</span>
           </div>
           <p className="text-lg font-bold text-white">{r.totalSegments.toLocaleString()}</p>
-          <p className="text-[9px] text-slate-500">{r.totalMiles} mi mapped</p>
+          <p className="text-xs text-slate-500">{r.totalMiles} mi mapped</p>
         </div>
 
         <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5">
           <div className="flex items-center gap-1.5 mb-1">
             <Zap className="w-3 h-3 text-purple-400" />
-            <span className="text-[10px] text-slate-500">LiDAR Coverage</span>
+            <span className="text-xs text-slate-500">LiDAR Coverage</span>
           </div>
           <p className="text-lg font-bold text-purple-400">{r.coveragePct}%</p>
-          <p className="text-[9px] text-slate-500">{r.lidarEnriched} enriched</p>
+          <p className="text-xs text-slate-500">{r.lidarEnriched} enriched</p>
         </div>
 
         <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5">
           <div className="flex items-center gap-1.5 mb-1">
             <Gauge className="w-3 h-3 text-cyan-400" />
-            <span className="text-[10px] text-slate-500">Avg Truck Risk</span>
+            <span className="text-xs text-slate-500">Avg Truck Risk</span>
           </div>
           <p className={`text-lg font-bold ${riskColor}`}>{r.avgTruckRisk ?? "—"}</p>
-          <p className="text-[9px] text-slate-500">out of 100</p>
+          <p className="text-xs text-slate-500">out of 100</p>
         </div>
 
         <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-2.5">
           <div className="flex items-center gap-1.5 mb-1">
             <AlertTriangle className="w-3 h-3 text-red-400" />
-            <span className="text-[10px] text-slate-500">High Risk</span>
+            <span className="text-xs text-slate-500">High Risk</span>
           </div>
           <p className={`text-lg font-bold ${r.highRiskSegments > 0 ? "text-red-400" : "text-emerald-400"}`}>
             {r.highRiskSegments}
           </p>
-          <p className="text-[9px] text-slate-500">segments &gt;60 risk</p>
+          <p className="text-xs text-slate-500">segments &gt;60 risk</p>
         </div>
       </div>
 
       <Button
         size="sm"
         variant="ghost"
-        className="w-full h-7 text-[10px] text-cyan-400 hover:bg-cyan-500/10"
+        className="w-full h-7 text-xs text-cyan-400 hover:bg-cyan-500/10"
         onClick={() => navigate("/hot-zones")}
       >
         View on Satellite Map <ChevronRight className="w-3 h-3 ml-1" />

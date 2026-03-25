@@ -22,7 +22,7 @@ export const OversizedLoadsWidget: React.FC = () => {
             <Box className="w-3 h-3 text-orange-400 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs text-white truncate">{l.loadNumber || `Load ${i+1}`}</p>
-              <p className="text-[10px] text-gray-500">{l.dimensions || "Oversized"}</p>
+              <p className="text-xs text-gray-500">{l.dimensions || "Oversized"}</p>
             </div>
           </div>
         )} empty="No oversized loads" />
@@ -57,7 +57,7 @@ export const SafetyProtocolsWidget: React.FC = () => {
         <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
           <Shield className={`w-3 h-3 flex-shrink-0 ${p.status === "complete" ? "text-green-400" : "text-yellow-400"}`} />
           <span className="text-xs text-white flex-1 truncate">{p.name || `Protocol ${i+1}`}</span>
-          <Badge className={`border-0 text-[10px] ${p.status === "complete" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
+          <Badge className={`border-0 text-xs ${p.status === "complete" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
             {p.status || "Pending"}
           </Badge>
         </div>
@@ -76,7 +76,7 @@ export const CommunicationHubWidget: React.FC = () => {
           <MessageSquare className="w-3 h-3 text-blue-400 flex-shrink-0" />
           <span className="text-xs text-white flex-1 truncate">{c.name || `Channel ${i+1}`}</span>
           {(c.unread || 0) > 0 && (
-            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-[10px]">{c.unread}</span>
+            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs">{c.unread}</span>
           )}
         </div>
       )} empty="No channels" />
@@ -99,7 +99,7 @@ export const IncidentReportsWidget: React.FC = () => {
           <AlertCircle className={`w-3 h-3 flex-shrink-0 ${inc.severity === "critical" ? "text-red-400" : "text-yellow-400"}`} />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-white truncate">{inc.title || `Incident ${i+1}`}</p>
-            <p className="text-[10px] text-gray-500">{inc.date || ""}</p>
+            <p className="text-xs text-gray-500">{inc.date || ""}</p>
           </div>
         </div>
       )} />
@@ -138,7 +138,7 @@ export const RouteRestrictionsWidget: React.FC = () => {
           <AlertCircle className="w-3 h-3 text-orange-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-white truncate">{r.location || `Restriction ${i+1}`}</p>
-            <p className="text-[10px] text-gray-500">{r.type || "Height"}: {r.limit || "N/A"}</p>
+            <p className="text-xs text-gray-500">{r.type || "Height"}: {r.limit || "N/A"}</p>
           </div>
         </div>
       )} empty="No restrictions on route" />
@@ -217,7 +217,7 @@ export const ClearanceAlertsWidget: React.FC = () => {
           <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-white truncate">{a.location || `Point ${i+1}`}</p>
-            <p className="text-[10px] text-gray-500">Clearance: {a.clearance || "N/A"}</p>
+            <p className="text-xs text-gray-500">Clearance: {a.clearance || "N/A"}</p>
           </div>
         </div>
       )} />
@@ -256,7 +256,7 @@ export const DriverCommunicationWidget: React.FC = () => {
           <div className={`w-3 h-3 rounded-full ${c.connected ? "bg-green-400" : "bg-red-400"}`} />
           <div>
             <p className="text-sm text-white">{c.driverName}</p>
-            <p className="text-[10px] text-gray-500">{c.connected ? "Connected" : "Offline"}</p>
+            <p className="text-xs text-gray-500">{c.connected ? "Connected" : "Offline"}</p>
           </div>
         </div>
         {c.driverPhone && <StatRow label="Phone" value={c.driverPhone} color="text-cyan-400" />}
@@ -275,9 +275,9 @@ export const EmergencyContactsWidget: React.FC = () => {
           <Phone className="w-3 h-3 text-red-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-white truncate">{c.name || `Contact ${i+1}`}</p>
-            <p className="text-[10px] text-gray-500">{c.role || "Emergency"}</p>
+            <p className="text-xs text-gray-500">{c.role || "Emergency"}</p>
           </div>
-          <span className="text-[10px] text-cyan-400">{c.phone || ""}</span>
+          <span className="text-xs text-cyan-400">{c.phone || ""}</span>
         </div>
       )} empty="No contacts" />
     )}</ResponsiveWidget>
@@ -294,7 +294,7 @@ export const TripLogWidget: React.FC = () => {
           <Clock className="w-3 h-3 text-blue-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-white truncate">{e.event || `Event ${i+1}`}</p>
-            <p className="text-[10px] text-gray-500">{e.time || ""} - {e.location || ""}</p>
+            <p className="text-xs text-gray-500">{e.time || ""} - {e.location || ""}</p>
           </div>
         </div>
       )} empty="No trip log entries" />
@@ -311,7 +311,7 @@ export const PermitVerificationWidget: React.FC = () => {
         <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
           <FileText className="w-3 h-3 text-blue-400 flex-shrink-0" />
           <span className="text-xs text-white flex-1 truncate">{p.state || `Permit ${i+1}`}</span>
-          <Badge className={`border-0 text-[10px] ${p.valid ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+          <Badge className={`border-0 text-xs ${p.valid ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
             {p.valid ? "Valid" : "Invalid"}
           </Badge>
         </div>

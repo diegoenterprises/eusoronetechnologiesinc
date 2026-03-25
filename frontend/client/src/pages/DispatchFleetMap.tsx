@@ -194,7 +194,7 @@ export default function DispatchFleetMap() {
             <Button
               size="sm"
               variant={showTraffic ? "default" : "outline"}
-              className={cn("h-7 px-2 text-[10px] rounded-md", showTraffic ? "bg-green-600 hover:bg-green-500" : "border-white/[0.08] bg-white/[0.02]")}
+              className={cn("h-7 px-2 text-xs rounded-md", showTraffic ? "bg-green-600 hover:bg-green-500" : "border-white/[0.08] bg-white/[0.02]")}
               onClick={() => setShowTraffic(!showTraffic)}
               aria-label="Toggle traffic layer"
             >
@@ -203,7 +203,7 @@ export default function DispatchFleetMap() {
             <Button
               size="sm"
               variant={mapType === "satellite" || mapType === "hybrid" ? "default" : "outline"}
-              className={cn("h-7 px-2 text-[10px] rounded-md", mapType !== "roadmap" ? "bg-blue-600 hover:bg-blue-500" : "border-white/[0.08] bg-white/[0.02]")}
+              className={cn("h-7 px-2 text-xs rounded-md", mapType !== "roadmap" ? "bg-blue-600 hover:bg-blue-500" : "border-white/[0.08] bg-white/[0.02]")}
               onClick={() => setMapType(prev => prev === "roadmap" ? "hybrid" : "roadmap")}
               aria-label="Toggle satellite view"
             >
@@ -212,7 +212,7 @@ export default function DispatchFleetMap() {
             <Button
               size="sm"
               variant={showLabels ? "default" : "outline"}
-              className={cn("h-7 px-2 text-[10px] rounded-md", showLabels ? "bg-purple-600 hover:bg-purple-500" : "border-white/[0.08] bg-white/[0.02]")}
+              className={cn("h-7 px-2 text-xs rounded-md", showLabels ? "bg-purple-600 hover:bg-purple-500" : "border-white/[0.08] bg-white/[0.02]")}
               onClick={() => setShowLabels(!showLabels)}
               aria-label="Toggle map labels"
             >
@@ -330,7 +330,7 @@ export default function DispatchFleetMap() {
 
           {/* Last Updated */}
           {(fleetQuery.data as any)?.lastUpdated && (
-            <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm rounded-md px-2 py-1 text-[10px] text-slate-400">
+            <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm rounded-md px-2 py-1 text-xs text-slate-400">
               <Clock className="w-3 h-3 inline mr-1" aria-hidden="true" />
               Updated {new Date((fleetQuery.data as any).lastUpdated).toLocaleTimeString()}
             </div>
@@ -343,7 +343,7 @@ export default function DispatchFleetMap() {
             <h2 className="text-sm font-semibold text-white flex items-center gap-1.5">
               <Truck className="w-4 h-4 text-cyan-400" aria-hidden="true" />
               Vehicles
-              <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-[10px] ml-auto">{vehicles.length}</Badge>
+              <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-xs ml-auto">{vehicles.length}</Badge>
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -374,7 +374,7 @@ export default function DispatchFleetMap() {
                       <span className="text-xs font-medium text-white">{v.unitNumber}</span>
                     </div>
                     <Badge className={cn(
-                      "border-0 text-[9px] px-1.5 py-0",
+                      "border-0 text-xs px-1.5 py-0",
                       v.status === "moving" ? "bg-green-500/20 text-green-400"
                         : v.status === "stopped" ? "bg-yellow-500/20 text-yellow-400"
                         : "bg-slate-500/20 text-slate-400"
@@ -382,7 +382,7 @@ export default function DispatchFleetMap() {
                       {getStatusLabel(v.status)}
                     </Badge>
                   </div>
-                  <div className="text-[10px] text-slate-400 space-y-0.5">
+                  <div className="text-xs text-slate-400 space-y-0.5">
                     <p className="truncate">{v.driverName}</p>
                     {v.speed > 0 && <p>{v.speed} mph</p>}
                     {v.loadNumber && (

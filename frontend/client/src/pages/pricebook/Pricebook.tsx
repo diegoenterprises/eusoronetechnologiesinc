@@ -177,7 +177,7 @@ export default function Pricebook() {
               { label: "Hazmat Class", key: "hazmatClass", type: "text" },
             ].map(f => (
               <div key={f.key}>
-                <label className="text-[10px] text-slate-500 uppercase mb-1 block">{f.label}</label>
+                <label className="text-xs text-slate-500 uppercase mb-1 block">{f.label}</label>
                 <Input
                   type={f.type}
                   value={(form as any)[f.key] || ""}
@@ -197,7 +197,7 @@ export default function Pricebook() {
       <div className="flex-1 overflow-auto">
         <table className="w-full text-xs">
           <thead className="sticky top-0 z-10">
-            <tr className="text-[10px] text-slate-500 uppercase border-b border-white/[0.06] bg-slate-900">
+            <tr className="text-xs text-slate-500 uppercase border-b border-white/[0.06] bg-slate-900">
               <th className="px-3 py-2 text-left">Entry Name</th>
               <th className="px-3 py-2 text-left">Origin</th>
               <th className="px-3 py-2 text-left">Destination</th>
@@ -229,11 +229,11 @@ export default function Pricebook() {
                   {e.destinationCity ? `${e.destinationCity}, ${e.destinationState || ""}` : e.destinationTerminalId ? `Terminal #${e.destinationTerminalId}` : "—"}
                 </td>
                 <td className="px-3 py-2">
-                  {e.cargoType ? <Badge className="bg-amber-500/10 text-amber-400 border-0 text-[10px]">{e.cargoType}</Badge> : "—"}
+                  {e.cargoType ? <Badge className="bg-amber-500/10 text-amber-400 border-0 text-xs">{e.cargoType}</Badge> : "—"}
                 </td>
                 <td className="px-3 py-2 text-slate-400">{e.hazmatClass || "—"}</td>
                 <td className="px-3 py-2">
-                  <Badge className="bg-blue-500/10 text-blue-400 border-0 text-[10px]">{RATE_TYPE_LABELS[e.rateType] || e.rateType}</Badge>
+                  <Badge className="bg-blue-500/10 text-blue-400 border-0 text-xs">{RATE_TYPE_LABELS[e.rateType] || e.rateType}</Badge>
                 </td>
                 <td className="px-3 py-2 text-right font-mono">
                   {editingId === e.id ? (
@@ -261,7 +261,7 @@ export default function Pricebook() {
                 <td className="px-3 py-2 text-right text-slate-400">{e.minimumCharge ? `$${Number(e.minimumCharge).toFixed(2)}` : "—"}</td>
                 <td className="px-3 py-2 text-slate-300">{e.effectiveDate || "—"}</td>
                 <td className="px-3 py-2 text-slate-300">{e.expirationDate || "—"}</td>
-                <td className="px-3 py-2">{e.fscIncluded ? <Badge className="bg-green-500/10 text-green-400 border-0 text-[10px]">Yes</Badge> : <span className="text-slate-500">No</span>}</td>
+                <td className="px-3 py-2">{e.fscIncluded ? <Badge className="bg-green-500/10 text-green-400 border-0 text-xs">Yes</Badge> : <span className="text-slate-500">No</span>}</td>
                 <td className="px-3 py-2 text-center">
                   <div className="flex items-center justify-center gap-1">
                     <button onClick={() => setHistoryEntryId(historyEntryId === e.id ? null : e.id)} className="text-slate-400 hover:text-white p-0.5">

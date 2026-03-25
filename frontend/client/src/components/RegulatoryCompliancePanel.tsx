@@ -148,13 +148,13 @@ export default function RegulatoryCompliancePanel({
         </div>
         <div className="flex-1 text-left">
           <p className={cn("text-sm font-semibold", statusCfg.text)}>{statusCfg.label}</p>
-          <p className="text-[10px] text-slate-500">{statusCfg.desc}</p>
+          <p className="text-xs text-slate-500">{statusCfg.desc}</p>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap justify-end">
-          {summary.critical > 0 && <Badge className="bg-red-500/20 text-red-400 border-0 text-[9px]">{summary.critical} critical</Badge>}
-          {summary.high > 0 && <Badge className="bg-orange-500/20 text-orange-400 border-0 text-[9px]">{summary.high} high</Badge>}
-          {summary.medium > 0 && <Badge className="bg-yellow-500/20 text-yellow-400 border-0 text-[9px]">{summary.medium} medium</Badge>}
-          {summary.low > 0 && <Badge className="bg-blue-500/20 text-blue-400 border-0 text-[9px]">{summary.low} advisory</Badge>}
+          {summary.critical > 0 && <Badge className="bg-red-500/20 text-red-400 border-0 text-xs">{summary.critical} critical</Badge>}
+          {summary.high > 0 && <Badge className="bg-orange-500/20 text-orange-400 border-0 text-xs">{summary.high} high</Badge>}
+          {summary.medium > 0 && <Badge className="bg-yellow-500/20 text-yellow-400 border-0 text-xs">{summary.medium} medium</Badge>}
+          {summary.low > 0 && <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">{summary.low} advisory</Badge>}
           {expanded ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
         </div>
       </button>
@@ -167,33 +167,33 @@ export default function RegulatoryCompliancePanel({
           <div className="px-4 py-2 bg-slate-800/40 flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-1.5">
               <Truck className="w-3 h-3 text-slate-500" />
-              <span className="text-[9px] text-slate-400 uppercase tracking-wider">Trailer</span>
-              <Badge variant="outline" className="text-[9px] border-slate-600/50 text-slate-300">{resolved.trailerSpec || trailerType}</Badge>
+              <span className="text-xs text-slate-400 uppercase tracking-wider">Trailer</span>
+              <Badge variant="outline" className="text-xs border-slate-600/50 text-slate-300">{resolved.trailerSpec || trailerType}</Badge>
             </div>
             <div className="flex items-center gap-1.5">
               <Scale className="w-3 h-3 text-slate-500" />
-              <span className="text-[9px] text-slate-400 uppercase tracking-wider">Product</span>
-              <Badge variant="outline" className="text-[9px] border-slate-600/50 text-slate-300">
+              <span className="text-xs text-slate-400 uppercase tracking-wider">Product</span>
+              <Badge variant="outline" className="text-xs border-slate-600/50 text-slate-300">
                 {resolved.catalogProduct?.label || resolved.productCategory || "General"}
               </Badge>
             </div>
             {resolved.isHazmat && (
-              <Badge className="bg-red-500/15 text-red-400 border-0 text-[9px]">
+              <Badge className="bg-red-500/15 text-red-400 border-0 text-xs">
                 <ShieldAlert className="w-2.5 h-2.5 mr-1" /> HAZMAT
               </Badge>
             )}
             {resolved.isTanker && (
-              <Badge className="bg-cyan-500/15 text-cyan-400 border-0 text-[9px]">TANKER</Badge>
+              <Badge className="bg-cyan-500/15 text-cyan-400 border-0 text-xs">TANKER</Badge>
             )}
             {resolved.catalogProduct?.requiresTWIC && (
-              <Badge className="bg-purple-500/15 text-purple-400 border-0 text-[9px]">
+              <Badge className="bg-purple-500/15 text-purple-400 border-0 text-xs">
                 <Fingerprint className="w-2.5 h-2.5 mr-1" /> TWIC
               </Badge>
             )}
             {resolved.catalogProduct?.temperatureControlled && (
-              <Badge className="bg-blue-500/15 text-blue-400 border-0 text-[9px]">TEMP CONTROLLED</Badge>
+              <Badge className="bg-blue-500/15 text-blue-400 border-0 text-xs">TEMP CONTROLLED</Badge>
             )}
-            <span className="text-[9px] text-slate-500 ml-auto">{states.join(", ")}</span>
+            <span className="text-xs text-slate-500 ml-auto">{states.join(", ")}</span>
           </div>
 
           {/* CDL Endorsements Required */}
@@ -201,13 +201,13 @@ export default function RegulatoryCompliancePanel({
             <div className="px-4 py-2.5 bg-purple-500/5">
               <div className="flex items-center gap-2 mb-1.5">
                 <BadgeCheck className="w-3.5 h-3.5 text-purple-400" />
-                <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Required CDL Endorsements</span>
+                <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">Required CDL Endorsements</span>
               </div>
               <div className="flex items-center gap-2">
                 {endorsements.map((e: string) => (
                   <div key={e} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
                     <span className="text-lg font-black text-purple-300">{e}</span>
-                    <span className="text-[9px] text-purple-400">
+                    <span className="text-xs text-purple-400">
                       {e === "H" ? "Hazmat" : e === "N" ? "Tanker" : e === "T" ? "Doubles/Triples" : e === "X" ? "Hazmat + Tanker" : e === "P" ? "Passenger" : e === "S" ? "School Bus" : e}
                     </span>
                   </div>
@@ -227,8 +227,8 @@ export default function RegulatoryCompliancePanel({
               <div key={cat} className="px-4 py-2.5">
                 <div className="flex items-center gap-2 mb-2">
                   <CatIcon className={cn("w-3.5 h-3.5", catCfg.color)} />
-                  <span className={cn("text-[10px] font-bold uppercase tracking-wider", catCfg.color)}>{catCfg.label}</span>
-                  <span className="text-[9px] text-slate-500 ml-auto">{findings.length}</span>
+                  <span className={cn("text-xs font-bold uppercase tracking-wider", catCfg.color)}>{catCfg.label}</span>
+                  <span className="text-xs text-slate-500 ml-auto">{findings.length}</span>
                 </div>
                 <div className="space-y-1.5">
                   {findings.map((f: any, idx: number) => {
@@ -236,17 +236,17 @@ export default function RegulatoryCompliancePanel({
                     return (
                       <div key={`${cat}-${idx}`} className={cn("rounded-lg px-3 py-2 border", sev.bg, sev.border)}>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className={cn("text-[11px] font-semibold flex-1", sev.text)}>{f.title}</span>
-                          <Badge className={cn("border-0 text-[8px] px-1.5 flex-shrink-0", sev.badge)}>{(f.severity || "info").toUpperCase()}</Badge>
-                          {f.source && <span className="text-[8px] text-slate-500 flex-shrink-0">{f.source}</span>}
+                          <span className={cn("text-xs font-semibold flex-1", sev.text)}>{f.title}</span>
+                          <Badge className={cn("border-0 text-xs px-1.5 flex-shrink-0", sev.badge)}>{(f.severity || "info").toUpperCase()}</Badge>
+                          {f.source && <span className="text-xs text-slate-500 flex-shrink-0">{f.source}</span>}
                         </div>
                         {f.description && f.description !== f.title && (
-                          <p className="text-[10px] text-slate-400 leading-relaxed">{f.description}</p>
+                          <p className="text-xs text-slate-400 leading-relaxed">{f.description}</p>
                         )}
                         <div className="flex items-center gap-3 mt-1">
-                          {f.regulation && <span className="text-[9px] text-slate-500">{f.regulation}</span>}
-                          {f.renewalPeriod && <span className="text-[9px] text-slate-600">Renew: {f.renewalPeriod}</span>}
-                          {f.documentRequired && <span className="text-[9px] text-slate-600">Doc: {f.documentRequired}</span>}
+                          {f.regulation && <span className="text-xs text-slate-500">{f.regulation}</span>}
+                          {f.renewalPeriod && <span className="text-xs text-slate-600">Renew: {f.renewalPeriod}</span>}
+                          {f.documentRequired && <span className="text-xs text-slate-600">Doc: {f.documentRequired}</span>}
                         </div>
                       </div>
                     );
@@ -258,10 +258,10 @@ export default function RegulatoryCompliancePanel({
 
           {/* Footer */}
           <div className="px-4 py-2 bg-slate-800/30 flex items-center justify-between">
-            <span className="text-[9px] text-slate-500">
+            <span className="text-xs text-slate-500">
               Regulatory Engine — PRODUCT_CATALOG + COMPLIANCE_RULES + {states.length} state{states.length !== 1 ? "s" : ""}
             </span>
-            <span className="text-[9px] text-slate-500">
+            <span className="text-xs text-slate-500">
               {summary.total} finding{summary.total !== 1 ? "s" : ""}
             </span>
           </div>

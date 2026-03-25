@@ -314,7 +314,7 @@ export default function EsangChatWidget({ open, onClose, dissolving, isFullScree
             {/* Centered title */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <p className={cn("text-base font-semibold tracking-[0.15em] lowercase", isLight ? "text-slate-800" : "text-white")} style={{ fontFamily: "'Inter', 'Gilroy', system-ui, sans-serif", letterSpacing: '0.15em' }}>esang</p>
-              <p className="text-[9px] text-green-400 flex items-center gap-1 mt-0.5">
+              <p className="text-xs text-green-400 flex items-center gap-1 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />Online
               </p>
             </div>
@@ -375,7 +375,7 @@ export default function EsangChatWidget({ open, onClose, dissolving, isFullScree
                       key={i}
                       onClick={() => { setMessage(qp.text); setTimeout(() => inputRef.current?.focus(), 50); }}
                       className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-xl text-[11px] font-medium transition-all text-left",
+                        "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all text-left",
                         isLight
                           ? "bg-white border border-slate-200 text-slate-600 hover:border-purple-300 hover:bg-purple-50"
                           : "bg-slate-800/60 border border-slate-700/50 text-slate-300 hover:border-purple-500/50 hover:bg-purple-500/10"
@@ -392,7 +392,7 @@ export default function EsangChatWidget({ open, onClose, dissolving, isFullScree
                 {/* Today label */}
                 <div className="flex justify-center">
                   <span className={cn(
-                    "text-[10px] px-3 py-0.5 rounded-full",
+                    "text-xs px-3 py-0.5 rounded-full",
                     isLight ? "bg-slate-200 text-slate-500" : "bg-slate-800 text-slate-500"
                   )}>
                     Today
@@ -405,7 +405,7 @@ export default function EsangChatWidget({ open, onClose, dissolving, isFullScree
                     {msg.role === "assistant" && (
                       <div className="flex items-center gap-1.5 mb-1 ml-1">
                         <EsangIcon className="w-3 h-3 text-purple-400" />
-                        <span className={cn("text-[10px] font-medium", isLight ? "text-slate-500" : "text-slate-500")}>esang</span>
+                        <span className={cn("text-xs font-medium", isLight ? "text-slate-500" : "text-slate-500")}>esang</span>
                       </div>
                     )}
                     <div
@@ -421,7 +421,7 @@ export default function EsangChatWidget({ open, onClose, dissolving, isFullScree
                       <div className="whitespace-pre-wrap break-words">{msg.role === "assistant" ? renderChatMarkdown(msg.content) : msg.content}</div>
                     </div>
                     {msg.timestamp && (
-                      <span className="text-[9px] text-slate-500 mt-0.5 mx-2">{msg.timestamp}</span>
+                      <span className="text-xs text-slate-500 mt-0.5 mx-2">{msg.timestamp}</span>
                     )}
                     {/* Action buttons on last AI message */}
                     {msg.role === "assistant" && lastActions.length > 0 && i === messages.length - 1 && (
@@ -430,7 +430,7 @@ export default function EsangChatWidget({ open, onClose, dissolving, isFullScree
                           <button
                             key={ai}
                             className={cn(
-                              "text-[10px] px-2.5 py-1 rounded-full border font-medium transition-colors",
+                              "text-xs px-2.5 py-1 rounded-full border font-medium transition-colors",
                               isLight
                                 ? "border-purple-200 text-purple-600 hover:bg-purple-50"
                                 : "border-purple-500/40 text-purple-400 hover:bg-purple-500/10"
@@ -449,7 +449,7 @@ export default function EsangChatWidget({ open, onClose, dissolving, isFullScree
                   <div className="flex flex-col items-start">
                     <div className="flex items-center gap-1.5 mb-1 ml-1">
                       <EsangIcon className="w-3 h-3 text-purple-400" />
-                      <span className="text-[10px] text-slate-500 font-medium">esang</span>
+                      <span className="text-xs text-slate-500 font-medium">esang</span>
                     </div>
                     <div className={cn(
                       "px-4 py-3 rounded-2xl rounded-bl-md",

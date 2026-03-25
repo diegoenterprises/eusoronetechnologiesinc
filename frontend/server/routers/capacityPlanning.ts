@@ -781,15 +781,65 @@ export const capacityPlanningRouter = router({
         const trailerCount = Number(trailersIdle?.cnt || 0);
         const possibleMatches = Math.min(tractorCount, trailerCount);
 
+        // Fetch actual available tractors
+        const tractorRows = await db.select({
+          id: vehicles.id,
+          make: vehicles.make,
+          model: vehicles.model,
+          year: vehicles.year,
+          vehicleType: vehicles.vehicleType,
+        }).from(vehicles)
+          .where(and(
+            eq(vehicles.vehicleType, "tractor"),
+            eq(vehicles.status, "available"),
+            eq(vehicles.isActive, true),
+            isNull(vehicles.deletedAt),
+          ))
+          .limit(10);
+
+        // Fetch actual available trailers
+        const trailerRows = await db.select({
+          id: vehicles.id,
+          make: vehicles.make,
+          model: vehicles.model,
+          year: vehicles.year,
+          vehicleType: vehicles.vehicleType,
+        }).from(vehicles)
+          .where(and(
+            inArray(vehicles.vehicleType, [...trailerTypes]),
+            eq(vehicles.status, "available"),
+            eq(vehicles.isActive, true),
+            isNull(vehicles.deletedAt),
+          ))
+          .limit(10);
+
+        // Average revenue per load (last 30 days) for estimating match revenue
+        const [avgRevRow] = await db.select({
+          avg: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 1200)`,
+        }).from(loads)
+          .where(and(eq(loads.status, "delivered"), gte(loads.createdAt, daysAgo(30))));
+        const avgLoadRevenue = Number(avgRevRow?.avg || 1200);
+
+        // Pair real tractors with real trailers
+        const matchCount = Math.min(tractorRows.length, trailerRows.length);
+        const matches = [];
+        for (let i = 0; i < matchCount; i++) {
+          const t = tractorRows[i];
+          const tr = trailerRows[i];
+          matches.push({
+            id: i + 1,
+            tractorId: t.id,
+            tractorType: [t.make, t.model, t.year].filter(Boolean).join(" ") || "Tractor",
+            trailerId: tr.id,
+            trailerType: tr.vehicleType || "trailer",
+            estimatedRevenue: Math.round(avgLoadRevenue * 0.85), // power-only earns ~85% of avg load
+          });
+        }
+
         return {
           tractorsAvailable: tractorCount,
           trailersNeedingPower: trailerCount,
-          matches: Array.from({ length: Math.min(possibleMatches, 10) }, (_, i) => ({
-            id: i + 1,
-            tractorType: "Day Cab",
-            trailerType: trailerTypes[i % trailerTypes.length],
-            estimatedRevenue: Math.round(800 + ((i * 137) % 1200)),
-          })),
+          matches,
           savings: possibleMatches * 350, // avg $350 savings per power-only vs full unit
         };
       } catch (err) {

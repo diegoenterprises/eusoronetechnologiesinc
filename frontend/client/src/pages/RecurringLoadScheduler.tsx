@@ -376,7 +376,7 @@ export default function RecurringLoadScheduler() {
                   )}>
                     <div className="mb-2">{t.icon}</div>
                     <p className={cn("font-bold text-sm", vl)}>{t.label}</p>
-                    <p className="text-[11px] text-slate-400">{t.desc}</p>
+                    <p className="text-xs text-slate-400">{t.desc}</p>
                   </button>
                 ))}
               </div>
@@ -407,7 +407,7 @@ export default function RecurringLoadScheduler() {
                             <Users className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
                             <div>
                               <p className={vl}>{p.partnerName || p.companyName}</p>
-                              <p className="text-[10px] text-slate-400">{p.partnerRole || "Catalyst"}</p>
+                              <p className="text-xs text-slate-400">{p.partnerRole || "Catalyst"}</p>
                             </div>
                           </button>
                         ))}
@@ -415,7 +415,7 @@ export default function RecurringLoadScheduler() {
                     )}
                   </div>
                   {catalystName && <p className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" />Dedicated to: {catalystName}</p>}
-                  {!catalystName && <p className="text-[10px] text-slate-400">Leave blank to post on the open market for bidding</p>}
+                  {!catalystName && <p className="text-xs text-slate-400">Leave blank to post on the open market for bidding</p>}
                 </div>
               )}
               {contractType === "scheduled_route" && (
@@ -460,7 +460,7 @@ export default function RecurringLoadScheduler() {
                     <label className={lb}>{contractType === "multi_stop" && idx > 0 ? "Stop Location" : "Origin"}</label>
                     {contractType === "multi_stop" && idx > 0 && p.originAddress ? (
                       <div className={cn("px-3 py-2 rounded-xl text-sm", isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800/70 text-slate-300")}>
-                        <p className="text-[10px] text-slate-400 mb-0.5">Chained from Stop {idx}</p>
+                        <p className="text-xs text-slate-400 mb-0.5">Chained from Stop {idx}</p>
                         {p.originAddress || `${p.originCity}, ${p.originState}`}
                       </div>
                     ) : (
@@ -480,13 +480,13 @@ export default function RecurringLoadScheduler() {
                         className={ic}
                       />
                     )}
-                    {p.originCity && !(contractType === "multi_stop" && idx > 0) && <p className="text-[10px] text-slate-400 mt-1">{p.originCity}, {p.originState}</p>}
+                    {p.originCity && !(contractType === "multi_stop" && idx > 0) && <p className="text-xs text-slate-400 mt-1">{p.originCity}, {p.originState}</p>}
                   </div>
                   <div>
                     <label className={lb}>{contractType === "multi_stop" ? "Next Stop / Final Destination" : contractType === "area_coverage" ? "Shared Destination" : "Destination"}</label>
                     {contractType === "area_coverage" && idx > 0 && p.destAddress ? (
                       <div className={cn("px-3 py-2 rounded-xl text-sm", isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800/70 text-slate-300")}>
-                        <p className="text-[10px] text-green-400 mb-0.5">Shared destination (set on Origin 1)</p>
+                        <p className="text-xs text-green-400 mb-0.5">Shared destination (set on Origin 1)</p>
                         {p.destAddress || `${p.destCity}, ${p.destState}`}
                       </div>
                     ) : (
@@ -511,7 +511,7 @@ export default function RecurringLoadScheduler() {
                         className={ic}
                       />
                     )}
-                    {p.destCity && !(contractType === "area_coverage" && idx > 0) && <p className="text-[10px] text-slate-400 mt-1">{p.destCity}, {p.destState}</p>}
+                    {p.destCity && !(contractType === "area_coverage" && idx > 0) && <p className="text-xs text-slate-400 mt-1">{p.destCity}, {p.destState}</p>}
                   </div>
                 </div>
 
@@ -543,9 +543,9 @@ export default function RecurringLoadScheduler() {
 
                 {/* Weekly Summary for this lane */}
                 <div className={cn("grid grid-cols-3 gap-2 p-3 rounded-xl", isLight ? "bg-blue-50" : "bg-blue-500/5")}>
-                  <div><p className="text-[10px] text-slate-400 uppercase">Loads/Week</p><p className={cn("font-bold", vl)}>{p.loadsPerDay * p.days.length}</p></div>
-                  <div><p className="text-[10px] text-slate-400 uppercase">Rev/Week</p><p className="font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${((parseFloat(p.ratePerLoad) || 0) * p.loadsPerDay * p.days.length).toLocaleString()}</p></div>
-                  <div><p className="text-[10px] text-slate-400 uppercase">Platform Fee</p><p className="font-bold text-purple-400">${(((parseFloat(p.ratePerLoad) || 0) * p.loadsPerDay * p.days.length) * PLATFORM_FEE / 100).toFixed(2)}</p></div>
+                  <div><p className="text-xs text-slate-400 uppercase">Loads/Week</p><p className={cn("font-bold", vl)}>{p.loadsPerDay * p.days.length}</p></div>
+                  <div><p className="text-xs text-slate-400 uppercase">Rev/Week</p><p className="font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${((parseFloat(p.ratePerLoad) || 0) * p.loadsPerDay * p.days.length).toLocaleString()}</p></div>
+                  <div><p className="text-xs text-slate-400 uppercase">Platform Fee</p><p className="font-bold text-purple-400">${(((parseFloat(p.ratePerLoad) || 0) * p.loadsPerDay * p.days.length) * PLATFORM_FEE / 100).toFixed(2)}</p></div>
                 </div>
               </CardContent>
             </Card>
@@ -561,9 +561,9 @@ export default function RecurringLoadScheduler() {
 
           {/* Totals */}
           <div className={cn("grid grid-cols-3 gap-3")}>
-            <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Total Loads/Week</p><p className={cn("text-xl font-bold", vl)}>{totalLoadsPerWeek}</p></div>
-            <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Total Revenue/Week</p><p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${totalRevPerWeek.toLocaleString()}</p></div>
-            <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Platform Fee/Week</p><p className="text-xl font-bold text-purple-400">${totalFeePerWeek.toFixed(2)}</p></div>
+            <div className={cl}><p className="text-xs text-slate-400 uppercase">Total Loads/Week</p><p className={cn("text-xl font-bold", vl)}>{totalLoadsPerWeek}</p></div>
+            <div className={cl}><p className="text-xs text-slate-400 uppercase">Total Revenue/Week</p><p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${totalRevPerWeek.toLocaleString()}</p></div>
+            <div className={cl}><p className="text-xs text-slate-400 uppercase">Platform Fee/Week</p><p className="text-xl font-bold text-purple-400">${totalFeePerWeek.toFixed(2)}</p></div>
           </div>
 
           <div className="flex gap-3">
@@ -596,14 +596,14 @@ export default function RecurringLoadScheduler() {
                     <div className="flex items-center gap-2 mb-3">
                       {allOk ? <CheckCircle className="w-4 h-4 text-green-500" /> : <AlertTriangle className="w-4 h-4 text-red-400" />}
                       <p className={cn("font-bold text-sm", vl)}>Lane {idx + 1}: {p.originCity}, {p.originState} → {p.destCity}, {p.destState}</p>
-                      <Badge className={cn("text-[10px] border", allOk ? "bg-green-500/15 text-green-500 border-green-500/30" : "bg-red-500/15 text-red-400 border-red-500/30")}>{allOk ? "Compliant" : "Violation"}</Badge>
+                      <Badge className={cn("text-xs border", allOk ? "bg-green-500/15 text-green-500 border-green-500/30" : "bg-red-500/15 text-red-400 border-red-500/30")}>{allOk ? "Compliant" : "Violation"}</Badge>
                     </div>
                     <div className="grid grid-cols-3 gap-3 text-xs">
                       <div><p className="text-slate-400">Daily Drive ({p.loadsPerDay} loads × {p.estimatedDriveHours}hr)</p><p className={cn("font-bold", hos.dailyDriveOk ? "text-green-500" : "text-red-400")}>{hos.totalDailyDrive}hr / {HOS_LIMITS.maxDrive}hr {hos.dailyDriveOk ? "OK" : "OVER"}</p></div>
                       <div><p className="text-slate-400">Daily Duty (est.)</p><p className={cn("font-bold", hos.dailyDutyOk ? "text-green-500" : "text-red-400")}>{hos.dailyDuty}hr / {HOS_LIMITS.maxDuty}hr {hos.dailyDutyOk ? "OK" : "OVER"}</p></div>
                       <div><p className="text-slate-400">Weekly ({p.days.length} days)</p><p className={cn("font-bold", hos.weeklyOk ? "text-green-500" : "text-red-400")}>{hos.weeklyHours}hr / {HOS_LIMITS.maxWeekly}hr {hos.weeklyOk ? "OK" : "OVER"}</p></div>
                     </div>
-                    {!allOk && <p className="text-[11px] text-red-400 mt-2">This schedule may require team drivers or schedule adjustment to maintain HOS compliance.</p>}
+                    {!allOk && <p className="text-xs text-red-400 mt-2">This schedule may require team drivers or schedule adjustment to maintain HOS compliance.</p>}
                   </div>
                 );
               })}
@@ -626,12 +626,12 @@ export default function RecurringLoadScheduler() {
                 <button onClick={() => setLinkedAgreement("existing")} className={cn("p-4 rounded-xl border text-left transition-all", linkedAgreement === "existing" ? "border-[#1473FF] bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10" : isLight ? "border-slate-200" : "border-slate-700")}>
                   <FileText className="w-5 h-5 text-blue-500 mb-2" />
                   <p className={cn("font-bold text-sm", vl)}>Use Existing Agreement</p>
-                  <p className="text-[11px] text-slate-400">Attach to an active MSA or contract</p>
+                  <p className="text-xs text-slate-400">Attach to an active MSA or contract</p>
                 </button>
                 <button onClick={() => setLinkedAgreement("new")} className={cn("p-4 rounded-xl border text-left transition-all", linkedAgreement === "new" ? "border-[#BE01FF] bg-gradient-to-br from-[#BE01FF]/10 to-[#1473FF]/10" : isLight ? "border-slate-200" : "border-slate-700")}>
                   <Plus className="w-5 h-5 text-purple-500 mb-2" />
                   <p className={cn("font-bold text-sm", vl)}>Create New Agreement</p>
-                  <p className="text-[11px] text-slate-400">Generate an agreement for this schedule</p>
+                  <p className="text-xs text-slate-400">Generate an agreement for this schedule</p>
                 </button>
               </div>
               {linkedAgreement === "existing" && (
@@ -658,7 +658,7 @@ export default function RecurringLoadScheduler() {
                     return sel ? (
                       <div className={cn("p-3 rounded-xl border", isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30")}>
                         <div className="flex items-center gap-2 mb-1"><CheckCircle className="w-4 h-4 text-green-500" /><p className={cn("font-bold text-xs", vl)}>Linked: #{sel.agreementNumber}</p></div>
-                        <p className="text-[10px] text-slate-400">Rate: ${sel.baseRate ? parseFloat(sel.baseRate).toLocaleString() : "—"} · {sel.rateType?.replace(/_/g, " ") || "—"} · Net {sel.paymentTermDays || 30} days</p>
+                        <p className="text-xs text-slate-400">Rate: ${sel.baseRate ? parseFloat(sel.baseRate).toLocaleString() : "—"} · {sel.rateType?.replace(/_/g, " ") || "—"} · Net {sel.paymentTermDays || 30} days</p>
                       </div>
                     ) : null;
                   })()}
@@ -682,7 +682,7 @@ export default function RecurringLoadScheduler() {
                   <div><p className="text-slate-400">Weekly Total</p><p className="font-bold text-lg text-purple-400">${totalFeePerWeek.toFixed(2)}</p></div>
                   <div><p className="text-slate-400">Monthly Est.</p><p className="font-bold text-lg text-purple-400">${(totalFeePerWeek * 4.33).toFixed(2)}</p></div>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-3">Covers: escrow protection, insurance verification, compliance monitoring, dispute resolution, GPS tracking, and payment processing.</p>
+                <p className="text-xs text-slate-400 mt-3">Covers: escrow protection, insurance verification, compliance monitoring, dispute resolution, GPS tracking, and payment processing.</p>
               </div>
             </CardContent>
           </Card>
@@ -706,7 +706,7 @@ export default function RecurringLoadScheduler() {
               <div key={p.id} className={cn("p-3 rounded-xl border mb-3", cl)}>
                 <div className="flex items-center justify-between mb-2">
                   <p className={cn("font-bold text-xs", vl)}>Lane {idx + 1}: {p.originCity}, {p.originState} → {p.destCity}, {p.destState}</p>
-                  <Badge className="bg-green-500/15 text-green-500 border-green-500/30 border text-[10px]">{checkHOS(p).dailyDriveOk && checkHOS(p).weeklyOk ? "HOS OK" : "HOS Warning"}</Badge>
+                  <Badge className="bg-green-500/15 text-green-500 border-green-500/30 border text-xs">{checkHOS(p).dailyDriveOk && checkHOS(p).weeklyOk ? "HOS OK" : "HOS Warning"}</Badge>
                 </div>
                 <div className="grid grid-cols-5 gap-2 text-xs">
                   <div><p className="text-slate-400">Days</p><p className={vl}>{p.days.join(", ")}</p></div>
@@ -718,10 +718,10 @@ export default function RecurringLoadScheduler() {
               </div>
             ))}
             <div className={cn("grid grid-cols-4 gap-3 mt-4")}>
-              <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Loads/Week</p><p className={cn("text-lg font-bold", vl)}>{totalLoadsPerWeek}</p></div>
-              <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Rev/Week</p><p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${totalRevPerWeek.toLocaleString()}</p></div>
-              <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Fee/Week</p><p className="text-lg font-bold text-purple-400">${totalFeePerWeek.toFixed(2)}</p></div>
-              <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Monthly Est.</p><p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(totalRevPerWeek * 4.33).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+              <div className={cl}><p className="text-xs text-slate-400 uppercase">Loads/Week</p><p className={cn("text-lg font-bold", vl)}>{totalLoadsPerWeek}</p></div>
+              <div className={cl}><p className="text-xs text-slate-400 uppercase">Rev/Week</p><p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${totalRevPerWeek.toLocaleString()}</p></div>
+              <div className={cl}><p className="text-xs text-slate-400 uppercase">Fee/Week</p><p className="text-lg font-bold text-purple-400">${totalFeePerWeek.toFixed(2)}</p></div>
+              <div className={cl}><p className="text-xs text-slate-400 uppercase">Monthly Est.</p><p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(totalRevPerWeek * 4.33).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
             </div>
           </CardContent></Card>
           <div className="flex gap-3">

@@ -82,7 +82,7 @@ export default function PhotoInspectionPage() {
           { id: "report" as Tab, icon: <FileCheck className="w-3.5 h-3.5 mr-1" />, label: "Report", color: "bg-emerald-600" },
           { id: "history" as Tab, icon: <History className="w-3.5 h-3.5 mr-1" />, label: "History", color: "bg-purple-600" },
         ].map(t => (
-          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-[11px]", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
+          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-xs", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
             {t.icon}{t.label}
           </Button>
         ))}
@@ -98,7 +98,7 @@ export default function PhotoInspectionPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs text-white flex items-center gap-2">
                   <CircleDot className="w-4 h-4 text-cyan-400" />{cat}
-                  <Badge variant="outline" className="text-[7px] text-slate-400">{items.length} points</Badge>
+                  <Badge variant="outline" className="text-xs text-slate-400">{items.length} points</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-3">
@@ -107,11 +107,11 @@ export default function PhotoInspectionPage() {
                     <div key={point.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-900/20 hover:bg-slate-900/30 transition-colors">
                       <Camera className="w-4 h-4 text-slate-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold text-white">{point.name}</p>
-                        <p className="text-[9px] text-slate-500">{point.description}</p>
+                        <p className="text-xs font-semibold text-white">{point.name}</p>
+                        <p className="text-xs text-slate-500">{point.description}</p>
                       </div>
-                      <div className="flex items-center gap-2 text-[8px]">
-                        <Badge variant="outline" className="text-[7px] text-blue-400 border-blue-500/30">{point.regulation}</Badge>
+                      <div className="flex items-center gap-2 text-xs">
+                        <Badge variant="outline" className="text-xs text-blue-400 border-blue-500/30">{point.regulation}</Badge>
                         <span className="text-slate-500">{point.requiredPhotos} photo</span>
                         <ChevronRight className="w-3 h-3 text-slate-600" />
                       </div>
@@ -137,14 +137,14 @@ export default function PhotoInspectionPage() {
                     <p className={cn("text-lg font-bold", RESULT_CONFIG[report.overallResult]?.color)}>
                       {RESULT_CONFIG[report.overallResult]?.label}
                     </p>
-                    <p className="text-[10px] text-slate-500">
+                    <p className="text-xs text-slate-500">
                       {report.safeToOperate ? "Vehicle safe to operate" : "Vehicle NOT safe to operate — do not dispatch"}
                     </p>
                   </div>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold font-mono text-white">{report.complianceScore}</p>
-                  <p className="text-[8px] text-slate-500">Compliance Score</p>
+                  <p className="text-xs text-slate-500">Compliance Score</p>
                 </div>
               </div>
               <div className="grid grid-cols-5 gap-2">
@@ -157,7 +157,7 @@ export default function PhotoInspectionPage() {
                 ].map(kpi => (
                   <div key={kpi.label} className="p-2 rounded-lg bg-slate-900/30 text-center">
                     <p className={cn("text-lg font-bold font-mono", kpi.color)}>{kpi.value}</p>
-                    <p className="text-[8px] text-slate-500">{kpi.label}</p>
+                    <p className="text-xs text-slate-500">{kpi.label}</p>
                   </div>
                 ))}
               </div>
@@ -177,18 +177,18 @@ export default function PhotoInspectionPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-semibold text-white">{result.pointName}</span>
-                          <Badge variant="outline" className={cn("text-[7px]", cfg.color)}>{result.condition}</Badge>
-                          <span className="text-[8px] text-slate-500">{result.category}</span>
+                          <span className="text-xs font-semibold text-white">{result.pointName}</span>
+                          <Badge variant="outline" className={cn("text-xs", cfg.color)}>{result.condition}</Badge>
+                          <span className="text-xs text-slate-500">{result.category}</span>
                         </div>
-                        <p className="text-[9px] text-slate-400 mt-0.5">{result.aiNotes}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{result.aiNotes}</p>
                         {result.defects.length > 0 && (
                           <div className="mt-1 space-y-0.5">
                             {result.defects.map((d: any, di: number) => (
-                              <div key={di} className="flex items-center gap-2 text-[9px]">
+                              <div key={di} className="flex items-center gap-2 text-xs">
                                 <AlertTriangle className={cn("w-3 h-3", SEVERITY_COLORS[d.severity])} />
                                 <span className="text-white">{d.description}</span>
-                                <Badge variant="outline" className={cn("text-[6px]", SEVERITY_COLORS[d.severity])}>{d.severity.replace("_", " ")}</Badge>
+                                <Badge variant="outline" className={cn("text-xs", SEVERITY_COLORS[d.severity])}>{d.severity.replace("_", " ")}</Badge>
                                 <span className="text-slate-500">{d.regulationRef}</span>
                               </div>
                             ))}
@@ -196,8 +196,8 @@ export default function PhotoInspectionPage() {
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-[9px] text-slate-500">Confidence</p>
-                        <p className="text-[11px] font-bold font-mono text-white">{Math.round(result.confidence * 100)}%</p>
+                        <p className="text-xs text-slate-500">Confidence</p>
+                        <p className="text-xs font-bold font-mono text-white">{Math.round(result.confidence * 100)}%</p>
                       </div>
                     </div>
                   </CardContent>
@@ -213,7 +213,7 @@ export default function PhotoInspectionPage() {
           <CardContent className="p-12 text-center">
             <Camera className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
             <p className="text-sm text-white font-semibold">No Report Yet</p>
-            <p className="text-[10px] text-slate-500 mt-1">Click "Run AI Inspection" to analyze vehicle photos</p>
+            <p className="text-xs text-slate-500 mt-1">Click "Run AI Inspection" to analyze vehicle photos</p>
           </CardContent>
         </Card>
       )}
@@ -239,19 +239,19 @@ export default function PhotoInspectionPage() {
                       <Truck className="w-4 h-4 text-slate-400" />
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-semibold text-white">{h.vehicleId}</span>
-                          <Badge variant="outline" className="text-[7px] text-slate-400">{h.type.replace("_", " ")}</Badge>
-                          <Badge variant="outline" className={cn("text-[7px]", rc.color)}>{rc.label}</Badge>
+                          <span className="text-xs font-semibold text-white">{h.vehicleId}</span>
+                          <Badge variant="outline" className="text-xs text-slate-400">{h.type.replace("_", " ")}</Badge>
+                          <Badge variant="outline" className={cn("text-xs", rc.color)}>{rc.label}</Badge>
                         </div>
-                        <p className="text-[9px] text-slate-500 mt-0.5">
+                        <p className="text-xs text-slate-500 mt-0.5">
                           {h.completedAt ? new Date(h.completedAt).toLocaleString() : "—"} • {h.totalDefects} defects • Score: {h.complianceScore}%
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {h.safeToOperate
-                        ? <Badge className="text-[8px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30"><CheckCircle className="w-3 h-3 mr-0.5" />Safe</Badge>
-                        : <Badge className="text-[8px] bg-red-500/20 text-red-400 border-red-500/30"><XCircle className="w-3 h-3 mr-0.5" />Unsafe</Badge>
+                        ? <Badge className="text-xs bg-emerald-500/20 text-emerald-400 border-emerald-500/30"><CheckCircle className="w-3 h-3 mr-0.5" />Safe</Badge>
+                        : <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/30"><XCircle className="w-3 h-3 mr-0.5" />Unsafe</Badge>
                       }
                     </div>
                   </div>

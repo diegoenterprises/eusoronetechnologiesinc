@@ -121,8 +121,8 @@ async function getRealFreightRates(): Promise<Record<string, { rate: number; pre
   }
 }
 
-// Market rate indices (like Platts/Argus benchmarks)
-const FREIGHT_INDICES = {
+// Fallback seed indices — used when no delivered load data exists yet
+const FREIGHT_INDICES_SEED: Record<string, { national: { current: number; previous: number; change: number; unit: string }; spot: { current: number; previous: number; change: number; unit: string }; contract: { current: number; previous: number; change: number; unit: string } }> = {
   DRY_VAN: {
     national: { current: 2.35, previous: 2.28, change: 3.07, unit: "$/mile" },
     spot: { current: 2.52, previous: 2.41, change: 4.56, unit: "$/mile" },
@@ -155,8 +155,110 @@ const FREIGHT_INDICES = {
   },
 };
 
-// Top lane rates (like commodity lane benchmarks)
-const LANE_BENCHMARKS = [
+// Map DB cargoType enum values to FREIGHT_INDICES equipment keys
+const CARGO_TO_EQUIPMENT: Record<string, string> = {
+  general: "DRY_VAN", grain: "DRY_VAN", dry_bulk: "DRY_VAN", timber: "DRY_VAN",
+  intermodal: "DRY_VAN", vehicles: "DRY_VAN",
+  refrigerated: "REEFER", food_grade: "REEFER", cryogenic: "REEFER",
+  oversized: "OVERSIZE", livestock: "FLATBED",
+  liquid: "TANKER", petroleum: "TANKER", water: "TANKER",
+  hazmat: "HAZMAT", chemicals: "HAZMAT", gas: "HAZMAT",
+};
+
+/**
+ * Compute freight rate indices from real delivered-load data.
+ * Queries average $/mile from loads delivered in the last 30 days (current)
+ * and the 30 days before that (previous), grouped by equipment type.
+ * Falls back to FREIGHT_INDICES_SEED when no data exists for an equipment type.
+ */
+let _freightIndicesCache: typeof FREIGHT_INDICES_SEED | null = null;
+let _freightIndicesCacheAt = 0;
+async function getFreightIndices(): Promise<typeof FREIGHT_INDICES_SEED> {
+  // Cache for 10 minutes to avoid hammering DB on every request
+  if (_freightIndicesCache && Date.now() - _freightIndicesCacheAt < 10 * 60 * 1000) return _freightIndicesCache;
+  try {
+    const db = await getDb();
+    if (!db) return FREIGHT_INDICES_SEED;
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000);
+
+    // Current 30-day avg rate-per-mile by cargoType for delivered loads
+    const currentRows = await db.execute(sql`
+      SELECT cargoType,
+             AVG(CAST(rate AS DECIMAL(10,2)) / NULLIF(CAST(distance AS DECIMAL(10,2)), 0)) as avgRpm,
+             COUNT(*) as cnt
+      FROM loads
+      WHERE status IN ('delivered','invoiced','paid','complete')
+        AND rate > 0 AND distance > 0
+        AND createdAt >= ${thirtyDaysAgo}
+      GROUP BY cargoType
+    `);
+
+    // Previous 30-day window for comparison
+    const prevRows = await db.execute(sql`
+      SELECT cargoType,
+             AVG(CAST(rate AS DECIMAL(10,2)) / NULLIF(CAST(distance AS DECIMAL(10,2)), 0)) as avgRpm
+      FROM loads
+      WHERE status IN ('delivered','invoiced','paid','complete')
+        AND rate > 0 AND distance > 0
+        AND createdAt >= ${sixtyDaysAgo} AND createdAt < ${thirtyDaysAgo}
+      GROUP BY cargoType
+    `);
+
+    const rows = (Array.isArray(currentRows) ? currentRows[0] ?? currentRows : currentRows) as Array<Record<string, unknown>>;
+    const prev = (Array.isArray(prevRows) ? prevRows[0] ?? prevRows : prevRows) as Array<Record<string, unknown>>;
+
+    // Build prev lookup by equipment key
+    const prevByEquip: Record<string, number> = {};
+    if (Array.isArray(prev)) {
+      for (const r of prev) {
+        const rpm = Number(r.avgRpm) || 0;
+        if (rpm > 0 && rpm < 50 && r.cargoType) {
+          const equipKey = CARGO_TO_EQUIPMENT[r.cargoType as string] || "DRY_VAN";
+          // If multiple cargo types map to same equipment, average them
+          if (!prevByEquip[equipKey]) prevByEquip[equipKey] = rpm;
+          else prevByEquip[equipKey] = (prevByEquip[equipKey] + rpm) / 2;
+        }
+      }
+    }
+
+    // Build current lookup by equipment key
+    const result = { ...FREIGHT_INDICES_SEED };
+    let anyData = false;
+    if (Array.isArray(rows)) {
+      for (const r of rows) {
+        const rpm = Number(r.avgRpm) || 0;
+        const cnt = Number(r.cnt) || 0;
+        if (rpm > 0 && rpm < 50 && r.cargoType && cnt >= 1) {
+          const equipKey = CARGO_TO_EQUIPMENT[r.cargoType as string] || "DRY_VAN";
+          const prevRate = prevByEquip[equipKey] || rpm;
+          const change = prevRate > 0 ? +((rpm - prevRate) / prevRate * 100).toFixed(2) : 0;
+          // Use DB data as national rate; estimate spot as +7% and contract as -7%
+          result[equipKey] = {
+            national: { current: +rpm.toFixed(2), previous: +prevRate.toFixed(2), change, unit: "$/mile" },
+            spot: { current: +(rpm * 1.07).toFixed(2), previous: +(prevRate * 1.07).toFixed(2), change, unit: "$/mile" },
+            contract: { current: +(rpm * 0.93).toFixed(2), previous: +(prevRate * 0.93).toFixed(2), change, unit: "$/mile" },
+          };
+          anyData = true;
+        }
+      }
+    }
+
+    if (anyData) {
+      _freightIndicesCache = result;
+      _freightIndicesCacheAt = Date.now();
+    }
+    return result;
+  } catch (err) {
+    logger.warn("[MarketPricing] getFreightIndices DB query failed, using seed:", err);
+    return FREIGHT_INDICES_SEED;
+  }
+}
+
+// Seed lane benchmarks — used when no real load data exists for lane computation
+const LANE_BENCHMARKS_SEED = [
   { origin: "Los Angeles, CA", destination: "Dallas, TX", miles: 1435, equipment: "DRY_VAN", rate: 2.45, volume: "HIGH", trend: "up", changePercent: 3.2 },
   { origin: "Chicago, IL", destination: "Atlanta, GA", miles: 716, equipment: "DRY_VAN", rate: 2.38, volume: "HIGH", trend: "stable", changePercent: 0.5 },
   { origin: "Houston, TX", destination: "New York, NY", miles: 1628, equipment: "TANKER", rate: 3.65, volume: "MEDIUM", trend: "up", changePercent: 4.1 },
@@ -171,14 +273,193 @@ const LANE_BENCHMARKS = [
   { origin: "Bakken, ND", destination: "Cushing, OK", miles: 1147, equipment: "TANKER", rate: 3.40, volume: "MEDIUM", trend: "stable", changePercent: 1.0 },
 ];
 
-// Fuel surcharge data (defaults — overridden by live EIA data)
-const FUEL_INDEX_DEFAULTS = {
-  diesel: { current: 3.89, previous: 3.82, weekAgo: 3.75, monthAgo: 3.62, yearAgo: 4.15 },
-  def: { current: 2.95, previous: 2.92, weekAgo: 2.88 },
-  surchargePerMile: 0.58,
-  eiaDieselAvg: 3.89,
+type LaneBenchmark = { origin: string; destination: string; miles: number; equipment: string; rate: number; volume: string; trend: string; changePercent: number };
+
+/**
+ * Compute lane benchmarks from real delivered-load data.
+ * Groups by origin state → dest state, calculates avg $/mile, load count, and trend.
+ * Falls back to LANE_BENCHMARKS_SEED when no data exists.
+ */
+let _laneBenchmarksCache: LaneBenchmark[] | null = null;
+let _laneBenchmarksCacheAt = 0;
+async function getLaneBenchmarksFromDB(): Promise<LaneBenchmark[]> {
+  if (_laneBenchmarksCache && Date.now() - _laneBenchmarksCacheAt < 10 * 60 * 1000) return _laneBenchmarksCache;
+  try {
+    const db = await getDb();
+    if (!db) return LANE_BENCHMARKS_SEED;
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 86400000);
+
+    // Current 30-day lanes by origin/dest state
+    const currentRows = await db.execute(sql`
+      SELECT originState, destState, cargoType,
+             AVG(CAST(rate AS DECIMAL(10,2)) / NULLIF(CAST(distance AS DECIMAL(10,2)), 0)) as avgRpm,
+             AVG(CAST(distance AS DECIMAL(10,2))) as avgMiles,
+             COUNT(*) as cnt
+      FROM loads
+      WHERE status IN ('delivered','invoiced','paid','complete')
+        AND rate > 0 AND distance > 0
+        AND originState IS NOT NULL AND destState IS NOT NULL
+        AND originState != '' AND destState != ''
+        AND createdAt >= ${thirtyDaysAgo}
+      GROUP BY originState, destState, cargoType
+      ORDER BY cnt DESC
+      LIMIT 30
+    `);
+
+    // Previous 30-day window for trend
+    const prevRows = await db.execute(sql`
+      SELECT originState, destState, cargoType,
+             AVG(CAST(rate AS DECIMAL(10,2)) / NULLIF(CAST(distance AS DECIMAL(10,2)), 0)) as avgRpm
+      FROM loads
+      WHERE status IN ('delivered','invoiced','paid','complete')
+        AND rate > 0 AND distance > 0
+        AND originState IS NOT NULL AND destState IS NOT NULL
+        AND originState != '' AND destState != ''
+        AND createdAt >= ${sixtyDaysAgo} AND createdAt < ${thirtyDaysAgo}
+      GROUP BY originState, destState, cargoType
+    `);
+
+    const rows = (Array.isArray(currentRows) ? currentRows[0] ?? currentRows : currentRows) as Array<Record<string, unknown>>;
+    const prev = (Array.isArray(prevRows) ? prevRows[0] ?? prevRows : prevRows) as Array<Record<string, unknown>>;
+
+    if (!Array.isArray(rows) || rows.length === 0) return LANE_BENCHMARKS_SEED;
+
+    // Build previous lookup: "originState-destState-cargoType" → avgRpm
+    const prevMap: Record<string, number> = {};
+    if (Array.isArray(prev)) {
+      for (const r of prev) {
+        const key = `${r.originState}-${r.destState}-${r.cargoType}`;
+        prevMap[key] = Number(r.avgRpm) || 0;
+      }
+    }
+
+    const lanes: LaneBenchmark[] = [];
+    for (const r of rows) {
+      const rpm = Number(r.avgRpm) || 0;
+      const cnt = Number(r.cnt) || 0;
+      const avgMiles = Math.round(Number(r.avgMiles) || 0);
+      if (rpm <= 0 || rpm > 50 || cnt < 1) continue;
+
+      const key = `${r.originState}-${r.destState}-${r.cargoType}`;
+      const prevRate = prevMap[key] || rpm;
+      const changePct = prevRate > 0 ? +((rpm - prevRate) / prevRate * 100).toFixed(1) : 0;
+      const trend = changePct > 1 ? "up" : changePct < -1 ? "down" : "stable";
+      const volume = cnt >= 20 ? "VERY_HIGH" : cnt >= 10 ? "HIGH" : cnt >= 5 ? "MEDIUM" : "LOW";
+      const equipKey = CARGO_TO_EQUIPMENT[(r.cargoType as string) || "general"] || "DRY_VAN";
+
+      lanes.push({
+        origin: `${r.originState}`,
+        destination: `${r.destState}`,
+        miles: avgMiles,
+        equipment: equipKey,
+        rate: +rpm.toFixed(2),
+        volume,
+        trend,
+        changePercent: changePct,
+      });
+    }
+
+    if (lanes.length > 0) {
+      _laneBenchmarksCache = lanes;
+      _laneBenchmarksCacheAt = Date.now();
+      return lanes;
+    }
+    return LANE_BENCHMARKS_SEED;
+  } catch (err) {
+    logger.warn("[MarketPricing] getLaneBenchmarksFromDB failed, using seed:", err);
+    return LANE_BENCHMARKS_SEED;
+  }
+}
+
+// Fuel surcharge data — computed from DB fuel records when available, otherwise zeros
+const FUEL_INDEX_FALLBACK = {
+  diesel: { current: 0, previous: 0, weekAgo: 0, monthAgo: 0, yearAgo: 0 },
+  def: { current: 0, previous: 0, weekAgo: 0 },
+  surchargePerMile: 0,
+  eiaDieselAvg: 0,
   lastUpdated: new Date().toISOString(),
 };
+
+let _dbFuelIndex: typeof FUEL_INDEX_FALLBACK | null = null;
+let _dbFuelIndexAt = 0;
+async function getDBFuelIndex(): Promise<typeof FUEL_INDEX_FALLBACK> {
+  if (_dbFuelIndex && Date.now() - _dbFuelIndexAt < 15 * 60 * 1000) return _dbFuelIndex;
+  try {
+    const db = await getDb();
+    if (!db) return FUEL_INDEX_FALLBACK;
+
+    // Try hzFuelPrices first (EIA-sourced data) — get latest national diesel average
+    const fuelRows = await db.execute(sql`
+      SELECT AVG(CAST(diesel_retail AS DECIMAL(6,3))) as avgDiesel,
+             MAX(report_date) as latestDate
+      FROM hz_fuel_prices
+      WHERE diesel_retail IS NOT NULL AND diesel_retail > 0
+      ORDER BY report_date DESC
+      LIMIT 50
+    `);
+    const fRows = (Array.isArray(fuelRows) ? fuelRows[0] ?? fuelRows : fuelRows) as Array<Record<string, unknown>>;
+    const latestDiesel = Array.isArray(fRows) && fRows.length > 0 ? Number(fRows[0]?.avgDiesel) || 0 : 0;
+
+    if (latestDiesel > 0) {
+      // Get previous week and month for comparison
+      const prevWeekRows = await db.execute(sql`
+        SELECT AVG(CAST(diesel_retail AS DECIMAL(6,3))) as avgDiesel
+        FROM hz_fuel_prices
+        WHERE diesel_retail IS NOT NULL AND diesel_retail > 0
+          AND report_date <= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        ORDER BY report_date DESC
+        LIMIT 50
+      `);
+      const pw = (Array.isArray(prevWeekRows) ? prevWeekRows[0] ?? prevWeekRows : prevWeekRows) as Array<Record<string, unknown>>;
+      const weekAgo = Array.isArray(pw) && pw.length > 0 ? Number(pw[0]?.avgDiesel) || latestDiesel : latestDiesel;
+
+      const surchargePerMile = Math.max(0, +((latestDiesel - 1.25) / 6).toFixed(3));
+      _dbFuelIndex = {
+        diesel: { current: +latestDiesel.toFixed(3), previous: +weekAgo.toFixed(3), weekAgo: +weekAgo.toFixed(3), monthAgo: 0, yearAgo: 0 },
+        def: { current: +(latestDiesel * 0.88 + 0.05).toFixed(3), previous: 0, weekAgo: 0 },
+        surchargePerMile,
+        eiaDieselAvg: +latestDiesel.toFixed(3),
+        lastUpdated: new Date().toISOString(),
+      };
+      _dbFuelIndexAt = Date.now();
+      return _dbFuelIndex;
+    }
+
+    // Fallback: try fuelTransactions table for recent avg pricePerGallon
+    const ftRows = await db.execute(sql`
+      SELECT AVG(CAST(pricePerGallon AS DECIMAL(6,3))) as avgPrice
+      FROM fuel_transactions
+      WHERE pricePerGallon > 0
+        AND transactionDate >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    `);
+    const ft = (Array.isArray(ftRows) ? ftRows[0] ?? ftRows : ftRows) as Array<Record<string, unknown>>;
+    const avgPrice = Array.isArray(ft) && ft.length > 0 ? Number(ft[0]?.avgPrice) || 0 : 0;
+
+    if (avgPrice > 0) {
+      const surchargePerMile = Math.max(0, +((avgPrice - 1.25) / 6).toFixed(3));
+      _dbFuelIndex = {
+        diesel: { current: +avgPrice.toFixed(3), previous: +avgPrice.toFixed(3), weekAgo: 0, monthAgo: 0, yearAgo: 0 },
+        def: { current: +(avgPrice * 0.88 + 0.05).toFixed(3), previous: 0, weekAgo: 0 },
+        surchargePerMile,
+        eiaDieselAvg: +avgPrice.toFixed(3),
+        lastUpdated: new Date().toISOString(),
+      };
+      _dbFuelIndexAt = Date.now();
+      return _dbFuelIndex;
+    }
+
+    return FUEL_INDEX_FALLBACK;
+  } catch (err) {
+    logger.warn("[MarketPricing] getDBFuelIndex failed:", err);
+    return FUEL_INDEX_FALLBACK;
+  }
+}
+
+// Alias for backward compat — used as fallback in getLiveFuelIndex
+const FUEL_INDEX_DEFAULTS = FUEL_INDEX_FALLBACK;
 
 async function getLiveFuelIndex() {
   const snap = await getLiveSnapshot();
@@ -195,7 +476,9 @@ async function getLiveFuelIndex() {
       isLive: true,
     };
   }
-  return { ...FUEL_INDEX_DEFAULTS, isLive: false };
+  // Fallback: try DB-sourced fuel data before returning zeros
+  const dbFuel = await getDBFuelIndex();
+  return { ...dbFuel, isLive: false };
 }
 
 // Seasonal adjustment factors
@@ -550,6 +833,7 @@ export const marketPricingRouter = router({
       timeframe: z.enum(["daily", "weekly", "monthly", "quarterly"]).default("daily"),
     }).optional())
     .query(async ({ input }) => {
+      const FREIGHT_INDICES = await getFreightIndices();
       const equipment = input?.equipment;
       const indices = equipment && equipment in FREIGHT_INDICES
         ? { [equipment]: FREIGHT_INDICES[equipment as keyof typeof FREIGHT_INDICES] }
@@ -580,6 +864,7 @@ export const marketPricingRouter = router({
       limit: z.number().default(20),
     }).optional())
     .query(async ({ input }) => {
+      const LANE_BENCHMARKS = await getLaneBenchmarksFromDB();
       let lanes = [...LANE_BENCHMARKS];
 
       if (input?.origin) {
@@ -625,6 +910,7 @@ export const marketPricingRouter = router({
       pickupDate: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
+      const FREIGHT_INDICES = await getFreightIndices();
       const baseIndex = FREIGHT_INDICES[input.equipment as keyof typeof FREIGHT_INDICES]
         || FREIGHT_INDICES.DRY_VAN;
 
@@ -716,6 +1002,7 @@ export const marketPricingRouter = router({
       period: z.enum(["7d", "30d", "90d", "1y"]).default("30d"),
     }))
     .query(async ({ input }) => {
+      const FREIGHT_INDICES = await getFreightIndices();
       const baseRate = FREIGHT_INDICES[input.equipment as keyof typeof FREIGHT_INDICES]?.national.current || 2.35;
       const days = input.period === "7d" ? 7 : input.period === "30d" ? 30 : input.period === "90d" ? 90 : 365;
       const startDate = new Date(Date.now() - days * 86400000);
@@ -900,6 +1187,8 @@ export const marketPricingRouter = router({
 
   // Get market summary for dashboard widgets — live data
   getMarketSummary: protectedProcedure.query(async () => {
+    const FREIGHT_INDICES = await getFreightIndices();
+    const LANE_BENCHMARKS = await getLaneBenchmarksFromDB();
     const equipmentTypes = Object.keys(FREIGHT_INDICES) as Array<keyof typeof FREIGHT_INDICES>;
     const liveFuel = await getLiveFuelIndex();
     const snap = await getLiveSnapshot();
@@ -914,7 +1203,7 @@ export const marketPricingRouter = router({
         naturalGas: snap?.naturalGas?.price || 2.85,
         isLiveData: snap?.isLiveData || false,
       },
-      topMovers: LANE_BENCHMARKS
+      topMovers: [...LANE_BENCHMARKS]
         .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
         .slice(0, 5)
         .map(l => ({
@@ -944,6 +1233,12 @@ export const marketPricingRouter = router({
     _liveSnapshotAt = 0;
     _historicalPrices = {};
     _historicalAt = 0;
+    _freightIndicesCache = null;
+    _freightIndicesCacheAt = 0;
+    _laneBenchmarksCache = null;
+    _laneBenchmarksCacheAt = 0;
+    _dbFuelIndex = null;
+    _dbFuelIndexAt = 0;
     results.push({ source: "market_snapshot_cache", label: "Market Cache Bust", success: true, category: "Market" });
 
     // 2. Force re-fetch a fresh market snapshot right now

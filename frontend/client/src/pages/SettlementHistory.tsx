@@ -118,7 +118,7 @@ export default function SettlementHistory() {
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                 <div>
                   <p className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}</p>
-                  <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                  <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                 </div>
               </div>
             </CardContent>
@@ -204,7 +204,7 @@ export default function SettlementHistory() {
                         <p className={cn("text-lg font-bold tabular-nums", settlement.status === "paid" ? "text-green-500" : isLight ? "text-slate-800" : "text-white")}>
                           ${net.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
-                        <Badge className={cn("text-[10px] border", status.cls)}>{status.label}</Badge>
+                        <Badge className={cn("text-xs border", status.cls)}>{status.label}</Badge>
                       </div>
                       <ChevronRight className={cn("w-4 h-4 transition-transform", isExpanded && "rotate-90", isLight ? "text-slate-300" : "text-slate-600")} />
                     </div>

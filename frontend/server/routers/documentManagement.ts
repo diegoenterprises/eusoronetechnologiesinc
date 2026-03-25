@@ -716,10 +716,18 @@ export const documentManagementRouter = router({
             namedInsured: "Transport Co LLC",
           });
         } else if (docType === "pod") {
+          // Look up actual receiver from load's delivery stop
+          let receiverName: string | null = null;
+          if (doc.loadId) {
+            const [stopRows] = await db.execute(
+              sql`SELECT contactName FROM load_stops WHERE loadId = ${doc.loadId} AND stopType = 'delivery' ORDER BY sequence DESC LIMIT 1`
+            ) as unknown as RawQueryRows;
+            receiverName = (stopRows || [])[0]?.contactName || null;
+          }
           Object.assign(extractedData, {
             deliveryDate: new Date().toISOString().split("T")[0],
             deliveryTime: "14:30",
-            receiverName: "John Smith",
+            receiverName,
             receiverSignature: true,
             condition: "Good",
             shortages: "None",

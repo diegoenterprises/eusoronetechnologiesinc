@@ -212,7 +212,7 @@ export default function DetentionTracking() {
                   <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                   <div>
                     <p className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}</p>
-                    <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                    <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -477,39 +477,39 @@ export default function DetentionTracking() {
                           <div className={cn("px-4 pb-4 pt-0 border-t", isLight ? "border-slate-100 bg-slate-50/50" : "border-slate-700/30 bg-slate-800/30")}>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-3">
                               <div>
-                                <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Arrival</p>
+                                <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Arrival</p>
                                 <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>
                                   {c.arrivalTime ? new Date(c.arrivalTime).toLocaleString() : "—"}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Departure</p>
+                                <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Departure</p>
                                 <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>
                                   {c.departureTime ? new Date(c.departureTime).toLocaleString() : "Still on-site"}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Free Time</p>
+                                <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Free Time</p>
                                 <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{c.freeTimeMinutes || 120} min</p>
                               </div>
                               <div>
-                                <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Rate</p>
+                                <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Rate</p>
                                 <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>${c.hourlyRate || 75}/hr</p>
                               </div>
                               <div>
-                                <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Total Dwell</p>
+                                <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Total Dwell</p>
                                 <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{c.totalDwellMinutes || 0} min</p>
                               </div>
                               <div>
-                                <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Billable</p>
+                                <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Billable</p>
                                 <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{c.billableMinutes || 0} min</p>
                               </div>
                               <div>
-                                <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Platform Fee</p>
+                                <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Platform Fee</p>
                                 <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>${(c.platformFee || 0).toFixed(2)}</p>
                               </div>
                               <div>
-                                <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Net to Carrier</p>
+                                <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Net to Carrier</p>
                                 <p className="text-sm font-bold text-green-400">${((c.totalAmount || 0) - (c.platformFee || 0)).toFixed(2)}</p>
                               </div>
                             </div>
@@ -610,7 +610,7 @@ export default function DetentionTracking() {
                         { label: "Rate", value: `$${calcQuery.data.ratePerHour}/hr` },
                       ].map((item) => (
                         <div key={item.label} className={cn("p-3 rounded-xl", isLight ? "bg-slate-50" : "bg-slate-700/30")}>
-                          <p className="text-[10px] uppercase tracking-wider text-slate-500">{item.label}</p>
+                          <p className="text-xs uppercase tracking-wider text-slate-500">{item.label}</p>
                           <p className={cn("text-lg font-bold", item.highlight ? "text-red-400" : (isLight ? "text-slate-800" : "text-white"))}>{item.value}</p>
                           {item.sub && <p className="text-xs text-slate-500">{item.sub}</p>}
                         </div>

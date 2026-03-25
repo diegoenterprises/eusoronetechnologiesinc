@@ -74,7 +74,7 @@ function statusBadge(status: string) {
     expiring_soon: { bg: "bg-amber-500/15", text: "text-amber-400", label: "Expiring Soon" },
   };
   const c = cfg[status] || { bg: "bg-slate-500/15", text: "text-slate-400", label: status };
-  return <Badge className={cn("text-[10px] font-semibold border-0", c.bg, c.text)}>{c.label}</Badge>;
+  return <Badge className={cn("text-xs font-semibold border-0", c.bg, c.text)}>{c.label}</Badge>;
 }
 
 function urgencyBadge(urgency: string) {
@@ -86,7 +86,7 @@ function urgencyBadge(urgency: string) {
   };
   const c = cfg[urgency] || cfg.medium;
   return (
-    <Badge className={cn("text-[10px] font-bold border-0 uppercase", c.bg, c.text)}>
+    <Badge className={cn("text-xs font-bold border-0 uppercase", c.bg, c.text)}>
       {urgency}
     </Badge>
   );
@@ -115,7 +115,7 @@ function ComplianceRing({ score, size = 100 }: { score: number; size?: number })
       </svg>
       <div className="absolute flex flex-col items-center">
         <span className="text-xl font-black text-white">{score}%</span>
-        <span className="text-[9px] text-slate-400">Score</span>
+        <span className="text-xs text-slate-400">Score</span>
       </div>
     </div>
   );
@@ -369,7 +369,7 @@ export default function DocumentManagement() {
                 {item.icon}
                 <span className="flex-1 text-left">{item.label}</span>
                 {item.count !== undefined && item.count > 0 && (
-                  <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded-full font-medium">
+                  <span className="text-xs bg-white/10 px-1.5 py-0.5 rounded-full font-medium">
                     {item.count}
                   </span>
                 )}
@@ -780,7 +780,7 @@ function LibraryTab({
                           <p className="text-xs text-slate-500 mb-1">Tags</p>
                           <div className="flex flex-wrap gap-1">
                             {selectedDoc.tags.map((t: string) => (
-                              <Badge key={t} className="text-[10px] bg-white/5 text-slate-300 border-0">{t}</Badge>
+                              <Badge key={t} className="text-xs bg-white/5 text-slate-300 border-0">{t}</Badge>
                             ))}
                           </div>
                         </div>
@@ -857,7 +857,7 @@ function LibraryTab({
                                 <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" />
                                 <div>
                                   <p className="text-xs text-slate-300">{entry.details}</p>
-                                  <p className="text-[10px] text-slate-500">
+                                  <p className="text-xs text-slate-500">
                                     {new Date(entry.timestamp).toLocaleString()}
                                   </p>
                                 </div>
@@ -1053,7 +1053,7 @@ function TemplatesTab({ templates, isLoading }: { templates: any[] | undefined; 
                   <div className="flex items-center gap-3 mt-2">
                     <span className="text-xs text-slate-500">{tpl.mergeFields.length} fields</span>
                     <span className="text-xs text-slate-500">Used {tpl.usageCount}x</span>
-                    <Badge className="text-[10px] bg-blue-500/10 text-blue-400 border-0 capitalize">{tpl.type.replace(/_/g, " ")}</Badge>
+                    <Badge className="text-xs bg-blue-500/10 text-blue-400 border-0 capitalize">{tpl.type.replace(/_/g, " ")}</Badge>
                   </div>
                 </div>
               </div>
@@ -1448,7 +1448,7 @@ function AnalyticsTab({ data, isLoading }: { data: any; isLoading: boolean }) {
                   className="w-full bg-blue-500/30 rounded-t-md transition-all"
                   style={{ height: `${Math.max((week.uploads / 30) * 100, 10)}%` }}
                 />
-                <span className="text-[10px] text-slate-500">{week.period}</span>
+                <span className="text-xs text-slate-500">{week.period}</span>
                 <span className="text-xs text-slate-400">{week.uploads}</span>
               </div>
             ))}
@@ -1468,7 +1468,7 @@ function AnalyticsTab({ data, isLoading }: { data: any; isLoading: boolean }) {
                 <span className="text-xs text-slate-300">{DOC_TYPE_LABELS[cat.type] || cat.type}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-400">{cat.count}</span>
-                  <Badge className="text-[10px] bg-blue-500/10 text-blue-400 border-0">{cat.percentage}%</Badge>
+                  <Badge className="text-xs bg-blue-500/10 text-blue-400 border-0">{cat.percentage}%</Badge>
                 </div>
               </div>
             ))}
@@ -1563,11 +1563,11 @@ function AuditTab({ data, isLoading }: { data: any; isLoading: boolean }) {
                           Document: {entry.documentName}
                         </p>
                       </div>
-                      <span className="text-[10px] text-slate-500 flex-shrink-0 ml-4">
+                      <span className="text-xs text-slate-500 flex-shrink-0 ml-4">
                         {new Date(entry.timestamp).toLocaleString()}
                       </span>
                     </div>
-                    <Badge className="text-[10px] bg-white/5 text-slate-400 border-0 mt-1 capitalize">
+                    <Badge className="text-xs bg-white/5 text-slate-400 border-0 mt-1 capitalize">
                       {entry.action.replace(/_/g, " ")}
                     </Badge>
                   </div>

@@ -128,8 +128,8 @@ export default function HazmatRouteRestriction() {
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{r.name}</p>
-                          <Badge className={cn("text-[9px] border", typeCfg.bg, typeCfg.color, "border-current/20")}>{typeCfg.label}</Badge>
-                          <Badge className={cn("text-[9px] border", sevCfg.bg, sevCfg.color, "border-current/20")}>{sevCfg.label}</Badge>
+                          <Badge className={cn("text-xs border", typeCfg.bg, typeCfg.color, "border-current/20")}>{typeCfg.label}</Badge>
+                          <Badge className={cn("text-xs border", sevCfg.bg, sevCfg.color, "border-current/20")}>{sevCfg.label}</Badge>
                         </div>
                         <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>{r.location} — {r.restriction}</p>
                       </div>
@@ -140,8 +140,8 @@ export default function HazmatRouteRestriction() {
                     <div className={cn("px-5 pb-5 space-y-3", isLight ? "border-t border-slate-100" : "border-t border-slate-700/30")}>
                       <div className="pt-3"><p className={cn("text-sm leading-relaxed", isLight ? "text-slate-600" : "text-slate-300")}>{r.details}</p></div>
                       <div className="flex flex-wrap gap-1">
-                        <span className={cn("text-[10px] font-medium mr-1", isLight ? "text-slate-500" : "text-slate-400")}>Affected classes:</span>
-                        {r.classes.map((c) => (<span key={c} className={cn("text-[9px] px-2 py-0.5 rounded-md", isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400")}>{c}</span>))}
+                        <span className={cn("text-xs font-medium mr-1", isLight ? "text-slate-500" : "text-slate-400")}>Affected classes:</span>
+                        {r.classes.map((c) => (<span key={c} className={cn("text-xs px-2 py-0.5 rounded-md", isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400")}>{c}</span>))}
                       </div>
                     </div>
                   )}

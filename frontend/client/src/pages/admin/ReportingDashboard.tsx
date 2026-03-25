@@ -348,7 +348,7 @@ export default function ReportingDashboard() {
                             style={{ height: `${Math.max(height, 4)}%` }}
                             title={`Week ${w.week}: ${w.count} signups`}
                           />
-                          <span className="text-[9px] text-muted-foreground">{w.count}</span>
+                          <span className="text-xs text-muted-foreground">{w.count}</span>
                         </div>
                       );
                     })}

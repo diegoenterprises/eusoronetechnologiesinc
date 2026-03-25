@@ -57,7 +57,7 @@ export default function Analytics() {
   const CI = ({ value }: { value: number | undefined | null }) => {
     if (value === undefined || value === null || value === 0) return null;
     return (
-      <span className={cn("flex items-center gap-0.5 text-[10px] font-bold", value >= 0 ? "text-green-500" : "text-red-500")}>
+      <span className={cn("flex items-center gap-0.5 text-xs font-bold", value >= 0 ? "text-green-500" : "text-red-500")}>
         {value >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
         {Math.abs(value)}%
       </span>
@@ -83,7 +83,7 @@ export default function Analytics() {
         {change !== undefined && <CI value={change} />}
       </div>
       {ld ? <Skeleton className="h-7 w-20 rounded-lg" /> : <p className={cn("text-2xl font-bold tracking-tight", color)}>{value}</p>}
-      <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-1">{label}</p>
+      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-1">{label}</p>
     </div>
   );
 
@@ -104,7 +104,7 @@ export default function Analytics() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('analytics.title', rm.label)}</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
               <Activity className="w-3 h-3 text-blue-500" />
-              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Live</span>
+              <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">Live</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>{rm.desc}</p>
@@ -144,7 +144,7 @@ export default function Analytics() {
           <div key={k.l} className={cn("rounded-2xl p-3 bg-gradient-to-br border", L ? `${k.b} border-slate-200/60` : `${k.b} border-slate-700/30`)}>
             <k.I className={cn("w-4 h-4 mb-1", k.c)} />
             {ld ? <Skeleton className="h-6 w-8" /> : <p className={cn("text-xl font-bold", k.c)}>{k.v}</p>}
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{k.l}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{k.l}</p>
           </div>
         ))}
       </div>
@@ -184,7 +184,7 @@ export default function Analytics() {
                           </div>
                           <div className="text-right">
                             <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-sm">${(t.revenue || 0).toLocaleString()}</span>
-                            <span className="text-[10px] text-slate-400 ml-2">{t.loads} loads · {(t.miles || 0).toLocaleString()} mi</span>
+                            <span className="text-xs text-slate-400 ml-2">{t.loads} loads · {(t.miles || 0).toLocaleString()} mi</span>
                           </div>
                         </div>
                         <div className={cn("h-1.5 rounded-full overflow-hidden", L ? "bg-slate-200" : "bg-slate-700")}>
@@ -224,15 +224,15 @@ export default function Analytics() {
               <div className="grid grid-cols-3 gap-3 mt-2">
                 <div className={cn(cellCls, "text-center")}>
                   <p className="text-lg font-bold text-emerald-500">{ld ? "—" : `$${(s?.revenue || 0).toLocaleString()}`}</p>
-                  <p className="text-[10px] text-slate-400 uppercase mt-0.5">Gross</p>
+                  <p className="text-xs text-slate-400 uppercase mt-0.5">Gross</p>
                 </div>
                 <div className={cn(cellCls, "text-center")}>
                   <p className="text-lg font-bold text-blue-500">{ld ? "—" : `$${(s?.avgLoadValue || 0).toLocaleString()}`}</p>
-                  <p className="text-[10px] text-slate-400 uppercase mt-0.5">Avg / Load</p>
+                  <p className="text-xs text-slate-400 uppercase mt-0.5">Avg / Load</p>
                 </div>
                 <div className={cn(cellCls, "text-center")}>
                   <p className="text-lg font-bold text-purple-500">{ld ? "—" : `$${s?.avgRatePerMile?.toFixed(2) || "0.00"}`}</p>
-                  <p className="text-[10px] text-slate-400 uppercase mt-0.5">Avg / Mile</p>
+                  <p className="text-xs text-slate-400 uppercase mt-0.5">Avg / Mile</p>
                 </div>
               </div>
             </CardContent>
@@ -277,7 +277,7 @@ export default function Analytics() {
                   <div key={k.l} className={cellCls}>
                     <div className="flex items-center gap-2 mb-1">
                       <k.I className={cn("w-3.5 h-3.5", k.c)} />
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wider">{k.l}</span>
+                      <span className="text-xs text-slate-400 uppercase tracking-wider">{k.l}</span>
                     </div>
                     {ld ? <Skeleton className="h-6 w-16 rounded" /> : <p className={cn("text-lg font-bold", k.c)}>{k.v}</p>}
                   </div>
@@ -301,7 +301,7 @@ export default function Analytics() {
             ].map((k) => (
               <div key={k.l} className={cn("rounded-xl p-4 text-center bg-gradient-to-br border", L ? `${k.b} border-slate-200/60` : `${k.b} border-slate-700/30`)}>
                 {ld ? <Skeleton className="h-8 w-12 mx-auto rounded" /> : <p className={cn("text-3xl font-bold", k.c)}>{k.v}</p>}
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider mt-1">{k.l}</p>
+                <p className="text-xs text-slate-400 uppercase tracking-wider mt-1">{k.l}</p>
               </div>
             ))}
           </div>
@@ -320,9 +320,9 @@ export default function Analytics() {
                     const h = Math.max(8, Math.round(((t.loads || 0) / maxLoads) * 100));
                     return (
                       <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                        <span className="text-[9px] text-slate-400 font-bold">{t.loads}</span>
+                        <span className="text-xs text-slate-400 font-bold">{t.loads}</span>
                         <div className="w-full rounded-t-md bg-gradient-to-t from-[#1473FF] to-[#BE01FF] transition-all duration-500" style={{ height: `${h}%` }} />
-                        <span className="text-[8px] text-slate-500">{(t.period || "").slice(5)}</span>
+                        <span className="text-xs text-slate-500">{(t.period || "").slice(5)}</span>
                       </div>
                     );
                   })}
@@ -350,7 +350,7 @@ export default function Analytics() {
                 <div>
                   <p className={valCls}>{(user as any)?.name || "User"}</p>
                   <p className="text-xs text-slate-400">{(user as any)?.email || ""}</p>
-                  <Badge className="mt-1 border-0 text-[10px] bg-blue-500/15 text-blue-400 uppercase">{userRole.replace(/_/g, " ")}</Badge>
+                  <Badge className="mt-1 border-0 text-xs bg-blue-500/15 text-blue-400 uppercase">{userRole.replace(/_/g, " ")}</Badge>
                 </div>
               </div>
               <div className={cn("border-t pt-4 space-y-3", L ? "border-slate-200" : "border-slate-700/30")}>
@@ -362,7 +362,7 @@ export default function Analytics() {
                   <div key={r.l} className="flex items-center gap-3">
                     <r.I className="w-4 h-4 text-slate-400 shrink-0" />
                     <div className="flex-1">
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wider">{r.l}</p>
+                      <p className="text-xs text-slate-400 uppercase tracking-wider">{r.l}</p>
                       <p className={cn("text-sm font-medium capitalize", L ? "text-slate-700" : "text-white")}>{r.v}</p>
                     </div>
                   </div>
@@ -392,7 +392,7 @@ export default function Analytics() {
                   <div key={k.l} className={cellCls}>
                     <div className="flex items-center gap-2 mb-1">
                       <k.I className={cn("w-3.5 h-3.5", k.c)} />
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wider">{k.l}</span>
+                      <span className="text-xs text-slate-400 uppercase tracking-wider">{k.l}</span>
                     </div>
                     {ld ? <Skeleton className="h-6 w-16 rounded" /> : <p className={cn("text-lg font-bold", k.c)}>{k.v}</p>}
                   </div>

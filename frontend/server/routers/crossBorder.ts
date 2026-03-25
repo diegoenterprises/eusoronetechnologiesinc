@@ -707,7 +707,7 @@ export const crossBorderRouter = router({
           totalWeight,
           estimatedDuties: Math.round(totalValue * 0.025 * 100) / 100,
           estimatedTaxes: Math.round(totalValue * 0.05 * 100) / 100,
-          estimatedFees: 27.75,
+          estimatedFees: 0,
           currency: input.destination.country === "CA" ? "CAD" : input.destination.country === "MX" ? "MXN" : "USD",
         },
         usmcaCertification: input.usmc ? { eligible: true, certificationNumber: rid("USMCA"), preferentialRate: true, dutySavings: Math.round(totalValue * 0.025 * 100) / 100 } : null,
@@ -766,6 +766,7 @@ export const crossBorderRouter = router({
       currency: z.enum(["USD", "CAD", "MXN"]).default("USD"),
     }))
     .query(async ({ ctx, input }) => {
+      // Static fallback FX rates — no live feed connected (last updated 2025-01-01)
       const fxRates: Record<string, number> = { USD: 1, CAD: 1.3645, MXN: 17.12 };
       const destRate = fxRates[input.currency] || 1;
 
@@ -798,7 +799,7 @@ export const crossBorderRouter = router({
       const totalSavings = lineItems.reduce((s, l) => s + l.usmcaSavings, 0);
       const merchandiseProcessingFee = input.destination === "US" ? Math.min(Math.max(totalDuty * 0.003464, 31.67), 614.35) : 0;
       const harborMaintenanceFee = 0;
-      const brokerageFee = 175;
+      const brokerageFee = 0; // Unknown until broker assigned
       const grandTotal = Math.round((totalDuty + totalTax + merchandiseProcessingFee + brokerageFee) * 100) / 100;
 
       // Log duty calculation to audit trail
@@ -1430,15 +1431,43 @@ export const crossBorderRouter = router({
         .orderBy(desc(documents.createdAt))
         .limit(20);
 
-      // Enrich with load numbers
+      // Enrich with load numbers and carrier info
       const docLoadIds = manifestDocs.map((d) => d.loadId).filter((id): id is number => id !== null);
       let loadMap: Record<number, string> = {};
+      let carrierMap: Record<number, { name: string; scac: string | null }> = {};
       if (docLoadIds.length > 0) {
         const docLoads = await db
-          .select({ id: loads.id, loadNumber: loads.loadNumber })
+          .select({ id: loads.id, loadNumber: loads.loadNumber, catalystId: loads.catalystId })
           .from(loads)
           .where(inArray(loads.id, docLoadIds));
         for (const l of docLoads) loadMap[l.id] = l.loadNumber;
+
+        // Resolve carrier companies from catalyst users
+        const catalystIds = docLoads.map((l) => l.catalystId).filter((id): id is number => id !== null);
+        if (catalystIds.length > 0) {
+          const catalystUsers = await db
+            .select({ id: users.id, companyId: users.companyId })
+            .from(users)
+            .where(inArray(users.id, catalystIds));
+          const companyIds = catalystUsers.map((u) => u.companyId).filter((id): id is number => id !== null);
+          let companyMap: Record<number, { name: string }> = {};
+          if (companyIds.length > 0) {
+            const companyRows = await db
+              .select({ id: companies.id, name: companies.name })
+              .from(companies)
+              .where(inArray(companies.id, companyIds));
+            for (const c of companyRows) companyMap[c.id] = { name: c.name };
+          }
+          const userCompanyMap: Record<number, { name: string }> = {};
+          for (const u of catalystUsers) {
+            if (u.companyId && companyMap[u.companyId]) userCompanyMap[u.id] = companyMap[u.companyId];
+          }
+          for (const l of docLoads) {
+            if (l.catalystId && userCompanyMap[l.catalystId]) {
+              carrierMap[l.id] = { name: userCompanyMap[l.catalystId].name, scac: null };
+            }
+          }
+        }
       }
 
       const manifests = manifestDocs.map((d) => ({
@@ -1450,7 +1479,7 @@ export const crossBorderRouter = router({
         acceptedAt: d.status === "active" ? d.createdAt?.toISOString() ?? iso() : null,
         portOfEntry: "Ambassador Bridge",
         estimatedArrival: future(0),
-        carrier: { name: "Cross-Border Carrier", scac: "CBCX" },
+        carrier: d.loadId && carrierMap[d.loadId] ? carrierMap[d.loadId] : { name: "Unknown", scac: null },
         shipmentType: "standard",
         conveyanceType: "HIGHWAY",
         pars: `PARS-${String(d.id).padStart(8, "0")}`,
@@ -1500,12 +1529,41 @@ export const crossBorderRouter = router({
 
       const docLoadIds = manifestDocs.map((d) => d.loadId).filter((id): id is number => id !== null);
       let loadMap: Record<number, string> = {};
+      let aceCarrierMap: Record<number, { name: string; dot: string | null }> = {};
       if (docLoadIds.length > 0) {
         const docLoads = await db
-          .select({ id: loads.id, loadNumber: loads.loadNumber })
+          .select({ id: loads.id, loadNumber: loads.loadNumber, catalystId: loads.catalystId })
           .from(loads)
           .where(inArray(loads.id, docLoadIds));
         for (const l of docLoads) loadMap[l.id] = l.loadNumber;
+
+        // Resolve carrier companies from catalyst users
+        const catalystIds = docLoads.map((l) => l.catalystId).filter((id): id is number => id !== null);
+        if (catalystIds.length > 0) {
+          const catalystUsers = await db
+            .select({ id: users.id, companyId: users.companyId })
+            .from(users)
+            .where(inArray(users.id, catalystIds));
+          const companyIds = catalystUsers.map((u) => u.companyId).filter((id): id is number => id !== null);
+          let companyMap: Record<number, { name: string; dotNumber: string | null }> = {};
+          if (companyIds.length > 0) {
+            const companyRows = await db
+              .select({ id: companies.id, name: companies.name, dotNumber: companies.dotNumber })
+              .from(companies)
+              .where(inArray(companies.id, companyIds));
+            for (const c of companyRows) companyMap[c.id] = { name: c.name, dotNumber: c.dotNumber };
+          }
+          const userCompanyMap: Record<number, { name: string; dotNumber: string | null }> = {};
+          for (const u of catalystUsers) {
+            if (u.companyId && companyMap[u.companyId]) userCompanyMap[u.id] = companyMap[u.companyId];
+          }
+          for (const l of docLoads) {
+            if (l.catalystId && userCompanyMap[l.catalystId]) {
+              const co = userCompanyMap[l.catalystId];
+              aceCarrierMap[l.id] = { name: co.name, dot: co.dotNumber };
+            }
+          }
+        }
       }
 
       const manifests = manifestDocs.map((d) => ({
@@ -1517,7 +1575,7 @@ export const crossBorderRouter = router({
         acceptedAt: d.status === "active" ? d.createdAt?.toISOString() ?? iso() : null,
         portOfEntry: "Laredo (World Trade Bridge)",
         estimatedArrival: future(0),
-        carrier: { name: "Cross-Border Carrier", scac: "CBCX", dot: "0000000" },
+        carrier: d.loadId && aceCarrierMap[d.loadId] ? { ...aceCarrierMap[d.loadId], scac: null } : { name: "Unknown", scac: null, dot: null },
         shipmentCount: 1,
         isfStatus: (d.status === "active" ? "FILED" : "PENDING") as "FILED" | "PENDING",
         paps: `PAPS-${String(d.id).padStart(8, "0")}`,
@@ -2105,16 +2163,16 @@ export const crossBorderRouter = router({
         border,
         kpis: {
           totalCrossings: filteredLoads.length,
-          averageCrossingTimeMinutes: 47,
+          averageCrossingTimeMinutes: 0,
           complianceRate,
           onTimeRate,
-          customsClearanceAvgHours: 2.8,
+          customsClearanceAvgHours: 0,
           dutiesPaid: Math.round(totalDuties * 100) / 100,
           brokerageFees: totalBrokerage,
           totalCostPerCrossing: filteredLoads.length > 0 ? Math.round((totalDuties + totalBrokerage) / filteredLoads.length) : 0,
-          fastLaneUtilization: 68,
-          eManifestAcceptanceRate: 97.3,
-          secondaryInspectionRate: 3.1,
+          fastLaneUtilization: 0,
+          eManifestAcceptanceRate: 0,
+          secondaryInspectionRate: 0,
           cabotageViolations: 0,
         },
         topRoutes,
@@ -2129,15 +2187,15 @@ export const crossBorderRouter = router({
           duties: Math.round(totalDuties * 100) / 100,
           taxes: Math.round(totalDuties * 0.25 * 100) / 100,
           brokerage: totalBrokerage,
-          bondPremiums: Math.round(1_875 / (365 / daysBack)),
-          compliance: Math.round(4_500 / (365 / daysBack)),
-          total: Math.round((totalDuties + totalDuties * 0.25 + totalBrokerage + 1_875 / (365 / daysBack) + 4_500 / (365 / daysBack)) * 100) / 100,
+          bondPremiums: 0,
+          compliance: 0,
+          total: Math.round((totalDuties + totalDuties * 0.25 + totalBrokerage) * 100) / 100,
         },
         trends: {
-          crossingsChange: 12.4,
-          costChange: -3.2,
-          complianceChange: 1.1,
-          waitTimeChange: -8.5,
+          crossingsChange: 0,
+          costChange: 0,
+          complianceChange: 0,
+          waitTimeChange: 0,
         },
       };
     }),

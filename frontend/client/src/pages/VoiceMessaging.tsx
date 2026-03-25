@@ -149,7 +149,7 @@ export default function VoiceMessaging() {
                           <p className={cn("text-sm font-bold truncate", isLight ? "text-slate-800" : "text-white")}>{msg.from}</p>
                           {isUnread && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
                           {msg.direction === "outgoing" && (
-                            <Badge className="bg-green-500/15 text-green-400 border-green-500/30 text-[8px]">Sent</Badge>
+                            <Badge className="bg-green-500/15 text-green-400 border-green-500/30 text-xs">Sent</Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-3 mt-1">
@@ -228,7 +228,7 @@ export default function VoiceMessaging() {
                       onClick={() => { sendRecording(); }}
                     >
                       <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{c.name}</p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{c.role}</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{c.role}</p>
                     </button>
                   ))}
                 </div>

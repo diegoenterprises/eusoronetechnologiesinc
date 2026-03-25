@@ -64,7 +64,7 @@ export default function UptimeDashboard() {
         ]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} className={cn("flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all border", tab === t.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-md" : L ? "bg-white border-slate-200 text-slate-600 hover:border-slate-300" : "bg-slate-800/60 border-slate-700/50 text-slate-400 hover:border-slate-600")}>
             {t.icon}{t.label}
-            {t.badge ? <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{t.badge}</span> : null}
+            {t.badge ? <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{t.badge}</span> : null}
           </button>
         ))}
       </div>
@@ -101,8 +101,8 @@ export default function UptimeDashboard() {
                   })}
                 </div>
                 <div className="flex justify-between mt-1">
-                  <span className={cn("text-[10px]", L ? "text-slate-400" : "text-slate-500")}>{trend[0]?.date}</span>
-                  <span className={cn("text-[10px]", L ? "text-slate-400" : "text-slate-500")}>{trend[trend.length - 1]?.date}</span>
+                  <span className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{trend[0]?.date}</span>
+                  <span className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{trend[trend.length - 1]?.date}</span>
                 </div>
               </CardContent>
             </Card>
@@ -143,10 +143,10 @@ export default function UptimeDashboard() {
                         <Badge className={p.role === "primary" ? "bg-blue-500/15 text-blue-500" : "bg-slate-500/15 text-slate-500"}>{p.role}</Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Latest Snapshot</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.latestSnapshot ? new Date(p.latestSnapshot).toLocaleString() : "—"}</p></div>
-                        <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Size</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.snapshotSize}</p></div>
-                        <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Encrypted</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.encrypted ? "AES-256" : "None"}</p></div>
-                        <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Replication Lag</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.replicationLag}</p></div>
+                        <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Latest Snapshot</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.latestSnapshot ? new Date(p.latestSnapshot).toLocaleString() : "—"}</p></div>
+                        <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Size</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.snapshotSize}</p></div>
+                        <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Encrypted</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.encrypted ? "AES-256" : "None"}</p></div>
+                        <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Replication Lag</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{p.replicationLag}</p></div>
                       </div>
                     </CardContent>
                   </Card>
@@ -157,10 +157,10 @@ export default function UptimeDashboard() {
                 <CardHeader className="pb-3"><CardTitle className={cn("text-lg flex items-center gap-2", L ? "text-slate-800" : "text-white")}><Shield className="w-5 h-5 text-[#1473FF]" />RPO / RTO</CardTitle></CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>RPO Target</p><p className={cn("text-lg font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{backupQuery.data.sla?.rpoTarget}</p></div>
-                    <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>RPO Actual</p><p className={cn("text-lg font-bold mt-0.5 text-green-500")}>{backupQuery.data.sla?.rpoActual}</p></div>
-                    <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>RTO Target</p><p className={cn("text-lg font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{backupQuery.data.sla?.rtoTarget}</p></div>
-                    <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>RTO Actual</p><p className={cn("text-lg font-bold mt-0.5 text-green-500")}>{backupQuery.data.sla?.rtoActual}</p></div>
+                    <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>RPO Target</p><p className={cn("text-lg font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{backupQuery.data.sla?.rpoTarget}</p></div>
+                    <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>RPO Actual</p><p className={cn("text-lg font-bold mt-0.5 text-green-500")}>{backupQuery.data.sla?.rpoActual}</p></div>
+                    <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>RTO Target</p><p className={cn("text-lg font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{backupQuery.data.sla?.rtoTarget}</p></div>
+                    <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>RTO Actual</p><p className={cn("text-lg font-bold mt-0.5 text-green-500")}>{backupQuery.data.sla?.rtoActual}</p></div>
                   </div>
                 </CardContent>
               </Card>
@@ -172,10 +172,10 @@ export default function UptimeDashboard() {
               <CardHeader className="pb-3"><CardTitle className={cn("text-lg flex items-center gap-2", L ? "text-slate-800" : "text-white")}><RefreshCw className="w-5 h-5 text-[#1473FF]" />Synthetic Restore Tests</CardTitle></CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Last Test</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{syntheticQuery.data.lastTest?.result}</p></div>
-                  <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Avg Restore</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{syntheticQuery.data.averageRestoreTime}</p></div>
-                  <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Success Rate</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{syntheticQuery.data.successRate}%</p></div>
-                  <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Tests (30d)</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{syntheticQuery.data.testsLast30Days}</p></div>
+                  <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Last Test</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{syntheticQuery.data.lastTest?.result}</p></div>
+                  <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Avg Restore</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{syntheticQuery.data.averageRestoreTime}</p></div>
+                  <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Success Rate</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{syntheticQuery.data.successRate}%</p></div>
+                  <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Tests (30d)</p><p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{syntheticQuery.data.testsLast30Days}</p></div>
                 </div>
               </CardContent>
             </Card>
@@ -190,7 +190,7 @@ export default function UptimeDashboard() {
                     <div className="flex items-center gap-2">
                       <HardDrive className="w-3.5 h-3.5 text-slate-400" />
                       <span className={L ? "text-slate-700" : "text-white"}>{s.provider?.toUpperCase()}</span>
-                      <Badge variant="outline" className="text-[9px]">{s.type}</Badge>
+                      <Badge variant="outline" className="text-xs">{s.type}</Badge>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={L ? "text-slate-400" : "text-slate-500"}>{s.size}</span>
@@ -218,7 +218,7 @@ export default function UptimeDashboard() {
                     <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{inc.service}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={inc.type === "outage" ? "bg-red-500/15 text-red-500 text-[10px]" : "bg-amber-500/15 text-amber-500 text-[10px]"}>{inc.type}</Badge>
+                    <Badge className={inc.type === "outage" ? "bg-red-500/15 text-red-500 text-xs" : "bg-amber-500/15 text-amber-500 text-xs"}>{inc.type}</Badge>
                     <span className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{inc.duration}</span>
                   </div>
                 </div>

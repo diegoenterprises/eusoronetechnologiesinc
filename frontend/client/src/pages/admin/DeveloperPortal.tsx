@@ -118,8 +118,8 @@ export default function DeveloperPortal() {
                     <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{k.name}</p>
                     <p className={cn("text-xs font-mono mt-0.5", L ? "text-slate-400" : "text-slate-500")}>{k.key}</p>
                     <div className="flex gap-2 mt-1">
-                      <Badge variant="outline" className="text-[10px]">{k.status}</Badge>
-                      <span className={cn("text-[10px]", L ? "text-slate-400" : "text-slate-500")}>Expires {k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : "Never"}</span>
+                      <Badge variant="outline" className="text-xs">{k.status}</Badge>
+                      <span className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>Expires {k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : "Never"}</span>
                     </div>
                   </div>
                   <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-500" onClick={() => handleRevokeKey(k.id)}><Trash2 className="w-4 h-4" /></Button>
@@ -139,15 +139,15 @@ export default function DeveloperPortal() {
               {tools.map((t: any, i: number) => (
                 <div key={i} className={cn("flex items-center justify-between p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                   <div className="flex items-center gap-3">
-                    <Badge className={cn("text-[10px] rounded-md font-mono", t.method === "POST" ? "bg-green-500/15 text-green-500 border-green-500/30" : "bg-blue-500/15 text-blue-500 border-blue-500/30")}>{t.method}</Badge>
+                    <Badge className={cn("text-xs rounded-md font-mono", t.method === "POST" ? "bg-green-500/15 text-green-500 border-green-500/30" : "bg-blue-500/15 text-blue-500 border-blue-500/30")}>{t.method}</Badge>
                     <div>
                       <p className={cn("text-sm font-mono font-medium", L ? "text-slate-800" : "text-white")}>{t.name}</p>
                       <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{t.description}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px]">{t.rateLimit}/min</Badge>
-                    <Badge variant="outline" className="text-[10px] font-mono">{t.requiresScope}</Badge>
+                    <Badge variant="outline" className="text-xs">{t.rateLimit}/min</Badge>
+                    <Badge variant="outline" className="text-xs font-mono">{t.requiresScope}</Badge>
                   </div>
                 </div>
               ))}
@@ -161,7 +161,7 @@ export default function DeveloperPortal() {
                 {scopes.map((s: any, i: number) => (
                   <div key={i} className={sc}>
                     <p className={cn("text-xs font-mono font-medium", L ? "text-slate-700" : "text-white")}>{s.scope}</p>
-                    <p className={cn("text-[10px] mt-0.5", L ? "text-slate-400" : "text-slate-500")}>{s.description}</p>
+                    <p className={cn("text-xs mt-0.5", L ? "text-slate-400" : "text-slate-500")}>{s.description}</p>
                   </div>
                 ))}
               </div>
@@ -180,7 +180,7 @@ export default function DeveloperPortal() {
                 {events.map((e: any, i: number) => (
                   <div key={i} className={sc}>
                     <p className={cn("text-xs font-mono font-medium", L ? "text-slate-700" : "text-white")}>{e.event}</p>
-                    <p className={cn("text-[10px] mt-0.5", L ? "text-slate-400" : "text-slate-500")}>{e.description}</p>
+                    <p className={cn("text-xs mt-0.5", L ? "text-slate-400" : "text-slate-500")}>{e.description}</p>
                   </div>
                 ))}
               </div>
@@ -194,7 +194,7 @@ export default function DeveloperPortal() {
                 <div key={w.id} className={cn("flex items-center justify-between p-3 rounded-xl border mb-2", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                   <div>
                     <p className={cn("text-sm font-mono", L ? "text-slate-800" : "text-white")}>{w.url}</p>
-                    <div className="flex gap-1 mt-1">{w.events?.map((e: string) => <Badge key={e} variant="outline" className="text-[10px]">{e}</Badge>)}</div>
+                    <div className="flex gap-1 mt-1">{w.events?.map((e: string) => <Badge key={e} variant="outline" className="text-xs">{e}</Badge>)}</div>
                   </div>
                   <Badge className={w.status === "active" ? "bg-green-500/15 text-green-500" : "bg-red-500/15 text-red-500"}>{w.status}</Badge>
                 </div>
@@ -211,11 +211,11 @@ export default function DeveloperPortal() {
             <CardHeader className="pb-3"><CardTitle className={cn("text-lg flex items-center gap-2", L ? "text-slate-800" : "text-white")}><Code className="w-5 h-5 text-[#1473FF]" />SDK & Integration</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className={sc}>
-                <p className={cn("text-[10px] uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>API Base URL</p>
+                <p className={cn("text-xs uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>API Base URL</p>
                 <p className={cn("text-sm font-mono font-medium mt-0.5", L ? "text-slate-800" : "text-white")}>{sdkQuery.data.apiBase}</p>
               </div>
               <div className={sc}>
-                <p className={cn("text-[10px] uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>Authentication</p>
+                <p className={cn("text-xs uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>Authentication</p>
                 <p className={cn("text-sm mt-0.5", L ? "text-slate-700" : "text-slate-300")}>{sdkQuery.data.authentication}</p>
               </div>
               {sdkQuery.data.sdks?.map((sdk: any) => (
@@ -224,11 +224,11 @@ export default function DeveloperPortal() {
                     <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{sdk.language}</p>
                     {sdk.package && <p className={cn("text-xs font-mono mt-0.5", L ? "text-slate-400" : "text-slate-500")}>{sdk.installCmd}</p>}
                   </div>
-                  <Badge variant="outline" className="text-[10px]">v{sdk.version || "REST"}</Badge>
+                  <Badge variant="outline" className="text-xs">v{sdk.version || "REST"}</Badge>
                 </div>
               ))}
               <div className={sc}>
-                <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-1", L ? "text-slate-400" : "text-slate-500")}>Rate Limits</p>
+                <p className={cn("text-xs uppercase tracking-wider font-medium mb-1", L ? "text-slate-400" : "text-slate-500")}>Rate Limits</p>
                 <div className="flex gap-4 text-xs">
                   <span className={L ? "text-slate-600" : "text-slate-300"}>Standard: <strong>{sdkQuery.data.rateLimits?.standard}</strong></span>
                   <span className={L ? "text-slate-600" : "text-slate-300"}>Premium: <strong>{sdkQuery.data.rateLimits?.premium}</strong></span>

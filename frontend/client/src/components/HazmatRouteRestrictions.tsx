@@ -239,13 +239,13 @@ export default function HazmatRouteRestrictions({
           <p className={cn("text-sm font-semibold", effectiveStatus === "ROUTE_BLOCKED" ? "text-red-400" : effectiveStatus === "RESTRICTIONS_APPLY" ? "text-orange-400" : "text-emerald-400")}>
             {effectiveStatusConfig.text}
           </p>
-          <p className="text-[10px] text-slate-500">{effectiveStatusConfig.desc}</p>
+          <p className="text-xs text-slate-500">{effectiveStatusConfig.desc}</p>
         </div>
         <div className="flex items-center gap-2">
-          {(data?.summary?.blocked || 0) > 0 && <Badge className="bg-red-500/20 text-red-400 border-0 text-[9px]">{data.summary.blocked} blocked</Badge>}
-          {(data?.summary?.restricted || 0) > 0 && <Badge className="bg-orange-500/20 text-orange-400 border-0 text-[9px]">{data.summary.restricted} restricted</Badge>}
-          {(data?.summary?.advisory || 0) > 0 && <Badge className="bg-blue-500/20 text-blue-400 border-0 text-[9px]">{data.summary.advisory} advisory</Badge>}
-          {allRegReqs.length > 0 && <Badge className="bg-indigo-500/20 text-indigo-300 border-0 text-[9px]">{allRegReqs.length} regulatory</Badge>}
+          {(data?.summary?.blocked || 0) > 0 && <Badge className="bg-red-500/20 text-red-400 border-0 text-xs">{data.summary.blocked} blocked</Badge>}
+          {(data?.summary?.restricted || 0) > 0 && <Badge className="bg-orange-500/20 text-orange-400 border-0 text-xs">{data.summary.restricted} restricted</Badge>}
+          {(data?.summary?.advisory || 0) > 0 && <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">{data.summary.advisory} advisory</Badge>}
+          {allRegReqs.length > 0 && <Badge className="bg-indigo-500/20 text-indigo-300 border-0 text-xs">{allRegReqs.length} regulatory</Badge>}
           {expanded ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
         </div>
       </button>
@@ -264,12 +264,12 @@ export default function HazmatRouteRestrictions({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className={cn("text-xs font-bold", sev.color)}>{r.location}</span>
-                      <Badge className="bg-red-500/30 text-red-300 border-0 text-[8px] px-1.5">{sev.label}</Badge>
+                      <Badge className="bg-red-500/30 text-red-300 border-0 text-xs px-1.5">{sev.label}</Badge>
                     </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">{r.description}</p>
+                    <p className="text-xs text-slate-300 leading-relaxed">{r.description}</p>
                     <div className="flex items-center gap-4 mt-1.5">
-                      <span className="text-[9px] text-slate-500">{r.regulation}</span>
-                      {r.alternatives && <span className="text-[9px] text-emerald-400">{r.alternatives}</span>}
+                      <span className="text-xs text-slate-500">{r.regulation}</span>
+                      {r.alternatives && <span className="text-xs text-emerald-400">{r.alternatives}</span>}
                     </div>
                   </div>
                 </div>
@@ -288,12 +288,12 @@ export default function HazmatRouteRestrictions({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className={cn("text-xs font-semibold", sev.color)}>{r.location}</span>
-                      <Badge className="bg-orange-500/20 text-orange-300 border-0 text-[8px] px-1.5">{sev.label}</Badge>
+                      <Badge className="bg-orange-500/20 text-orange-300 border-0 text-xs px-1.5">{sev.label}</Badge>
                     </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">{r.description}</p>
+                    <p className="text-xs text-slate-300 leading-relaxed">{r.description}</p>
                     <div className="flex items-center gap-4 mt-1.5">
-                      <span className="text-[9px] text-slate-500">{r.regulation}</span>
-                      {r.alternatives && <span className="text-[9px] text-emerald-400">{r.alternatives}</span>}
+                      <span className="text-xs text-slate-500">{r.regulation}</span>
+                      {r.alternatives && <span className="text-xs text-emerald-400">{r.alternatives}</span>}
                     </div>
                   </div>
                 </div>
@@ -311,10 +311,10 @@ export default function HazmatRouteRestrictions({
                   <TypeIcon className={cn("w-3.5 h-3.5 mt-0.5 flex-shrink-0", sev.color)} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[11px] text-slate-400 font-medium">{r.location}</span>
-                      <Badge className="bg-blue-500/15 text-blue-300 border-0 text-[8px] px-1.5">{sev.label}</Badge>
+                      <span className="text-xs text-slate-400 font-medium">{r.location}</span>
+                      <Badge className="bg-blue-500/15 text-blue-300 border-0 text-xs px-1.5">{sev.label}</Badge>
                     </div>
-                    <p className="text-[10px] text-slate-500 leading-relaxed">{r.description}</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">{r.description}</p>
                   </div>
                 </div>
               </div>
@@ -326,21 +326,21 @@ export default function HazmatRouteRestrictions({
             <div className="px-4 py-3 bg-purple-500/5">
               <div className="flex items-center gap-2 mb-2">
                 <Shield className="w-3.5 h-3.5 text-purple-400" />
-                <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">ERG Protective Action Distances</span>
+                <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">ERG Protective Action Distances</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-center">
                 {data.ergProtectiveDistances.smallSpill && (
                   <div className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/30">
-                    <p className="text-[9px] text-slate-500 uppercase">Small Spill</p>
-                    <p className="text-[11px] text-white font-medium">
+                    <p className="text-xs text-slate-500 uppercase">Small Spill</p>
+                    <p className="text-xs text-white font-medium">
                       {data.ergProtectiveDistances.smallSpill.day} (day) / {data.ergProtectiveDistances.smallSpill.night} (night)
                     </p>
                   </div>
                 )}
                 {data.ergProtectiveDistances.largeSpill && (
                   <div className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/30">
-                    <p className="text-[9px] text-slate-500 uppercase">Large Spill</p>
-                    <p className="text-[11px] text-white font-medium">
+                    <p className="text-xs text-slate-500 uppercase">Large Spill</p>
+                    <p className="text-xs text-white font-medium">
                       {data.ergProtectiveDistances.largeSpill.day} (day) / {data.ergProtectiveDistances.largeSpill.night} (night)
                     </p>
                   </div>
@@ -362,7 +362,7 @@ export default function HazmatRouteRestrictions({
                 <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex-1 text-left">
                   Regulatory Compliance — {allStates.join(", ")}
                 </span>
-                <Badge className="bg-indigo-500/20 text-indigo-300 border-0 text-[9px]">
+                <Badge className="bg-indigo-500/20 text-indigo-300 border-0 text-xs">
                   {allRegReqs.length} requirement{allRegReqs.length !== 1 ? "s" : ""}
                 </Badge>
                 {regExpanded ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
@@ -380,8 +380,8 @@ export default function HazmatRouteRestrictions({
                       <div key={cat} className="px-4 py-2.5">
                         <div className="flex items-center gap-2 mb-2">
                           <CatIcon className="w-3.5 h-3.5 text-indigo-400" />
-                          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">{catLabel}</span>
-                          <span className="text-[9px] text-slate-500 ml-auto">{reqs.length}</span>
+                          <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">{catLabel}</span>
+                          <span className="text-xs text-slate-500 ml-auto">{reqs.length}</span>
                         </div>
                         <div className="space-y-1.5">
                           {reqs.map((req: any, idx: number) => {
@@ -389,14 +389,14 @@ export default function HazmatRouteRestrictions({
                             return (
                               <div key={`${cat}-${idx}`} className={cn("rounded-lg px-3 py-2 border", sevStyle.bg, sevStyle.border)}>
                                 <div className="flex items-center gap-2 mb-0.5">
-                                  <span className={cn("text-[11px] font-semibold", sevStyle.text)}>{req.title}</span>
-                                  <Badge className={cn("border-0 text-[8px] px-1.5", sevStyle.badge)}>{req.severity?.toUpperCase()}</Badge>
-                                  {req.source && <span className="text-[8px] text-slate-500 ml-auto">{req.source}</span>}
+                                  <span className={cn("text-xs font-semibold", sevStyle.text)}>{req.title}</span>
+                                  <Badge className={cn("border-0 text-xs px-1.5", sevStyle.badge)}>{req.severity?.toUpperCase()}</Badge>
+                                  {req.source && <span className="text-xs text-slate-500 ml-auto">{req.source}</span>}
                                 </div>
-                                {req.description && <p className="text-[10px] text-slate-400 leading-relaxed">{req.description}</p>}
+                                {req.description && <p className="text-xs text-slate-400 leading-relaxed">{req.description}</p>}
                                 <div className="flex items-center gap-3 mt-1">
-                                  {req.regulation && <span className="text-[9px] text-slate-500">{req.regulation}</span>}
-                                  {req.renewalPeriod && <span className="text-[9px] text-slate-600">Renew: {req.renewalPeriod}</span>}
+                                  {req.regulation && <span className="text-xs text-slate-500">{req.regulation}</span>}
+                                  {req.renewalPeriod && <span className="text-xs text-slate-600">Renew: {req.renewalPeriod}</span>}
                                 </div>
                               </div>
                             );
@@ -412,8 +412,8 @@ export default function HazmatRouteRestrictions({
 
           {/* Footer */}
           <div className="px-4 py-2 bg-slate-800/30 flex items-center justify-between">
-            <span className="text-[9px] text-slate-500">{data?.regulation || "Regulatory Engine"}</span>
-            <span className="text-[9px] text-slate-500">
+            <span className="text-xs text-slate-500">{data?.regulation || "Regulatory Engine"}</span>
+            <span className="text-xs text-slate-500">
               {(data?.restrictions?.length || 0) + allRegReqs.length} total finding{((data?.restrictions?.length || 0) + allRegReqs.length) !== 1 ? "s" : ""}
             </span>
           </div>

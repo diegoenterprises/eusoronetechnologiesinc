@@ -14,7 +14,7 @@ export const NextDeliveryWidget: React.FC = () => {
         <div className="p-3 rounded-lg bg-cyan-500/10 text-center">
           <MapPin className="w-5 h-5 text-cyan-400 mx-auto mb-1" />
           <p className="text-sm font-bold text-white">{d.destination}</p>
-          <p className="text-[10px] text-gray-400">{d.loadNumber}</p>
+          <p className="text-xs text-gray-400">{d.loadNumber}</p>
         </div>
         <StatRow label="ETA" value={d.eta} color="text-cyan-400" />
         <StatRow label="Distance" value={`${d.distance} mi`} color="text-blue-400" />
@@ -32,7 +32,7 @@ export const RestAreasWidget: React.FC = () => {
         <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
           <MapPin className="w-3 h-3 text-green-400 flex-shrink-0" />
           <span className="text-xs text-white flex-1 truncate">{a.name || `Rest Area ${i+1}`}</span>
-          <span className="text-[10px] text-cyan-400">{a.distance || "?"} mi</span>
+          <span className="text-xs text-cyan-400">{a.distance || "?"} mi</span>
         </div>
       )} empty="No rest areas nearby" />
     )}</ResponsiveWidget>
@@ -87,9 +87,9 @@ export const TrafficUpdatesWidget: React.FC = () => {
           <AlertCircle className="w-3 h-3 text-orange-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-white truncate">{u.location || `Route ${i+1}`}</p>
-            <p className="text-[10px] text-gray-500">{u.description || "Traffic delay"}</p>
+            <p className="text-xs text-gray-500">{u.description || "Traffic delay"}</p>
           </div>
-          <span className="text-[10px] text-orange-400">+{u.delay || 0}min</span>
+          <span className="text-xs text-orange-400">+{u.delay || 0}min</span>
         </div>
       )} empty="No traffic issues" />
     )}</ResponsiveWidget>
@@ -129,7 +129,7 @@ export const DispatcherChatWidget: React.FC = () => {
         </div>
         <WidgetList items={messages.slice(-(exp ? 5 : 3))} renderItem={(m: any, i: number) => (
           <div key={i} className={`p-2 rounded-lg ${m.fromDispatcher ? "bg-blue-500/10 ml-2" : "bg-white/5 mr-2"}`}>
-            <p className="text-[10px] text-gray-500">{m.sender || (m.fromDispatcher ? "Dispatch" : "You")}</p>
+            <p className="text-xs text-gray-500">{m.sender || (m.fromDispatcher ? "Dispatch" : "You")}</p>
             <p className="text-xs text-white">{m.text || ""}</p>
           </div>
         )} empty="No messages" />
@@ -164,7 +164,7 @@ export const LoadDocumentsWidget: React.FC = () => {
         <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
           <FileText className="w-3 h-3 text-blue-400 flex-shrink-0" />
           <span className="text-xs text-white flex-1 truncate">{d.name || `Doc ${i+1}`}</span>
-          <Badge className={`border-0 text-[10px] ${d.status === "signed" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
+          <Badge className={`border-0 text-xs ${d.status === "signed" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
             {d.status || "Pending"}
           </Badge>
         </div>

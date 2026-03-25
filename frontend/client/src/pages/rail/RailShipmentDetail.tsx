@@ -66,7 +66,7 @@ export default function RailShipmentDetail() {
                     <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2",
                       active ? "bg-blue-500 border-blue-400 text-white" : done ? "bg-emerald-500/20 border-emerald-500 text-emerald-400" : "bg-slate-700/30 border-slate-600 text-slate-500"
                     )}>{done ? <CheckCircle className="w-3 h-3" /> : i + 1}</div>
-                    <span className={cn("text-[10px] mt-1 text-center leading-tight", active ? "text-blue-400 font-medium" : done ? "text-emerald-400" : "text-slate-500")}>{st.replace(/_/g, " ")}</span>
+                    <span className={cn("text-xs mt-1 text-center leading-tight", active ? "text-blue-400 font-medium" : done ? "text-emerald-400" : "text-slate-500")}>{st.replace(/_/g, " ")}</span>
                   </div>
                   {i < STATUSES.length - 1 && <div className={cn("w-4 h-0.5 mt-[-12px]", done ? "bg-emerald-500" : "bg-slate-600")} />}
                 </div>

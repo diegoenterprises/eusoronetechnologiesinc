@@ -10,7 +10,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { drivers, incidents, inspections, users, vehicles, loads, notifications } from "../../drizzle/schema";
+import { drivers, incidents, inspections, users, vehicles, loads, notifications, trainingRecords } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte, asc, or, like, count as drizzleCount, inArray } from "drizzle-orm";
 import { emitNotification } from "../_core/websocket";
 
@@ -333,7 +333,7 @@ export const safetyRiskRouter = router({
 
         return {
           predictions: predictions.slice(0, 20),
-          modelConfidence: 72,
+          modelConfidence: 0, // No ML model deployed — confidence unavailable
           lastUpdated: new Date().toISOString(),
           highRiskTimeWindows,
           riskByLane: [],
@@ -1048,24 +1048,38 @@ export const safetyRiskRouter = router({
 
         const incidentTrend = Number(currentInc?.cnt || 0) - Number(prevInc?.cnt || 0);
 
+        // Compute training completion rate from trainingRecords
+        const [trStats] = await db.select({
+          total: sql<number>`count(*)`,
+          completed: sql<number>`SUM(CASE WHEN ${trainingRecords.status} = 'completed' THEN 1 ELSE 0 END)`,
+        }).from(trainingRecords).where(eq(trainingRecords.companyId, companyId));
+        const trTotal = trStats?.total || 0;
+        const trainingCompletionRate = trTotal > 0 ? Math.round(((trStats?.completed || 0) / trTotal) * 100) : 0;
+
+        // No safety_meetings table — attendance rate is 0
+        const meetingAttendanceRate = 0;
+        // Program participation derived from training engagement
+        const programParticipation = trainingCompletionRate;
+
         const overallScore = computeSafetyCultureScore({
           nearMissReportRate: nmRate,
-          trainingCompletionRate: 75, // default until training data connected
-          meetingAttendanceRate: 70,
+          trainingCompletionRate,
+          meetingAttendanceRate,
           observationRate: 50,
           incidentTrend,
-          programParticipation: 60,
+          programParticipation,
         });
 
         const grade = overallScore >= 90 ? "A+" : overallScore >= 80 ? "A" : overallScore >= 70 ? "B" : overallScore >= 60 ? "C" : overallScore >= 50 ? "D" : "F";
 
+        const incidentTrendScore = Math.max(0, 100 - Math.abs(incidentTrend) * 10);
         const dimensions = [
           { name: "Near-Miss Reporting Culture", score: Math.round(nmRate), weight: 15 },
-          { name: "Training Completion", score: 75, weight: 25 },
-          { name: "Safety Meeting Engagement", score: 70, weight: 15 },
+          { name: "Training Completion", score: trainingCompletionRate, weight: 25 },
+          { name: "Safety Meeting Engagement", score: meetingAttendanceRate, weight: 15 },
           { name: "Behavioral Observations", score: 50, weight: 15 },
-          { name: "Incident Trend", score: Math.max(0, 100 - Math.abs(incidentTrend) * 10), weight: 15 },
-          { name: "Program Participation", score: 60, weight: 15 },
+          { name: "Incident Trend", score: incidentTrendScore, weight: 15 },
+          { name: "Program Participation", score: programParticipation, weight: 15 },
         ];
 
         const recommendations: string[] = [];
@@ -1087,7 +1101,8 @@ export const safetyRiskRouter = router({
   getSafetyTrainingCompliance: protectedProcedure
     .input(z.object({ driverId: z.number().optional() }).optional())
     .query(async ({ ctx }) => {
-      return {
+      const db = await getDb();
+      const empty = {
         overallCompletionRate: 0,
         requiredCourses: [] as {
           id: string; name: string; category: string;
@@ -1097,12 +1112,66 @@ export const safetyRiskRouter = router({
         overdueDrivers: [] as { driverId: number; driverName: string; overdueCourses: number }[],
         upcomingDeadlines: [] as { courseId: string; courseName: string; dueDate: string; driversAffected: number }[],
       };
+      if (!db) return empty;
+      try {
+        const companyId = ctx.user?.companyId || 0;
+
+        // Aggregate training records by course for this company
+        const courseRows = await db.select({
+          courseName: trainingRecords.courseName,
+          total: sql<number>`count(*)`,
+          completed: sql<number>`SUM(CASE WHEN ${trainingRecords.status} = 'completed' THEN 1 ELSE 0 END)`,
+        }).from(trainingRecords).where(eq(trainingRecords.companyId, companyId)).groupBy(trainingRecords.courseName);
+
+        const requiredCourses = courseRows.map((c, i) => {
+          const tot = c.total || 0;
+          const comp = c.completed || 0;
+          return {
+            id: String(i + 1),
+            name: c.courseName,
+            category: "safety",
+            completedCount: comp,
+            totalRequired: tot,
+            complianceRate: tot > 0 ? Math.round((comp / tot) * 100) : 0,
+            dueDate: null,
+          };
+        });
+
+        const totalAll = courseRows.reduce((s, c) => s + (c.total || 0), 0);
+        const completedAll = courseRows.reduce((s, c) => s + (c.completed || 0), 0);
+        const overallCompletionRate = totalAll > 0 ? Math.round((completedAll / totalAll) * 100) : 0;
+
+        // Find drivers with expired/assigned (overdue) training
+        const overdueRows = await db.select({
+          userId: trainingRecords.userId,
+          overdueCourses: sql<number>`count(*)`,
+          driverName: users.name,
+        }).from(trainingRecords)
+          .leftJoin(users, eq(trainingRecords.userId, users.id))
+          .where(and(
+            eq(trainingRecords.companyId, companyId),
+            or(eq(trainingRecords.status, "expired"), eq(trainingRecords.status, "assigned")),
+          ))
+          .groupBy(trainingRecords.userId, users.name);
+
+        const overdueDrivers = overdueRows.map(r => ({
+          driverId: r.userId,
+          driverName: r.driverName || "Unknown",
+          overdueCourses: r.overdueCourses || 0,
+        }));
+
+        return { overallCompletionRate, requiredCourses, overdueDrivers, upcomingDeadlines: [] };
+      } catch (e) {
+        logger.error("[SafetyRisk] getSafetyTrainingCompliance error:", e);
+        return empty;
+      }
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════════
   // SAFETY MEETINGS
   // ═══════════════════════════════════════════════════════════════════════════════
 
+  // No safety_meetings table exists in the schema — return empty collections
   getSafetyMeetings: protectedProcedure
     .input(z.object({
       status: z.enum(["upcoming", "completed", "cancelled", "all"]).optional().default("all"),

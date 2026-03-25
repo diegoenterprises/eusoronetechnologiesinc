@@ -39,7 +39,7 @@ function KpiCard({ icon, label, value, subtitle, isLight, accent = "blue" }: {
       <div className={cn("p-2 rounded-lg w-fit mb-2", accentMap[accent])}>{icon}</div>
       <div className={cn("text-2xl font-bold", isLight ? "text-slate-900" : "text-white")}>{value}</div>
       <div className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>{label}</div>
-      {subtitle && <div className={cn("text-[10px] mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>{subtitle}</div>}
+      {subtitle && <div className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>{subtitle}</div>}
     </div>
   );
 }

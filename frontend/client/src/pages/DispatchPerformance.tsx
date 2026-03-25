@@ -129,7 +129,7 @@ export default function DispatchPerformance() {
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       Target: {metric.weightUnit === '$' ? `$${metric.target.toLocaleString()}` : `${metric.target.toLocaleString()}${metric.weightUnit}`}
                       {atTarget && <span className="text-green-400 ml-2">Target met!</span>}
                     </p>
@@ -146,7 +146,7 @@ export default function DispatchPerformance() {
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Award className="w-5 h-5 text-yellow-400" />Achievements
               {stats?.achievements && (
-                <Badge className="bg-yellow-500/20 text-yellow-400 border-0 text-[10px] ml-2">
+                <Badge className="bg-yellow-500/20 text-yellow-400 border-0 text-xs ml-2">
                   {stats.achievements.filter((a: any) => a.unlocked).length}/{stats.achievements.length}
                 </Badge>
               )}
@@ -178,7 +178,7 @@ export default function DispatchPerformance() {
                     )}>
                       <AchIcon className={cn("w-7 h-7 mx-auto mb-2", a.unlocked ? "text-yellow-400" : "text-slate-600")} />
                       <p className={cn("text-xs font-semibold", a.unlocked ? "text-white" : "text-slate-500")}>{a.name}</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{a.description}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{a.description}</p>
                     </div>
                   );
                 })}
@@ -218,9 +218,9 @@ export default function DispatchPerformance() {
                       <div className="flex items-center gap-2">
                         <p className="text-white font-medium text-sm">{item.loadNumber}</p>
                         {item.cargoType === 'hazmat' && (
-                          <Badge className="bg-red-500/20 text-red-400 border-0 text-[9px] px-1">HM</Badge>
+                          <Badge className="bg-red-500/20 text-red-400 border-0 text-xs px-1">HM</Badge>
                         )}
-                        <Badge className={cn("border-0 text-[9px] px-1.5",
+                        <Badge className={cn("border-0 text-xs px-1.5",
                           item.onTime ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"
                         )}>
                           {item.onTime ? 'On Time' : 'Late'}

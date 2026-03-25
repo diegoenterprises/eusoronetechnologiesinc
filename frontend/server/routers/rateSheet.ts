@@ -21,7 +21,7 @@ import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { loads, users, companies, documents, hzFuelPrices } from "../../drizzle/schema";
+import { loads, users, companies, documents, hzFuelPrices, platformFeeConfigs, pricebookEntries } from "../../drizzle/schema";
 import { digitizeRateSheet } from "../services/rateSheetDigitizer";
 import { unsafeCast } from "../_core/types/unsafe";
 
@@ -121,49 +121,102 @@ const reconciliationLineSchema = z.object({
 // PLATFORM FEE SCHEDULE — EusoTrip Revenue Model
 // ═══════════════════════════════════════════════════════════════════════════
 
-const PLATFORM_FEE_SCHEDULE = {
-  // Core transaction fee (% of gross load payment)
+// Fallback fee schedule — used when platformFeeConfigs table has no 'load_completion' entry
+const PLATFORM_FEE_DEFAULTS = {
   transactionFeePercent: 3.5,
-  // Minimum platform fee per load
   minimumFee: 15.00,
-  // Maximum platform fee cap per load
   maximumFee: 500.00,
-  // Document generation fees
-  bolGenerationFee: 0, // Included in platform
-  runTicketFee: 0,     // Included in platform
-  reconciliationFee: 0, // Included in platform
-  // Payment processing (on top of platform fee)
-  paymentProcessingPercent: 2.9, // Stripe Connect
-  paymentProcessingFlat: 0.30,    // Per-transaction
-  // Who pays what:
-  //   Shipper pays: load amount + platform fee
-  //   Carrier/Catalyst receives: load amount - platform fee
-  //   Platform keeps: platform fee + payment processing
-  //   Driver payout: per carrier's arrangement (carrier → driver)
-  //   Broker: earns commission from spread, pays platform fee on their cut
-  //   Terminal: earns facility fees, pays platform fee on those
+  bolGenerationFee: 0,
+  runTicketFee: 0,
+  reconciliationFee: 0,
+  paymentProcessingPercent: 2.9,
+  paymentProcessingFlat: 0.30,
 };
 
-function calculatePlatformFee(grossAmount: number): {
+/**
+ * Load platform fee schedule from platformFeeConfigs table.
+ * Looks for an active config with transactionType='load_completion'.
+ * Falls back to PLATFORM_FEE_DEFAULTS if none found.
+ */
+let _platformFeeCache: typeof PLATFORM_FEE_DEFAULTS | null = null;
+let _platformFeeCacheAt = 0;
+async function getPlatformFeeSchedule(): Promise<typeof PLATFORM_FEE_DEFAULTS> {
+  if (_platformFeeCache && Date.now() - _platformFeeCacheAt < 5 * 60 * 1000) return _platformFeeCache;
+  try {
+    const db = await getDb();
+    if (!db) return PLATFORM_FEE_DEFAULTS;
+
+    const rows = await db.select()
+      .from(platformFeeConfigs)
+      .where(and(
+        eq(platformFeeConfigs.transactionType, "load_completion"),
+        eq(platformFeeConfigs.isActive, true),
+      ))
+      .orderBy(desc(platformFeeConfigs.effectiveFrom))
+      .limit(1);
+
+    if (rows.length > 0) {
+      const cfg = rows[0];
+      _platformFeeCache = {
+        transactionFeePercent: Number(cfg.baseRate) || PLATFORM_FEE_DEFAULTS.transactionFeePercent,
+        minimumFee: Number(cfg.minFee) || PLATFORM_FEE_DEFAULTS.minimumFee,
+        maximumFee: Number(cfg.maxFee) || PLATFORM_FEE_DEFAULTS.maximumFee,
+        bolGenerationFee: 0,
+        runTicketFee: 0,
+        reconciliationFee: 0,
+        // Payment processing comes from a separate config or uses defaults
+        paymentProcessingPercent: PLATFORM_FEE_DEFAULTS.paymentProcessingPercent,
+        paymentProcessingFlat: PLATFORM_FEE_DEFAULTS.paymentProcessingFlat,
+      };
+
+      // Check for a payment_processing config for the processing fees
+      const ppRows = await db.select()
+        .from(platformFeeConfigs)
+        .where(and(
+          eq(platformFeeConfigs.feeCode, "payment_processing"),
+          eq(platformFeeConfigs.isActive, true),
+        ))
+        .limit(1);
+      if (ppRows.length > 0) {
+        _platformFeeCache.paymentProcessingPercent = Number(ppRows[0].baseRate) || PLATFORM_FEE_DEFAULTS.paymentProcessingPercent;
+        _platformFeeCache.paymentProcessingFlat = Number(ppRows[0].flatAmount) || PLATFORM_FEE_DEFAULTS.paymentProcessingFlat;
+      }
+
+      _platformFeeCacheAt = Date.now();
+      return _platformFeeCache;
+    }
+
+    return PLATFORM_FEE_DEFAULTS;
+  } catch (err) {
+    logger.warn("[RateSheet] getPlatformFeeSchedule DB query failed, using defaults:", err);
+    return PLATFORM_FEE_DEFAULTS;
+  }
+}
+
+// Synchronous alias for backward compat in non-async contexts
+const PLATFORM_FEE_SCHEDULE = PLATFORM_FEE_DEFAULTS;
+
+async function calculatePlatformFee(grossAmount: number): Promise<{
   platformFeePercent: number;
   platformFeeAmount: number;
   paymentProcessingFee: number;
   totalPlatformRevenue: number;
   shipperPays: number;
   carrierReceives: number;
-} {
-  const rawFee = grossAmount * (PLATFORM_FEE_SCHEDULE.transactionFeePercent / 100);
+}> {
+  const fees = await getPlatformFeeSchedule();
+  const rawFee = grossAmount * (fees.transactionFeePercent / 100);
   const platformFeeAmount = Math.min(
-    Math.max(rawFee, PLATFORM_FEE_SCHEDULE.minimumFee),
-    PLATFORM_FEE_SCHEDULE.maximumFee
+    Math.max(rawFee, fees.minimumFee),
+    fees.maximumFee
   );
   const paymentProcessingFee = Math.round(
-    (grossAmount * (PLATFORM_FEE_SCHEDULE.paymentProcessingPercent / 100) +
-     PLATFORM_FEE_SCHEDULE.paymentProcessingFlat) * 100
+    (grossAmount * (fees.paymentProcessingPercent / 100) +
+     fees.paymentProcessingFlat) * 100
   ) / 100;
 
   return {
-    platformFeePercent: PLATFORM_FEE_SCHEDULE.transactionFeePercent,
+    platformFeePercent: fees.transactionFeePercent,
     platformFeeAmount: Math.round(platformFeeAmount * 100) / 100,
     paymentProcessingFee,
     totalPlatformRevenue: Math.round((platformFeeAmount + paymentProcessingFee) * 100) / 100,
@@ -274,9 +327,42 @@ function calculateRunPayment(
 }
 
 /**
- * Generate default rate tiers (Permian Crude Transport style, 5-mile increments)
+ * Generate default rate tiers (Permian Crude Transport style, 5-mile increments).
+ * First queries pricebook_entries for per_barrel rates; falls back to hardcoded defaults.
  */
-function generateDefaultRateTiers(): { minMiles: number; maxMiles: number; ratePerBarrel: number }[] {
+async function generateDefaultRateTiers(): Promise<{ minMiles: number; maxMiles: number; ratePerBarrel: number }[]> {
+  // Try pricebook_entries first — look for active per_barrel rate entries
+  try {
+    const db = await getDb();
+    if (db) {
+      const pbRows = await db.select({
+        rate: pricebookEntries.rate,
+        minimumCharge: pricebookEntries.minimumCharge,
+      }).from(pricebookEntries)
+        .where(and(
+          eq(pricebookEntries.rateType, "per_barrel"),
+          eq(pricebookEntries.isActive, 1),
+          lte(pricebookEntries.effectiveDate, sql`CURDATE()`),
+        ))
+        .orderBy(pricebookEntries.rate)
+        .limit(60);
+
+      if (pbRows.length >= 5) {
+        // Build tiers from pricebook entries — distribute across 5-mile increments
+        const tiers: { minMiles: number; maxMiles: number; ratePerBarrel: number }[] = [];
+        for (let i = 0; i < pbRows.length; i++) {
+          const minMiles = i * 5 + 1;
+          const maxMiles = (i + 1) * 5;
+          tiers.push({ minMiles, maxMiles, ratePerBarrel: Number(pbRows[i].rate) || 0 });
+        }
+        return tiers;
+      }
+    }
+  } catch (err) {
+    logger.warn("[RateSheet] pricebook_entries query failed, using default tiers:", err);
+  }
+
+  // Fallback: hardcoded default rate tiers (Permian Crude Transport schedule)
   const tiers: { minMiles: number; maxMiles: number; ratePerBarrel: number }[] = [];
   const rateData: [number, number, number][] = [
     [1, 5, 0.83], [6, 10, 0.86], [11, 15, 0.95], [16, 20, 0.99],
@@ -401,18 +487,18 @@ const REGION_SURCHARGE_OVERRIDES: Record<string, Partial<{ waitTimeRatePerHour: 
  * Generate region-, product-, and trailer-aware rate tiers
  * Applies real-world regional cost multipliers to the Permian baseline
  */
-function generateSmartRateTiers(
+async function generateSmartRateTiers(
   region?: string,
   product?: string,
   trailerType?: string,
-): {
+): Promise<{
   tiers: { minMiles: number; maxMiles: number; ratePerBarrel: number }[];
   surcharges: Record<string, any>;
   regionInfo: { key: string; label: string; padd: string; multiplier: number } | null;
   productMultiplier: number;
   trailerMultiplier: number;
-} {
-  const baseTiers = generateDefaultRateTiers();
+}> {
+  const baseTiers = await generateDefaultRateTiers();
   const regionKey = region?.toLowerCase().replace(/[\s\/]+/g, "_").replace(/[^a-z0-9_]/g, "") || "";
   const regionData = REGION_MULTIPLIERS[regionKey] || null;
   const regionMult = regionData?.mult || 1.0;
@@ -500,9 +586,9 @@ export const rateSheetRouter = router({
   /**
    * Get default rate tiers (Permian Crude Transport standard)
    */
-  getDefaultTiers: protectedProcedure.query(() => {
+  getDefaultTiers: protectedProcedure.query(async () => {
     return {
-      tiers: generateDefaultRateTiers(),
+      tiers: await generateDefaultRateTiers(),
       surcharges: {
         fscEnabled: true,
         fscBaselineDieselPrice: 3.75,
@@ -585,8 +671,8 @@ export const rateSheetRouter = router({
       product: z.string().optional(),
       trailerType: z.string().optional(),
     }).optional())
-    .query(({ input }) => {
-      const result = generateSmartRateTiers(input?.region, input?.product, input?.trailerType);
+    .query(async ({ input }) => {
+      const result = await generateSmartRateTiers(input?.region, input?.product, input?.trailerType);
       return {
         tiers: result.tiers,
         surcharges: result.surcharges,
@@ -736,8 +822,8 @@ export const rateSheetRouter = router({
       rateTiers: z.array(rateTierSchema).optional(),
       surcharges: surchargeRulesSchema.optional(),
     }))
-    .query(({ input }) => {
-      const tiers = input.rateTiers || generateDefaultRateTiers();
+    .query(async ({ input }) => {
+      const tiers = input.rateTiers || await generateDefaultRateTiers();
       const surcharges = input.surcharges || {
         fscEnabled: true,
         fscBaselineDieselPrice: 3.75,
@@ -805,7 +891,7 @@ export const rateSheetRouter = router({
       currentDieselPrice: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const tiers = input.rateTiers || generateDefaultRateTiers();
+      const tiers = input.rateTiers || await generateDefaultRateTiers();
       const surcharges = input.surcharges || {
         fscEnabled: true,
         fscBaselineDieselPrice: 3.75,
@@ -869,7 +955,7 @@ export const rateSheetRouter = router({
       };
 
       // Platform fee on the grand total
-      const platformFees = calculatePlatformFee(totals.grandTotal);
+      const platformFees = await calculatePlatformFee(totals.grandTotal);
 
       const reconciliationId = `RECON-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
 
@@ -901,9 +987,9 @@ export const rateSheetRouter = router({
         platformFees: {
           ...platformFees,
           feeSchedule: {
-            transactionFeePercent: PLATFORM_FEE_SCHEDULE.transactionFeePercent,
-            minimumFee: PLATFORM_FEE_SCHEDULE.minimumFee,
-            maximumFee: PLATFORM_FEE_SCHEDULE.maximumFee,
+            transactionFeePercent: platformFees.platformFeePercent,
+            minimumFee: (await getPlatformFeeSchedule()).minimumFee,
+            maximumFee: (await getPlatformFeeSchedule()).maximumFee,
           },
         },
         // Final amounts after platform fee
@@ -1575,13 +1661,14 @@ export const rateSheetRouter = router({
   /**
    * Get platform fee schedule (visible to all users)
    */
-  getPlatformFeeSchedule: protectedProcedure.query(() => {
+  getPlatformFeeSchedule: protectedProcedure.query(async () => {
+    const fees = await getPlatformFeeSchedule();
     return {
-      transactionFeePercent: PLATFORM_FEE_SCHEDULE.transactionFeePercent,
-      minimumFee: PLATFORM_FEE_SCHEDULE.minimumFee,
-      maximumFee: PLATFORM_FEE_SCHEDULE.maximumFee,
-      paymentProcessingPercent: PLATFORM_FEE_SCHEDULE.paymentProcessingPercent,
-      paymentProcessingFlat: PLATFORM_FEE_SCHEDULE.paymentProcessingFlat,
+      transactionFeePercent: fees.transactionFeePercent,
+      minimumFee: fees.minimumFee,
+      maximumFee: fees.maximumFee,
+      paymentProcessingPercent: fees.paymentProcessingPercent,
+      paymentProcessingFlat: fees.paymentProcessingFlat,
       includes: ["BOL generation", "Run ticket generation", "Reconciliation statements", "Document storage", "Load lifecycle tracking"],
       description: "EusoTrip charges a transparent platform fee on every reconciled load payment. The fee covers full EusoTicket document generation, secure escrow, and payment processing.",
     };
@@ -1592,8 +1679,8 @@ export const rateSheetRouter = router({
    */
   previewPlatformFee: protectedProcedure
     .input(z.object({ grossAmount: z.number() }))
-    .query(({ input }) => {
-      return calculatePlatformFee(input.grossAmount);
+    .query(async ({ input }) => {
+      return await calculatePlatformFee(input.grossAmount);
     }),
 
   /**

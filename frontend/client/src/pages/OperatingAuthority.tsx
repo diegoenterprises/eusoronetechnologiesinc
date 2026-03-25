@@ -364,17 +364,17 @@ export default function OperatingAuthority() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 text-xs">Operating Area Risk</span>
-                      <Badge className={`border-0 text-[10px] ${theftRisk.data.riskLevel === "CRITICAL" ? "bg-red-500/20 text-red-400" : theftRisk.data.riskLevel === "HIGH" ? "bg-orange-500/20 text-orange-400" : theftRisk.data.riskLevel === "MODERATE" ? "bg-amber-500/20 text-amber-400" : "bg-emerald-500/20 text-emerald-400"}`}>
+                      <Badge className={`border-0 text-xs ${theftRisk.data.riskLevel === "CRITICAL" ? "bg-red-500/20 text-red-400" : theftRisk.data.riskLevel === "HIGH" ? "bg-orange-500/20 text-orange-400" : theftRisk.data.riskLevel === "MODERATE" ? "bg-amber-500/20 text-amber-400" : "bg-emerald-500/20 text-emerald-400"}`}>
                         {theftRisk.data.riskLevel}
                       </Badge>
                     </div>
                     <div className="w-full h-2 rounded-full bg-slate-700 overflow-hidden">
                       <div className={`h-full rounded-full transition-all ${theftRisk.data.overallScore > 60 ? "bg-red-500" : theftRisk.data.overallScore > 30 ? "bg-amber-500" : "bg-emerald-500"}`} style={{ width: `${theftRisk.data.overallScore}%` }} />
                     </div>
-                    <p className="text-[10px] text-slate-500">Score: {theftRisk.data.overallScore}/100 — {theftRisk.data.recommendations?.[0] || "Monitor theft activity"}</p>
+                    <p className="text-xs text-slate-500">Score: {theftRisk.data.overallScore}/100 — {theftRisk.data.recommendations?.[0] || "Monitor theft activity"}</p>
                     <div className="flex flex-wrap gap-1">
                       {theftRisk.data.custodyChain?.filter((c: any) => c.required).slice(0, 3).map((c: any) => (
-                        <span key={c.step} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-400">{c.action}</span>
+                        <span key={c.step} className="text-xs px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-400">{c.action}</span>
                       ))}
                     </div>
                   </div>
@@ -395,21 +395,21 @@ export default function OperatingAuthority() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400 text-xs">SmartWay Rating</span>
-                      <Badge className={`border-0 text-[10px] ${emissions.data.smartwayRating === "SUPERIOR" ? "bg-emerald-500/20 text-emerald-400" : emissions.data.smartwayRating === "GOOD" ? "bg-cyan-500/20 text-cyan-400" : "bg-amber-500/20 text-amber-400"}`}>
+                      <Badge className={`border-0 text-xs ${emissions.data.smartwayRating === "SUPERIOR" ? "bg-emerald-500/20 text-emerald-400" : emissions.data.smartwayRating === "GOOD" ? "bg-cyan-500/20 text-cyan-400" : "bg-amber-500/20 text-amber-400"}`}>
                         {emissions.data.smartwayRating}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="p-2 rounded-lg bg-slate-900/40 text-center">
                         <p className="text-white text-sm font-bold">{emissions.data.co2Tons?.toFixed(1)}</p>
-                        <p className="text-[9px] text-slate-500">CO2 tons/load</p>
+                        <p className="text-xs text-slate-500">CO2 tons/load</p>
                       </div>
                       <div className="p-2 rounded-lg bg-slate-900/40 text-center">
                         <p className="text-white text-sm font-bold">${emissions.data.carbonOffsetCost}</p>
-                        <p className="text-[9px] text-slate-500">Offset cost</p>
+                        <p className="text-xs text-slate-500">Offset cost</p>
                       </div>
                     </div>
-                    <p className="text-[10px] text-slate-500">Intermodal could save {emissions.data.vsIntermodalPct}% emissions on long-haul lanes</p>
+                    <p className="text-xs text-slate-500">Intermodal could save {emissions.data.vsIntermodalPct}% emissions on long-haul lanes</p>
                   </div>
                 ) : (
                   <Skeleton className="h-20 w-full rounded-lg" />
@@ -518,21 +518,21 @@ export default function OperatingAuthority() {
                     <p className="text-2xl font-bold text-emerald-400">
                       {Math.round(equipment.filter((v: any) => (v.year || 0) >= 2021).length / Math.max(equipment.length, 1) * 100)}%
                     </p>
-                    <p className="text-[10px] text-slate-500">Fleet compliant</p>
+                    <p className="text-xs text-slate-500">Fleet compliant</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3 mt-3">
                   <div className="p-2 rounded-lg bg-slate-900/40 text-center">
                     <p className="text-white text-sm font-bold">{equipment.filter((v: any) => (v.year || 0) >= 2024).length}</p>
-                    <p className="text-[9px] text-emerald-400">2024+ (EPA Tier 4)</p>
+                    <p className="text-xs text-emerald-400">2024+ (EPA Tier 4)</p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/40 text-center">
                     <p className="text-white text-sm font-bold">{equipment.filter((v: any) => (v.year || 0) >= 2021 && (v.year || 0) < 2024).length}</p>
-                    <p className="text-[9px] text-amber-400">2021-2023 (Near compliant)</p>
+                    <p className="text-xs text-amber-400">2021-2023 (Near compliant)</p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/40 text-center">
                     <p className="text-white text-sm font-bold">{equipment.filter((v: any) => (v.year || 0) < 2021).length}</p>
-                    <p className="text-[9px] text-red-400">Pre-2021 (Action needed)</p>
+                    <p className="text-xs text-red-400">Pre-2021 (Action needed)</p>
                   </div>
                 </div>
                 {emissions?.data && (
@@ -602,7 +602,7 @@ export default function OperatingAuthority() {
                             <Badge className={`border-0 text-xs ${v.authoritySource === "leased" ? "bg-blue-500/20 text-blue-400" : "bg-slate-600/30 text-slate-400"}`}>
                               {v.authoritySource === "leased" ? `Leased · MC ${v.leaseMcNumber}` : "Own Authority"}
                             </Badge>
-                            <Badge className={`border-0 text-[9px] block ${epaStatus === "compliant" ? "bg-emerald-500/20 text-emerald-400" : epaStatus === "near" ? "bg-amber-500/20 text-amber-400" : "bg-red-500/20 text-red-400"}`}>
+                            <Badge className={`border-0 text-xs block ${epaStatus === "compliant" ? "bg-emerald-500/20 text-emerald-400" : epaStatus === "near" ? "bg-amber-500/20 text-amber-400" : "bg-red-500/20 text-red-400"}`}>
                               {epaStatus === "compliant" ? "EPA 2027 Ready" : epaStatus === "near" ? "Near Compliant" : "Pre-2021 — Upgrade"}
                             </Badge>
                           </div>
@@ -734,10 +734,10 @@ export default function OperatingAuthority() {
                             <p className="text-slate-500 text-xs mt-0.5">DBA: {c.dbaName}</p>
                           )}
                           <div className="flex items-center gap-3 mt-1">
-                            <Badge className={`border-0 text-[10px] ${c.allowedToOperate ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
+                            <Badge className={`border-0 text-xs ${c.allowedToOperate ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
                               {c.operatingStatus}
                             </Badge>
-                            <Badge className="border-0 text-[10px] bg-blue-500/15 text-blue-400">FMCSA Verified</Badge>
+                            <Badge className="border-0 text-xs bg-blue-500/15 text-blue-400">FMCSA Verified</Badge>
                           </div>
                         </div>
                       </div>
@@ -763,55 +763,55 @@ export default function OperatingAuthority() {
                     {/* Authority Types & Details */}
                     <div className="flex flex-wrap gap-2 mb-3">
                       {c.commonAuthority && c.commonAuthority !== "N" && (
-                        <Badge className="border-0 text-[10px] bg-purple-500/15 text-purple-400">Common Authority: {c.commonAuthority}</Badge>
+                        <Badge className="border-0 text-xs bg-purple-500/15 text-purple-400">Common Authority: {c.commonAuthority}</Badge>
                       )}
                       {c.contractAuthority && c.contractAuthority !== "N" && (
-                        <Badge className="border-0 text-[10px] bg-amber-500/15 text-amber-400">Contract Authority: {c.contractAuthority}</Badge>
+                        <Badge className="border-0 text-xs bg-amber-500/15 text-amber-400">Contract Authority: {c.contractAuthority}</Badge>
                       )}
                       {c.brokerAuthority && c.brokerAuthority !== "N" && (
-                        <Badge className="border-0 text-[10px] bg-cyan-500/15 text-cyan-400">Broker Authority: {c.brokerAuthority}</Badge>
+                        <Badge className="border-0 text-xs bg-cyan-500/15 text-cyan-400">Broker Authority: {c.brokerAuthority}</Badge>
                       )}
                       {c.hazmat && (
-                        <Badge className="border-0 text-[10px] bg-orange-500/15 text-orange-400">HAZMAT</Badge>
+                        <Badge className="border-0 text-xs bg-orange-500/15 text-orange-400">HAZMAT</Badge>
                       )}
                       {c.bipdInsurance && (
-                        <Badge className="border-0 text-[10px] bg-emerald-500/15 text-emerald-400">BIPD Insured</Badge>
+                        <Badge className="border-0 text-xs bg-emerald-500/15 text-emerald-400">BIPD Insured</Badge>
                       )}
                       {c.cargoInsurance && (
-                        <Badge className="border-0 text-[10px] bg-emerald-500/15 text-emerald-400">Cargo Insured</Badge>
+                        <Badge className="border-0 text-xs bg-emerald-500/15 text-emerald-400">Cargo Insured</Badge>
                       )}
                     </div>
 
                     {/* 2026 Carrier Vetting Intelligence */}
                     <div className="p-3 rounded-lg bg-slate-900/40 border border-slate-700/20 mb-3">
-                      <p className="text-[9px] text-slate-500 uppercase tracking-wider font-medium mb-2">2026 Carrier Intelligence</p>
+                      <p className="text-xs text-slate-500 uppercase tracking-wider font-medium mb-2">2026 Carrier Intelligence</p>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         <div className="flex items-center gap-1.5">
                           <ShieldAlert className={`w-3.5 h-3.5 ${c.safetyRating === "Satisfactory" ? "text-emerald-400" : c.safetyRating === "Conditional" ? "text-amber-400" : c.safetyRating === "Unsatisfactory" ? "text-red-400" : "text-slate-500"}`} />
                           <div>
-                            <p className="text-[9px] text-slate-500">Safety</p>
-                            <p className={`text-[10px] font-medium ${c.safetyRating === "Satisfactory" ? "text-emerald-400" : c.safetyRating === "Conditional" ? "text-amber-400" : c.safetyRating === "Unsatisfactory" ? "text-red-400" : "text-slate-400"}`}>{c.safetyRating || "Not Rated"}</p>
+                            <p className="text-xs text-slate-500">Safety</p>
+                            <p className={`text-xs font-medium ${c.safetyRating === "Satisfactory" ? "text-emerald-400" : c.safetyRating === "Conditional" ? "text-amber-400" : c.safetyRating === "Unsatisfactory" ? "text-red-400" : "text-slate-400"}`}>{c.safetyRating || "Not Rated"}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Lock className={`w-3.5 h-3.5 ${c.bipdInsurance && c.cargoInsurance ? "text-emerald-400" : c.bipdInsurance || c.cargoInsurance ? "text-amber-400" : "text-red-400"}`} />
                           <div>
-                            <p className="text-[9px] text-slate-500">Insurance</p>
-                            <p className={`text-[10px] font-medium ${c.bipdInsurance && c.cargoInsurance ? "text-emerald-400" : "text-amber-400"}`}>{c.bipdInsurance && c.cargoInsurance ? "Full Coverage" : c.bipdInsurance ? "BIPD Only" : "Incomplete"}</p>
+                            <p className="text-xs text-slate-500">Insurance</p>
+                            <p className={`text-xs font-medium ${c.bipdInsurance && c.cargoInsurance ? "text-emerald-400" : "text-amber-400"}`}>{c.bipdInsurance && c.cargoInsurance ? "Full Coverage" : c.bipdInsurance ? "BIPD Only" : "Incomplete"}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Target className={`w-3.5 h-3.5 ${c.fleetSize > 50 ? "text-emerald-400" : c.fleetSize > 10 ? "text-cyan-400" : "text-amber-400"}`} />
                           <div>
-                            <p className="text-[9px] text-slate-500">Scale</p>
-                            <p className="text-[10px] font-medium text-slate-300">{c.fleetSize > 50 ? "Large Fleet" : c.fleetSize > 10 ? "Mid Fleet" : "Small Op"}</p>
+                            <p className="text-xs text-slate-500">Scale</p>
+                            <p className="text-xs font-medium text-slate-300">{c.fleetSize > 50 ? "Large Fleet" : c.fleetSize > 10 ? "Mid Fleet" : "Small Op"}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <ShieldCheck className={`w-3.5 h-3.5 ${c.allowedToOperate ? "text-emerald-400" : "text-red-400"}`} />
                           <div>
-                            <p className="text-[9px] text-slate-500">Theft Risk</p>
-                            <p className="text-[10px] font-medium text-amber-400">Verify ID</p>
+                            <p className="text-xs text-slate-500">Theft Risk</p>
+                            <p className="text-xs font-medium text-amber-400">Verify ID</p>
                           </div>
                         </div>
                       </div>
@@ -876,46 +876,46 @@ export default function OperatingAuthority() {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                   <div className="p-3 rounded-xl bg-slate-900/50 text-center">
-                    <p className="text-[10px] text-slate-500 uppercase">Spot Rate</p>
+                    <p className="text-xs text-slate-500 uppercase">Spot Rate</p>
                     <p className="text-xl font-bold text-cyan-400">${marketIntel.data.laneIntel?.avgSpotRate}</p>
                     <div className="flex items-center justify-center gap-1 mt-0.5">
                       {marketIntel.data.spotRateTrend === "RISING" ? <ArrowUpRight className="w-3 h-3 text-red-400" /> : marketIntel.data.spotRateTrend === "DECLINING" ? <ArrowDownRight className="w-3 h-3 text-emerald-400" /> : <Minus className="w-3 h-3 text-slate-400" />}
-                      <span className="text-[10px] text-slate-500">{marketIntel.data.spotRateTrend}</span>
+                      <span className="text-xs text-slate-500">{marketIntel.data.spotRateTrend}</span>
                     </div>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/50 text-center">
-                    <p className="text-[10px] text-slate-500 uppercase">Contract Rate</p>
+                    <p className="text-xs text-slate-500 uppercase">Contract Rate</p>
                     <p className="text-xl font-bold text-blue-400">${marketIntel.data.laneIntel?.avgContractRate}</p>
                     <div className="flex items-center justify-center gap-1 mt-0.5">
                       {marketIntel.data.contractRateTrend === "RISING" ? <ArrowUpRight className="w-3 h-3 text-red-400" /> : <Minus className="w-3 h-3 text-slate-400" />}
-                      <span className="text-[10px] text-slate-500">{marketIntel.data.contractRateTrend}</span>
+                      <span className="text-xs text-slate-500">{marketIntel.data.contractRateTrend}</span>
                     </div>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/50 text-center">
-                    <p className="text-[10px] text-slate-500 uppercase">Demand</p>
+                    <p className="text-xs text-slate-500 uppercase">Demand</p>
                     <p className="text-xl font-bold text-amber-400">{marketIntel.data.laneIntel?.demandIndex}</p>
-                    <p className="text-[10px] text-slate-500">/ 100</p>
+                    <p className="text-xs text-slate-500">/ 100</p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/50 text-center">
-                    <p className="text-[10px] text-slate-500 uppercase">YoY Change</p>
+                    <p className="text-xs text-slate-500 uppercase">YoY Change</p>
                     <p className="text-xl font-bold text-white">+{marketIntel.data.yearOverYearChange}%</p>
-                    <p className="text-[10px] text-slate-500">spot rates</p>
+                    <p className="text-xs text-slate-500">spot rates</p>
                   </div>
                 </div>
                 {/* Quarterly Forecast */}
                 <div className="grid grid-cols-4 gap-2 mb-4">
                   {marketIntel.data.quarterlyForecast?.map((q: any) => (
                     <div key={q.quarter} className="p-2 rounded-lg bg-slate-900/30 text-center">
-                      <p className="text-[9px] text-slate-500 font-medium">{q.quarter}</p>
+                      <p className="text-xs text-slate-500 font-medium">{q.quarter}</p>
                       <p className="text-xs font-bold text-white mt-0.5">+{q.spotChange}%</p>
-                      <Badge className={`border-0 text-[8px] mt-0.5 ${q.capacity === "SURPLUS" ? "bg-emerald-500/20 text-emerald-400" : q.capacity === "TIGHTENING" ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"}`}>{q.capacity}</Badge>
+                      <Badge className={`border-0 text-xs mt-0.5 ${q.capacity === "SURPLUS" ? "bg-emerald-500/20 text-emerald-400" : q.capacity === "TIGHTENING" ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"}`}>{q.capacity}</Badge>
                     </div>
                   ))}
                 </div>
                 {/* Key Insights */}
                 <div className="space-y-1">
                   {marketIntel.data.keyInsights?.slice(0, 3).map((k: string, i: number) => (
-                    <div key={i} className="flex items-start gap-2 text-[11px] text-slate-400">
+                    <div key={i} className="flex items-start gap-2 text-xs text-slate-400">
                       <Zap className="w-3 h-3 text-cyan-400 mt-0.5 flex-shrink-0" />
                       <span>{k}</span>
                     </div>
@@ -942,8 +942,8 @@ export default function OperatingAuthority() {
                   {theftRisk.data.factors?.map((f: any, i: number) => (
                     <div key={i} className="mb-2">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] text-slate-400">{f.factor}</span>
-                        <span className="text-[10px] text-white font-medium">{Math.round(f.score)}</span>
+                        <span className="text-xs text-slate-400">{f.factor}</span>
+                        <span className="text-xs text-white font-medium">{Math.round(f.score)}</span>
                       </div>
                       <div className="w-full h-1 rounded-full bg-slate-700 overflow-hidden">
                         <div className={`h-full rounded-full ${f.score > 60 ? "bg-red-400" : f.score > 30 ? "bg-amber-400" : "bg-emerald-400"}`} style={{ width: `${f.score}%` }} />
@@ -951,9 +951,9 @@ export default function OperatingAuthority() {
                     </div>
                   ))}
                   <div className="mt-3 space-y-1">
-                    <p className="text-[10px] text-slate-500 uppercase font-medium">Custody Chain</p>
+                    <p className="text-xs text-slate-500 uppercase font-medium">Custody Chain</p>
                     {theftRisk.data.custodyChain?.filter((c: any) => c.required).map((c: any) => (
-                      <div key={c.step} className="flex items-center gap-2 text-[11px] text-slate-300">
+                      <div key={c.step} className="flex items-center gap-2 text-xs text-slate-300">
                         <CheckCircle className="w-3 h-3 text-emerald-400 flex-shrink-0" />
                         <span>{c.action}</span>
                       </div>
@@ -984,10 +984,10 @@ export default function OperatingAuthority() {
                     <div key={i} className="p-3 rounded-lg bg-slate-900/40 border border-slate-700/30">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-white font-semibold">{a.policy}</span>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{a.status}</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{a.status}</span>
                       </div>
-                      <p className="text-[10px] text-slate-400">{a.impact}</p>
-                      <p className="text-[10px] text-cyan-400 mt-1">{a.action}</p>
+                      <p className="text-xs text-slate-400">{a.impact}</p>
+                      <p className="text-xs text-cyan-400 mt-1">{a.action}</p>
                     </div>
                   ))}
                 </div>
@@ -1006,13 +1006,13 @@ export default function OperatingAuthority() {
                 <div className="space-y-2">
                   {seasonalCal.data.events?.slice(0, 8).map((e: any, i: number) => (
                     <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-900/30 hover:bg-slate-900/50 transition-colors">
-                      <Badge className={`border-0 text-[9px] min-w-[48px] text-center ${e.impact === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{e.impact}</Badge>
-                      <span className="text-[10px] text-slate-500 w-16 font-medium">{e.month}</span>
+                      <Badge className={`border-0 text-xs min-w-[48px] text-center ${e.impact === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{e.impact}</Badge>
+                      <span className="text-xs text-slate-500 w-16 font-medium">{e.month}</span>
                       <div className="flex-1">
                         <p className="text-xs text-white font-medium">{e.event}</p>
-                        <p className="text-[10px] text-slate-400">{e.description}</p>
+                        <p className="text-xs text-slate-400">{e.description}</p>
                       </div>
-                      <span className="text-[10px] text-cyan-400 max-w-[140px] text-right">{e.action}</span>
+                      <span className="text-xs text-cyan-400 max-w-[140px] text-right">{e.action}</span>
                     </div>
                   ))}
                 </div>
@@ -1030,34 +1030,34 @@ export default function OperatingAuthority() {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   <div className="p-3 rounded-xl bg-slate-900/50 text-center">
-                    <p className="text-[10px] text-slate-500">CO2/Load</p>
+                    <p className="text-xs text-slate-500">CO2/Load</p>
                     <p className="text-lg font-bold text-emerald-400">{emissions.data.co2Tons?.toFixed(2)}</p>
-                    <p className="text-[9px] text-slate-500">metric tons</p>
+                    <p className="text-xs text-slate-500">metric tons</p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/50 text-center">
-                    <p className="text-[10px] text-slate-500">Fuel/Load</p>
+                    <p className="text-xs text-slate-500">Fuel/Load</p>
                     <p className="text-lg font-bold text-blue-400">{emissions.data.fuelGallons?.toFixed(0)}</p>
-                    <p className="text-[9px] text-slate-500">gallons</p>
+                    <p className="text-xs text-slate-500">gallons</p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/50 text-center">
-                    <p className="text-[10px] text-slate-500">Fuel Cost</p>
+                    <p className="text-xs text-slate-500">Fuel Cost</p>
                     <p className="text-lg font-bold text-amber-400">${emissions.data.fuelCost}</p>
-                    <p className="text-[9px] text-slate-500">per load</p>
+                    <p className="text-xs text-slate-500">per load</p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/50 text-center">
-                    <p className="text-[10px] text-slate-500">SmartWay</p>
+                    <p className="text-xs text-slate-500">SmartWay</p>
                     <p className={`text-lg font-bold ${emissions.data.smartwayRating === "SUPERIOR" ? "text-emerald-400" : emissions.data.smartwayRating === "GOOD" ? "text-cyan-400" : "text-amber-400"}`}>{emissions.data.smartwayRating}</p>
-                    <p className="text-[9px] text-slate-500">rating</p>
+                    <p className="text-xs text-slate-500">rating</p>
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/50 text-center">
-                    <p className="text-[10px] text-slate-500">Carbon Offset</p>
+                    <p className="text-xs text-slate-500">Carbon Offset</p>
                     <p className="text-lg font-bold text-white">${emissions.data.carbonOffsetCost}</p>
-                    <p className="text-[9px] text-slate-500">per load</p>
+                    <p className="text-xs text-slate-500">per load</p>
                   </div>
                 </div>
                 <div className="mt-3 space-y-1">
                   {emissions.data.recommendations?.map((r: string, i: number) => (
-                    <div key={i} className="flex items-start gap-2 text-[10px] text-slate-400">
+                    <div key={i} className="flex items-start gap-2 text-xs text-slate-400">
                       <Leaf className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
                       <span>{r}</span>
                     </div>
@@ -1086,7 +1086,7 @@ export default function OperatingAuthority() {
 function AuthorityField({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div>
-      <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wider">{label}</p>
+      <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">{label}</p>
       <p className="text-white text-sm font-medium mt-0.5">{value || "—"}</p>
     </div>
   );
@@ -1136,7 +1136,7 @@ function LeaseCard({ lease, onSign, onTerminate, onUpdateCompliance }: { lease: 
           </div>
           {lease.revenueSharePercent && (
             <div className="text-right">
-              <p className="text-slate-500 text-[10px] uppercase tracking-wider">Revenue Split</p>
+              <p className="text-slate-500 text-xs uppercase tracking-wider">Revenue Split</p>
               <p className="text-white font-bold text-lg">{lease.revenueSharePercent}%</p>
             </div>
           )}
@@ -1285,7 +1285,7 @@ function CreateLeaseDialog({ open, onOpenChange, onSubmit, authorities }: { open
                   }`}
                 >
                   <p className="font-medium text-sm">{cfg.label}</p>
-                  <p className="text-[10px] mt-0.5 opacity-70">{cfg.desc}</p>
+                  <p className="text-xs mt-0.5 opacity-70">{cfg.desc}</p>
                 </button>
               ))}
             </div>
@@ -1452,7 +1452,7 @@ function FMCSALeaseDialog({ open, onOpenChange, carrier, onSubmit }: { open: boo
                   <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
                     <span>DOT {carrier.dotNumber}</span>
                     {carrier.mcNumber && <span>{carrier.mcNumber}</span>}
-                    <Badge className={`border-0 text-[9px] ${carrier.allowedToOperate ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
+                    <Badge className={`border-0 text-xs ${carrier.allowedToOperate ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
                       {carrier.operatingStatus}
                     </Badge>
                   </div>
@@ -1476,7 +1476,7 @@ function FMCSALeaseDialog({ open, onOpenChange, carrier, onSubmit }: { open: boo
                   }`}
                 >
                   <p className="font-medium text-sm">{cfg.label}</p>
-                  <p className="text-[10px] mt-0.5 opacity-70">{cfg.desc}</p>
+                  <p className="text-xs mt-0.5 opacity-70">{cfg.desc}</p>
                 </button>
               ))}
             </div>

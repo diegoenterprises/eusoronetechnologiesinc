@@ -772,7 +772,7 @@ export const driverWellnessRouter = router({
       if (!db) {
         return {
           fleetRetentionRate: 0, averageTenureMonths: 0, annualTurnoverRate: 0,
-          industryAvgTurnover: 91, costPerTurnover: 12500, estimatedAnnualSavings: 0,
+          industryAvgTurnover: 91, /* Industry benchmark — ATA/ATRI data */ costPerTurnover: 12500, /* Industry benchmark — ATA/ATRI data */ estimatedAnnualSavings: 0,
           riskDistribution: { low: 0, moderate: 0, high: 0, critical: 0 },
           turnoverPredictions: [] as { month: string; predicted: number; confidence: number }[],
           topRetentionFactors: [] as { factor: string; impact: number }[],
@@ -837,8 +837,8 @@ export const driverWellnessRouter = router({
         fleetRetentionRate,
         averageTenureMonths,
         annualTurnoverRate,
-        industryAvgTurnover: 91,
-        costPerTurnover: 12500,
+        industryAvgTurnover: 91, // Industry benchmark — ATA/ATRI data
+        costPerTurnover: 12500, // Industry benchmark — ATA/ATRI data
         estimatedAnnualSavings,
         riskDistribution,
         turnoverPredictions: [
@@ -846,6 +846,7 @@ export const driverWellnessRouter = router({
           { month: "2026-05", predicted: riskDistribution.critical + Math.round(riskDistribution.high * 0.3), confidence: 65 },
           { month: "2026-06", predicted: Math.round(riskDistribution.high * 0.2), confidence: 55 },
         ],
+        // Industry benchmark — ATA/ATRI data: known top retention factors and relative impact scores
         topRetentionFactors: [
           { factor: "Competitive Pay", impact: 92 },
           { factor: "Home Time", impact: 88 },
@@ -882,7 +883,7 @@ export const driverWellnessRouter = router({
             id: "rr-1", priority: "high", category: "safety",
             title: "Safety Refresher Training",
             description: `Safety score is ${safetyScore}/100. Enroll in advanced defensive driving course.`,
-            estimatedImpact: "high", estimatedCost: 500,
+            estimatedImpact: "high", estimatedCost: 500, // Estimate default — typical training course cost
           });
         }
 
@@ -902,7 +903,7 @@ export const driverWellnessRouter = router({
             id: "rr-3", priority: "medium", category: "recognition",
             title: "Tenure Milestone Recognition",
             description: `Driver has ${tenureMonths} months of service. Plan a recognition event.`,
-            estimatedImpact: "medium", estimatedCost: 150,
+            estimatedImpact: "medium", estimatedCost: 150, // Estimate default — recognition event cost
           });
         }
 
@@ -912,7 +913,7 @@ export const driverWellnessRouter = router({
             id: "rr-4", priority: "medium", category: "career",
             title: "Hazmat Endorsement",
             description: "Driver does not have hazmat endorsement. This could open higher-paying loads.",
-            estimatedImpact: "medium", estimatedCost: 800,
+            estimatedImpact: "medium", estimatedCost: 800, // Estimate default — hazmat endorsement cost
           });
         }
 
@@ -1257,6 +1258,7 @@ export const driverWellnessRouter = router({
         }));
       }
 
+      // Program config — reward values are configurable program defaults (no incentive_programs table)
       return {
         programs: [
           { id: "ip-1", name: "Safe Driver Bonus", description: "Quarterly bonus for zero incidents and clean inspections", reward: "$500/quarter", currentProgress: 78, targetMetric: "0 incidents + clean inspections", endDate: "2026-03-31", status: "active" },
@@ -1276,19 +1278,14 @@ export const driverWellnessRouter = router({
     .input(z.object({ driverId: z.string().optional(), period: z.enum(["month", "quarter", "year"]).optional() }).optional())
     .query(({ ctx, input }) => {
       const driverId = resolveDriverIdString(ctx, input?.driverId);
+      // No payouts table — return empty earnings until incentive_payouts table is implemented
       return {
         driverId,
         period: input?.period || "year",
-        totalEarnings: 5850,
-        breakdown: [
-          { programId: "ip-1", programName: "Safe Driver Bonus", earned: 2000, payouts: [{ amount: 500, date: "2025-03-31" }, { amount: 500, date: "2025-06-30" }, { amount: 500, date: "2025-09-30" }, { amount: 500, date: "2025-12-31" }] },
-          { programId: "ip-2", programName: "Fuel Efficiency Champion", earned: 1400, payouts: [{ amount: 200, date: "2025-08-01" }, { amount: 200, date: "2025-09-01" }, { amount: 200, date: "2025-10-01" }, { amount: 200, date: "2025-11-01" }, { amount: 200, date: "2025-12-01" }, { amount: 200, date: "2026-01-01" }, { amount: 200, date: "2026-02-01" }] },
-          { programId: "ip-3", programName: "On-Time Delivery Streak", earned: 900, payouts: [{ amount: 300, date: "2025-07-15" }, { amount: 300, date: "2025-10-22" }, { amount: 300, date: "2026-01-08" }] },
-          { programId: "ip-5", programName: "Mileage Milestone", earned: 1000, payouts: [{ amount: 1000, date: "2025-11-15" }] },
-          { programId: "ip-4", programName: "Referral Bonus", earned: 2500, payouts: [{ amount: 2500, date: "2025-09-20" }] },
-        ],
-        pendingPayouts: 700,
-        nextPayoutDate: "2026-03-31",
+        totalEarnings: 0,
+        breakdown: [],
+        pendingPayouts: 0,
+        nextPayoutDate: null,
       };
     }),
 
@@ -1426,11 +1423,8 @@ export const driverWellnessRouter = router({
         homeLocation: "On file",
         currentSchedule: { daysOut, daysHome, pattern: `${daysOut}/${daysHome}` },
         optimizedSchedule: { daysOut: Math.max(daysOut - 2, 5), daysHome: daysHome + 1, pattern: `${Math.max(daysOut - 2, 5)}/${daysHome + 1}` },
-        potentialRoutes: [
-          { id: "hr-1", route: "Regional Loop A", distance: 400, estimatedHomeTime: `${daysHome + 1} days/2 weeks`, payImpact: -120, rating: 4.5 },
-          { id: "hr-2", route: "Regional Loop B", distance: 270, estimatedHomeTime: `${daysHome + 2} days/2 weeks`, payImpact: -280, rating: 4.2 },
-          { id: "hr-3", route: "Long Haul Loop", distance: 780, estimatedHomeTime: `${daysHome} days/2 weeks`, payImpact: 150, rating: 3.8 },
-        ],
+        // No route planning table — return empty until route_options table is implemented
+        potentialRoutes: [],
         nextHomeDate: new Date(Date.now() + daysOut * 86400000).toISOString().slice(0, 10),
         averageHomeTimePercentage,
         targetHomeTimePercentage: 28,

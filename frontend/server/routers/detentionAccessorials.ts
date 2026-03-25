@@ -21,6 +21,9 @@ type RawSqlRow = Record<string, string | number | null>;
 // RATE SCHEDULES & CONFIG
 // ════════════════════════════════════════════════════════════════════════════
 
+// Industry-standard detention escalation tiers (OOIDA / TIA / FMCSA recommended ranges).
+// These represent well-established industry norms that do not change with platform data.
+// Override per-company via customRatePerHour in the calculation endpoint.
 const DETENTION_TIERS = [
   { label: "Standard", minHours: 0, maxHours: 4, ratePerHour: 75 },
   { label: "Extended", minHours: 4, maxHours: 8, ratePerHour: 100 },
@@ -28,6 +31,8 @@ const DETENTION_TIERS = [
   { label: "Multi-Day", minHours: 24, maxHours: 999, ratePerHour: 150 },
 ];
 
+// Industry-standard demurrage escalation tiers (port/rail industry norms).
+// Override per-company via customPerDiemRate in the calculation endpoint.
 const DEMURRAGE_TIERS = [
   { label: "Day 1-2", minDays: 0, maxDays: 2, perDiemRate: 150 },
   { label: "Day 3-5", minDays: 2, maxDays: 5, perDiemRate: 200 },
@@ -35,6 +40,8 @@ const DEMURRAGE_TIERS = [
   { label: "Day 11+", minDays: 10, maxDays: 999, perDiemRate: 350 },
 ];
 
+// Industry-standard accessorial charge catalog — charge types and default rates.
+// These are reference data (standard charge categories); actual rates are per-agreement.
 const ACCESSORIAL_CATALOG_DEFAULTS = [
   { code: "DET", name: "Detention", category: "time", defaultRate: 75, unit: "per hour", freeTime: 120, description: "Waiting time beyond free time at pickup or delivery" },
   { code: "DEM", name: "Demurrage", category: "time", defaultRate: 150, unit: "per day", freeTime: 48, description: "Container/trailer held beyond free time at port or rail" },

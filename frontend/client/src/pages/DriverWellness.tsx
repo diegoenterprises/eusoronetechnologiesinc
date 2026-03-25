@@ -159,8 +159,8 @@ function OverviewTab() {
                 ))}
               </div>
               <div className="flex justify-between mt-1">
-                <span className="text-[10px] text-slate-600">Jan</span>
-                <span className="text-[10px] text-slate-600">Dec</span>
+                <span className="text-xs text-slate-600">Jan</span>
+                <span className="text-xs text-slate-600">Dec</span>
               </div>
             </div>
           </CardContent>
@@ -235,7 +235,7 @@ function OverviewTab() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-white">{c.count}</span>
-                    <Badge variant="outline" className={cn("text-[10px]",
+                    <Badge variant="outline" className={cn("text-xs",
                       c.severity === "high" ? "text-red-400 border-red-500/30" :
                       c.severity === "moderate" ? "text-yellow-400 border-yellow-500/30" :
                       "text-emerald-400 border-emerald-500/30"
@@ -268,7 +268,7 @@ function OverviewTab() {
                       <Moon className="w-3.5 h-3.5 text-cyan-400" />
                       <span className="text-xs text-slate-300">{h.sleepHours}h</span>
                     </div>
-                    <Badge variant="outline" className="text-[10px] text-slate-400 border-slate-600">{h.stressLevel}</Badge>
+                    <Badge variant="outline" className="text-xs text-slate-400 border-slate-600">{h.stressLevel}</Badge>
                   </div>
                 </div>
               ))}
@@ -369,7 +369,7 @@ function FatigueTab() {
                 <p className="text-xs text-slate-400">{alert.reason}</p>
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-xs text-slate-500">{alert.route}</span>
-                  {alert.acknowledged && <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30">Acknowledged</Badge>}
+                  {alert.acknowledged && <Badge variant="outline" className="text-xs text-emerald-400 border-emerald-500/30">Acknowledged</Badge>}
                 </div>
               </div>
             ))}
@@ -569,7 +569,7 @@ function RetentionTab() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-semibold text-white">{rec.title}</span>
-                      <Badge variant="outline" className={cn("text-[10px]",
+                      <Badge variant="outline" className={cn("text-xs",
                         rec.priority === "high" ? "text-red-400 border-red-500/30" :
                         rec.priority === "medium" ? "text-yellow-400 border-yellow-500/30" :
                         "text-slate-400 border-slate-600"
@@ -722,8 +722,8 @@ function TrainingTab() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="text-sm font-semibold text-white">{prog.title}</h3>
-                    <Badge variant="outline" className="text-[10px] text-cyan-400 border-cyan-500/30 capitalize">{prog.category}</Badge>
-                    {prog.status === "completed" && <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30">Completed</Badge>}
+                    <Badge variant="outline" className="text-xs text-cyan-400 border-cyan-500/30 capitalize">{prog.category}</Badge>
+                    {prog.status === "completed" && <Badge variant="outline" className="text-xs text-emerald-400 border-emerald-500/30">Completed</Badge>}
                   </div>
                   <p className="text-xs text-slate-400">{prog.description}</p>
                   <div className="flex gap-4 mt-2 text-xs text-slate-500">
@@ -821,7 +821,7 @@ function BenefitsTab() {
                     <span className="text-emerald-400">Employer: ${b.employerContribution}/mo</span>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30">{b.status}</Badge>
+                <Badge variant="outline" className="text-xs text-emerald-400 border-emerald-500/30">{b.status}</Badge>
               </div>
             </CardContent>
           </Card>
@@ -968,7 +968,7 @@ function RecognitionTab() {
                   <span className="text-sm text-white">{rec.fromName}</span>
                   <ChevronRight className="w-3 h-3 text-slate-600" />
                   <span className="text-sm text-emerald-400">{rec.toName}</span>
-                  <Badge variant="outline" className="text-[10px] text-cyan-400 border-cyan-500/30 capitalize ml-auto">{rec.category.replace("_", " ")}</Badge>
+                  <Badge variant="outline" className="text-xs text-cyan-400 border-cyan-500/30 capitalize ml-auto">{rec.category.replace("_", " ")}</Badge>
                 </div>
                 <p className="text-xs text-slate-400 ml-8">{rec.message}</p>
                 <div className="flex items-center gap-2 mt-2 ml-8">
@@ -1121,14 +1121,14 @@ function PhysicalHealthTab() {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-white">{h?.fitness?.bmi}</p>
             <p className="text-xs text-slate-400">BMI</p>
-            <Badge variant="outline" className="text-[10px] text-yellow-400 border-yellow-500/30 mt-1">{h?.fitness?.bmiCategory}</Badge>
+            <Badge variant="outline" className="text-xs text-yellow-400 border-yellow-500/30 mt-1">{h?.fitness?.bmiCategory}</Badge>
           </CardContent>
         </Card>
         <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-white">{h?.fitness?.bloodPressure}</p>
             <p className="text-xs text-slate-400">Blood Pressure</p>
-            <Badge variant="outline" className="text-[10px] text-yellow-400 border-yellow-500/30 mt-1">{h?.fitness?.bloodPressureCategory}</Badge>
+            <Badge variant="outline" className="text-xs text-yellow-400 border-yellow-500/30 mt-1">{h?.fitness?.bloodPressureCategory}</Badge>
           </CardContent>
         </Card>
         <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>

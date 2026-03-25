@@ -139,7 +139,7 @@ export default function VesselBookingDetail() {
                   <div className="flex flex-col items-center min-w-[55px]">
                     <div
                       className={cn(
-                        "w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold border-2",
+                        "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border-2",
                         active
                           ? "bg-cyan-500 border-cyan-400 text-white"
                           : done
@@ -151,7 +151,7 @@ export default function VesselBookingDetail() {
                     </div>
                     <span
                       className={cn(
-                        "text-[8px] mt-1 text-center leading-tight",
+                        "text-xs mt-1 text-center leading-tight",
                         active
                           ? "text-cyan-400 font-medium"
                           : done

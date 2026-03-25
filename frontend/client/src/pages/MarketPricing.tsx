@@ -172,7 +172,7 @@ export default function MarketPricing() {
                 <h1 className={`text-xl font-semibold tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>{t('marketPricing.title')}</h1>
                 <div className="flex items-center gap-2 mt-0.5">
                   <div className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
-                  <p className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>{source}</p>
+                  <p className={`text-xs ${isLight ? "text-slate-500" : "text-white/40"}`}>{source}</p>
                 </div>
               </div>
             </div>
@@ -199,7 +199,7 @@ export default function MarketPricing() {
                 {showSearchResults && debouncedSearch.length >= 2 && (
                   <div className={`absolute right-0 top-full mt-2 w-96 max-h-[60vh] overflow-y-auto rounded-2xl border shadow-2xl z-50 ${isLight ? "bg-white border-slate-200 shadow-slate-200/50" : "bg-[#12121a] border-white/[0.08] shadow-black/40"}`}>
                     <div className={`sticky top-0 px-4 py-2.5 border-b flex items-center justify-between ${isLight ? "bg-white/95 border-slate-100 backdrop-blur" : "bg-[#12121a]/95 border-white/[0.04] backdrop-blur"}`}>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>
+                      <span className={`text-xs font-bold uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>
                         {searchQuery?.isLoading ? "Searching..." : `${searchResults.length} result${searchResults.length !== 1 ? "s" : ""}`}
                         {searchTotalApi > 0 && <span className="text-[#1473FF]"> · {searchTotalApi} from API</span>}
                       </span>
@@ -209,7 +209,7 @@ export default function MarketPricing() {
                       <div className="py-8 text-center">
                         <Search className={`w-6 h-6 mx-auto mb-2 ${isLight ? "text-slate-300" : "text-white/15"}`} />
                         <p className={`text-xs ${isLight ? "text-slate-400" : "text-white/30"}`}>No results for "{debouncedSearch}"</p>
-                        <p className={`text-[10px] mt-1 ${isLight ? "text-slate-300" : "text-white/20"}`}>Try a ticker symbol like AAPL, TSLA, GC, CL</p>
+                        <p className={`text-xs mt-1 ${isLight ? "text-slate-300" : "text-white/20"}`}>Try a ticker symbol like AAPL, TSLA, GC, CL</p>
                       </div>
                     ) : (
                       searchResults.map((r: any, idx: number) => (
@@ -222,17 +222,17 @@ export default function MarketPricing() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className={`text-xs font-semibold ${isLight ? "text-slate-800" : "text-white/90"}`}>{r.name}</span>
-                              {r.source === "api" && <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-[#1473FF]/10 text-[#1473FF] uppercase">API</span>}
+                              {r.source === "api" && <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-[#1473FF]/10 text-[#1473FF] uppercase">API</span>}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className={`text-[10px] font-mono ${isLight ? "text-slate-400" : "text-white/30"}`}>{r.symbol}</span>
-                              <span className={`text-[10px] ${isLight ? "text-slate-300" : "text-white/20"}`}>·</span>
-                              <span className={`text-[10px] ${isLight ? "text-slate-300" : "text-white/20"}`}>{r.category}</span>
+                              <span className={`text-xs font-mono ${isLight ? "text-slate-400" : "text-white/30"}`}>{r.symbol}</span>
+                              <span className={`text-xs ${isLight ? "text-slate-300" : "text-white/20"}`}>·</span>
+                              <span className={`text-xs ${isLight ? "text-slate-300" : "text-white/20"}`}>{r.category}</span>
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0">
                             {r.price > 0 && <span className={`text-xs font-bold tabular-nums ${isLight ? "text-slate-800" : "text-white/80"}`}>${r.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: r.price >= 100 ? 2 : 4 })}</span>}
-                            {r.changePercent !== 0 && <div className={`text-[10px] font-semibold tabular-nums ${r.changePercent > 0 ? "text-emerald-500" : "text-red-400"}`}>{r.changePercent > 0 ? "+" : ""}{Number(r.changePercent).toFixed(2)}%</div>}
+                            {r.changePercent !== 0 && <div className={`text-xs font-semibold tabular-nums ${r.changePercent > 0 ? "text-emerald-500" : "text-red-400"}`}>{r.changePercent > 0 ? "+" : ""}{Number(r.changePercent).toFixed(2)}%</div>}
                           </div>
                         </button>
                       ))
@@ -250,13 +250,13 @@ export default function MarketPricing() {
           {/* Market Breadth bar */}
           {breadth && (
             <div className={`flex items-center gap-4 mt-4 pt-3 border-t ${isLight ? "border-slate-100" : "border-white/[0.04]"}`}>
-              <span className={`text-[10px] uppercase tracking-wider font-medium ${isLight ? "text-slate-400" : "text-white/30"}`}>Market Breadth</span>
+              <span className={`text-xs uppercase tracking-wider font-medium ${isLight ? "text-slate-400" : "text-white/30"}`}>Market Breadth</span>
               <div className="flex-1 h-2 rounded-full overflow-hidden flex">
                 <div className="bg-emerald-500 h-full transition-all duration-500" style={{ width: `${(breadth.advancing / (breadth.advancing + breadth.declining + breadth.unchanged)) * 100}%` }} />
                 <div className={`h-full transition-all duration-500 ${isLight ? "bg-slate-200" : "bg-white/10"}`} style={{ width: `${(breadth.unchanged / (breadth.advancing + breadth.declining + breadth.unchanged)) * 100}%` }} />
                 <div className="bg-red-500 h-full transition-all duration-500" style={{ width: `${(breadth.declining / (breadth.advancing + breadth.declining + breadth.unchanged)) * 100}%` }} />
               </div>
-              <div className="flex items-center gap-3 text-[11px] tabular-nums">
+              <div className="flex items-center gap-3 text-xs tabular-nums">
                 <span className="text-emerald-500 font-medium">+{breadth.advancing}</span>
                 <span className={isLight ? "text-slate-400" : "text-white/30"}>{breadth.unchanged}</span>
                 <span className="text-red-400 font-medium">-{breadth.declining}</span>
@@ -328,13 +328,13 @@ export default function MarketPricing() {
                 <div className="flex items-center gap-3">
                   <h2 className={`text-lg font-bold ${isLight ? "text-slate-900" : "text-white"}`}>{quoteData.name}</h2>
                   <span className={`text-xs font-mono px-2 py-0.5 rounded-lg ${isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/40"}`}>{quoteData.symbol}</span>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg ${quoteData.category === "External" ? "bg-[#1473FF]/10 text-[#1473FF]" : isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/40"}`}>{quoteData.category}</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${quoteData.category === "External" ? "bg-[#1473FF]/10 text-[#1473FF]" : isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/40"}`}>{quoteData.category}</span>
                 </div>
                 <div className="flex items-end gap-4 mt-2">
                   <span className={`text-3xl font-bold tabular-nums ${isLight ? "text-slate-900" : "text-white"}`}>
                     {quoteData.price != null ? `$${Number(quoteData.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: quoteData.price >= 100 ? 2 : 4 })}` : "N/A"}
                   </span>
-                  <span className={`text-[10px] mb-1 ${isLight ? "text-slate-400" : "text-white/30"}`}>{quoteData.unit}</span>
+                  <span className={`text-xs mb-1 ${isLight ? "text-slate-400" : "text-white/30"}`}>{quoteData.unit}</span>
                   {quoteData.changePercent !== 0 && (
                     <span className={`text-sm font-bold tabular-nums mb-0.5 ${quoteData.changePercent > 0 ? "text-emerald-500" : "text-red-400"}`}>
                       {quoteData.changePercent > 0 ? "+" : ""}{Number(quoteData.changePercent).toFixed(2)}%
@@ -352,7 +352,7 @@ export default function MarketPricing() {
                     { label: "Change", value: quoteData.change },
                   ].map(d => (
                     <div key={d.label}>
-                      <p className={`text-[9px] uppercase tracking-wider font-medium ${isLight ? "text-slate-400" : "text-white/25"}`}>{d.label}</p>
+                      <p className={`text-xs uppercase tracking-wider font-medium ${isLight ? "text-slate-400" : "text-white/25"}`}>{d.label}</p>
                       <p className={`text-xs font-semibold tabular-nums mt-0.5 ${isLight ? "text-slate-700" : "text-white/70"}`}>
                         {typeof d.value === "number" ? (d.value >= 100 ? d.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Number(d.value).toFixed(4)) : d.value || "—"}
                       </p>
@@ -362,12 +362,12 @@ export default function MarketPricing() {
                 {/* Source badges */}
                 {quoteData.sources && (
                   <div className="flex items-center gap-2 mt-3">
-                    <span className={`text-[9px] uppercase tracking-wider font-medium ${isLight ? "text-slate-400" : "text-white/25"}`}>Sources:</span>
-                    {quoteData.sources.commodityPriceAPI && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[#1473FF]/10 text-[#1473FF]">CommodityPriceAPI ${Number(quoteData.sources.commodityPriceAPI).toFixed(2)}</span>}
-                    {quoteData.sources.yahooFinance && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-400">Yahoo ${Number(quoteData.sources.yahooFinance).toFixed(2)}</span>}
-                    {quoteData.sources.fredEia && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400">FRED/EIA ${Number(quoteData.sources.fredEia).toFixed(2)}</span>}
-                    {quoteData.sources.seed && <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg ${isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/30"}`}>Seed ${Number(quoteData.sources.seed).toFixed(2)}</span>}
-                    <span className={`text-[10px] ml-auto ${isLight ? "text-slate-400" : "text-white/20"}`}>Best: {quoteData.bestSource}</span>
+                    <span className={`text-xs uppercase tracking-wider font-medium ${isLight ? "text-slate-400" : "text-white/25"}`}>Sources:</span>
+                    {quoteData.sources.commodityPriceAPI && <span className="text-xs font-semibold px-2 py-0.5 rounded-lg bg-[#1473FF]/10 text-[#1473FF]">CommodityPriceAPI ${Number(quoteData.sources.commodityPriceAPI).toFixed(2)}</span>}
+                    {quoteData.sources.yahooFinance && <span className="text-xs font-semibold px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-400">Yahoo ${Number(quoteData.sources.yahooFinance).toFixed(2)}</span>}
+                    {quoteData.sources.fredEia && <span className="text-xs font-semibold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400">FRED/EIA ${Number(quoteData.sources.fredEia).toFixed(2)}</span>}
+                    {quoteData.sources.seed && <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/30"}`}>Seed ${Number(quoteData.sources.seed).toFixed(2)}</span>}
+                    <span className={`text-xs ml-auto ${isLight ? "text-slate-400" : "text-white/20"}`}>Best: {quoteData.bestSource}</span>
                   </div>
                 )}
               </div>
@@ -424,9 +424,9 @@ export default function MarketPricing() {
                             </h3>
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className={`text-[10px] font-mono ${isLight ? "text-slate-400" : "text-white/30"}`}>{c.symbol}</span>
+                            <span className={`text-xs font-mono ${isLight ? "text-slate-400" : "text-white/30"}`}>{c.symbol}</span>
                             {catCfg && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-md font-medium" style={{ backgroundColor: catCfg.color + "15", color: catCfg.color }}>
+                              <span className="text-xs px-1.5 py-0.5 rounded-md font-medium" style={{ backgroundColor: catCfg.color + "15", color: catCfg.color }}>
                                 {c.category}
                               </span>
                             )}
@@ -441,7 +441,7 @@ export default function MarketPricing() {
                           <div className={`text-xl font-bold tabular-nums tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>
                             {fmtPrice(c.price, c.unit)}
                           </div>
-                          <div className={`text-[10px] mt-0.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>{c.unit}</div>
+                          <div className={`text-xs mt-0.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>{c.unit}</div>
                         </div>
                         <div className="text-right">
                           <div className={`flex items-center gap-1 text-sm font-semibold tabular-nums ${ch.color}`}>
@@ -471,19 +471,19 @@ export default function MarketPricing() {
                                   { label: "Change", value: `${Number(c.change) >= 0 ? "+" : ""}${Number(c.change || 0).toFixed(Number(c.price) >= 100 ? 2 : 4)}` },
                                 ].map(row => (
                                   <div key={row.label} className="flex items-center justify-between">
-                                    <span className={`text-[10px] uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>{row.label}</span>
+                                    <span className={`text-xs uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>{row.label}</span>
                                     <span className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{row.value}</span>
                                   </div>
                                 ))}
                               </div>
                               <div className={`flex items-center justify-between mt-3`}>
-                                <div className={`flex items-center gap-2 text-[10px] ${isLight ? "text-slate-400" : "text-white/20"}`}>
+                                <div className={`flex items-center gap-2 text-xs ${isLight ? "text-slate-400" : "text-white/20"}`}>
                                   <Activity className="w-3 h-3" />
                                   {intel?.source || source}
                                 </div>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setSelectedQuoteSymbol(c.symbol); }}
-                                  className="text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white hover:shadow-lg hover:shadow-[#1473FF]/20 transition-all"
+                                  className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white hover:shadow-lg hover:shadow-[#1473FF]/20 transition-all"
                                 >
                                   View Full Quote
                                 </button>
@@ -519,7 +519,7 @@ export default function MarketPricing() {
                       <div key={g.symbol} className={`flex items-center justify-between py-1.5 ${isLight ? "" : ""}`}>
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-semibold ${isLight ? "text-slate-800" : "text-white/90"}`}>{g.name}</span>
-                          <span className={`text-[10px] font-mono ${isLight ? "text-slate-400" : "text-white/30"}`}>{g.symbol}</span>
+                          <span className={`text-xs font-mono ${isLight ? "text-slate-400" : "text-white/30"}`}>{g.symbol}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <span className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-800" : "text-white/90"}`}>{fmtPrice(g.price, g.unit)}</span>
@@ -540,7 +540,7 @@ export default function MarketPricing() {
                       <div key={l.symbol} className={`flex items-center justify-between py-1.5 ${isLight ? "" : ""}`}>
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-semibold ${isLight ? "text-slate-800" : "text-white/90"}`}>{l.name}</span>
-                          <span className={`text-[10px] font-mono ${isLight ? "text-slate-400" : "text-white/30"}`}>{l.symbol}</span>
+                          <span className={`text-xs font-mono ${isLight ? "text-slate-400" : "text-white/30"}`}>{l.symbol}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <span className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-800" : "text-white/90"}`}>{fmtPrice(l.price, l.unit)}</span>

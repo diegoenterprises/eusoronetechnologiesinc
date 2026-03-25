@@ -825,7 +825,7 @@ export default function RegisterCatalyst() {
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-blue-400" />
                 <span className="text-white font-semibold text-sm">Loading Equipment Capabilities</span>
-                <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400">Tanker Fleet</Badge>
+                <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400">Tanker Fleet</Badge>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="space-y-2">

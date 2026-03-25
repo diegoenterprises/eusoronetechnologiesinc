@@ -197,16 +197,16 @@ export default function DockManagement() {
             {tasStatus?.connected ? (
               <div className="flex items-center gap-1.5 text-emerald-400">
                 <Wifi className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-medium">TAS Connected</span>
+                <span className="text-xs font-medium">TAS Connected</span>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 text-slate-500">
                 <WifiOff className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-medium">TAS Offline</span>
+                <span className="text-xs font-medium">TAS Offline</span>
               </div>
             )}
             {tasStatus?.provider && (
-              <span className={cn("text-[10px] px-2 py-0.5 rounded-md font-medium",
+              <span className={cn("text-xs px-2 py-0.5 rounded-md font-medium",
                 tasStatus.provider === "DTN" ? "bg-blue-500/10 text-blue-400" :
                 tasStatus.provider === "Buckeye" ? "bg-cyan-500/10 text-cyan-400" :
                 tasStatus.provider === "Dearman" ? "bg-orange-500/10 text-orange-400" :
@@ -219,22 +219,22 @@ export default function DockManagement() {
               </span>
             )}
             {!tasStatus?.provider && (
-              <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.04] text-slate-400">No TAS configured</span>
+              <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.04] text-slate-400">No TAS configured</span>
             )}
           </div>
           {tasStatus?.lastSync && (
-            <span className="text-[10px] text-slate-500 flex items-center gap-1">
+            <span className="text-xs text-slate-500 flex items-center gap-1">
               <Clock className="w-3 h-3" />Last sync: {new Date(tasStatus.lastSync).toLocaleTimeString()}
             </span>
           )}
         </div>
         <div className="flex gap-2">
           <Button size="sm" onClick={() => setShowRunTicket(true)}
-            className="h-7 px-3 text-[10px] rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 shadow-none">
+            className="h-7 px-3 text-xs rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 shadow-none">
             <Droplets className="w-3 h-3 mr-1" />Run Ticket
           </Button>
           <Button size="sm" onClick={() => setShowBOL(true)}
-            className="h-7 px-3 text-[10px] rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-white/[0.1] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.08] shadow-none">
+            className="h-7 px-3 text-xs rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-white/[0.1] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.08] shadow-none">
             <FileText className="w-3 h-3 mr-1" />Generate BOL
           </Button>
         </div>
@@ -245,31 +245,31 @@ export default function DockManagement() {
         <div className={cn("p-4", cell)}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center"><CheckCircle className="w-5 h-5 text-emerald-400" /></div>
-            <div><p className="text-xl font-bold text-emerald-400">{available}</p><p className="text-[10px] text-slate-500">Available</p></div>
+            <div><p className="text-xl font-bold text-emerald-400">{available}</p><p className="text-xs text-slate-500">Available</p></div>
           </div>
         </div>
         <div className={cn("p-4", cell)}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center"><Package className="w-5 h-5 text-blue-400" /></div>
-            <div><p className="text-xl font-bold text-blue-400">{inUse}</p><p className="text-[10px] text-slate-500">In Use</p></div>
+            <div><p className="text-xl font-bold text-blue-400">{inUse}</p><p className="text-xs text-slate-500">In Use</p></div>
           </div>
         </div>
         <div className={cn("p-4", cell)}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center"><Wrench className="w-5 h-5 text-red-400" /></div>
-            <div><p className="text-xl font-bold text-red-400">{maint}</p><p className="text-[10px] text-slate-500">Maintenance</p></div>
+            <div><p className="text-xl font-bold text-red-400">{maint}</p><p className="text-xs text-slate-500">Maintenance</p></div>
           </div>
         </div>
         <div className={cn("p-4", cell)}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center"><Gauge className="w-5 h-5 text-purple-400" /></div>
-            <div><p className="text-xl font-bold text-purple-400">{utilization}%</p><p className="text-[10px] text-slate-500">Utilization</p></div>
+            <div><p className="text-xl font-bold text-purple-400">{utilization}%</p><p className="text-xs text-slate-500">Utilization</p></div>
           </div>
         </div>
         <div className={cn("p-4", cell)}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#1473FF]/10 flex items-center justify-center"><BarChart3 className="w-5 h-5 text-[#1473FF]" /></div>
-            <div><p className="text-xl font-bold text-[#1473FF]">{bayStats.throughputToday || 0}</p><p className="text-[10px] text-slate-500">Throughput Today</p></div>
+            <div><p className="text-xl font-bold text-[#1473FF]">{bayStats.throughputToday || 0}</p><p className="text-xs text-slate-500">Throughput Today</p></div>
           </div>
         </div>
       </div>
@@ -278,7 +278,7 @@ export default function DockManagement() {
       <div className="flex gap-1">
         {(["grid", "list", "maintenance"] as const).map(v => (
           <button key={v} onClick={() => setTab(v)} className={cn(
-            "text-[11px] px-3 py-1.5 rounded-lg font-medium transition-colors",
+            "text-xs px-3 py-1.5 rounded-lg font-medium transition-colors",
             tab === v ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-slate-50 dark:bg-white/[0.03] text-slate-500 hover:text-slate-300"
           )}>{v === "grid" ? "Facility Layout" : v === "list" ? "Dock Details" : "Maintenance"}</button>
         ))}
@@ -292,7 +292,7 @@ export default function DockManagement() {
             <div className="flex items-center gap-2 mb-5">
               <Container className="w-4 h-4 text-[#1473FF]" />
               <span className="text-sm font-medium text-slate-800 dark:text-white">Facility Layout</span>
-              <span className="text-[10px] text-slate-600 ml-auto">
+              <span className="text-xs text-slate-600 ml-auto">
                 {available} available | {inUse} active | {maint} maintenance
               </span>
             </div>
@@ -324,31 +324,31 @@ export default function DockManagement() {
                       <Icon className={cn("w-4 h-4", st.cls)} />
                     </div>
 
-                    <p className={cn("text-[10px] font-medium mb-1", st.cls)}>{st.label}</p>
+                    <p className={cn("text-xs font-medium mb-1", st.cls)}>{st.label}</p>
 
                     {dock.status === "in_use" && dock.currentLoad && (
                       <div className="mt-2 space-y-1">
-                        <p className="text-[10px] text-slate-300 truncate">{dock.currentLoad.catalyst || "Loading..."}</p>
-                        <p className="text-[9px] text-slate-500">{dock.currentLoad.product}</p>
+                        <p className="text-xs text-slate-300 truncate">{dock.currentLoad.catalyst || "Loading..."}</p>
+                        <p className="text-xs text-slate-500">{dock.currentLoad.product}</p>
                         {dock.currentLoad.progress != null && (
                           <div className="mt-1.5">
                             <div className="h-1 bg-slate-100 dark:bg-white/[0.06] rounded-full overflow-hidden">
                               <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${dock.currentLoad.progress}%` }} />
                             </div>
-                            <p className="text-[9px] text-blue-400 mt-0.5">{dock.currentLoad.progress}%</p>
+                            <p className="text-xs text-blue-400 mt-0.5">{dock.currentLoad.progress}%</p>
                           </div>
                         )}
                       </div>
                     )}
 
                     {dock.status === "maintenance" && (
-                      <p className="text-[9px] text-red-300/60 mt-1">{dock.maintenanceReason || "Scheduled"}</p>
+                      <p className="text-xs text-red-300/60 mt-1">{dock.maintenanceReason || "Scheduled"}</p>
                     )}
 
                     {dock.status === "available" && dock.products && (
                       <div className="flex flex-wrap gap-1 mt-2">
                         {(dock.products as string[]).slice(0, 2).map((p: string) => (
-                          <span key={p} className="text-[8px] text-slate-500 bg-slate-50 dark:bg-white/[0.04] px-1.5 py-0.5 rounded">{p}</span>
+                          <span key={p} className="text-xs text-slate-500 bg-slate-50 dark:bg-white/[0.04] px-1.5 py-0.5 rounded">{p}</span>
                         ))}
                       </div>
                     )}
@@ -362,7 +362,7 @@ export default function DockManagement() {
               {Object.entries(DOCK_STATUS).map(([key, val]) => (
                 <div key={key} className="flex items-center gap-1.5">
                   <div className={cn("w-2 h-2 rounded-full", val.cls.replace("text-", "bg-"))} />
-                  <span className="text-[10px] text-slate-500">{val.label}</span>
+                  <span className="text-xs text-slate-500">{val.label}</span>
                 </div>
               ))}
             </div>
@@ -386,16 +386,16 @@ export default function DockManagement() {
                   </div>
                   <div className="flex gap-2">
                     {dock.status === "available" && (
-                      <Button size="sm" onClick={() => startMut.mutate({ bayId: dock.id })} className="h-8 px-3 text-[11px] rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-slate-800 dark:text-white border-0 shadow-none">
+                      <Button size="sm" onClick={() => startMut.mutate({ bayId: dock.id })} className="h-8 px-3 text-xs rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-slate-800 dark:text-white border-0 shadow-none">
                         <Play className="w-3 h-3 mr-1" />Start Loading
                       </Button>
                     )}
                     {dock.status === "in_use" && (
                       <>
-                        <Button size="sm" variant="ghost" onClick={() => pauseMut.mutate({ bayId: dock.id })} className="h-8 px-3 text-[11px] text-amber-400 hover:bg-amber-400/10">
+                        <Button size="sm" variant="ghost" onClick={() => pauseMut.mutate({ bayId: dock.id })} className="h-8 px-3 text-xs text-amber-400 hover:bg-amber-400/10">
                           <Pause className="w-3 h-3 mr-1" />Pause
                         </Button>
-                        <Button size="sm" onClick={() => completeMut.mutate({ bayId: dock.id })} className="h-8 px-3 text-[11px] rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/20 shadow-none">
+                        <Button size="sm" onClick={() => completeMut.mutate({ bayId: dock.id })} className="h-8 px-3 text-xs rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/20 shadow-none">
                           <CheckCircle className="w-3 h-3 mr-1" />Complete
                         </Button>
                       </>
@@ -405,19 +405,19 @@ export default function DockManagement() {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-3">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Products</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">Products</p>
                     <p className="text-xs text-slate-800 dark:text-white mt-1">{(dock.products || []).join(", ") || "General"}</p>
                   </div>
                   <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-3">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Flow Rate</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">Flow Rate</p>
                     <p className="text-xs text-slate-800 dark:text-white mt-1">{dock.flowRate || "---"} {dock.flowRateUnit || "gpm"}</p>
                   </div>
                   <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-3">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Today's Loads</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">Today's Loads</p>
                     <p className="text-xs text-slate-800 dark:text-white mt-1">0</p>
                   </div>
                   <div className="bg-slate-50 dark:bg-white/[0.03] rounded-xl p-3">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Avg Load Time</p>
+                    <p className="text-xs text-slate-500 uppercase tracking-wider">Avg Load Time</p>
                     <p className="text-xs text-slate-800 dark:text-white mt-1">{bayStats.avgLoadTime || "---"} min</p>
                   </div>
                 </div>
@@ -447,12 +447,12 @@ export default function DockManagement() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-slate-500">{(tank.currentLevel || 0).toLocaleString()} / {(tank.capacity || 0).toLocaleString()} {tank.unit}</span>
-                      <span className={cn("text-[10px] font-semibold",
+                      <span className="text-xs text-slate-500">{(tank.currentLevel || 0).toLocaleString()} / {(tank.capacity || 0).toLocaleString()} {tank.unit}</span>
+                      <span className={cn("text-xs font-semibold",
                         tank.percentFull > 70 ? "text-emerald-400" : tank.percentFull > 40 ? "text-blue-400" : "text-amber-400"
                       )}>{tank.percentFull}%</span>
                     </div>
-                    {tank.alert && <p className="text-[9px] text-amber-400 mt-1">{tank.alert}</p>}
+                    {tank.alert && <p className="text-xs text-amber-400 mt-1">{tank.alert}</p>}
                   </div>
                 ))}
               </div>
@@ -464,7 +464,7 @@ export default function DockManagement() {
       {/* List View */}
       {tab === "list" && (
         <div className={cn("divide-y divide-slate-200/60 dark:divide-white/[0.03]", cell)}>
-          <div className="grid grid-cols-6 gap-3 px-5 py-3 text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+          <div className="grid grid-cols-6 gap-3 px-5 py-3 text-xs text-slate-500 uppercase tracking-wider font-semibold">
             <span>Dock</span><span>Status</span><span>Driver</span><span>Product</span><span>Progress</span><span>Est. Complete</span>
           </div>
           {racks.length === 0 ? (
@@ -479,7 +479,7 @@ export default function DockManagement() {
             return (
               <div key={dock.id} className="grid grid-cols-6 gap-3 px-5 py-3.5 items-center hover:bg-white/[0.01]">
                 <span className="text-xs font-medium text-slate-800 dark:text-white">{dock.name || dock.id}</span>
-                <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md w-fit", st.cls, st.bg.split(" ")[0])}>{st.label}</span>
+                <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md w-fit", st.cls, st.bg.split(" ")[0])}>{st.label}</span>
                 <span className="text-xs text-slate-300">{dock.currentLoad?.catalyst || "---"}</span>
                 <span className="text-xs text-slate-400">{dock.currentLoad?.product || "---"}</span>
                 <div>
@@ -488,9 +488,9 @@ export default function DockManagement() {
                       <div className="h-1.5 bg-slate-100 dark:bg-white/[0.06] rounded-full overflow-hidden flex-1">
                         <div className="h-full bg-blue-400 rounded-full" style={{ width: `${dock.currentLoad.progress}%` }} />
                       </div>
-                      <span className="text-[10px] text-blue-400 font-medium">{dock.currentLoad.progress}%</span>
+                      <span className="text-xs text-blue-400 font-medium">{dock.currentLoad.progress}%</span>
                     </div>
-                  ) : <span className="text-[10px] text-slate-600">---</span>}
+                  ) : <span className="text-xs text-slate-600">---</span>}
                 </div>
                 <span className="text-xs text-slate-500">{dock.expectedAvailable || (dock.currentLoad ? "~15 min" : "---")}</span>
               </div>
@@ -518,10 +518,10 @@ export default function DockManagement() {
                   <div>
                     <p className="text-sm font-medium text-slate-800 dark:text-white">{dock.name || dock.id}</p>
                     <p className="text-xs text-slate-400">{dock.maintenanceReason || "Scheduled maintenance"}</p>
-                    {dock.expectedAvailable && <p className="text-[10px] text-slate-500 mt-0.5">Expected available: {dock.expectedAvailable}</p>}
+                    {dock.expectedAvailable && <p className="text-xs text-slate-500 mt-0.5">Expected available: {dock.expectedAvailable}</p>}
                   </div>
                 </div>
-                <Button size="sm" onClick={() => returnToServiceMut.mutate({ bayId: dock.id })} className="h-8 px-3 text-[11px] rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/20 shadow-none">
+                <Button size="sm" onClick={() => returnToServiceMut.mutate({ bayId: dock.id })} className="h-8 px-3 text-xs rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/20 shadow-none">
                   <RotateCcw className="w-3 h-3 mr-1" />Return to Service
                 </Button>
               </div>
@@ -541,15 +541,15 @@ export default function DockManagement() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Active Bays</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Active Bays</label>
                 <Input type="number" defaultValue={racks.length || 6} placeholder="Number of bays" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Default Products</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Default Products</label>
                 <Input defaultValue="Gasoline, Diesel, Biodiesel, Jet Fuel" placeholder="Comma-separated" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Operating Hours</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Operating Hours</label>
                 <div className="flex gap-2">
                   <Input defaultValue="06:00" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
                   <span className="text-slate-500 self-center">to</span>
@@ -557,9 +557,9 @@ export default function DockManagement() {
                 </div>
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">TAS Provider</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">TAS Provider</label>
                 <Input defaultValue={tasStatus?.provider || ""} placeholder="DTN, Buckeye, Dearman..." className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" readOnly />
-                <p className="text-[10px] text-slate-500 mt-1">Manage TAS connections in Integrations</p>
+                <p className="text-xs text-slate-500 mt-1">Manage TAS connections in Integrations</p>
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
@@ -610,15 +610,15 @@ export default function DockManagement() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Appointment ID <span className="text-red-400">*</span></label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Appointment ID <span className="text-red-400">*</span></label>
                 <Input value={bolForm.appointmentId} onChange={e => setBolForm(p => ({ ...p, appointmentId: e.target.value }))} placeholder="APT-2026-XXXX" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">PO Number</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">PO Number</label>
                 <Input value={bolForm.poNumber} onChange={e => setBolForm(p => ({ ...p, poNumber: e.target.value }))} placeholder="Purchase order #" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Product <span className="text-red-400">*</span></label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Product <span className="text-red-400">*</span></label>
                 {inventory.length > 0 ? (
                   <select value={bolForm.productName} onChange={e => setBolForm(p => ({ ...p, productName: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-slate-800 dark:text-white outline-none">
                     <option value="">Select product...</option>
@@ -631,25 +631,25 @@ export default function DockManagement() {
                 )}
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Quantity (gallons) <span className="text-red-400">*</span></label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Quantity (gallons) <span className="text-red-400">*</span></label>
                 <Input type="number" value={bolForm.quantity} onChange={e => setBolForm(p => ({ ...p, quantity: e.target.value }))} placeholder="e.g. 8500" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Trailer Number</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Trailer Number</label>
                 <Input value={bolForm.trailerNumber} onChange={e => setBolForm(p => ({ ...p, trailerNumber: e.target.value }))} placeholder="e.g. TRL-1234" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Seal Number</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Seal Number</label>
                 <Input value={bolForm.sealNumber} onChange={e => setBolForm(p => ({ ...p, sealNumber: e.target.value }))} placeholder="e.g. SEAL-5678" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
               {(bolForm.bolType === "hazmat" || bolForm.bolType === "chemical") && (
                 <div className="col-span-2">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">UN Number <span className="text-amber-500">(AI will auto-populate hazmat info)</span></label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">UN Number <span className="text-amber-500">(AI will auto-populate hazmat info)</span></label>
                   <Input value={bolForm.unNumber} onChange={e => setBolForm(p => ({ ...p, unNumber: e.target.value }))} placeholder="e.g. UN1203 (Gasoline)" className="rounded-xl bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30" />
                 </div>
               )}
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Freight Charges</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Freight Charges</label>
                 <select value={bolForm.freightCharges} onChange={e => setBolForm(p => ({ ...p, freightCharges: e.target.value as any }))} className="w-full px-4 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-slate-800 dark:text-white outline-none">
                   <option value="prepaid">Prepaid</option>
                   <option value="collect">Collect</option>
@@ -657,11 +657,11 @@ export default function DockManagement() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Destination</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Destination</label>
                 <Input value={bolForm.destination} onChange={e => setBolForm(p => ({ ...p, destination: e.target.value }))} placeholder="Delivery address" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
               <div className="col-span-2">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Special Instructions</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1.5">Special Instructions</label>
                 <Input value={bolForm.specialInstructions} onChange={e => setBolForm(p => ({ ...p, specialInstructions: e.target.value }))} placeholder="Liftgate required, appointment time, freeze protect, etc." className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
             </div>
@@ -722,11 +722,11 @@ export default function DockManagement() {
             {/* SECTION 1: Basic Info + Product */}
             <div className="grid grid-cols-4 gap-3">
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Ticket Date <span className="text-red-400">*</span></label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Ticket Date <span className="text-red-400">*</span></label>
                 <DatePicker value={runTicketForm.ticketDate} onChange={(v) => setRunTicketForm(p => ({ ...p, ticketDate: v }))} />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Product <span className="text-red-400">*</span></label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Product <span className="text-red-400">*</span></label>
                 <select value={runTicketForm.productType} onChange={e => setRunTicketForm(p => ({ ...p, productType: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-slate-800 dark:text-white outline-none h-9">
                   <option value="Crude Oil">UN1267 - Crude Oil</option>
                   <option value="Condensate">Condensate</option>
@@ -735,11 +735,11 @@ export default function DockManagement() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">R Number</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">R Number</label>
                 <Input value={runTicketForm.rNumber} onChange={e => setRunTicketForm(p => ({ ...p, rNumber: e.target.value }))} placeholder="e.g. 476875" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Quality</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Quality</label>
                 <select value={runTicketForm.qualityNote} onChange={e => setRunTicketForm(p => ({ ...p, qualityNote: e.target.value }))} className="w-full px-3 py-2 rounded-xl text-sm bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-slate-800 dark:text-white outline-none h-9">
                   <option value="">Select...</option>
                   <option value="Good Oil">Good Oil</option>
@@ -751,38 +751,38 @@ export default function DockManagement() {
 
             {/* SECTION 2: Driver / Equipment */}
             <div className={cn("rounded-xl border p-3", "bg-blue-50/50 dark:bg-blue-500/5 border-blue-200 dark:border-blue-500/20")}>
-              <h3 className="text-[10px] font-semibold text-blue-700 dark:text-blue-400 mb-2 uppercase tracking-wider">Driver / Equipment</h3>
+              <h3 className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-2 uppercase tracking-wider">Driver / Equipment</h3>
               <div className="grid grid-cols-4 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Driver Name</label>
+                  <label className="text-xs text-slate-500 block mb-1">Driver Name</label>
                   <Input value={runTicketForm.driverName} onChange={e => setRunTicketForm(p => ({ ...p, driverName: e.target.value }))} placeholder="Jeff Black" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Driver #</label>
+                  <label className="text-xs text-slate-500 block mb-1">Driver #</label>
                   <Input value={runTicketForm.driverNumber} onChange={e => setRunTicketForm(p => ({ ...p, driverNumber: e.target.value }))} placeholder="84" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Truck #</label>
+                  <label className="text-xs text-slate-500 block mb-1">Truck #</label>
                   <Input value={runTicketForm.truckNumber} onChange={e => setRunTicketForm(p => ({ ...p, truckNumber: e.target.value }))} placeholder="3424 8085" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Trailer #</label>
+                  <label className="text-xs text-slate-500 block mb-1">Trailer #</label>
                   <Input value={runTicketForm.trailerNumber} onChange={e => setRunTicketForm(p => ({ ...p, trailerNumber: e.target.value }))} placeholder="1432" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Trucked By</label>
+                  <label className="text-xs text-slate-500 block mb-1">Trucked By</label>
                   <Input value={runTicketForm.transporterName} onChange={e => setRunTicketForm(p => ({ ...p, transporterName: e.target.value }))} placeholder="Carrier company" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Driver ON Time</label>
+                  <label className="text-xs text-slate-500 block mb-1">Driver ON Time</label>
                   <Input type="time" value={runTicketForm.driverOnTime} onChange={e => setRunTicketForm(p => ({ ...p, driverOnTime: e.target.value }))} className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Driver OFF Time</label>
+                  <label className="text-xs text-slate-500 block mb-1">Driver OFF Time</label>
                   <Input type="time" value={runTicketForm.driverOffTime} onChange={e => setRunTicketForm(p => ({ ...p, driverOffTime: e.target.value }))} className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Wait Time (hrs)</label>
+                  <label className="text-xs text-slate-500 block mb-1">Wait Time (hrs)</label>
                   <Input type="number" step="0.5" value={runTicketForm.waitTimeHours} onChange={e => setRunTicketForm(p => ({ ...p, waitTimeHours: e.target.value }))} placeholder="0" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/30" />
                 </div>
               </div>
@@ -790,38 +790,38 @@ export default function DockManagement() {
 
             {/* SECTION 3: Origin (Lease/Plant) */}
             <div className={cn("rounded-xl border p-3", "bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20")}>
-              <h3 className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 mb-2 uppercase tracking-wider">Origin (Lease / Plant)</h3>
+              <h3 className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2 uppercase tracking-wider">Origin (Lease / Plant)</h3>
               <div className="grid grid-cols-4 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Operator / Lease Plant</label>
+                  <label className="text-xs text-slate-500 block mb-1">Operator / Lease Plant</label>
                   <Input value={runTicketForm.operatorLeasePlant} onChange={e => setRunTicketForm(p => ({ ...p, operatorLeasePlant: e.target.value }))} placeholder="Hagerman" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-emerald-200 dark:border-emerald-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">For the Account Of</label>
+                  <label className="text-xs text-slate-500 block mb-1">For the Account Of</label>
                   <Input value={runTicketForm.forAccountOf} onChange={e => setRunTicketForm(p => ({ ...p, forAccountOf: e.target.value }))} placeholder="E.E.P" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-emerald-200 dark:border-emerald-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Lease #</label>
+                  <label className="text-xs text-slate-500 block mb-1">Lease #</label>
                   <Input value={runTicketForm.leaseNumber} onChange={e => setRunTicketForm(p => ({ ...p, leaseNumber: e.target.value }))} placeholder="HAGE0003" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-emerald-200 dark:border-emerald-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Operator</label>
+                  <label className="text-xs text-slate-500 block mb-1">Operator</label>
                   <Input value={runTicketForm.operatorName} onChange={e => setRunTicketForm(p => ({ ...p, operatorName: e.target.value }))} placeholder="Somgas LP" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-emerald-200 dark:border-emerald-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Shipper</label>
+                  <label className="text-xs text-slate-500 block mb-1">Shipper</label>
                   <Input value={runTicketForm.shipperName} onChange={e => setRunTicketForm(p => ({ ...p, shipperName: e.target.value }))} placeholder="CP Energy" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-emerald-200 dark:border-emerald-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">County</label>
+                  <label className="text-xs text-slate-500 block mb-1">County</label>
                   <Input value={runTicketForm.county} onChange={e => setRunTicketForm(p => ({ ...p, county: e.target.value }))} placeholder="Grayson" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-emerald-200 dark:border-emerald-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">State</label>
+                  <label className="text-xs text-slate-500 block mb-1">State</label>
                   <Input value={runTicketForm.stateProvince} onChange={e => setRunTicketForm(p => ({ ...p, stateProvince: e.target.value }))} placeholder="TX" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-emerald-200 dark:border-emerald-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Customer</label>
+                  <label className="text-xs text-slate-500 block mb-1">Customer</label>
                   <Input value={runTicketForm.nameOfCompany} onChange={e => setRunTicketForm(p => ({ ...p, nameOfCompany: e.target.value }))} placeholder="Company name" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-emerald-200 dark:border-emerald-500/30" />
                 </div>
               </div>
@@ -829,30 +829,30 @@ export default function DockManagement() {
 
             {/* SECTION 4: Tank & Gauge Readings */}
             <div className={cn("rounded-xl border p-3", "bg-amber-50/50 dark:bg-amber-500/5 border-amber-200 dark:border-amber-500/20")}>
-              <h3 className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 mb-2 uppercase tracking-wider">Tank / Gauge / Measurements</h3>
+              <h3 className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2 uppercase tracking-wider">Tank / Gauge / Measurements</h3>
               <div className="grid grid-cols-6 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Tank #</label>
+                  <label className="text-xs text-slate-500 block mb-1">Tank #</label>
                   <Input value={runTicketForm.tankNumber} onChange={e => setRunTicketForm(p => ({ ...p, tankNumber: e.target.value }))} placeholder="3" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Tank Size (BBL)</label>
+                  <label className="text-xs text-slate-500 block mb-1">Tank Size (BBL)</label>
                   <Input type="number" value={runTicketForm.tankSize} onChange={e => setRunTicketForm(p => ({ ...p, tankSize: e.target.value }))} placeholder="500" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Meter OFF</label>
+                  <label className="text-xs text-slate-500 block mb-1">Meter OFF</label>
                   <Input type="number" value={runTicketForm.meterOff} onChange={e => setRunTicketForm(p => ({ ...p, meterOff: e.target.value }))} className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Meter ON</label>
+                  <label className="text-xs text-slate-500 block mb-1">Meter ON</label>
                   <Input type="number" value={runTicketForm.meterOn} onChange={e => setRunTicketForm(p => ({ ...p, meterOn: e.target.value }))} className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Meter Factor</label>
+                  <label className="text-xs text-slate-500 block mb-1">Meter Factor</label>
                   <Input type="number" step="0.001" value={runTicketForm.meterFactor} onChange={e => setRunTicketForm(p => ({ ...p, meterFactor: e.target.value }))} className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Seal ON / OFF</label>
+                  <label className="text-xs text-slate-500 block mb-1">Seal ON / OFF</label>
                   <div className="flex gap-1">
                     <Input value={runTicketForm.sealOn} onChange={e => setRunTicketForm(p => ({ ...p, sealOn: e.target.value }))} placeholder="On" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30 w-1/2" />
                     <Input value={runTicketForm.sealOff} onChange={e => setRunTicketForm(p => ({ ...p, sealOff: e.target.value }))} placeholder="Off" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30 w-1/2" />
@@ -862,52 +862,52 @@ export default function DockManagement() {
               {/* Gauge readings (FT / IN) + Temps */}
               <div className="grid grid-cols-6 gap-3 mt-3">
                 <div className="col-span-2">
-                  <label className="text-[10px] text-slate-500 block mb-1">Open/High Gauge (FT' IN")</label>
+                  <label className="text-xs text-slate-500 block mb-1">Open/High Gauge (FT' IN")</label>
                   <div className="flex gap-1">
                     <Input type="number" value={runTicketForm.openGaugeFt} onChange={e => setRunTicketForm(p => ({ ...p, openGaugeFt: e.target.value }))} placeholder="FT" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30 w-1/2" />
                     <Input type="number" value={runTicketForm.openGaugeIn} onChange={e => setRunTicketForm(p => ({ ...p, openGaugeIn: e.target.value }))} placeholder="IN" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30 w-1/2" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Open Temp (F)</label>
+                  <label className="text-xs text-slate-500 block mb-1">Open Temp (F)</label>
                   <Input type="number" value={runTicketForm.openTemp} onChange={e => setRunTicketForm(p => ({ ...p, openTemp: e.target.value }))} placeholder="60" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-[10px] text-slate-500 block mb-1">Close/Low Gauge (FT' IN")</label>
+                  <label className="text-xs text-slate-500 block mb-1">Close/Low Gauge (FT' IN")</label>
                   <div className="flex gap-1">
                     <Input type="number" value={runTicketForm.closeGaugeFt} onChange={e => setRunTicketForm(p => ({ ...p, closeGaugeFt: e.target.value }))} placeholder="FT" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30 w-1/2" />
                     <Input type="number" value={runTicketForm.closeGaugeIn} onChange={e => setRunTicketForm(p => ({ ...p, closeGaugeIn: e.target.value }))} placeholder="IN" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30 w-1/2" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Close Temp (F)</label>
+                  <label className="text-xs text-slate-500 block mb-1">Close Temp (F)</label>
                   <Input type="number" value={runTicketForm.closeTemp} onChange={e => setRunTicketForm(p => ({ ...p, closeTemp: e.target.value }))} placeholder="58" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
               </div>
               {/* Observed Measurements */}
               <div className="grid grid-cols-6 gap-3 mt-3">
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Obs Gravity <span className="text-red-400">*</span></label>
+                  <label className="text-xs text-slate-500 block mb-1">Obs Gravity <span className="text-red-400">*</span></label>
                   <Input type="number" step="0.1" value={runTicketForm.obsGravity} onChange={e => setRunTicketForm(p => ({ ...p, obsGravity: e.target.value }))} placeholder="29" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Obs Temp (F) <span className="text-red-400">*</span></label>
+                  <label className="text-xs text-slate-500 block mb-1">Obs Temp (F) <span className="text-red-400">*</span></label>
                   <Input type="number" step="0.1" value={runTicketForm.obsTemperature} onChange={e => setRunTicketForm(p => ({ ...p, obsTemperature: e.target.value }))} placeholder="60" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Gravity @60F</label>
+                  <label className="text-xs text-slate-500 block mb-1">Gravity @60F</label>
                   <Input type="number" step="0.1" value={runTicketForm.gravityAt60F} onChange={e => setRunTicketForm(p => ({ ...p, gravityAt60F: e.target.value }))} placeholder="50.3" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">BS&W % <span className="text-red-400">*</span></label>
+                  <label className="text-xs text-slate-500 block mb-1">BS&W % <span className="text-red-400">*</span></label>
                   <Input type="number" step="0.01" value={runTicketForm.bsw} onChange={e => setRunTicketForm(p => ({ ...p, bsw: e.target.value }))} placeholder="0.90" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Gross BBL</label>
+                  <label className="text-xs text-slate-500 block mb-1">Gross BBL</label>
                   <Input type="number" step="0.01" value={runTicketForm.grossBarrels} onChange={e => setRunTicketForm(p => ({ ...p, grossBarrels: e.target.value }))} placeholder="182.20" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 block mb-1">Net BBL</label>
+                  <label className="text-xs text-slate-500 block mb-1">Net BBL</label>
                   <Input type="number" step="0.01" value={runTicketForm.netBarrels} onChange={e => setRunTicketForm(p => ({ ...p, netBarrels: e.target.value }))} placeholder="150" className="rounded-lg h-8 text-sm bg-white dark:bg-white/[0.04] border-amber-200 dark:border-amber-500/30" />
                 </div>
               </div>
@@ -916,19 +916,19 @@ export default function DockManagement() {
             {/* SECTION 5: Movement / Destination */}
             <div className="grid grid-cols-4 gap-3">
               <div>
-                <label className="text-[10px] text-slate-500 block mb-1">Destination Station</label>
+                <label className="text-xs text-slate-500 block mb-1">Destination Station</label>
                 <Input value={runTicketForm.destinationStation} onChange={e => setRunTicketForm(p => ({ ...p, destinationStation: e.target.value }))} placeholder="Barcas - Cushing" className="rounded-lg h-8 text-sm bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 block mb-1">One-Way Miles</label>
+                <label className="text-xs text-slate-500 block mb-1">One-Way Miles</label>
                 <Input type="number" value={runTicketForm.destinationMiles} onChange={e => setRunTicketForm(p => ({ ...p, destinationMiles: e.target.value }))} placeholder="350" className="rounded-lg h-8 text-sm bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 block mb-1">Purchaser</label>
+                <label className="text-xs text-slate-500 block mb-1">Purchaser</label>
                 <Input value={runTicketForm.purchaserName} onChange={e => setRunTicketForm(p => ({ ...p, purchaserName: e.target.value }))} placeholder="First purchaser" className="rounded-lg h-8 text-sm bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 block mb-1">Comments</label>
+                <label className="text-xs text-slate-500 block mb-1">Comments</label>
                 <Input value={runTicketForm.comment} onChange={e => setRunTicketForm(p => ({ ...p, comment: e.target.value }))} placeholder="29G 60F, Good Oil" className="rounded-lg h-8 text-sm bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
               </div>
             </div>

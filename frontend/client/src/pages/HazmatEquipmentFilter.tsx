@@ -130,27 +130,27 @@ export default function HazmatEquipmentFilter() {
                   <div className="flex items-center gap-4 px-5 py-4">
                     <div className={cn("w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0 border-2", eq.available ? "border-green-500/30 bg-green-500/10" : "border-slate-500/30 bg-slate-500/10")}>
                       <Truck className={cn("w-5 h-5", eq.available ? "text-green-500" : "text-slate-400")} />
-                      <span className={cn("text-[8px] font-bold mt-0.5", eq.available ? "text-green-500" : "text-slate-400")}>{eq.unitNumber}</span>
+                      <span className={cn("text-xs font-bold mt-0.5", eq.available ? "text-green-500" : "text-slate-400")}>{eq.unitNumber}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{eq.unitNumber} — {eq.type}</p>
-                        <Badge className={cn("text-[9px] border", eq.available ? "bg-green-500/15 text-green-400 border-green-500/30" : "bg-slate-500/15 text-slate-400 border-slate-500/30")}>{eq.available ? "Available" : "In Use"}</Badge>
-                        <Badge className={cn("text-[9px] border", insp.bg, insp.color, "border-current/20")}>{insp.label}</Badge>
+                        <Badge className={cn("text-xs border", eq.available ? "bg-green-500/15 text-green-400 border-green-500/30" : "bg-slate-500/15 text-slate-400 border-slate-500/30")}>{eq.available ? "Available" : "In Use"}</Badge>
+                        <Badge className={cn("text-xs border", insp.bg, insp.color, "border-current/20")}>{insp.label}</Badge>
                       </div>
-                      <div className="flex items-center gap-3 text-[10px] flex-wrap">
+                      <div className="flex items-center gap-3 text-xs flex-wrap">
                         <span className={cn(isLight ? "text-slate-500" : "text-slate-400")}><Settings className="w-3 h-3 inline mr-0.5" /> {eq.spec}</span>
                         <span className={cn(isLight ? "text-slate-500" : "text-slate-400")}><Gauge className="w-3 h-3 inline mr-0.5" /> {eq.capacity}</span>
                         <span className={cn(isLight ? "text-slate-500" : "text-slate-400")}><MapPin className="w-3 h-3 inline mr-0.5" /> {eq.location}</span>
                       </div>
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {eq.products.map((p) => (
-                          <span key={p} className={cn("text-[9px] px-2 py-0.5 rounded-md", isLight ? "bg-slate-100 text-slate-500" : "bg-slate-700/50 text-slate-400")}>{p}</span>
+                          <span key={p} className={cn("text-xs px-2 py-0.5 rounded-md", isLight ? "bg-slate-100 text-slate-500" : "bg-slate-700/50 text-slate-400")}>{p}</span>
                         ))}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                      <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
                         <Calendar className="w-3 h-3 inline mr-0.5" /> Next: {new Date(eq.nextInspection).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                       </p>
                     </div>

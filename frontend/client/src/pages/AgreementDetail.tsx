@@ -164,7 +164,7 @@ export default function AgreementDetail() {
           { label: "Duration", value: fmt(ag.contractDuration || "—"), icon: <Calendar className="w-3.5 h-3.5 text-purple-500" /> },
         ].map(item => (
           <div key={item.label} className={cl}>
-            <div className="flex items-center gap-1.5 mb-1">{item.icon}<span className="text-[10px] uppercase text-slate-400 font-bold">{item.label}</span></div>
+            <div className="flex items-center gap-1.5 mb-1">{item.icon}<span className="text-xs uppercase text-slate-400 font-bold">{item.label}</span></div>
             <p className={cn("font-bold", vl)}>{item.value}</p>
           </div>
         ))}
@@ -178,7 +178,7 @@ export default function AgreementDetail() {
           { label: "Cargo Insurance", value: fmtCurrency(ag.cargoInsuranceRequired) },
         ].map(item => (
           <div key={item.label} className={cl}>
-            <span className="text-[10px] uppercase text-slate-400 font-bold block mb-1">{item.label}</span>
+            <span className="text-xs uppercase text-slate-400 font-bold block mb-1">{item.label}</span>
             <p className={cn("font-bold text-sm", vl)}>{item.value}</p>
           </div>
         ))}

@@ -114,7 +114,7 @@ export default function TodaySchedule() {
             {[
               { icon: <CheckCircle className="w-5 h-5 text-green-400" />, bg: "bg-green-500/15", value: `${completed}/${schedule.length}`, label: "Completed", color: "text-green-400" },
               { icon: <Clock className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/15", value: `${hoursRemaining}h`, label: "HOS Left", color: "text-blue-400" },
-              { icon: <Navigation className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/15", value: "287 mi", label: "Remaining", color: "text-purple-400" },
+              { icon: <Navigation className="w-5 h-5 text-purple-400" />, bg: "bg-purple-500/15", value: load?.miles ? `${Math.round(load.miles)} mi` : "\u2014", label: "Remaining", color: "text-purple-400" },
             ].map((s) => (
               <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
                 <CardContent className="p-4">
@@ -122,7 +122,7 @@ export default function TodaySchedule() {
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                     <div>
                       <p className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}</p>
-                      <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                      <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -202,13 +202,13 @@ export default function TodaySchedule() {
                           <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{item.location}</p>
                         </div>
                         {item.loadNumber && (
-                          <Badge className={cn("mt-2 text-[9px]", cfg.bg, cfg.color, "border-current/20")}>
+                          <Badge className={cn("mt-2 text-xs", cfg.bg, cfg.color, "border-current/20")}>
                             {item.loadNumber}
                           </Badge>
                         )}
                         {isCurrent && (
                           <div className="mt-2">
-                            <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-[10px]">
+                            <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-xs">
                               In Progress
                             </Badge>
                           </div>

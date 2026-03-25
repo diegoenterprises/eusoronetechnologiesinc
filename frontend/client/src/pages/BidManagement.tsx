@@ -96,7 +96,7 @@ export default function BidManagement() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">EusoBid</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
               <Gavel className="w-3 h-3 text-blue-500" />
-              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Command Center</span>
+              <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">Command Center</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>Bid pipeline, win analytics, and market intelligence</p>
@@ -119,7 +119,7 @@ export default function BidManagement() {
           <div key={k.l} className={cn("rounded-2xl p-3 bg-gradient-to-br border", L ? `${k.b} border-slate-200/60` : `${k.b} border-slate-700/30`)}>
             <k.I className={cn("w-4 h-4 mb-1", k.c)} />
             {ld ? <Skeleton className="h-6 w-10" /> : <p className={cn("text-xl font-bold", k.c)}>{k.v}</p>}
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{k.l}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{k.l}</p>
           </div>
         ))}
       </div>
@@ -129,14 +129,14 @@ export default function BidManagement() {
         <div className={cn("rounded-xl border p-3", L ? "bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200" : "bg-gradient-to-r from-purple-500/5 to-blue-500/5 border-purple-500/20")}>
           <div className="flex items-center gap-2 mb-2">
             <Shield className="w-3.5 h-3.5 text-purple-400" />
-            <span className={cn("text-[10px] font-bold uppercase tracking-wider", L ? "text-purple-600" : "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent")}>ESANG AI Bid Intelligence</span>
-            <span className={cn("ml-auto text-[10px]", L ? "text-slate-500" : "text-slate-500")}>
+            <span className={cn("text-xs font-bold uppercase tracking-wider", L ? "text-purple-600" : "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent")}>ESANG AI Bid Intelligence</span>
+            <span className={cn("ml-auto text-xs", L ? "text-slate-500" : "text-slate-500")}>
               Trend: <span className={mlDemand.data.trend === "RISING" ? "text-green-400 font-bold" : mlDemand.data.trend === "DECLINING" ? "text-red-400 font-bold" : "text-slate-400 font-bold"}>{mlDemand.data.trend}</span>
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
             {mlDemand.data.topLanes.slice(0, 5).map((lane: any, i: number) => (
-              <span key={i} className={cn("text-[10px] px-2 py-1 rounded-lg border", L ? "bg-white border-slate-200 text-slate-600" : "bg-slate-800/50 border-slate-700/30 text-slate-300")}>
+              <span key={i} className={cn("text-xs px-2 py-1 rounded-lg border", L ? "bg-white border-slate-200 text-slate-600" : "bg-slate-800/50 border-slate-700/30 text-slate-300")}>
                 <span className="font-bold">{lane.lane}</span>
                 <span className="text-slate-400 ml-1">{lane.volume} loads</span>
                 <span className={`ml-1 ${lane.trend === "RISING" ? "text-green-400" : lane.trend === "DECLINING" ? "text-red-400" : "text-slate-400"}`}>{lane.trend === "RISING" ? "↑" : lane.trend === "DECLINING" ? "↓" : "→"}</span>
@@ -198,7 +198,7 @@ export default function BidManagement() {
                         <p className={cn("font-bold text-xs", L ? "text-slate-800" : "text-white")}>#{load.loadNumber || `L-${String(load.id).slice(0,5)}`}</p>
                         <span className="text-xs text-slate-400">{load.distance || "—"} mi</span>
                       </div>
-                      <p className="text-[10px] text-slate-400">{typeof load.origin === "object" ? `${load.origin?.city || ""}, ${load.origin?.state || ""}` : load.origin} → {typeof load.destination === "object" ? `${load.destination?.city || ""}, ${load.destination?.state || ""}` : load.destination}</p>
+                      <p className="text-xs text-slate-400">{typeof load.origin === "object" ? `${load.origin?.city || ""}, ${load.origin?.state || ""}` : load.origin} → {typeof load.destination === "object" ? `${load.destination?.city || ""}, ${load.destination?.state || ""}` : load.destination}</p>
                       <div className="flex items-center gap-2">
                         <Input type="number" placeholder="$" value={bidAmount[load.id] || ""} onChange={(e: any) => setBidAmount(prev => ({ ...prev, [load.id]: e.target.value }))} className={cn("flex-1 rounded-lg h-8 text-xs", L ? "bg-white border-slate-200" : "bg-slate-900/50 border-slate-700")} />
                         <Button size="sm" variant="outline" className={cn("rounded-lg h-8 px-2", L ? "border-purple-200 text-purple-600" : "bg-purple-500/15 border-purple-500/30 text-purple-400")} onClick={() => analyzeMutation.mutate({ loadId: load.id, bidAmount: parseFloat(bidAmount[load.id] || "0") })}>
@@ -327,7 +327,7 @@ export default function BidManagement() {
                   <div key={k.l} className={cellCls}>
                     <div className="flex items-center gap-2 mb-1">
                       <k.I className={cn("w-3.5 h-3.5", k.c)} />
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wider">{k.l}</span>
+                      <span className="text-xs text-slate-400 uppercase tracking-wider">{k.l}</span>
                     </div>
                     {ld ? <Skeleton className="h-6 w-12 rounded" /> : <p className={cn("text-lg font-bold", k.c)}>{k.v}</p>}
                   </div>
@@ -362,19 +362,19 @@ export default function BidManagement() {
                       const hWon = m.count > 0 ? Math.round(((m.won || 0) / m.count) * hTotal) : 0;
                       return (
                         <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                          <span className="text-[9px] text-slate-400 font-bold">{m.count}</span>
+                          <span className="text-xs text-slate-400 font-bold">{m.count}</span>
                           <div className="w-full flex flex-col items-center">
                             <div className={cn("w-full rounded-t-md transition-all duration-500", L ? "bg-slate-200" : "bg-slate-700")} style={{ height: `${hTotal - hWon}%`, minHeight: "2px" }} />
                             <div className="w-full rounded-b-md bg-gradient-to-t from-green-500 to-emerald-400 transition-all duration-500" style={{ height: `${hWon}%`, minHeight: m.won > 0 ? "4px" : "0px" }} />
                           </div>
-                          <span className="text-[8px] text-slate-500">{(m.month || "").slice(5)}</span>
+                          <span className="text-xs text-slate-500">{(m.month || "").slice(5)}</span>
                         </div>
                       );
                     })}
                   </div>
                   <div className="flex items-center justify-center gap-4 mt-2">
-                    <div className="flex items-center gap-1.5"><div className={cn("w-2.5 h-2.5 rounded-sm", L ? "bg-slate-200" : "bg-slate-700")} /><span className="text-[10px] text-slate-400">Total Bids</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-green-500" /><span className="text-[10px] text-slate-400">Won</span></div>
+                    <div className="flex items-center gap-1.5"><div className={cn("w-2.5 h-2.5 rounded-sm", L ? "bg-slate-200" : "bg-slate-700")} /><span className="text-xs text-slate-400">Total Bids</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-green-500" /><span className="text-xs text-slate-400">Won</span></div>
                   </div>
                 </div>
               ) : (
@@ -404,7 +404,7 @@ export default function BidManagement() {
                   <div key={k.l} className={cellCls}>
                     <div className="flex items-center gap-2 mb-1">
                       <k.I className={cn("w-3.5 h-3.5", k.c)} />
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wider">{k.l}</span>
+                      <span className="text-xs text-slate-400 uppercase tracking-wider">{k.l}</span>
                     </div>
                     {ld ? <Skeleton className="h-6 w-16 rounded" /> : <p className={cn("text-lg font-bold", k.c)}>{k.v}</p>}
                   </div>

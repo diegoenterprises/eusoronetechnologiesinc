@@ -38,7 +38,7 @@ export default function TenantManagerPage() {
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <Building2 className="w-5 h-5 text-pink-400" />PaaS Tenant Manager
           </h1>
-          <p className="text-[10px] text-slate-400 mt-0.5">White-label multi-tenant infrastructure — data isolation, feature gating, API key management</p>
+          <p className="text-xs text-slate-400 mt-0.5">White-label multi-tenant infrastructure — data isolation, feature gating, API key management</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="h-7 text-xs border-white/[0.08] text-slate-400" onClick={() => listQ.refetch?.()}>
@@ -55,17 +55,17 @@ export default function TenantManagerPage() {
         <div className="p-3 rounded-xl bg-pink-500/5 border border-pink-500/20">
           <Building2 className="w-4 h-4 text-pink-400 mb-1" />
           <span className="text-xl font-bold font-mono text-white">{stats.total}</span>
-          <p className="text-[9px] text-slate-500 mt-0.5">Total Tenants</p>
+          <p className="text-xs text-slate-500 mt-0.5">Total Tenants</p>
         </div>
         <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
           <Shield className="w-4 h-4 text-emerald-400 mb-1" />
           <span className="text-xl font-bold font-mono text-white">{stats.active}</span>
-          <p className="text-[9px] text-slate-500 mt-0.5">Active</p>
+          <p className="text-xs text-slate-500 mt-0.5">Active</p>
         </div>
         <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
           <Settings className="w-4 h-4 text-amber-400 mb-1" />
           <span className="text-xl font-bold font-mono text-white">{stats.suspended}</span>
-          <p className="text-[9px] text-slate-500 mt-0.5">Suspended</p>
+          <p className="text-xs text-slate-500 mt-0.5">Suspended</p>
         </div>
       </div>
 
@@ -75,7 +75,7 @@ export default function TenantManagerPage() {
           <CardContent className="p-10 text-center">
             <Building2 className="w-10 h-10 text-slate-600 mx-auto mb-3" />
             <p className="text-sm text-slate-400 font-semibold">No Tenants</p>
-            <p className="text-[10px] text-slate-500 mt-1">Create your first white-label tenant</p>
+            <p className="text-xs text-slate-500 mt-1">Create your first white-label tenant</p>
           </CardContent>
         </Card>
       ) : (
@@ -87,16 +87,16 @@ export default function TenantManagerPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold text-white">Tenant #{t.id}</span>
-                      <Badge className={cn("text-[8px]", STATUS_COLORS[t.status] || STATUS_COLORS.active)}>{t.status}</Badge>
+                      <Badge className={cn("text-xs", STATUS_COLORS[t.status] || STATUS_COLORS.active)}>{t.status}</Badge>
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-[9px] text-slate-500 font-mono"><Key className="w-3 h-3 inline mr-0.5" />{t.tenantKeyPreview}</span>
-                      {t.customDomain && <span className="text-[9px] text-blue-400"><Globe className="w-3 h-3 inline mr-0.5" />{t.customDomain}</span>}
-                      <span className="text-[9px] text-slate-500"><Users className="w-3 h-3 inline mr-0.5" />Max {t.maxUsers} users</span>
-                      <span className="text-[9px] text-slate-500">Max {t.maxLoads} loads</span>
+                      <span className="text-xs text-slate-500 font-mono"><Key className="w-3 h-3 inline mr-0.5" />{t.tenantKeyPreview}</span>
+                      {t.customDomain && <span className="text-xs text-blue-400"><Globe className="w-3 h-3 inline mr-0.5" />{t.customDomain}</span>}
+                      <span className="text-xs text-slate-500"><Users className="w-3 h-3 inline mr-0.5" />Max {t.maxUsers} users</span>
+                      <span className="text-xs text-slate-500">Max {t.maxLoads} loads</span>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] text-pink-400 hover:bg-pink-500/10" onClick={() => { if (confirm("Regenerate API key?")) regenM.mutate({ id: t.id }); }}>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-pink-400 hover:bg-pink-500/10" onClick={() => { if (confirm("Regenerate API key?")) regenM.mutate({ id: t.id }); }}>
                     <Key className="w-3 h-3 mr-0.5" />Regen Key
                   </Button>
                 </div>
@@ -116,20 +116,20 @@ export default function TenantManagerPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] text-slate-500 uppercase">Custom Domain (optional)</label>
+                <label className="text-xs text-slate-500 uppercase">Custom Domain (optional)</label>
                 <Input value={form.customDomain} onChange={(e: any) => setForm({ ...form, customDomain: e.target.value })} placeholder="freight.acme.com" className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 uppercase">Parent Carrier ID (optional)</label>
+                <label className="text-xs text-slate-500 uppercase">Parent Carrier ID (optional)</label>
                 <Input value={form.parentCarrierId} onChange={(e: any) => setForm({ ...form, parentCarrierId: e.target.value })} placeholder="e.g., 5" className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-500 uppercase">Max Users</label>
+                  <label className="text-xs text-slate-500 uppercase">Max Users</label>
                   <Input type="number" value={form.maxUsers} onChange={(e: any) => setForm({ ...form, maxUsers: e.target.value })} className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 uppercase">Max Loads</label>
+                  <label className="text-xs text-slate-500 uppercase">Max Loads</label>
                   <Input type="number" value={form.maxLoads} onChange={(e: any) => setForm({ ...form, maxLoads: e.target.value })} className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
                 </div>
               </div>

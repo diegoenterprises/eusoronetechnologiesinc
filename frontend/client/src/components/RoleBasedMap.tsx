@@ -269,7 +269,7 @@ export default function RoleBasedMap({
                 <MapPin size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500 animate-pulse" />
               </div>
               <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} ${isWidget ? "text-xs" : "text-sm"} font-medium mb-1`}>Live Map Ready</p>
-              <p className={`${isDark ? 'text-gray-600' : 'text-gray-400'} ${isWidget ? "text-[10px]" : "text-xs"} text-center max-w-xs`}>
+              <p className={`${isDark ? 'text-gray-600' : 'text-gray-400'} ${isWidget ? "text-xs" : "text-xs"} text-center max-w-xs`}>
                 GPS tracking data will appear here in real time
               </p>
             </div>
@@ -316,7 +316,7 @@ export default function RoleBasedMap({
 
                     {/* Speed indicator for moving vehicles */}
                     {location.speed && location.speed > 0 && (
-                      <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                      <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
                         {Math.round(location.speed)}
                       </div>
                     )}
@@ -336,7 +336,7 @@ export default function RoleBasedMap({
                       {location.speed !== undefined && (
                         <p className="text-cyan-400 mt-1">Speed: {Math.round(location.speed)} mph</p>
                       )}
-                      <p className="text-gray-500 mt-1 text-[10px]">
+                      <p className="text-gray-500 mt-1 text-xs">
                         Updated: {formatLastUpdate(location.updatedAt)}
                       </p>
                       {/* Tooltip arrow */}
@@ -383,7 +383,7 @@ export default function RoleBasedMap({
             <p className={`${isDark ? 'text-white' : 'text-gray-900'} font-semibold mb-1`}>{userRole} View</p>
             <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>{locations.length} locations</p>
             {mapData?.lastUpdated && (
-              <p className="text-gray-500 text-[10px] mt-1">
+              <p className="text-gray-500 text-xs mt-1">
                 Last sync: {formatLastUpdate(mapData.lastUpdated)}
               </p>
             )}
@@ -418,7 +418,7 @@ export default function RoleBasedMap({
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                      className={`px-2 py-0.5 rounded text-xs font-semibold ${
                         location.status === "active"
                           ? "bg-green-900/50 text-green-400"
                           : location.status === "pending"
@@ -431,7 +431,7 @@ export default function RoleBasedMap({
                       {location.status}
                     </span>
                     {location.speed !== undefined && location.speed > 0 && (
-                      <span className="text-cyan-400 text-[10px]">{Math.round(location.speed)} mph</span>
+                      <span className="text-cyan-400 text-xs">{Math.round(location.speed)} mph</span>
                     )}
                   </div>
                 </div>

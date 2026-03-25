@@ -62,7 +62,7 @@ export default function TruckPostingBoard() {
             <CardContent className="p-3 text-center">
               <div className="flex justify-center mb-1">{s.icon}</div>
               {capacityQuery.isLoading ? <Skeleton className="h-6 w-10 mx-auto" /> : <p className={cn("text-lg font-bold", s.color)}>{s.value}</p>}
-              <p className="text-[9px] text-slate-400 uppercase">{s.label}</p>
+              <p className="text-xs text-slate-400 uppercase">{s.label}</p>
             </CardContent>
           </Card>
         ))}
@@ -88,7 +88,7 @@ export default function TruckPostingBoard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Search className="w-5 h-5 text-[#1473FF]" />Available Trucks
-              <Badge variant="outline" className="text-[10px] border-slate-600 ml-auto">{trucks.length}</Badge>
+              <Badge variant="outline" className="text-xs border-slate-600 ml-auto">{trucks.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 max-h-[600px] overflow-y-auto">
@@ -104,9 +104,9 @@ export default function TruckPostingBoard() {
                       <div className="flex items-center gap-2">
                         <Truck className="w-4 h-4 text-blue-400" />
                         <span className="text-white font-medium text-sm">{t.make} {t.model} {t.year}</span>
-                        <Badge variant="outline" className="text-[9px] border-slate-600">{t.vehicleType}</Badge>
+                        <Badge variant="outline" className="text-xs border-slate-600">{t.vehicleType}</Badge>
                       </div>
-                      {t.hazmat?.fullyQualified && <Badge className="bg-orange-500/20 text-orange-400 text-[9px]"><Flame className="w-3 h-3 mr-0.5" />Hazmat Qualified</Badge>}
+                      {t.hazmat?.fullyQualified && <Badge className="bg-orange-500/20 text-orange-400 text-xs"><Flame className="w-3 h-3 mr-0.5" />Hazmat Qualified</Badge>}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-slate-500">
                       <span>{t.company?.name}</span>
@@ -126,7 +126,7 @@ export default function TruckPostingBoard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Truck className="w-5 h-5 text-emerald-400" />My Fleet Availability
-              <Badge variant="outline" className="text-[10px] border-slate-600 ml-auto">{myFleet.length}</Badge>
+              <Badge variant="outline" className="text-xs border-slate-600 ml-auto">{myFleet.length}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 max-h-[600px] overflow-y-auto">
@@ -143,7 +143,7 @@ export default function TruckPostingBoard() {
                         <p className="text-white font-medium text-sm">{v.make} {v.model} {v.year}</p>
                         <p className="text-xs text-slate-500">{v.vehicleType} · {v.licensePlate || v.vin}</p>
                       </div>
-                      <Badge className={cn("text-[9px]", v.status === "available" ? "bg-green-500/20 text-green-400" : v.status === "in_use" ? "bg-blue-500/20 text-blue-400" : "bg-yellow-500/20 text-yellow-400")}>{v.status}</Badge>
+                      <Badge className={cn("text-xs", v.status === "available" ? "bg-green-500/20 text-green-400" : v.status === "in_use" ? "bg-blue-500/20 text-blue-400" : "bg-yellow-500/20 text-yellow-400")}>{v.status}</Badge>
                     </div>
                   </div>
                 ))}

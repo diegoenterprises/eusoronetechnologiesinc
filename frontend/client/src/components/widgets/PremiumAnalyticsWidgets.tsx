@@ -12,7 +12,7 @@ export const RevenueForecastingWidget: React.FC = () => {
       <div className="space-y-3">
         <div className="text-center p-4 rounded-xl bg-gradient-to-br from-emerald-500/[0.12] to-green-600/[0.06] border border-emerald-500/20">
           <p className="text-2xl font-bold text-emerald-400 tabular-nums">${(f.projectedMonth || 0).toLocaleString()}</p>
-          <p className="text-[11px] text-gray-500 font-medium mt-1">Projected Revenue</p>
+          <p className="text-xs text-gray-500 font-medium mt-1">Projected Revenue</p>
         </div>
         <StatRow label="Current" value={`$${(f.currentMonth || 0).toLocaleString()}`} color="text-blue-400" />
         <StatRow label="Growth" value={`${f.growth || 0}%`} color={(f.growth || 0) >= 0 ? "text-green-400" : "text-red-400"} />
@@ -72,14 +72,14 @@ export const DemandHeatmapWidget: React.FC = () => {
             <div className="flex items-center gap-2 mb-1">
               <MapPin className={`w-3 h-3 flex-shrink-0 ${levelColor(h.level)}`} />
               <span className="text-xs text-white flex-1 truncate font-medium">{h.region || `Region ${i+1}`}</span>
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${h.level === "CRITICAL" ? "bg-red-500/20 text-red-400" : h.level === "HIGH" ? "bg-orange-500/20 text-orange-400" : "bg-yellow-500/20 text-yellow-400"}`}>{h.level}</span>
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${h.level === "CRITICAL" ? "bg-red-500/20 text-red-400" : h.level === "HIGH" ? "bg-orange-500/20 text-orange-400" : "bg-yellow-500/20 text-yellow-400"}`}>{h.level}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full ${barColor(h.level)} transition-all`} style={{ width: `${Math.round(((h.demand || 0) / maxDemand) * 100)}%` }} />
               </div>
-              <span className="text-[10px] text-orange-400 font-semibold w-16 text-right">{h.demand} loads</span>
-              {h.surge && <span className="text-[9px] text-purple-400 font-bold">{h.surge}x</span>}
+              <span className="text-xs text-orange-400 font-semibold w-16 text-right">{h.demand} loads</span>
+              {h.surge && <span className="text-xs text-purple-400 font-bold">{h.surge}x</span>}
             </div>
           </div>
         ))}
@@ -113,7 +113,7 @@ export const FuelEfficiencyAnalyticsWidget: React.FC = () => {
       <div className="space-y-3">
         <div className="text-center p-4 rounded-xl bg-gradient-to-br from-emerald-500/[0.12] to-cyan-600/[0.06] border border-emerald-500/20">
           <p className="text-2xl font-bold text-emerald-400 tabular-nums">{f.avgMpg || 0} MPG</p>
-          <p className="text-[11px] text-gray-500 font-medium mt-1">Fleet Average</p>
+          <p className="text-xs text-gray-500 font-medium mt-1">Fleet Average</p>
         </div>
         <StatRow label="Total Gallons" value={(f.totalGallons || 0).toLocaleString()} color="text-blue-400" />
         <StatRow label="Total Cost" value={`$${(f.totalCost || 0).toLocaleString()}`} color="text-orange-400" />
@@ -144,7 +144,7 @@ export const ComplianceScoreWidget: React.FC = () => {
       <div className="space-y-3">
         <div className="text-center p-4 rounded-xl bg-gradient-to-br from-blue-500/[0.12] to-purple-600/[0.06] border border-blue-500/20">
           <p className="text-3xl font-bold text-blue-400 tabular-nums">{c.overall || 0}%</p>
-          <p className="text-[11px] text-gray-500 font-medium mt-1">Compliance Score</p>
+          <p className="text-xs text-gray-500 font-medium mt-1">Compliance Score</p>
         </div>
         <StatRow label="FMCSA" value={`${c.fmcsa || 0}%`} color={(c.fmcsa || 0) >= 90 ? "text-green-400" : "text-red-400"} />
         <StatRow label="DOT" value={`${c.dot || 0}%`} color={(c.dot || 0) >= 90 ? "text-green-400" : "text-red-400"} />
@@ -162,7 +162,7 @@ export const AdvancedMarketRatesWidget: React.FC = () => {
       <div className="space-y-3">
         <div className="text-center p-4 rounded-xl bg-gradient-to-br from-blue-500/[0.12] to-cyan-600/[0.06] border border-blue-500/20">
           <p className="text-2xl font-bold text-blue-400 tabular-nums">${m.avgRate || 0}/mi</p>
-          <p className="text-[11px] text-gray-500 font-medium mt-1">Average Market Rate</p>
+          <p className="text-xs text-gray-500 font-medium mt-1">Average Market Rate</p>
         </div>
         <StatRow label="Rate Change" value={`${(m.rateChange || 0) > 0 ? '+' : ''}$${m.rateChange || 0}`} color={(m.rateChange || 0) >= 0 ? "text-green-400" : "text-red-400"} />
         {(m.topLanes || []).slice(0, 2).map((l: any, i: number) => (
@@ -181,7 +181,7 @@ export const BidWinRateWidget: React.FC = () => {
       <div className="space-y-3">
         <div className="text-center p-4 rounded-xl bg-gradient-to-br from-emerald-500/[0.12] to-blue-600/[0.06] border border-emerald-500/20">
           <p className="text-2xl font-bold text-emerald-400 tabular-nums">{b.winRate || 0}%</p>
-          <p className="text-[11px] text-gray-500 font-medium mt-1">Win Rate</p>
+          <p className="text-xs text-gray-500 font-medium mt-1">Win Rate</p>
         </div>
         <StatRow label="Total Bids" value={b.totalBids || 0} color="text-blue-400" />
         <StatRow label="Won" value={b.won || 0} color="text-green-400" />
@@ -239,7 +239,7 @@ export const CustomerSatisfactionWidget: React.FC = () => {
       <div className="space-y-3">
         <div className="text-center p-4 rounded-xl bg-gradient-to-br from-amber-500/[0.12] to-yellow-600/[0.06] border border-amber-500/20">
           <p className="text-2xl font-bold text-amber-400 tabular-nums">{s.score || 0}/5</p>
-          <p className="text-[11px] text-gray-500 font-medium mt-1">Satisfaction Score</p>
+          <p className="text-xs text-gray-500 font-medium mt-1">Satisfaction Score</p>
         </div>
         <StatRow label="Reviews" value={s.totalReviews || 0} color="text-blue-400" />
         <StatRow label="NPS" value={s.nps || 0} color={(s.nps || 0) >= 50 ? "text-green-400" : "text-yellow-400"} />

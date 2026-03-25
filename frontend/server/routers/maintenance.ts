@@ -51,7 +51,7 @@ export const maintenanceRouter = router({
             description: `Scheduled maintenance for ${v.make} ${v.model}`,
             scheduledDate: v.nextMaintenanceDate?.toISOString().split('T')[0] || "",
             status,
-            estimatedCost: 150,
+            estimatedCost: 0, // Unknown until actual maintenance is performed
             mileage: 0,
           };
         });

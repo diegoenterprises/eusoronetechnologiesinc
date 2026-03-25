@@ -305,7 +305,24 @@ export const contractsRouter = router({
               contractId: input.contractId, period: input.period,
               volume: { committed, delivered, remaining: Math.max(0, committed - delivered), onTrack: committed === 0 || delivered >= committed * 0.8 },
               revenue: { total: stats?.revenue || 0, projected: 0, avgPerLoad: delivered > 0 ? Math.round((stats?.revenue || 0) / delivered) : 0 },
-              performance: { onTimePickup: 0, onTimeDelivery: 0, claimsRate: 0, customerSatisfaction: 0 }, byLane: [],
+              performance: await (async () => {
+                try {
+                  const [perf] = await db.select({
+                    total: sql<number>`COUNT(*)`,
+                    onTimePickup: sql<number>`SUM(CASE WHEN ${loads.pickupDate} IS NOT NULL AND ${loads.status} NOT IN ('cancelled','on_hold') THEN 1 ELSE 0 END)`,
+                    onTimeDelivery: sql<number>`SUM(CASE WHEN ${loads.actualDeliveryDate} IS NOT NULL AND ${loads.estimatedDeliveryDate} IS NOT NULL AND ${loads.actualDeliveryDate} <= ${loads.estimatedDeliveryDate} THEN 1 ELSE 0 END)`,
+                    deliveredCount: sql<number>`SUM(CASE WHEN ${loads.actualDeliveryDate} IS NOT NULL THEN 1 ELSE 0 END)`,
+                  }).from(loads).where(and(eq(loads.shipperId, agr.partyAUserId), gte(loads.createdAt, since)));
+                  const total = perf?.total || 0;
+                  const deliveredCount = perf?.deliveredCount || 0;
+                  return {
+                    onTimePickup: total > 0 ? Math.round(((perf?.onTimePickup || 0) / total) * 100) : 0,
+                    onTimeDelivery: deliveredCount > 0 ? Math.round(((perf?.onTimeDelivery || 0) / deliveredCount) * 100) : 0,
+                    claimsRate: 0,
+                    customerSatisfaction: 0,
+                  };
+                } catch { return { onTimePickup: 0, onTimeDelivery: 0, claimsRate: 0, customerSatisfaction: 0 }; }
+              })(), byLane: [],
             };
           }
         } catch { /* fall through */ }
@@ -346,11 +363,40 @@ export const contractsRouter = router({
         const [active] = await db.select({ count: sql<number>`count(*)`, totalValue: sql<number>`COALESCE(SUM(CAST(${agreements.baseRate} AS DECIMAL)), 0)` }).from(agreements).where(and(userFilter, eq(agreements.status, 'active')));
         const [pending] = await db.select({ count: sql<number>`count(*)` }).from(agreements).where(and(userFilter, eq(agreements.status, 'pending_review')));
         const activeCount = active?.count || 0;
+        // Compute renewal rate: renewed / (renewed + expired + terminated)
+        const [renewed] = await db.select({ count: sql<number>`count(*)` }).from(agreements).where(and(userFilter, eq(agreements.status, 'renewed')));
+        const [expired] = await db.select({ count: sql<number>`count(*)` }).from(agreements).where(and(userFilter, eq(agreements.status, 'expired')));
+        const [terminated] = await db.select({ count: sql<number>`count(*)` }).from(agreements).where(and(userFilter, eq(agreements.status, 'terminated')));
+        const renewedCount = renewed?.count || 0;
+        const endedCount = renewedCount + (expired?.count || 0) + (terminated?.count || 0);
+        const renewalRate = endedCount > 0 ? Math.round((renewedCount / endedCount) * 100) : 0;
+        // Compute expiring in 30 and 90 days
+        const thirtyDays = new Date(Date.now() + 30 * 86400000);
+        const ninetyDays = new Date(Date.now() + 90 * 86400000);
+        const [exp30] = await db.select({ count: sql<number>`count(*)` }).from(agreements).where(and(userFilter, eq(agreements.status, 'active'), sql`${agreements.expirationDate} IS NOT NULL AND ${agreements.expirationDate} <= ${thirtyDays}`));
+        const [exp90] = await db.select({ count: sql<number>`count(*)` }).from(agreements).where(and(userFilter, eq(agreements.status, 'active'), sql`${agreements.expirationDate} IS NOT NULL AND ${agreements.expirationDate} <= ${ninetyDays}`));
+        // Compute avg on-time delivery across all active contracts
+        const daysMap: Record<string, number> = { month: 30, quarter: 90, year: 365 };
+        const since = new Date(Date.now() - (daysMap[input.period] || 90) * 86400000);
+        const [perfStats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+          onTime: sql<number>`SUM(CASE WHEN ${loads.actualDeliveryDate} IS NOT NULL AND ${loads.estimatedDeliveryDate} IS NOT NULL AND ${loads.actualDeliveryDate} <= ${loads.estimatedDeliveryDate} THEN 1 ELSE 0 END)`,
+          deliveredCount: sql<number>`SUM(CASE WHEN ${loads.actualDeliveryDate} IS NOT NULL THEN 1 ELSE 0 END)`,
+        }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.createdAt} >= ${since}`));
+        const deliveredCount = perfStats?.deliveredCount || 0;
+        const avgOnTimeDelivery = deliveredCount > 0 ? Math.round(((perfStats?.onTime || 0) / deliveredCount) * 100) : 0;
+        // Group by type
+        const typeRows = await db.select({
+          type: agreements.agreementType,
+          count: sql<number>`count(*)`,
+          value: sql<number>`COALESCE(SUM(CAST(${agreements.baseRate} AS DECIMAL)), 0)`,
+        }).from(agreements).where(and(userFilter, eq(agreements.status, 'active'))).groupBy(agreements.agreementType);
+        const byType = typeRows.map(t => ({ type: t.type, count: t.count, value: Math.round(t.value) }));
         return {
           period: input.period,
-          summary: { activeContracts: activeCount, totalValue: active?.totalValue || 0, avgContractValue: activeCount > 0 ? Math.round((active?.totalValue || 0) / activeCount) : 0, renewalRate: 0 },
-          byType: [], performance: { avgOnTimeDelivery: 0, avgClaimsRate: 0, avgCustomerSatisfaction: 0 },
-          upcoming: { expiring30Days: 0, expiring90Days: 0, pendingApproval: pending?.count || 0 },
+          summary: { activeContracts: activeCount, totalValue: active?.totalValue || 0, avgContractValue: activeCount > 0 ? Math.round((active?.totalValue || 0) / activeCount) : 0, renewalRate },
+          byType, performance: { avgOnTimeDelivery, avgClaimsRate: 0, avgCustomerSatisfaction: 0 },
+          upcoming: { expiring30Days: exp30?.count || 0, expiring90Days: exp90?.count || 0, pendingApproval: pending?.count || 0 },
         };
       } catch { return { period: input.period, summary: { activeContracts: 0, totalValue: 0, avgContractValue: 0, renewalRate: 0 }, byType: [], performance: { avgOnTimeDelivery: 0, avgClaimsRate: 0, avgCustomerSatisfaction: 0 }, upcoming: { expiring30Days: 0, expiring90Days: 0, pendingApproval: 0 } }; }
     }),

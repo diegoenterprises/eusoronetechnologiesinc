@@ -75,7 +75,7 @@ export default function InboundDashboard() {
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-xs text-emerald-400 font-medium">LIVE</span>
-          <span className="text-[10px] text-slate-600">Updates every 30s</span>
+          <span className="text-xs text-slate-600">Updates every 30s</span>
         </div>
         <div className="flex gap-1 bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] rounded-lg p-0.5">
           <button
@@ -123,23 +123,23 @@ export default function InboundDashboard() {
               {/* Summary bar */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                 <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-3">
-                  <p className="text-[10px] text-slate-500 mb-0.5">Inbound Trucks</p>
+                  <p className="text-xs text-slate-500 mb-0.5">Inbound Trucks</p>
                   <p className="text-xl font-semibold text-slate-800 dark:text-white">{approaching.length}</p>
                 </div>
                 <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-3">
-                  <p className="text-[10px] text-slate-500 mb-0.5">Next Arrival</p>
+                  <p className="text-xs text-slate-500 mb-0.5">Next Arrival</p>
                   <p className="text-xl font-semibold text-blue-400">
                     {approaching[0]?.etaLabel || "---"}
                   </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-3">
-                  <p className="text-[10px] text-slate-500 mb-0.5">Compliance Clear</p>
+                  <p className="text-xs text-slate-500 mb-0.5">Compliance Clear</p>
                   <p className="text-xl font-semibold text-emerald-400">
                     {approaching.filter((t: any) => t.complianceStatus === "CLEAR").length}/{approaching.length}
                   </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-3">
-                  <p className="text-[10px] text-slate-500 mb-0.5">Closest</p>
+                  <p className="text-xs text-slate-500 mb-0.5">Closest</p>
                   <p className="text-xl font-semibold text-slate-800 dark:text-white">
                     {approaching[0]?.distanceMiles || 0} mi
                   </p>
@@ -148,7 +148,7 @@ export default function InboundDashboard() {
 
               {/* Truck cards */}
               <div className="space-y-2">
-                <div className="grid grid-cols-12 gap-2 px-4 py-2 text-[10px] font-medium text-slate-600 uppercase tracking-wider">
+                <div className="grid grid-cols-12 gap-2 px-4 py-2 text-xs font-medium text-slate-600 uppercase tracking-wider">
                   <div className="col-span-1">ETA</div>
                   <div className="col-span-3">Driver / Carrier</div>
                   <div className="col-span-2">Product</div>
@@ -177,13 +177,13 @@ export default function InboundDashboard() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-medium text-slate-800 dark:text-white truncate">Load #{truck.loadNumber}</p>
-                        <p className="text-[10px] text-slate-500 truncate">Driver ID: {truck.driverId || "---"}</p>
+                        <p className="text-xs text-slate-500 truncate">Driver ID: {truck.driverId || "---"}</p>
                       </div>
                     </div>
                     <div className="col-span-2 flex items-center">
                       <div>
                         <p className="text-xs text-slate-800 dark:text-white">{truck.product || "---"}</p>
-                        {truck.unNumber && <p className="text-[10px] text-slate-500">{truck.unNumber}</p>}
+                        {truck.unNumber && <p className="text-xs text-slate-500">{truck.unNumber}</p>}
                       </div>
                     </div>
                     <div className="col-span-2 flex items-center text-xs text-slate-800 dark:text-white">
@@ -239,11 +239,11 @@ export default function InboundDashboard() {
               {/* Summary */}
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-4">
-                  <p className="text-[10px] text-slate-500 mb-0.5">Total Volume ({forecastHours}h)</p>
+                  <p className="text-xs text-slate-500 mb-0.5">Total Volume ({forecastHours}h)</p>
                   <p className="text-2xl font-semibold text-slate-800 dark:text-white">{(forecast as any).totalVolume?.toLocaleString() || 0} gal</p>
                 </div>
                 <div className="bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.05] rounded-xl p-4">
-                  <p className="text-[10px] text-slate-500 mb-0.5">Scheduled Loads</p>
+                  <p className="text-xs text-slate-500 mb-0.5">Scheduled Loads</p>
                   <p className="text-2xl font-semibold text-slate-800 dark:text-white">{(forecast as any).loadCount || 0}</p>
                 </div>
               </div>
@@ -296,7 +296,7 @@ export default function InboundDashboard() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-800 dark:text-white">Pipeline Flows</p>
-                <p className="text-[10px] text-slate-500">Genscape / Wood Mackenzie</p>
+                <p className="text-xs text-slate-500">Genscape / Wood Mackenzie</p>
               </div>
             </div>
             {pipelineFlows.length > 0 ? (
@@ -307,13 +307,13 @@ export default function InboundDashboard() {
                       <Droplets className="w-3.5 h-3.5 text-violet-400" />
                       <div>
                         <p className="text-xs font-medium text-slate-800 dark:text-white">{f.pipelineName || f.name || `Pipeline ${i + 1}`}</p>
-                        <p className="text-[10px] text-slate-500">{f.region || f.segment || ""}</p>
+                        <p className="text-xs text-slate-500">{f.region || f.segment || ""}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-semibold text-slate-800 dark:text-white tabular-nums">{f.flowRate?.toLocaleString() || "---"} <span className="text-[10px] text-slate-500">bbl/d</span></p>
+                      <p className="text-xs font-semibold text-slate-800 dark:text-white tabular-nums">{f.flowRate?.toLocaleString() || "---"} <span className="text-xs text-slate-500">bbl/d</span></p>
                       {f.change != null && (
-                        <p className={cn("text-[10px] font-medium flex items-center justify-end gap-0.5", f.change >= 0 ? "text-emerald-400" : "text-red-400")}>
+                        <p className={cn("text-xs font-medium flex items-center justify-end gap-0.5", f.change >= 0 ? "text-emerald-400" : "text-red-400")}>
                           {f.change >= 0 ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />}
                           {Math.abs(f.change).toFixed(1)}%
                         </p>
@@ -338,7 +338,7 @@ export default function InboundDashboard() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-800 dark:text-white">Crude & Production Context</p>
-                <p className="text-[10px] text-slate-500">Enverus</p>
+                <p className="text-xs text-slate-500">Enverus</p>
               </div>
             </div>
             {crudeContext ? (
@@ -350,10 +350,10 @@ export default function InboundDashboard() {
                   { name: "Midland", price: crudeContext.midland || null, change: crudeContext.midlandChange },
                 ]).filter((b: any) => b.price != null).map((b: any, i: number) => (
                   <div key={i} className="bg-white dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] rounded-xl p-3">
-                    <p className="text-[10px] text-slate-500 mb-1">{b.name}</p>
+                    <p className="text-xs text-slate-500 mb-1">{b.name}</p>
                     <p className="text-lg font-bold text-slate-800 dark:text-white tabular-nums">${Number(b.price).toFixed(2)}</p>
                     {b.change != null && (
-                      <p className={cn("text-[10px] font-medium flex items-center gap-0.5 mt-0.5", Number(b.change) >= 0 ? "text-emerald-400" : "text-red-400")}>
+                      <p className={cn("text-xs font-medium flex items-center gap-0.5 mt-0.5", Number(b.change) >= 0 ? "text-emerald-400" : "text-red-400")}>
                         {Number(b.change) >= 0 ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />}
                         {Math.abs(Number(b.change)).toFixed(2)}
                       </p>

@@ -36,7 +36,7 @@ export default function Earnings() {
       pending: "bg-yellow-500/15 text-yellow-500 border-yellow-500/30",
       processing: "bg-blue-500/15 text-blue-500 border-blue-500/30",
     };
-    return <Badge className={cn("border text-[10px] font-bold", m[s] || "bg-slate-500/15 text-slate-400 border-slate-500/30")}>{s?.charAt(0).toUpperCase() + s?.slice(1) || "Unknown"}</Badge>;
+    return <Badge className={cn("border text-xs font-bold", m[s] || "bg-slate-500/15 text-slate-400 border-slate-500/30")}>{s?.charAt(0).toUpperCase() + s?.slice(1) || "Unknown"}</Badge>;
   };
 
   const periodTabs = [
@@ -64,7 +64,7 @@ export default function Earnings() {
         <div className="bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Total Earnings ({period})</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Total Earnings ({period})</p>
               {summaryQuery.isLoading ? <Skeleton className={cn("h-12 w-48 rounded-xl mt-1", isLight ? "bg-slate-200" : "")} /> : (
                 <p className="text-4xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mt-1">${(summary?.total || 0).toLocaleString()}</p>
               )}

@@ -68,7 +68,7 @@ function statusBadge(status: string, isLight: boolean) {
     NOT_APPLICABLE: { bg: "bg-slate-500/15", text: "text-slate-400", label: "N/A" },
   };
   const c = cfg[status] || cfg.NOT_UPLOADED;
-  return <Badge className={cn("text-[10px] font-semibold border-0", c.bg, c.text)}>{c.label}</Badge>;
+  return <Badge className={cn("text-xs font-semibold border-0", c.bg, c.text)}>{c.label}</Badge>;
 }
 
 function severityBadge(severity: string) {
@@ -79,7 +79,7 @@ function severityBadge(severity: string) {
     LOW: { bg: "bg-blue-500/15", text: "text-blue-400" },
   };
   const c = cfg[severity] || cfg.MEDIUM;
-  return <Badge className={cn("text-[10px] font-bold border-0 uppercase", c.bg, c.text)}>{severity}</Badge>;
+  return <Badge className={cn("text-xs font-bold border-0 uppercase", c.bg, c.text)}>{severity}</Badge>;
 }
 
 // ── Compliance Score Ring ──
@@ -102,7 +102,7 @@ function ComplianceRing({ score, size = 120 }: { score: number; size?: number })
       </svg>
       <div className="absolute flex flex-col items-center">
         <span className="text-2xl font-black text-white">{score}%</span>
-        <span className="text-[10px] text-slate-400 font-medium">Compliance</span>
+        <span className="text-xs text-slate-400 font-medium">Compliance</span>
       </div>
     </div>
   );
@@ -323,7 +323,7 @@ function UploadModal({
                       </div>
                       <div className="flex-1 min-w-0 space-y-2">
                         <p className={cn("text-sm font-medium truncate", isLight ? "text-slate-800" : "text-white")}>{entry.file.name}</p>
-                        <p className={cn("text-[11px]", isLight ? "text-slate-400" : "text-slate-500")}>{(entry.file.size / 1024).toFixed(0)} KB</p>
+                        <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{(entry.file.size / 1024).toFixed(0)} KB</p>
                         {/* Document type selector */}
                         <Select value={entry.docTypeId} onValueChange={(v) => updateFile(idx, { docTypeId: v })}>
                           <SelectTrigger className={cn("h-8 text-xs", isLight ? "bg-white border-slate-300" : "bg-slate-700 border-slate-600")}>
@@ -358,16 +358,16 @@ function UploadModal({
                         <div className={cn("rounded-lg p-3 space-y-2 border", isLight ? "bg-purple-50 border-purple-200" : "bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/20")}>
                           <div className="flex items-center gap-2">
                             <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                            <span className="text-[11px] text-purple-400 font-medium uppercase tracking-wider">AI Classification</span>
-                            <span className="text-[10px] text-slate-500 ml-auto">{aiResult.classification?.confidence}% confidence</span>
+                            <span className="text-xs text-purple-400 font-medium uppercase tracking-wider">AI Classification</span>
+                            <span className="text-xs text-slate-500 ml-auto">{aiResult.classification?.confidence}% confidence</span>
                           </div>
                           <p className={cn("text-sm", isLight ? "text-slate-700" : "text-white")}>{aiResult.classification?.summary}</p>
                           <div className="flex flex-wrap gap-1.5">
-                            <Badge className="bg-purple-500/15 text-purple-400 border-0 text-[10px]">
+                            <Badge className="bg-purple-500/15 text-purple-400 border-0 text-xs">
                               {aiResult.classification?.category}
                             </Badge>
                             {aiResult.ocr?.lineCount && (
-                              <Badge className="bg-slate-500/15 text-slate-400 border-0 text-[10px]">
+                              <Badge className="bg-slate-500/15 text-slate-400 border-0 text-xs">
                                 {aiResult.ocr.lineCount} lines extracted
                               </Badge>
                             )}
@@ -375,7 +375,7 @@ function UploadModal({
                           {aiResult.classification?.extractedFields && Object.keys(aiResult.classification.extractedFields).length > 0 && (
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
                               {Object.entries(aiResult.classification.extractedFields).slice(0, 6).map(([key, val]) => (
-                                <div key={key} className="flex justify-between text-[11px]">
+                                <div key={key} className="flex justify-between text-xs">
                                   <span className="text-slate-500">{key}</span>
                                   <span className={cn("font-medium truncate ml-2", isLight ? "text-slate-700" : "text-slate-300")}>{String(val)}</span>
                                 </div>
@@ -383,7 +383,7 @@ function UploadModal({
                             </div>
                           )}
                           {aiResult.savedId && (
-                            <p className="text-[10px] text-green-400 font-medium">Saved to document center</p>
+                            <p className="text-xs text-green-400 font-medium">Saved to document center</p>
                           )}
                         </div>
                       </div>
@@ -670,7 +670,7 @@ export default function DocumentCenter() {
                   <AlertTriangle className="w-4 h-4 text-orange-400" />
                   Urgent Actions
                   {urgentActions.length > 0 && (
-                    <Badge className="bg-red-500/15 text-red-400 border-0 text-[10px]">{urgentActions.length}</Badge>
+                    <Badge className="bg-red-500/15 text-red-400 border-0 text-xs">{urgentActions.length}</Badge>
                   )}
                 </CardTitle>
               </CardHeader>
@@ -694,7 +694,7 @@ export default function DocumentCenter() {
                           <span className={cn("text-xs font-semibold truncate", isLight ? "text-slate-800" : "text-white")}>{action.documentTypeName}</span>
                           {severityBadge(action.severity)}
                         </div>
-                        <p className="text-[11px] text-slate-400 line-clamp-2">{action.message}</p>
+                        <p className="text-xs text-slate-400 line-clamp-2">{action.message}</p>
                       </div>
                       {action.blocksOperations && (
                         <Lock className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
@@ -743,7 +743,7 @@ export default function DocumentCenter() {
                   {tab.label}
                   {tab.count > 0 && (
                     <span className={cn(
-                      "text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1",
+                      "text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1",
                       activeTab === tab.key ? "bg-white/20" : "bg-slate-500/20"
                     )}>
                       {tab.count}
@@ -878,17 +878,17 @@ export default function DocumentCenter() {
                                   <p className={cn("text-sm font-semibold truncate", isLight ? "text-slate-800" : "text-white")}>{doc.documentTypeName}</p>
                                   {statusBadge(doc.status, isLight)}
                                   {doc.isStateSpecific && doc.stateCode && (
-                                    <Badge className="bg-blue-500/10 text-blue-400 border-0 text-[9px] gap-0.5 font-mono">
+                                    <Badge className="bg-blue-500/10 text-blue-400 border-0 text-xs gap-0.5 font-mono">
                                       <MapPin className="w-2.5 h-2.5" /> {doc.stateCode}
                                     </Badge>
                                   )}
                                   {doc.isBlocking && doc.status === "NOT_UPLOADED" && (
-                                    <Badge className="bg-red-500/10 text-red-400 border-0 text-[9px] gap-0.5">
+                                    <Badge className="bg-red-500/10 text-red-400 border-0 text-xs gap-0.5">
                                       <Lock className="w-2.5 h-2.5" /> Required
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+                                <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5 flex-wrap">
                                   {doc.isStateSpecific && doc.stateCode && (
                                     <span className="inline-flex items-center gap-1">
                                       <MapPin className="w-3 h-3" />

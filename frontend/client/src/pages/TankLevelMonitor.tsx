@@ -95,7 +95,7 @@ export default function TankLevelMonitor() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Real-time tank gauging, alerts & demand forecasting</p>
         </div>
-        <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-400 animate-pulse">
+        <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-400 animate-pulse">
           <Activity className="w-3 h-3 mr-1" />LIVE
         </Badge>
       </div>
@@ -134,7 +134,7 @@ export default function TankLevelMonitor() {
             >
               {t.icon}{t.label}
               {t.key === "alerts" && alerts.length > 0 && (
-                <span className="ml-1 bg-red-500 text-white text-[8px] rounded-full w-4 h-4 flex items-center justify-center">
+                <span className="ml-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
                   {alerts.length}
                 </span>
               )}
@@ -164,38 +164,38 @@ export default function TankLevelMonitor() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-white">{data.summary.terminalName}</p>
-                      <p className="text-[10px] text-slate-500">{data.summary.totalTanks} tanks monitored</p>
+                      <p className="text-xs text-slate-500">{data.summary.totalTanks} tanks monitored</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-center">
-                      <p className="text-[9px] text-slate-500 uppercase">Total Inventory</p>
+                      <p className="text-xs text-slate-500 uppercase">Total Inventory</p>
                       <p className="text-lg font-bold font-mono text-white">
                         {(data.summary.totalInventory / 1000).toFixed(0)}K
                       </p>
-                      <p className="text-[9px] text-slate-500">gallons</p>
+                      <p className="text-xs text-slate-500">gallons</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[9px] text-slate-500 uppercase">Capacity</p>
+                      <p className="text-xs text-slate-500 uppercase">Capacity</p>
                       <p className="text-lg font-bold font-mono text-slate-300">
                         {(data.summary.totalCapacity / 1000).toFixed(0)}K
                       </p>
-                      <p className="text-[9px] text-slate-500">gallons</p>
+                      <p className="text-xs text-slate-500">gallons</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[9px] text-slate-500 uppercase">Utilization</p>
+                      <p className="text-xs text-slate-500 uppercase">Utilization</p>
                       <p className={cn("text-lg font-bold font-mono", levelTextColor(data.summary.overallUtilization))}>
                         {data.summary.overallUtilization}%
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       {data.summary.alerts.critical > 0 && (
-                        <Badge variant="outline" className="text-[9px] border-red-500/30 text-red-400">
+                        <Badge variant="outline" className="text-xs border-red-500/30 text-red-400">
                           {data.summary.alerts.critical} critical
                         </Badge>
                       )}
                       {data.summary.alerts.warning > 0 && (
-                        <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-400">
+                        <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400">
                           {data.summary.alerts.warning} warnings
                         </Badge>
                       )}
@@ -209,9 +209,9 @@ export default function TankLevelMonitor() {
                     {data.summary.productBreakdown.map((p: any) => (
                       <div key={p.product} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/30 border border-slate-700/30">
                         <Droplets className={cn("w-3 h-3", levelTextColor(p.utilization))} />
-                        <span className="text-[10px] text-slate-400 capitalize">{p.product.replace(/_/g, " ")}</span>
-                        <span className={cn("text-[10px] font-bold font-mono", levelTextColor(p.utilization))}>{p.utilization}%</span>
-                        <span className="text-[9px] text-slate-600">({p.tankCount})</span>
+                        <span className="text-xs text-slate-400 capitalize">{p.product.replace(/_/g, " ")}</span>
+                        <span className={cn("text-xs font-bold font-mono", levelTextColor(p.utilization))}>{p.utilization}%</span>
+                        <span className="text-xs text-slate-600">({p.tankCount})</span>
                       </div>
                     ))}
                   </div>
@@ -239,11 +239,11 @@ export default function TankLevelMonitor() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-white">Tank {tank.tankNumber}</span>
-                        <Badge variant="outline" className={cn("text-[8px]", sc.color, sc.border)}>
+                        <Badge variant="outline" className={cn("text-xs", sc.color, sc.border)}>
                           {sc.label}
                         </Badge>
                       </div>
-                      <span className="text-[10px] text-slate-400 capitalize">{tank.product.replace(/_/g, " ")}</span>
+                      <span className="text-xs text-slate-400 capitalize">{tank.product.replace(/_/g, " ")}</span>
                     </div>
 
                     {/* Level Bar */}
@@ -264,27 +264,27 @@ export default function TankLevelMonitor() {
                     {/* Stats */}
                     <div className="grid grid-cols-3 gap-1.5 mb-2">
                       <div className="p-1.5 rounded-md bg-slate-900/30 text-center">
-                        <p className="text-[8px] text-slate-500">Level</p>
-                        <p className="text-[10px] font-mono font-bold text-white">
+                        <p className="text-xs text-slate-500">Level</p>
+                        <p className="text-xs font-mono font-bold text-white">
                           {(tank.currentLevelGallons / 1000).toFixed(1)}K
                         </p>
                       </div>
                       <div className="p-1.5 rounded-md bg-slate-900/30 text-center">
-                        <p className="text-[8px] text-slate-500">Ullage</p>
-                        <p className="text-[10px] font-mono font-bold text-slate-300">
+                        <p className="text-xs text-slate-500">Ullage</p>
+                        <p className="text-xs font-mono font-bold text-slate-300">
                           {(tank.ullageGallons / 1000).toFixed(1)}K
                         </p>
                       </div>
                       <div className="p-1.5 rounded-md bg-slate-900/30 text-center">
-                        <p className="text-[8px] text-slate-500">Rate</p>
-                        <p className={cn("text-[10px] font-mono font-bold", tank.changeRateGPH >= 0 ? "text-emerald-400" : "text-amber-400")}>
+                        <p className="text-xs text-slate-500">Rate</p>
+                        <p className={cn("text-xs font-mono font-bold", tank.changeRateGPH >= 0 ? "text-emerald-400" : "text-amber-400")}>
                           {tank.changeRateGPH > 0 ? "+" : ""}{tank.changeRateGPH}
                         </p>
                       </div>
                     </div>
 
                     {/* Gauge & Temp Row */}
-                    <div className="flex items-center justify-between text-[9px]">
+                    <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-1 text-slate-500">
                         <Gauge className="w-3 h-3" />
                         <span>{tank.gaugeFeet}'{tank.gaugeInches}"</span>
@@ -309,11 +309,11 @@ export default function TankLevelMonitor() {
                       ) : (
                         <ArrowUp className="w-3 h-3 text-emerald-400" />
                       )}
-                      <span className="text-[9px] text-slate-500">
+                      <span className="text-xs text-slate-500">
                         {Math.abs(tank.changeRateGPH)} GPH {tank.changeRateGPH < 0 ? "outflow" : "inflow"}
                       </span>
                       {tank.estimatedEmptyHours && (
-                        <span className="text-[9px] text-amber-400 ml-auto">~{tank.estimatedEmptyHours}h to empty</span>
+                        <span className="text-xs text-amber-400 ml-auto">~{tank.estimatedEmptyHours}h to empty</span>
                       )}
                     </div>
                   </CardContent>
@@ -329,7 +329,7 @@ export default function TankLevelMonitor() {
                 <CardTitle className="text-xs text-white flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-cyan-400" />
                   Tank {selectedTank} — 24h Trend
-                  <Badge variant="outline" className="text-[8px] border-slate-600/50 text-slate-400 capitalize ml-2">
+                  <Badge variant="outline" className="text-xs border-slate-600/50 text-slate-400 capitalize ml-2">
                     {trend.reading?.product?.replace(/_/g, " ")}
                   </Badge>
                 </CardTitle>
@@ -346,7 +346,7 @@ export default function TankLevelMonitor() {
                     />
                   ))}
                 </div>
-                <div className="flex items-center justify-between text-[9px] text-slate-500">
+                <div className="flex items-center justify-between text-xs text-slate-500">
                   <span>24h ago</span>
                   <div className="flex items-center gap-3">
                     <span>Min: {Math.min(...(trend.trend || []).map((p: any) => p.percentFull))}%</span>
@@ -369,7 +369,7 @@ export default function TankLevelMonitor() {
               <CardContent className="p-8 text-center">
                 <Bell className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
                 <p className="text-sm text-emerald-400 font-semibold">All Clear</p>
-                <p className="text-[10px] text-slate-500">No active alerts for this terminal</p>
+                <p className="text-xs text-slate-500">No active alerts for this terminal</p>
               </CardContent>
             </Card>
           )}
@@ -384,17 +384,17 @@ export default function TankLevelMonitor() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className={cn("text-[8px]", sev.color)}>
+                        <Badge variant="outline" className={cn("text-xs", sev.color)}>
                           {alert.severity.toUpperCase()}
                         </Badge>
-                        <Badge variant="outline" className="text-[8px] border-slate-600/50 text-slate-400">
+                        <Badge variant="outline" className="text-xs border-slate-600/50 text-slate-400">
                           {alert.type}
                         </Badge>
-                        <span className="text-[9px] text-slate-500">Tank {alert.tankNumber}</span>
-                        <span className="text-[9px] text-slate-600 capitalize">{alert.product.replace(/_/g, " ")}</span>
+                        <span className="text-xs text-slate-500">Tank {alert.tankNumber}</span>
+                        <span className="text-xs text-slate-600 capitalize">{alert.product.replace(/_/g, " ")}</span>
                       </div>
-                      <p className="text-[11px] text-white">{alert.message}</p>
-                      <p className="text-[9px] text-slate-500 mt-1">
+                      <p className="text-xs text-white">{alert.message}</p>
+                      <p className="text-xs text-slate-500 mt-1">
                         {new Date(alert.triggeredAt).toLocaleTimeString()} — {alert.terminalName}
                       </p>
                     </div>
@@ -424,39 +424,39 @@ export default function TankLevelMonitor() {
                   <div className="flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-purple-400" />
                     <span className="text-xs font-bold text-white">{fc.tankId}</span>
-                    <Badge variant="outline" className="text-[8px] border-slate-600/50 text-slate-400 capitalize">
+                    <Badge variant="outline" className="text-xs border-slate-600/50 text-slate-400 capitalize">
                       {fc.product.replace(/_/g, " ")}
                     </Badge>
                   </div>
-                  <Badge variant="outline" className="text-[8px] border-purple-500/30 text-purple-400">
+                  <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">
                     {fc.confidence}% confidence
                   </Badge>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                    <p className="text-[8px] text-slate-500">Daily Consumption</p>
+                    <p className="text-xs text-slate-500">Daily Consumption</p>
                     <p className="text-sm font-bold font-mono text-white">{(fc.avgDailyConsumption / 1000).toFixed(1)}K</p>
-                    <p className="text-[8px] text-slate-500">gal/day</p>
+                    <p className="text-xs text-slate-500">gal/day</p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                    <p className="text-[8px] text-slate-500">Days to Reorder</p>
+                    <p className="text-xs text-slate-500">Days to Reorder</p>
                     <p className={cn("text-sm font-bold font-mono", fc.daysUntilReorder <= 2 ? "text-red-400" : fc.daysUntilReorder <= 5 ? "text-amber-400" : "text-emerald-400")}>
                       {fc.daysUntilReorder}
                     </p>
-                    <p className="text-[8px] text-slate-500">days</p>
+                    <p className="text-xs text-slate-500">days</p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                    <p className="text-[8px] text-slate-500">Suggested Delivery</p>
+                    <p className="text-xs text-slate-500">Suggested Delivery</p>
                     <p className="text-sm font-bold font-mono text-cyan-400">{fc.suggestedDeliveryDate}</p>
-                    <p className="text-[8px] text-slate-500">{(fc.suggestedDeliveryQty / 1000).toFixed(1)}K gal</p>
+                    <p className="text-xs text-slate-500">{(fc.suggestedDeliveryQty / 1000).toFixed(1)}K gal</p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                    <p className="text-[8px] text-slate-500">Days to Empty</p>
+                    <p className="text-xs text-slate-500">Days to Empty</p>
                     <p className={cn("text-sm font-bold font-mono", fc.daysUntilEmpty <= 3 ? "text-red-400" : "text-white")}>
                       {fc.daysUntilEmpty}
                     </p>
-                    <p className="text-[8px] text-slate-500">days</p>
+                    <p className="text-xs text-slate-500">days</p>
                   </div>
                 </div>
               </CardContent>
@@ -476,7 +476,7 @@ export default function TankLevelMonitor() {
             <p className="text-sm text-slate-400 mt-1 max-w-md mx-auto">
               Enter a Terminal ID to view live tank levels, gauge readings, alerts, and demand forecasts.
             </p>
-            <div className="flex items-center justify-center gap-6 mt-6 text-[10px] text-slate-500">
+            <div className="flex items-center justify-center gap-6 mt-6 text-xs text-slate-500">
               <div className="flex items-center gap-1.5"><Gauge className="w-3.5 h-3.5 text-cyan-400" /> Live gauging</div>
               <div className="flex items-center gap-1.5"><Bell className="w-3.5 h-3.5 text-amber-400" /> Threshold alerts</div>
               <div className="flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5 text-purple-400" /> Demand forecast</div>

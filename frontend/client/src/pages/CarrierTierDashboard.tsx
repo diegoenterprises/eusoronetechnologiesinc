@@ -116,8 +116,8 @@ export default function CarrierTierDashboard() {
                       <span className={cn("text-lg font-bold font-mono", tc.text)}>{count}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-slate-500 capitalize">{t}</span>
-                      <span className="text-[10px] text-slate-500">{pct}%</span>
+                      <span className="text-xs text-slate-500 capitalize">{t}</span>
+                      <span className="text-xs text-slate-500">{pct}%</span>
                     </div>
                   </button>
                 );
@@ -133,7 +133,7 @@ export default function CarrierTierDashboard() {
                 className="h-8 pl-9 text-xs bg-white/[0.04] border-white/[0.08] text-white placeholder:text-slate-500" />
             </div>
             {tierFilter !== "all" && (
-              <Badge className={cn("text-[10px] cursor-pointer", TIER_COLORS[tierFilter].text, TIER_COLORS[tierFilter].bg)} onClick={() => setTierFilter("all")}>
+              <Badge className={cn("text-xs cursor-pointer", TIER_COLORS[tierFilter].text, TIER_COLORS[tierFilter].bg)} onClick={() => setTierFilter("all")}>
                 {tierFilter} <X className="w-3 h-3 ml-1" />
               </Badge>
             )}
@@ -147,12 +147,12 @@ export default function CarrierTierDashboard() {
               <CardContent className="p-8 text-center">
                 <Truck className="w-8 h-8 text-slate-600 mx-auto mb-2" />
                 <p className="text-sm text-slate-400 font-semibold">No Carriers Found</p>
-                <p className="text-[10px] text-slate-500 mt-1">{search ? "Try a different search" : "No carriers with DOT numbers"}</p>
+                <p className="text-xs text-slate-500 mt-1">{search ? "Try a different search" : "No carriers with DOT numbers"}</p>
               </CardContent>
             </Card>
           ) : (
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl overflow-hidden">
-              <div className="grid grid-cols-[1fr_90px_70px_70px_70px_70px_90px] gap-2 px-4 py-2 border-b border-white/[0.06] text-[9px] font-semibold text-slate-500 uppercase tracking-wider">
+              <div className="grid grid-cols-[1fr_90px_70px_70px_70px_70px_90px] gap-2 px-4 py-2 border-b border-white/[0.06] text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 <span>Carrier</span><span>Tier</span><span className="text-right">Score</span><span className="text-right">Loads</span><span className="text-right">On-Time</span><span className="text-right">Tenure</span><span className="text-center">Actions</span>
               </div>
               <div className="divide-y divide-white/[0.03]">
@@ -163,23 +163,23 @@ export default function CarrierTierDashboard() {
                       <div className="min-w-0">
                         <span className="text-xs font-semibold text-white truncate block">{c.name}</span>
                         <div className="flex items-center gap-2 mt-0.5">
-                          {c.dotNumber && <span className="text-[9px] text-slate-500">DOT# {c.dotNumber}</span>}
-                          {c.mcNumber && <span className="text-[9px] text-slate-500">MC# {c.mcNumber}</span>}
+                          {c.dotNumber && <span className="text-xs text-slate-500">DOT# {c.dotNumber}</span>}
+                          {c.mcNumber && <span className="text-xs text-slate-500">MC# {c.mcNumber}</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className={tc.text}>{TIER_ICONS_SM[c.tier]}</span>
-                        <span className={cn("text-[10px] font-bold capitalize", tc.text)}>{c.tier}</span>
+                        <span className={cn("text-xs font-bold capitalize", tc.text)}>{c.tier}</span>
                       </div>
                       <span className={cn("text-xs font-bold font-mono text-right", c.compositeScore >= 85 ? "text-yellow-400" : c.compositeScore >= 70 ? "text-slate-300" : c.compositeScore >= 55 ? "text-orange-400" : "text-slate-500")}>{c.compositeScore}</span>
                       <span className="text-xs font-mono text-slate-300 text-right">{c.totalLoads}</span>
                       <span className={cn("text-xs font-mono text-right", c.onTimeRate >= 90 ? "text-emerald-400" : c.onTimeRate >= 70 ? "text-amber-400" : "text-red-400")}>{c.onTimeRate}%</span>
                       <span className="text-xs text-slate-400 text-right">{c.tenureMonths}mo</span>
                       <div className="flex items-center justify-center gap-1">
-                        <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] text-cyan-400 hover:bg-cyan-500/10" onClick={() => { setSelectedCarrierId(c.id); setView("detail"); }}>
+                        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-cyan-400 hover:bg-cyan-500/10" onClick={() => { setSelectedCarrierId(c.id); setView("detail"); }}>
                           <Eye className="w-3 h-3 mr-0.5" />View
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[9px] text-amber-400 hover:bg-amber-500/10" onClick={() => { setOverrideTarget({ id: c.id, name: c.name }); setOverrideTierVal(c.tier); }}>
+                        <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs text-amber-400 hover:bg-amber-500/10" onClick={() => { setOverrideTarget({ id: c.id, name: c.name }); setOverrideTierVal(c.tier); }}>
                           <Pencil className="w-3 h-3" />
                         </Button>
                       </div>
@@ -207,7 +207,7 @@ export default function CarrierTierDashboard() {
                   <button key={t} onClick={() => setOverrideTierVal(t)}
                     className={cn("p-3 rounded-lg border text-center transition-all", overrideTier === t ? cn(tc.border, tc.bg, "ring-1", tc.ring) : "border-slate-700/30 hover:border-slate-600")}>
                     <span className={tc.text}>{TIER_ICONS[t]}</span>
-                    <p className={cn("text-[10px] font-bold capitalize mt-1", tc.text)}>{t}</p>
+                    <p className={cn("text-xs font-bold capitalize mt-1", tc.text)}>{t}</p>
                   </button>
                 );
               })}
@@ -241,13 +241,13 @@ export default function CarrierTierDashboard() {
                       <p className="text-lg font-bold text-white">{detail.companyName}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <CarrierTierBadge tier={detail.tier} score={detail.compositeScore} size="md" showScore />
-                        {detail.dotNumber && <span className="text-[10px] text-slate-500">DOT# {detail.dotNumber}</span>}
-                        {detail.mcNumber && <span className="text-[10px] text-slate-500">MC# {detail.mcNumber}</span>}
+                        {detail.dotNumber && <span className="text-xs text-slate-500">DOT# {detail.dotNumber}</span>}
+                        {detail.mcNumber && <span className="text-xs text-slate-500">MC# {detail.mcNumber}</span>}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Button variant="outline" size="sm" className="h-7 text-[10px] border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                    <Button variant="outline" size="sm" className="h-7 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
                       onClick={() => { setOverrideTarget({ id: selectedCarrierId!, name: detail.companyName }); setOverrideTierVal(detail.tier); }}>
                       <Pencil className="w-3 h-3 mr-1" />Override Tier
                     </Button>
@@ -255,7 +255,7 @@ export default function CarrierTierDashboard() {
                       <div className={cn("relative w-16 h-16 rounded-full flex items-center justify-center ring-4", colors.ring, colors.bg)}>
                         <span className={cn("text-xl font-bold font-mono", colors.text)}>{detail.compositeScore}</span>
                       </div>
-                      <p className="text-[9px] text-slate-500 mt-1">Score</p>
+                      <p className="text-xs text-slate-500 mt-1">Score</p>
                     </div>
                   </div>
                 </div>
@@ -266,7 +266,7 @@ export default function CarrierTierDashboard() {
                     {detail.flags.map((flag: string, i: number) => (
                       <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-red-500/5 border border-red-500/20">
                         <AlertTriangle className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
-                        <span className="text-[10px] text-red-300">{flag}</span>
+                        <span className="text-xs text-red-300">{flag}</span>
                       </div>
                     ))}
                   </div>
@@ -280,10 +280,10 @@ export default function CarrierTierDashboard() {
                     {(detail.breakdown || []).map((b: any) => (
                       <div key={b.category}>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] text-slate-400">{b.category}</span>
+                          <span className="text-xs text-slate-400">{b.category}</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-slate-500">{(b.weight * 100).toFixed(0)}%</span>
-                            <span className={cn("text-[10px] font-mono font-bold", b.rawScore >= 80 ? "text-emerald-400" : b.rawScore >= 60 ? "text-blue-400" : b.rawScore >= 40 ? "text-amber-400" : "text-red-400")}>{b.rawScore}</span>
+                            <span className="text-xs text-slate-500">{(b.weight * 100).toFixed(0)}%</span>
+                            <span className={cn("text-xs font-mono font-bold", b.rawScore >= 80 ? "text-emerald-400" : b.rawScore >= 60 ? "text-blue-400" : b.rawScore >= 40 ? "text-amber-400" : "text-red-400")}>{b.rawScore}</span>
                           </div>
                         </div>
                         <div className="h-1.5 rounded-full bg-slate-700/50 overflow-hidden">
@@ -303,7 +303,7 @@ export default function CarrierTierDashboard() {
                       {detail.tierDefinition.benefits.map((b: string, i: number) => (
                         <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-slate-900/30">
                           <CheckCircle className={cn("w-3 h-3 mt-0.5 flex-shrink-0", colors.text)} />
-                          <span className="text-[10px] text-slate-300">{b}</span>
+                          <span className="text-xs text-slate-300">{b}</span>
                         </div>
                       ))}
                     </div>
@@ -313,19 +313,19 @@ export default function CarrierTierDashboard() {
                 {detail.tierDefinition && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="p-2.5 rounded-xl border border-slate-700/30 bg-slate-900/20">
-                      <p className="text-[9px] text-slate-500 uppercase tracking-wider">Fee Discount</p>
+                      <p className="text-xs text-slate-500 uppercase tracking-wider">Fee Discount</p>
                       <p className={cn("text-lg font-bold font-mono", colors.text)}>{detail.tierDefinition.platformFeeDiscount}%</p>
                     </div>
                     <div className="p-2.5 rounded-xl border border-slate-700/30 bg-slate-900/20">
-                      <p className="text-[9px] text-slate-500 uppercase tracking-wider">Dispatch Boost</p>
+                      <p className="text-xs text-slate-500 uppercase tracking-wider">Dispatch Boost</p>
                       <p className={cn("text-lg font-bold font-mono", colors.text)}>+{detail.tierDefinition.priorityMatchBoost}</p>
                     </div>
                     <div className="p-2.5 rounded-xl border border-slate-700/30 bg-slate-900/20">
-                      <p className="text-[9px] text-slate-500 uppercase tracking-wider">Analytics</p>
+                      <p className="text-xs text-slate-500 uppercase tracking-wider">Analytics</p>
                       <p className="text-sm font-semibold text-white capitalize">{detail.tierDefinition.analyticsAccess}</p>
                     </div>
                     <div className="p-2.5 rounded-xl border border-slate-700/30 bg-slate-900/20">
-                      <p className="text-[9px] text-slate-500 uppercase tracking-wider">Load Access</p>
+                      <p className="text-xs text-slate-500 uppercase tracking-wider">Load Access</p>
                       <p className="text-sm font-semibold text-white capitalize">{detail.tierDefinition.loadAccessTier}</p>
                     </div>
                   </div>
@@ -336,13 +336,13 @@ export default function CarrierTierDashboard() {
                     <div className="flex items-center gap-2 mb-3">
                       <ArrowUpRight className={cn("w-4 h-4", colors.text)} />
                       <span className="text-xs font-semibold text-white">Path to {detail.promotionPath.nextTier}</span>
-                      <Badge variant="outline" className={cn("text-[9px]", colors.border, colors.text)}>+{detail.promotionPath.pointsNeeded} pts needed</Badge>
+                      <Badge variant="outline" className={cn("text-xs", colors.border, colors.text)}>+{detail.promotionPath.pointsNeeded} pts needed</Badge>
                     </div>
                     <div className="space-y-1.5">
                       {detail.promotionPath.suggestions.map((s: string, i: number) => (
                         <div key={i} className="flex items-start gap-2">
                           <Target className="w-3 h-3 text-cyan-400 mt-0.5 flex-shrink-0" />
-                          <span className="text-[10px] text-slate-300">{s}</span>
+                          <span className="text-xs text-slate-300">{s}</span>
                         </div>
                       ))}
                     </div>

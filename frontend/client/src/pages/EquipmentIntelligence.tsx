@@ -349,7 +349,7 @@ export function EquipmentIntelligencePanel() {
                                   <p className={cn("text-xs", mt)}>{VEHICLE_TYPE_LABELS[v.vehicleType] || v.vehicleType}</p>
                                 </div>
                               </div>
-                              <Badge className={cn("text-[9px]",
+                              <Badge className={cn("text-xs",
                                 v.status === "available" ? "bg-green-500/15 text-green-500" :
                                 v.status === "in_use" ? "bg-blue-500/15 text-blue-500" :
                                 v.status === "maintenance" ? "bg-yellow-500/15 text-yellow-500" :
@@ -365,10 +365,10 @@ export function EquipmentIntelligencePanel() {
                               <span className={cn("flex items-center gap-1", v.certificationCount > 0 ? "text-emerald-500" : mt)}>
                                 <Award className="w-3 h-3" />{v.certificationCount} certs
                               </span>
-                              {v.vin && <span className={cn("text-[10px]", mt)}>VIN: ...{v.vin.slice(-6)}</span>}
+                              {v.vin && <span className={cn("text-xs", mt)}>VIN: ...{v.vin.slice(-6)}</span>}
                             </div>
                             <div className="flex items-center justify-end mt-2">
-                              <span className={cn("text-[10px] font-medium flex items-center gap-1", "text-blue-500")}>
+                              <span className={cn("text-xs font-medium flex items-center gap-1", "text-blue-500")}>
                                 Manage Equipment <ChevronRight className="w-3 h-3" />
                               </span>
                             </div>
@@ -428,7 +428,7 @@ export function EquipmentIntelligencePanel() {
                       <h2 className={cn("text-lg font-bold truncate", vl)}>
                         {vehicleProfile.vehicleName || `Vehicle #${selectedVehicleId}`}
                       </h2>
-                      <Badge className={cn("text-[10px] flex-shrink-0",
+                      <Badge className={cn("text-xs flex-shrink-0",
                         vehicleProfile.status === "available" ? "bg-green-500/15 text-green-500" :
                         vehicleProfile.status === "in_use" ? "bg-blue-500/15 text-blue-500" :
                         vehicleProfile.status === "maintenance" ? "bg-yellow-500/15 text-yellow-500" :
@@ -445,25 +445,25 @@ export function EquipmentIntelligencePanel() {
                     <div className="flex items-center gap-2 mb-2">
                       <Hash className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                       <span className={cn("text-xs font-mono tracking-wider", vl)}>{vehicleProfile.vin || "—"}</span>
-                      <span className={cn("text-[9px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded", L ? "bg-slate-100 text-slate-400" : "bg-slate-700 text-slate-500")}>VIN</span>
+                      <span className={cn("text-xs uppercase tracking-wider font-medium px-1.5 py-0.5 rounded", L ? "bg-slate-100 text-slate-400" : "bg-slate-700 text-slate-500")}>VIN</span>
                     </div>
 
                     {/* Detail Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2 mt-3">
                       <div>
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium", mt)}>Make</p>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium", mt)}>Make</p>
                         <p className={cn("text-sm font-semibold", vl)}>{vehicleProfile.make || "—"}</p>
                       </div>
                       <div>
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium", mt)}>Model</p>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium", mt)}>Model</p>
                         <p className={cn("text-sm font-semibold", vl)}>{vehicleProfile.model || "—"}</p>
                       </div>
                       <div>
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium", mt)}>Year</p>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium", mt)}>Year</p>
                         <p className={cn("text-sm font-semibold", vl)}>{vehicleProfile.year || "—"}</p>
                       </div>
                       <div>
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium", mt)}>Mileage</p>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium", mt)}>Mileage</p>
                         {editingMileage ? (
                           <div className="flex items-center gap-1">
                             <Input value={mileageInput} onChange={(e: any) => setMileageInput(e.target.value)}
@@ -480,21 +480,21 @@ export function EquipmentIntelligencePanel() {
                         )}
                       </div>
                       <div>
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium", mt)}>Plate</p>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium", mt)}>Plate</p>
                         <p className={cn("text-sm font-semibold", vl)}>{vehicleProfile.licensePlate || "—"}</p>
                       </div>
                       <div>
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium", mt)}>Capacity</p>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium", mt)}>Capacity</p>
                         <p className={cn("text-sm font-semibold", vl)}>{vehicleProfile.capacity || "—"}</p>
                       </div>
                       <div>
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium", mt)}>Next Maintenance</p>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium", mt)}>Next Maintenance</p>
                         <p className={cn("text-sm font-semibold", vehicleProfile.nextMaintenanceDate ? vl : mt)}>
                           {vehicleProfile.nextMaintenanceDate ? new Date(vehicleProfile.nextMaintenanceDate).toLocaleDateString() : "Not set"}
                         </p>
                       </div>
                       <div>
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium", mt)}>Next Inspection</p>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium", mt)}>Next Inspection</p>
                         <p className={cn("text-sm font-semibold", vehicleProfile.nextInspectionDate ? vl : mt)}>
                           {vehicleProfile.nextInspectionDate ? new Date(vehicleProfile.nextInspectionDate).toLocaleDateString() : "Not set"}
                         </p>
@@ -513,7 +513,7 @@ export function EquipmentIntelligencePanel() {
                   ].map((s) => (
                     <div key={s.label} className={cn("text-center px-4 py-2 rounded-xl", L ? "bg-slate-50" : "bg-slate-900/30")}>
                       <p className={cn("text-lg font-bold", s.color)}>{s.value}</p>
-                      <p className={cn("text-[9px] uppercase tracking-wider font-medium", mt)}>{s.label}</p>
+                      <p className={cn("text-xs uppercase tracking-wider font-medium", mt)}>{s.label}</p>
                     </div>
                   ))}
                 </div>
@@ -587,7 +587,7 @@ export function EquipmentIntelligencePanel() {
                         <div className="flex items-center gap-2 mb-2">
                           <p className={cn("font-bold text-sm", vl)}>ESANG AI Vehicle Intelligence</p>
                           {scanResult.sections.safetyScore != null && (
-                            <Badge className={cn("text-[10px]",
+                            <Badge className={cn("text-xs",
                               scanResult.sections.safetyScore >= 80 ? "bg-green-500/15 text-green-500" :
                               scanResult.sections.safetyScore >= 50 ? "bg-yellow-500/15 text-yellow-500" :
                               "bg-red-500/15 text-red-500"
@@ -628,7 +628,7 @@ export function EquipmentIntelligencePanel() {
                         .filter(([k, v]) => k !== "summary" && v && v !== "null" && v !== "Unknown")
                         .map(([k, v]) => (
                           <div key={k} className={cn("p-2.5 rounded-xl", L ? "bg-slate-50" : "bg-slate-900/30")}>
-                            <p className={cn("text-[9px] uppercase tracking-wider font-medium mb-0.5", mt)}>
+                            <p className={cn("text-xs uppercase tracking-wider font-medium mb-0.5", mt)}>
                               {k.replace(/([A-Z])/g, " $1").trim()}
                             </p>
                             <p className={cn("text-xs font-semibold", vl)}>{String(v)}</p>
@@ -646,7 +646,7 @@ export function EquipmentIntelligencePanel() {
                     <div className="flex items-center gap-2 mb-3">
                       <Activity className="w-4 h-4 text-orange-500" />
                       <p className={cn("font-bold text-sm", vl)}>Maintenance Alerts</p>
-                      <Badge className="text-[9px] bg-orange-500/15 text-orange-500">{scanResult.sections.maintenanceAlerts.length}</Badge>
+                      <Badge className="text-xs bg-orange-500/15 text-orange-500">{scanResult.sections.maintenanceAlerts.length}</Badge>
                     </div>
                     <div className="space-y-2">
                       {scanResult.sections.maintenanceAlerts.map((a: any, i: number) => (
@@ -657,14 +657,14 @@ export function EquipmentIntelligencePanel() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <p className={cn("text-xs font-semibold", vl)}>{a.title}</p>
-                              <Badge className={cn("text-[8px]",
+                              <Badge className={cn("text-xs",
                                 a.priority === "critical" ? "bg-red-500/15 text-red-500" :
                                 a.priority === "high" ? "bg-orange-500/15 text-orange-500" :
                                 "bg-yellow-500/15 text-yellow-500"
                               )}>{a.priority}</Badge>
                             </div>
-                            <p className={cn("text-[11px] mt-0.5", mt)}>{a.detail}</p>
-                            {a.mileageInterval && <p className={cn("text-[10px] mt-1 font-medium", mt)}>Every {Number(a.mileageInterval).toLocaleString()} mi</p>}
+                            <p className={cn("text-xs mt-0.5", mt)}>{a.detail}</p>
+                            {a.mileageInterval && <p className={cn("text-xs mt-1 font-medium", mt)}>Every {Number(a.mileageInterval).toLocaleString()} mi</p>}
                           </div>
                         </div>
                       ))}
@@ -680,7 +680,7 @@ export function EquipmentIntelligencePanel() {
                     <div className="flex items-center gap-2 mb-3">
                       <AlertTriangle className="w-4 h-4 text-red-500" />
                       <p className={cn("font-bold text-sm", vl)}>Equipment Gaps</p>
-                      <Badge className="text-[9px] bg-red-500/15 text-red-500">
+                      <Badge className="text-xs bg-red-500/15 text-red-500">
                         {scanResult.sections.equipmentGaps.filter((g: any) => g.severity === "critical").length} critical
                       </Badge>
                     </div>
@@ -696,7 +696,7 @@ export function EquipmentIntelligencePanel() {
                           </div>
                           <div className="flex-1">
                             <p className={cn("text-xs font-semibold", vl)}>{g.item}</p>
-                            <p className={cn("text-[11px]", mt)}>{g.reason}</p>
+                            <p className={cn("text-xs", mt)}>{g.reason}</p>
                           </div>
                         </div>
                       ))}
@@ -719,13 +719,13 @@ export function EquipmentIntelligencePanel() {
                           <div key={i} className={cn("p-2.5 rounded-xl", L ? "bg-slate-50" : "bg-slate-900/30")}>
                             <div className="flex items-center justify-between mb-0.5">
                               <p className={cn("text-xs font-semibold", vl)}>{r.item}</p>
-                              <Badge className={cn("text-[8px]",
+                              <Badge className={cn("text-xs",
                                 r.priority === "required" ? "bg-red-500/15 text-red-500" :
                                 r.priority === "recommended" ? "bg-yellow-500/15 text-yellow-500" :
                                 "bg-slate-500/15 text-slate-400"
                               )}>{r.priority}</Badge>
                             </div>
-                            <p className={cn("text-[10px]", mt)}>{r.reason}</p>
+                            <p className={cn("text-xs", mt)}>{r.reason}</p>
                           </div>
                         ))}
                       </div>
@@ -746,12 +746,12 @@ export function EquipmentIntelligencePanel() {
                           <div key={i} className={cn("p-2.5 rounded-xl", L ? "bg-slate-50" : "bg-slate-900/30")}>
                             <div className="flex items-center justify-between mb-0.5">
                               <p className={cn("text-xs font-semibold", vl)}>{c.item}</p>
-                              <Badge className={cn("text-[8px]",
+                              <Badge className={cn("text-xs",
                                 c.status === "required" ? "bg-red-500/15 text-red-500" : "bg-yellow-500/15 text-yellow-500"
                               )}>{c.status}</Badge>
                             </div>
-                            <p className={cn("text-[10px] font-medium", "text-blue-400")}>{c.regulation}</p>
-                            <p className={cn("text-[10px]", mt)}>{c.detail}</p>
+                            <p className={cn("text-xs font-medium", "text-blue-400")}>{c.regulation}</p>
+                            <p className={cn("text-xs", mt)}>{c.detail}</p>
                           </div>
                         ))}
                       </div>
@@ -760,7 +760,7 @@ export function EquipmentIntelligencePanel() {
                 )}
               </div>
 
-              <p className={cn("text-[10px] text-center", mt)}>
+              <p className={cn("text-xs text-center", mt)}>
                 Scanned by ESANG AI at {scanResult.scannedAt ? new Date(scanResult.scannedAt).toLocaleString() : "—"}
               </p>
             </>
@@ -805,7 +805,7 @@ export function EquipmentIntelligencePanel() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={cn("text-[10px]", L ? "bg-slate-100 text-slate-600" : "bg-slate-700 text-slate-300")}>
+                    <Badge className={cn("text-xs", L ? "bg-slate-100 text-slate-600" : "bg-slate-700 text-slate-300")}>
                       {cat.items?.filter((i: any) => editItems.get(i.id)?.available).length || 0}/{cat.itemCount}
                     </Badge>
                     {expandedCats.has(cat.id) ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
@@ -840,7 +840,7 @@ export function EquipmentIntelligencePanel() {
                             <p className={cn("font-medium text-sm", vl)}>{item.name}</p>
                             <p className={cn("text-xs truncate", mt)}>{item.description}</p>
                           </div>
-                          <Badge className={cn("text-[9px] flex-shrink-0",
+                          <Badge className={cn("text-xs flex-shrink-0",
                             item.criticality === "required" ? "bg-red-500/15 text-red-500" :
                             item.criticality === "recommended" ? "bg-yellow-500/15 text-yellow-500" :
                             "bg-slate-500/15 text-slate-400"
@@ -890,7 +890,7 @@ export function EquipmentIntelligencePanel() {
                         <div className="text-right">
                           <p className={cn("text-2xl font-bold", scoreColor)}>{p.score}%</p>
                           {p.criticalGaps > 0 && (
-                            <p className="text-[10px] text-red-400 font-medium">{p.criticalGaps} critical gap{p.criticalGaps > 1 ? "s" : ""}</p>
+                            <p className="text-xs text-red-400 font-medium">{p.criticalGaps} critical gap{p.criticalGaps > 1 ? "s" : ""}</p>
                           )}
                         </div>
                       </div>
@@ -901,14 +901,14 @@ export function EquipmentIntelligencePanel() {
                         />
                       </div>
                       <div className="flex items-center justify-between mt-2">
-                        <Badge className={cn("text-[10px]",
+                        <Badge className={cn("text-xs",
                           p.readiness === "ready" ? "bg-green-500/15 text-green-500" :
                           p.readiness === "partial" ? "bg-yellow-500/15 text-yellow-500" :
                           "bg-red-500/15 text-red-500"
                         )}>
                           {p.readiness === "ready" ? "Ready to Haul" : p.readiness === "partial" ? "Partial Match" : "Not Ready"}
                         </Badge>
-                        <p className={cn("text-[10px]", mt)}>
+                        <p className={cn("text-xs", mt)}>
                           {p.readiness === "ready" ? "All required equipment available" :
                            p.readiness === "partial" ? "Some equipment missing" :
                            "Missing critical equipment"}
@@ -972,7 +972,7 @@ export function EquipmentIntelligencePanel() {
                         <div key={item.id} className={cn("p-3 rounded-xl", L ? "bg-slate-50" : "bg-slate-900/30")}>
                           <div className="flex items-center justify-between mb-1">
                             <p className={cn("font-medium text-sm", vl)}>{item.name}</p>
-                            <Badge className={cn("text-[9px]",
+                            <Badge className={cn("text-xs",
                               item.criticality === "required" ? "bg-red-500/15 text-red-500" :
                               item.criticality === "recommended" ? "bg-yellow-500/15 text-yellow-500" :
                               "bg-slate-500/15 text-slate-400"
@@ -984,7 +984,7 @@ export function EquipmentIntelligencePanel() {
                           {item.specs && Object.keys(item.specs).length > 0 && (
                             <div className="flex flex-wrap gap-1.5">
                               {Object.entries(item.specs).map(([key, vals]: [string, any]) => (
-                                <span key={key} className={cn("text-[10px] px-2 py-0.5 rounded-full border",
+                                <span key={key} className={cn("text-xs px-2 py-0.5 rounded-full border",
                                   L ? "bg-white border-slate-200 text-slate-600" : "bg-slate-800 border-slate-600 text-slate-300"
                                 )}>
                                   {key}: {Array.isArray(vals) ? vals.join(", ") : String(vals)}
@@ -994,12 +994,12 @@ export function EquipmentIntelligencePanel() {
                           )}
                           <div className="flex flex-wrap gap-1 mt-2">
                             {item.applicableProducts?.slice(0, 4).map((p: string) => (
-                              <span key={p} className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 font-medium">
+                              <span key={p} className="text-xs px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 font-medium">
                                 {p.replace(/_/g, " ")}
                               </span>
                             ))}
                             {(item.applicableProducts?.length || 0) > 4 && (
-                              <span className="text-[9px] text-slate-400">+{item.applicableProducts.length - 4} more</span>
+                              <span className="text-xs text-slate-400">+{item.applicableProducts.length - 4} more</span>
                             )}
                           </div>
                         </div>
@@ -1020,23 +1020,23 @@ export function EquipmentIntelligencePanel() {
                   <p className={cn("font-bold text-sm mb-1", vl)}>{p.name}</p>
                   <p className={cn("text-xs mb-3", mt)}>{p.category}</p>
                   <div className="flex items-center gap-3 mb-2">
-                    <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full", "bg-red-500/15 text-red-500")}>
+                    <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", "bg-red-500/15 text-red-500")}>
                       {p.requiredEquipmentCount} required
                     </span>
-                    <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full", "bg-yellow-500/15 text-yellow-500")}>
+                    <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", "bg-yellow-500/15 text-yellow-500")}>
                       {p.recommendedEquipmentCount} recommended
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {p.typicalTrailers?.map((t: string) => (
-                      <span key={t} className={cn("text-[9px] px-1.5 py-0.5 rounded border",
+                      <span key={t} className={cn("text-xs px-1.5 py-0.5 rounded border",
                         L ? "border-slate-200 text-slate-500" : "border-slate-600 text-slate-400"
                       )}>
                         {t.replace(/_/g, " ")}
                       </span>
                     ))}
                   </div>
-                  {p.notes && <p className={cn("text-[10px] mt-2 leading-relaxed", mt)}>{p.notes.slice(0, 150)}{p.notes.length > 150 ? "..." : ""}</p>}
+                  {p.notes && <p className={cn("text-xs mt-2 leading-relaxed", mt)}>{p.notes.slice(0, 150)}{p.notes.length > 150 ? "..." : ""}</p>}
                 </CardContent>
               </Card>
             ))}

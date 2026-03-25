@@ -306,9 +306,9 @@ export default function PredictiveLoadPricing() {
                         )}
                       </div>
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-[10px] text-slate-500">Low</span>
-                        <span className="text-[10px] text-slate-500">Predicted</span>
-                        <span className="text-[10px] text-slate-500">High</span>
+                        <span className="text-xs text-slate-500">Low</span>
+                        <span className="text-xs text-slate-500">Predicted</span>
+                        <span className="text-xs text-slate-500">High</span>
                       </div>
                     </div>
                     <p className={cn("text-sm", isLight ? "text-slate-600" : "text-slate-300")}>{pred?.recommendation}</p>
@@ -501,7 +501,7 @@ export default function PredictiveLoadPricing() {
                         <div key={i} className={cn("p-4 rounded-lg border text-center", isLight ? "bg-slate-50 border-slate-100" : "bg-slate-700/30 border-slate-600/30")}>
                           <p className="text-xs text-slate-500 mb-1">Week {i + 1}</p>
                           <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{vol}</p>
-                          <p className="text-[10px] text-slate-500">loads</p>
+                          <p className="text-xs text-slate-500">loads</p>
                         </div>
                       ))}
                     </div>
@@ -560,7 +560,7 @@ export default function PredictiveLoadPricing() {
                         const isCurrent = Number(m) === snap?.currentMonth;
                         return (
                           <div key={m} className={cn("p-2 rounded-lg border text-center", isCurrent ? "border-cyan-500/50 bg-cyan-500/10" : isLight ? "bg-slate-50 border-slate-100" : "bg-slate-700/30 border-slate-600/30")}>
-                            <p className={cn("text-[10px] font-medium", isCurrent ? "text-cyan-400" : "text-slate-500")}>{monthNames[Number(m) - 1]}</p>
+                            <p className={cn("text-xs font-medium", isCurrent ? "text-cyan-400" : "text-slate-500")}>{monthNames[Number(m) - 1]}</p>
                             <p className={cn("text-sm font-bold", factor > 1.05 ? "text-red-400" : factor < 0.98 ? "text-green-400" : isLight ? "text-slate-700" : "text-white")}>
                               {factor.toFixed(2)}x
                             </p>
@@ -691,7 +691,7 @@ export default function PredictiveLoadPricing() {
                             <td className="py-2 px-3 text-right text-slate-400">{load.distance} mi</td>
                             <td className="py-2 px-3 text-right text-purple-400">${load.distance > 0 ? (load.rate / load.distance).toFixed(2) : "—"}</td>
                             <td className="py-2 px-3 text-center">
-                              <Badge className={cn("text-[10px]", load.status === "delivered" ? "bg-green-500/20 text-green-400" : "bg-cyan-500/20 text-cyan-400")}>{load.status}</Badge>
+                              <Badge className={cn("text-xs", load.status === "delivered" ? "bg-green-500/20 text-green-400" : "bg-cyan-500/20 text-cyan-400")}>{load.status}</Badge>
                             </td>
                           </tr>
                         ))}

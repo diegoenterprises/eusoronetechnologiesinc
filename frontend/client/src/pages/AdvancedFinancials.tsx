@@ -64,7 +64,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <Badge className={cn("text-[10px] font-medium border-0", STATUS_COLORS[status] || "bg-slate-500/20 text-slate-400")}>
+    <Badge className={cn("text-xs font-medium border-0", STATUS_COLORS[status] || "bg-slate-500/20 text-slate-400")}>
       {status.replace(/_/g, " ")}
     </Badge>
   );
@@ -82,8 +82,8 @@ function KPICard({ icon, label, value, sub, accent = "cyan", isLight = false }: 
           <div className={cn("p-2 rounded-full", bgCls)}>{icon}</div>
           <div>
             <p className={cn("text-xl font-bold", accentCls)}>{value}</p>
-            <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-slate-400"} uppercase tracking-wide`}>{label}</p>
-            {sub && <p className={`text-[10px] ${isLight ? "text-slate-400" : "text-slate-500"} mt-0.5`}>{sub}</p>}
+            <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"} uppercase tracking-wide`}>{label}</p>
+            {sub && <p className={`text-xs ${isLight ? "text-slate-400" : "text-slate-500"} mt-0.5`}>{sub}</p>}
           </div>
         </div>
       </CardContent>
@@ -202,9 +202,9 @@ function OverviewTab({ isLight = false }: { isLight?: boolean }) {
                       <span className="text-xs text-slate-400 w-16 shrink-0">{t.month}</span>
                       <div className={`flex-1 ${isLight ? "bg-slate-200" : "bg-slate-700/30"} rounded-full h-5 relative overflow-hidden`}>
                         <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500/60 to-emerald-500/60 rounded-full" style={{ width: `${pct}%` }} />
-                        <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white font-medium">{fmtUSD(t.revenue)}</span>
+                        <span className="absolute inset-0 flex items-center justify-center text-xs text-white font-medium">{fmtUSD(t.revenue)}</span>
                       </div>
-                      <Badge className="text-[9px] bg-emerald-500/20 text-emerald-400 border-0 shrink-0">{fmtPct(t.margin)}</Badge>
+                      <Badge className="text-xs bg-emerald-500/20 text-emerald-400 border-0 shrink-0">{fmtPct(t.margin)}</Badge>
                     </div>
                   );
                 })}
@@ -228,7 +228,7 @@ function OverviewTab({ isLight = false }: { isLight?: boolean }) {
                       <div className="absolute inset-y-0 left-0 bg-red-500/40 rounded-full" style={{ width: `${c.percentage}%` }} />
                     </div>
                     <span className="text-xs text-slate-300 w-16 text-right shrink-0">{fmtUSD(c.amount)}</span>
-                    <span className="text-[10px] text-slate-500 w-10 text-right shrink-0">{c.percentage.toFixed(1)}%</span>
+                    <span className="text-xs text-slate-500 w-10 text-right shrink-0">{c.percentage.toFixed(1)}%</span>
                   </div>
                 ))}
                 <div className={`flex justify-between pt-2 ${isLight ? "border-t border-slate-200" : "border-t border-slate-700/50"}`}>
@@ -299,9 +299,9 @@ function OverviewTab({ isLight = false }: { isLight?: boolean }) {
               })}
             </div>
             <div className="flex justify-between mt-2">
-              <span className="text-[10px] text-slate-500">Start: {fmtUSD(cf.startingBalance)}</span>
-              <span className="text-[10px] text-slate-500">Min: {fmtUSD(cf.minimumBalance)} ({cf.minimumBalanceDate})</span>
-              <span className="text-[10px] text-slate-500">End: {fmtUSD(cf.endingBalance)}</span>
+              <span className="text-xs text-slate-500">Start: {fmtUSD(cf.startingBalance)}</span>
+              <span className="text-xs text-slate-500">Min: {fmtUSD(cf.minimumBalance)} ({cf.minimumBalanceDate})</span>
+              <span className="text-xs text-slate-500">End: {fmtUSD(cf.endingBalance)}</span>
             </div>
           </CardContent>
         </Card>
@@ -341,9 +341,9 @@ function CollectionsTab({ isLight = false }: { isLight?: boolean }) {
             <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               {analytics.agingBuckets.map((b: any) => (
                 <div key={b.label} className={`${isLight ? "bg-slate-100 rounded-lg p-3" : "bg-slate-700/30 rounded-lg p-3"} text-center`}>
-                  <p className="text-[10px] text-slate-400 uppercase">{b.label}</p>
+                  <p className="text-xs text-slate-400 uppercase">{b.label}</p>
                   <p className="text-sm font-bold text-slate-200 mt-1">{fmtUSD(b.amount)}</p>
-                  <p className="text-[10px] text-slate-500">{b.count} invoices ({b.percentage}%)</p>
+                  <p className="text-xs text-slate-500">{b.count} invoices ({b.percentage}%)</p>
                 </div>
               ))}
             </div>
@@ -377,7 +377,7 @@ function CollectionsTab({ isLight = false }: { isLight?: boolean }) {
                       <td className={`py-2 pr-3 text-right ${isLight ? "text-slate-900" : "text-slate-200"} font-medium`}>{fmtUSD(item.balance)}</td>
                       <td className="py-2 pr-3 text-right text-slate-300">{item.daysOverdue}</td>
                       <td className="py-2 pr-3 text-center">
-                        <span className={cn("text-[10px] font-bold", item.priorityScore > 70 ? "text-red-400" : item.priorityScore > 40 ? "text-amber-400" : "text-emerald-400")}>
+                        <span className={cn("text-xs font-bold", item.priorityScore > 70 ? "text-red-400" : item.priorityScore > 40 ? "text-amber-400" : "text-emerald-400")}>
                           {item.priorityScore}
                         </span>
                       </td>
@@ -472,7 +472,7 @@ function Tax1099Tab({ isLight = false }: { isLight?: boolean }) {
                         {genResult.contractors.map((c: any) => (
                           <tr key={c.contractorId} className="border-b border-slate-700/20">
                             <td className="py-1.5 pr-3 text-slate-300">{c.name}</td>
-                            <td className="py-1.5 pr-3 text-slate-500 font-mono text-[10px]">
+                            <td className="py-1.5 pr-3 text-slate-500 font-mono text-xs">
                               {c.tin} {c.tinValidated && <ShieldCheck className="inline w-3 h-3 text-emerald-400" />}
                             </td>
                             <td className="py-1.5 pr-3 text-right text-slate-200">{fmtUSD(c.totalNonemployeeCompensation)}</td>
@@ -529,7 +529,7 @@ function CurrencyTab({ isLight = false }: { isLight?: boolean }) {
                     <span className="text-xs font-bold text-emerald-400">{r.to}</span>
                   </div>
                   <p className="text-lg font-bold text-slate-200 mt-1">{r.appliedRate.toFixed(4)}</p>
-                  <p className="text-[10px] text-slate-500">Mid: {r.midMarketRate.toFixed(4)} | Spread: {r.spreadBps}bps</p>
+                  <p className="text-xs text-slate-500">Mid: {r.midMarketRate.toFixed(4)} | Spread: {r.spreadBps}bps</p>
                 </div>
               ))}
             </div>
@@ -543,7 +543,7 @@ function CurrencyTab({ isLight = false }: { isLight?: boolean }) {
         <CardContent>
           <div className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="text-[10px] text-slate-400 uppercase">Amount</label>
+              <label className="text-xs text-slate-400 uppercase">Amount</label>
               <input
                 type="number"
                 value={amount}
@@ -552,13 +552,13 @@ function CurrencyTab({ isLight = false }: { isLight?: boolean }) {
               />
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase">From</label>
+              <label className="text-xs text-slate-400 uppercase">From</label>
               <select value={from} onChange={(e) => setFrom(e.target.value)} className={`block mt-1 ${isLight ? "bg-white border border-slate-300 text-slate-900" : "bg-slate-700/50 border border-slate-600 text-slate-200"} rounded-md px-3 py-1.5 text-sm`}>
                 <option value="USD">USD</option><option value="CAD">CAD</option><option value="MXN">MXN</option>
               </select>
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase">To</label>
+              <label className="text-xs text-slate-400 uppercase">To</label>
               <select value={to} onChange={(e) => setTo(e.target.value)} className={`block mt-1 ${isLight ? "bg-white border border-slate-300 text-slate-900" : "bg-slate-700/50 border border-slate-600 text-slate-200"} rounded-md px-3 py-1.5 text-sm`}>
                 <option value="USD">USD</option><option value="CAD">CAD</option><option value="MXN">MXN</option>
               </select>
@@ -632,7 +632,7 @@ function ProfitabilityTab({ isLight = false }: { isLight?: boolean }) {
                       <td className="py-1.5 text-center">
                         {l.trend === "up" && <TrendingUp className="w-3 h-3 text-emerald-400 inline" />}
                         {l.trend === "down" && <TrendingDown className="w-3 h-3 text-red-400 inline" />}
-                        {l.trend === "stable" && <span className="text-[10px] text-slate-500">--</span>}
+                        {l.trend === "stable" && <span className="text-xs text-slate-500">--</span>}
                       </td>
                     </tr>
                   ))}
@@ -687,7 +687,7 @@ function ProfitabilityTab({ isLight = false }: { isLight?: boolean }) {
         <Card className={`${isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50"} rounded-xl`}>
           <CardHeader className="pb-2">
             <CardTitle className={`text-sm ${isLight ? "text-slate-700" : "text-slate-300"}`}>Payment Terms Optimization</CardTitle>
-            <p className="text-[10px] text-emerald-400">Projected cash flow improvement: {fmtUSD(terms.totalProjectedCashFlowImprovement)} | DSO impact: {terms.avgDSOImpact} days</p>
+            <p className="text-xs text-emerald-400">Projected cash flow improvement: {fmtUSD(terms.totalProjectedCashFlowImprovement)} | DSO impact: {terms.avgDSOImpact} days</p>
           </CardHeader>
           <CardContent className="space-y-3">
             {terms.recommendations.map((r: any) => (
@@ -695,13 +695,13 @@ function ProfitabilityTab({ isLight = false }: { isLight?: boolean }) {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-slate-200">{r.customer}</span>
                   <div className="flex items-center gap-2">
-                    <Badge className="text-[9px] bg-red-500/20 text-red-400 border-0">{r.currentTerms}</Badge>
+                    <Badge className="text-xs bg-red-500/20 text-red-400 border-0">{r.currentTerms}</Badge>
                     <ArrowRightLeft className="w-3 h-3 text-slate-500" />
-                    <Badge className="text-[9px] bg-emerald-500/20 text-emerald-400 border-0">{r.suggestedTerms}</Badge>
+                    <Badge className="text-xs bg-emerald-500/20 text-emerald-400 border-0">{r.suggestedTerms}</Badge>
                   </div>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1">{r.reason}</p>
-                <p className="text-[10px] text-cyan-400 mt-0.5">Impact: {fmtUSD(r.projectedImpact)}/mo</p>
+                <p className="text-xs text-slate-400 mt-1">{r.reason}</p>
+                <p className="text-xs text-cyan-400 mt-0.5">Impact: {fmtUSD(r.projectedImpact)}/mo</p>
               </div>
             ))}
           </CardContent>
@@ -743,7 +743,7 @@ function FactoringTab({ isLight = false }: { isLight?: boolean }) {
                   <h3 className="text-sm font-bold text-slate-200">{o.provider}</h3>
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-amber-400">{o.rating}</span>
-                    <span className="text-[10px] text-slate-500">/5</span>
+                    <span className="text-xs text-slate-500">/5</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -765,12 +765,12 @@ function FactoringTab({ isLight = false }: { isLight?: boolean }) {
         <Card className={`${isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50"} rounded-xl`}>
           <CardHeader className="pb-2">
             <CardTitle className={`text-sm ${isLight ? "text-slate-700" : "text-slate-300"}`}>Revenue Recognition (ASC 606)</CardTitle>
-            <p className="text-[10px] text-slate-500">Period: {rev.period} | Recognized: {fmtUSD(rev.recognizedRevenue)} / {fmtUSD(rev.totalContractValue)}</p>
+            <p className="text-xs text-slate-500">Period: {rev.period} | Recognized: {fmtUSD(rev.recognizedRevenue)} / {fmtUSD(rev.totalContractValue)}</p>
           </CardHeader>
           <CardContent className="space-y-2">
             {rev.performanceObligations.map((po: any) => (
               <div key={po.id} className="flex items-center gap-3">
-                <span className="text-[10px] text-slate-500 w-12 shrink-0">{po.id}</span>
+                <span className="text-xs text-slate-500 w-12 shrink-0">{po.id}</span>
                 <span className="text-xs text-slate-300 flex-1 truncate">{po.description}</span>
                 <div className={`w-24 ${isLight ? "bg-slate-200" : "bg-slate-700/30"} rounded-full h-3 relative overflow-hidden shrink-0`}>
                   <div className="absolute inset-y-0 left-0 bg-cyan-500/50 rounded-full" style={{ width: `${po.allocatedValue > 0 ? (po.recognizedAmount / po.allocatedValue) * 100 : 0}%` }} />
@@ -833,13 +833,13 @@ function FuelCardsTab({ isLight = false }: { isLight?: boolean }) {
                         <td className={`py-1.5 pr-3 text-right ${isLight ? "text-slate-900" : "text-slate-200"} font-medium`}>{fmtUSD(t.totalAmount)}</td>
                         <td className="py-1.5 pr-3 text-center">
                           {t.flagged ? (
-                            <Badge className="text-[9px] bg-red-500/20 text-red-400 border-0">{t.fraudScore}</Badge>
+                            <Badge className="text-xs bg-red-500/20 text-red-400 border-0">{t.fraudScore}</Badge>
                           ) : (
-                            <span className="text-[10px] text-emerald-400">{t.fraudScore}</span>
+                            <span className="text-xs text-emerald-400">{t.fraudScore}</span>
                           )}
                         </td>
                         <td className="py-1.5 text-center">
-                          {t.reconciled ? <ShieldCheck className="w-3 h-3 text-emerald-400 inline" /> : <span className="text-[10px] text-slate-500">--</span>}
+                          {t.reconciled ? <ShieldCheck className="w-3 h-3 text-emerald-400 inline" /> : <span className="text-xs text-slate-500">--</span>}
                         </td>
                       </tr>
                     ))}

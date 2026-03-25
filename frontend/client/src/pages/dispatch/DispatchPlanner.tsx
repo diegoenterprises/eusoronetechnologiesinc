@@ -60,7 +60,7 @@ function MiniCalendar({ value, onChange, onClose }: { value: string; onChange: (
           <button onClick={() => navMonth(1)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-white/[0.08] text-slate-400"><ChevronDown className="w-3.5 h-3.5" /></button>
         </div>
       </div>
-      <div className="grid grid-cols-7 text-center text-[10px] font-medium text-slate-500 mb-1">
+      <div className="grid grid-cols-7 text-center text-xs font-medium text-slate-500 mb-1">
         {["S","M","T","W","T","F","S"].map((d, i) => <span key={i}>{d}</span>)}
       </div>
       <div className="grid grid-cols-7 gap-px">
@@ -86,8 +86,8 @@ function MiniCalendar({ value, onChange, onClose }: { value: string; onChange: (
         })}
       </div>
       <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.06]">
-        <button onClick={() => { onChange(formatDate(new Date())); onClose(); }} className="text-[10px] text-cyan-400 hover:text-cyan-300 font-medium">Today</button>
-        <button onClick={() => { onChange(""); onClose(); }} className="text-[10px] text-slate-500 hover:text-slate-300">Clear</button>
+        <button onClick={() => { onChange(formatDate(new Date())); onClose(); }} className="text-xs text-cyan-400 hover:text-cyan-300 font-medium">Today</button>
+        <button onClick={() => { onChange(""); onClose(); }} className="text-xs text-slate-500 hover:text-slate-300">Clear</button>
       </div>
     </div>
   );
@@ -289,7 +289,7 @@ export default function DispatchPlanner() {
               <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-1.5">
                 <Package className="w-4 h-4 text-orange-400" />
                 Unassigned Loads
-                <Badge className="bg-orange-500/20 text-orange-400 border-0 text-[10px] ml-1">
+                <Badge className="bg-orange-500/20 text-orange-400 border-0 text-xs ml-1">
                   {filteredLoads.length}
                 </Badge>
               </h2>
@@ -306,7 +306,7 @@ export default function DispatchPlanner() {
             <div className="flex gap-1.5 flex-wrap">
               <button
                 className={cn(
-                  "text-[10px] px-2 py-0.5 rounded border transition-all",
+                  "text-xs px-2 py-0.5 rounded border transition-all",
                   !cargoFilter ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-400" : "border-white/[0.06] text-slate-400 hover:bg-white/[0.04]"
                 )}
                 onClick={() => setCargoFilter("")}
@@ -315,7 +315,7 @@ export default function DispatchPlanner() {
                 <button
                   key={c}
                   className={cn(
-                    "text-[10px] px-2 py-0.5 rounded border transition-all capitalize",
+                    "text-xs px-2 py-0.5 rounded border transition-all capitalize",
                     cargoFilter === c ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-400" : "border-white/[0.06] text-slate-400 hover:bg-white/[0.04]"
                   )}
                   onClick={() => setCargoFilter(c === cargoFilter ? "" : c)}
@@ -323,7 +323,7 @@ export default function DispatchPlanner() {
               ))}
               <button
                 className={cn(
-                  "text-[10px] px-2 py-0.5 rounded border transition-all",
+                  "text-xs px-2 py-0.5 rounded border transition-all",
                   hazmatOnly ? "border-red-500/50 bg-red-500/10 text-red-400" : "border-white/[0.06] text-slate-400 hover:bg-white/[0.04]"
                 )}
                 onClick={() => setHazmatOnly(!hazmatOnly)}
@@ -362,23 +362,23 @@ export default function DispatchPlanner() {
                     </span>
                     <div className="flex gap-1">
                       {load.hazmatClass && (
-                        <Badge className="bg-red-500/20 text-red-400 border-0 text-[9px] px-1">
+                        <Badge className="bg-red-500/20 text-red-400 border-0 text-xs px-1">
                           HazMat {load.hazmatClass}
                         </Badge>
                       )}
-                      <Badge className="bg-slate-700 text-slate-300 border-0 text-[9px] px-1 capitalize">
+                      <Badge className="bg-slate-700 text-slate-300 border-0 text-xs px-1 capitalize">
                         {load.cargoType}
                       </Badge>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-1">
+                  <div className="flex items-center gap-1 text-xs text-slate-400 mb-1">
                     <MapPin className="w-3 h-3 text-green-400 shrink-0" />
                     <span className="truncate">{formatLocation(load.pickupLocation)}</span>
                     <span className="text-slate-600 mx-0.5">→</span>
                     <MapPin className="w-3 h-3 text-red-400 shrink-0" />
                     <span className="truncate">{formatLocation(load.deliveryLocation)}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
                     {load.distance && <span>{Number(load.distance).toFixed(0)} mi</span>}
                     {load.weight && <span>{Number(load.weight).toLocaleString()} lbs</span>}
                     {load.rate && <span className="text-green-400 font-medium">${Number(load.rate).toLocaleString()}</span>}
@@ -393,16 +393,16 @@ export default function DispatchPlanner() {
                   {/* Auto-suggest panel */}
                   {suggestLoadId === load.id && suggestQuery.data && (
                     <div className="mt-2 pt-2 border-t border-white/[0.06] space-y-1">
-                      <div className="text-[10px] text-purple-400 font-medium flex items-center gap-1">
+                      <div className="text-xs text-purple-400 font-medium flex items-center gap-1">
                         <Sparkles className="w-3 h-3" />AI Suggestions
                         <button className="ml-auto text-slate-500 hover:text-slate-300" onClick={() => setSuggestLoadId(null)}>
                           <X className="w-3 h-3" />
                         </button>
                       </div>
                       {suggestQuery.data.suggestedDrivers.slice(0, 5).map((s: any) => (
-                        <div key={s.driverId} className="flex items-center gap-2 text-[10px] py-0.5">
+                        <div key={s.driverId} className="flex items-center gap-2 text-xs py-0.5">
                           <div className={cn(
-                            "w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold",
+                            "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold",
                             s.score >= 70 ? "bg-green-500/20 text-green-400" :
                             s.score >= 40 ? "bg-yellow-500/20 text-yellow-400" :
                             "bg-red-500/20 text-red-400"
@@ -426,11 +426,11 @@ export default function DispatchPlanner() {
               <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-1.5">
                 <Truck className="w-4 h-4 text-cyan-400" />
                 Driver Timelines
-                <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-[10px] ml-1">
+                <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-xs ml-1">
                   {board?.drivers?.length || 0} drivers
                 </Badge>
               </h2>
-              <div className="text-[10px] text-slate-500">
+              <div className="text-xs text-slate-500">
                 Drag loads from left panel onto driver slots
               </div>
             </div>
@@ -457,9 +457,9 @@ export default function DispatchPlanner() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-white truncate">{driver.driverName}</div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
                         <span className={cn(
-                          "px-1 py-0.5 rounded text-[9px] font-medium capitalize",
+                          "px-1 py-0.5 rounded text-xs font-medium capitalize",
                           driver.status === "available" ? "bg-green-500/20 text-green-400" :
                           driver.status === "on_load" ? "bg-blue-500/20 text-blue-400" :
                           "bg-slate-700 text-slate-400"
@@ -487,7 +487,7 @@ export default function DispatchPlanner() {
                           style={{ width: `${Math.min(100, (driver.hosRemaining / 660) * 100)}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-slate-400 w-12 text-right">{hosLabel(driver.hosRemaining)}</span>
+                      <span className="text-xs text-slate-400 w-12 text-right">{hosLabel(driver.hosRemaining)}</span>
                     </div>
                   </div>
 
@@ -510,7 +510,7 @@ export default function DispatchPlanner() {
                         {slot.load ? (
                           <div className="p-2 flex-1 flex flex-col">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-[11px] font-semibold text-cyan-400 truncate">
+                              <span className="text-xs font-semibold text-cyan-400 truncate">
                                 {slot.load.loadNumber}
                               </span>
                               <button
@@ -521,10 +521,10 @@ export default function DispatchPlanner() {
                                 <X className="w-3 h-3" />
                               </button>
                             </div>
-                            <div className="text-[9px] text-slate-400 truncate">
+                            <div className="text-xs text-slate-400 truncate">
                               {formatLocation(slot.load.pickupLocation)} → {formatLocation(slot.load.deliveryLocation)}
                             </div>
-                            <div className="mt-auto flex items-center gap-1.5 text-[9px]">
+                            <div className="mt-auto flex items-center gap-1.5 text-xs">
                               {slot.load.hazmatClass && (
                                 <span className="text-red-400">HM-{slot.load.hazmatClass}</span>
                               )}
@@ -535,7 +535,7 @@ export default function DispatchPlanner() {
                             </div>
                           </div>
                         ) : (
-                          <div className="flex-1 flex flex-col items-center justify-center text-slate-600 text-[10px]">
+                          <div className="flex-1 flex flex-col items-center justify-center text-slate-600 text-xs">
                             <Zap className="w-4 h-4 mb-0.5 opacity-30" />
                             Slot {slot.slotIndex + 1}
                             {draggingLoadId && (

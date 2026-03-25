@@ -342,7 +342,7 @@ export default function Weather({ location: locationProp, compact = false, expan
               <p className="text-sm text-gray-400 flex items-center gap-1">
                 <MapPin className="w-3 h-3" />
                 {weather.location}
-                {customLocation && <span className="text-[10px] text-cyan-400 ml-1">(custom)</span>}
+                {customLocation && <span className="text-xs text-cyan-400 ml-1">(custom)</span>}
               </p>
             </div>
             {getWeatherIcon(weather.condition, weather.icon)}
@@ -383,11 +383,11 @@ export default function Weather({ location: locationProp, compact = false, expan
                 )}
               </div>
               {customLocation && (
-                <button onClick={clearLocation} className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors">
+                <button onClick={clearLocation} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
                   Reset to device location
                 </button>
               )}
-              <p className="text-[10px] text-gray-600">Select a city from the dropdown to set your weather location</p>
+              <p className="text-xs text-gray-600">Select a city from the dropdown to set your weather location</p>
             </div>
           )}
 

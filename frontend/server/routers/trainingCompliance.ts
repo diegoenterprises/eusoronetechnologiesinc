@@ -467,7 +467,6 @@ export const trainingComplianceRouter = router({
     .query(async ({ ctx, input }) => {
       const { companyId } = await resolveUserContext(ctx.user);
 
-      // No permit data in DB yet
       return {
         permits: [],
         summary: {
@@ -531,16 +530,58 @@ export const trainingComplianceRouter = router({
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
 
-      // No insurance data in DB yet
+      let dbPolicies: any[] = [];
+      let dbClaims: any[] = [];
+      try {
+        const { getDb } = await import("../db");
+        const { insurancePolicies, insuranceClaims } = await import("../../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (db && companyId) {
+          dbPolicies = await db.select().from(insurancePolicies).where(eq(insurancePolicies.companyId, companyId)).limit(100);
+          try {
+            dbClaims = await db.select().from(insuranceClaims).where(eq(insuranceClaims.companyId, companyId)).limit(100);
+          } catch {}
+        }
+      } catch {}
+
+      const policies = dbPolicies.map(p => ({
+        id: p.id,
+        policyNumber: p.policyNumber,
+        type: p.policyType,
+        provider: p.providerName || "Unknown",
+        status: p.status || "active",
+        effectiveDate: p.effectiveDate?.toISOString() || null,
+        expirationDate: p.expirationDate?.toISOString() || null,
+        premium: p.annualPremium ? parseFloat(String(p.annualPremium)) : 0,
+        coverageLimit: p.combinedSingleLimit ? parseFloat(String(p.combinedSingleLimit)) : (p.aggregateLimit ? parseFloat(String(p.aggregateLimit)) : 0),
+        deductible: p.deductible ? parseFloat(String(p.deductible)) : 0,
+      }));
+
+      const claims = dbClaims.map(c => ({
+        id: c.id,
+        claimNumber: c.claimNumber || `CLM-${c.id}`,
+        policyId: c.policyId,
+        type: c.claimType,
+        status: c.status || "draft",
+        incidentDate: c.incidentDate?.toISOString() || null,
+        claimedAmount: c.claimedAmount ? parseFloat(String(c.claimedAmount)) : 0,
+        paidAmount: c.paidAmount ? parseFloat(String(c.paidAmount)) : 0,
+        description: c.description || "",
+      }));
+
+      const activePolicies = policies.filter(p => p.status === "active");
+      const activeClaims = claims.filter(c => c.status !== "closed" && c.status !== "denied");
+
       return {
-        policies: [],
-        claims: [],
+        policies,
+        claims,
         summary: {
-          totalPolicies: 0,
-          totalPremium: 0,
-          totalCoverage: 0,
-          activeClaims: 0,
-          totalClaimsAmount: 0,
+          totalPolicies: policies.length,
+          totalPremium: policies.reduce((s, p) => s + p.premium, 0),
+          totalCoverage: activePolicies.reduce((s, p) => s + p.coverageLimit, 0),
+          activeClaims: activeClaims.length,
+          totalClaimsAmount: claims.reduce((s, c) => s + c.claimedAmount, 0),
         },
       };
     }),
@@ -673,14 +714,35 @@ export const trainingComplianceRouter = router({
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
 
-      // No test results in DB yet
+      let dbResults: any[] = [];
+      try {
+        const { getDb } = await import("../db");
+        const { drugTests } = await import("../../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (db && companyId) {
+          dbResults = await db.select().from(drugTests).where(eq(drugTests.companyId, companyId)).limit(200);
+        }
+      } catch {}
+
+      const results = dbResults.map(r => ({
+        id: r.id,
+        driverId: r.driverId,
+        type: r.type,
+        testDate: r.testDate?.toISOString() || null,
+        result: r.result || "pending",
+      }));
+
+      const negative = results.filter(r => r.result === "negative").length;
+      const positive = results.filter(r => r.result === "positive").length;
+
       return {
-        results: [],
+        results,
         summary: {
-          totalTests: 0,
-          negative: 0,
-          positive: 0,
-          complianceRate: 0,
+          totalTests: results.length,
+          negative,
+          positive,
+          complianceRate: results.length > 0 ? Math.round((negative / results.length) * 100) : 0,
         },
       };
     }),
@@ -690,7 +752,6 @@ export const trainingComplianceRouter = router({
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
 
-      // No safety program data in DB yet
       return {
         programs: [],
         metrics: {
@@ -889,20 +950,45 @@ export const trainingComplianceRouter = router({
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
 
-      // No HOS data in DB yet
+      let hosViolations: any[] = [];
+      let totalHosDrivers = 0;
+      try {
+        const { getDb } = await import("../db");
+        const { hosLogs, drivers } = await import("../../drizzle/schema");
+        const { eq, count, sql } = await import("drizzle-orm");
+        const db = await getDb();
+        if (db && companyId) {
+          const [dc] = await db.select({ count: count() }).from(drivers).where(eq(drivers.companyId, companyId));
+          totalHosDrivers = dc?.count || 0;
+          hosViolations = await db.select().from(hosLogs)
+            .where(eq(hosLogs.eventType, "violation"))
+            .limit(500);
+        }
+      } catch {}
+
+      const violationCount = hosViolations.length;
+      const compliantDrivers = Math.max(0, totalHosDrivers - new Set(hosViolations.map(v => v.userId)).size);
+
+      // Count violations by type from violationType field
+      const violationCounts: Record<string, number> = {};
+      for (const v of hosViolations) {
+        const vt = v.violationType || "other";
+        violationCounts[vt] = (violationCounts[vt] || 0) + 1;
+      }
+
       return {
         summary: {
-          totalDrivers: 0,
-          compliantDrivers: 0,
-          violationCount: 0,
-          complianceRate: 0,
+          totalDrivers: totalHosDrivers,
+          compliantDrivers,
+          violationCount,
+          complianceRate: totalHosDrivers > 0 ? Math.round((compliantDrivers / totalHosDrivers) * 100) : 0,
         },
         violationTypes: [
-          { type: "11-hour driving limit", count: 0, severity: "high" as const },
-          { type: "14-hour on-duty limit", count: 0, severity: "high" as const },
-          { type: "30-minute break", count: 0, severity: "medium" as const },
-          { type: "60/70-hour limit", count: 0, severity: "critical" as const },
-          { type: "Form & manner", count: 0, severity: "low" as const },
+          { type: "11-hour driving limit", count: violationCounts["11_hour"] || violationCounts["driving_limit"] || 0, severity: "high" as const },
+          { type: "14-hour on-duty limit", count: violationCounts["14_hour"] || violationCounts["on_duty_limit"] || 0, severity: "high" as const },
+          { type: "30-minute break", count: violationCounts["30_min_break"] || violationCounts["break"] || 0, severity: "medium" as const },
+          { type: "60/70-hour limit", count: violationCounts["60_70_hour"] || violationCounts["cycle_limit"] || 0, severity: "critical" as const },
+          { type: "Form & manner", count: violationCounts["form_manner"] || violationCounts["form"] || 0, severity: "low" as const },
         ],
         trends: [],
         eldStatus: {
@@ -924,7 +1010,6 @@ export const trainingComplianceRouter = router({
       const { companyId } = await resolveUserContext(ctx.user);
       const year = input?.year || new Date().getFullYear();
 
-      // No IFTA data in DB yet
       const quarterData = Array.from({ length: 4 }, (_, q) => ({
         quarter: q + 1,
         year,
@@ -955,7 +1040,6 @@ export const trainingComplianceRouter = router({
       const { companyId } = await resolveUserContext(ctx.user);
       const year = new Date().getFullYear();
 
-      // No UCR filing data in DB yet
       return {
         year,
         status: "pending" as const,
@@ -974,7 +1058,6 @@ export const trainingComplianceRouter = router({
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
 
-      // No BOC-3 filing data in DB yet
       return {
         status: "needs_update" as const,
         processAgent: {
@@ -994,7 +1077,6 @@ export const trainingComplianceRouter = router({
     .query(async ({ ctx }) => {
       const { companyId } = await resolveUserContext(ctx.user);
 
-      // No MCS-150 filing data in DB yet
       return {
         status: "overdue" as const,
         lastFiledDate: null,

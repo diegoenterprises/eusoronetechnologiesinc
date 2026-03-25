@@ -187,7 +187,7 @@ export default function LoadTracking() {
                     </div>
                     <div className="flex items-center gap-3">
                       {trackedLoad.hazmatClass && (
-                        <Badge className="bg-orange-500/20 text-orange-400 border-0 text-[11px]">HAZMAT {trackedLoad.hazmatClass}</Badge>
+                        <Badge className="bg-orange-500/20 text-orange-400 border-0 text-xs">HAZMAT {trackedLoad.hazmatClass}</Badge>
                       )}
                       <Badge className={cn("border-0 text-sm font-bold px-4 py-1.5 rounded-xl", sc.bg, sc.text)}>
                         {sc.label}
@@ -241,7 +241,7 @@ export default function LoadTracking() {
                       { label: "Rate", value: trackedLoad.rate > 0 ? `$${trackedLoad.rate.toLocaleString()}` : "N/A" },
                     ].map((item) => (
                       <div key={item.label} className={cn("p-3 rounded-xl", isLight ? "bg-white/70 border border-slate-100" : "bg-slate-800/50")}>
-                        <p className="text-[11px] text-slate-400 mb-0.5">{item.label}</p>
+                        <p className="text-xs text-slate-400 mb-0.5">{item.label}</p>
                         <p className={cn("font-medium text-sm truncate", isLight ? "text-slate-800" : "text-white")}>{item.value || "N/A"}</p>
                       </div>
                     ))}
@@ -277,7 +277,7 @@ export default function LoadTracking() {
                           <div className="pl-5">
                             <div className="flex items-center gap-2 mb-0.5">
                               <p className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>{event.status}</p>
-                              <span className="text-[11px] text-slate-400">{event.timestamp}</span>
+                              <span className="text-xs text-slate-400">{event.timestamp}</span>
                             </div>
                             <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>{event.location}</p>
                             {event.notes && <p className="text-xs text-slate-400 mt-0.5">{event.notes}</p>}
@@ -313,7 +313,7 @@ export default function LoadTracking() {
                     { label: "Destination", value: trackedLoad.destination },
                   ].map((item) => (
                     <div key={item.label} className={cn("p-3 rounded-xl", isLight ? "bg-slate-50 border border-slate-100" : "bg-slate-900/40")}>
-                      <p className="text-[11px] text-slate-400 mb-0.5">{item.label}</p>
+                      <p className="text-xs text-slate-400 mb-0.5">{item.label}</p>
                       <p className={cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white")}>{item.value || "N/A"}</p>
                     </div>
                   ))}
@@ -374,7 +374,7 @@ export default function LoadTracking() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
                               <p className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>{s.loadNumber}</p>
-                              <Badge className={cn("border-0 text-[10px]", sc.bg, sc.text)}>{sc.label}</Badge>
+                              <Badge className={cn("border-0 text-xs", sc.bg, sc.text)}>{sc.label}</Badge>
                             </div>
                             <div className="flex items-center gap-1.5 text-xs text-slate-400">
                               <span>{s.origin}</span>
@@ -385,7 +385,7 @@ export default function LoadTracking() {
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <div className="text-right">
-                            <p className="text-[10px] text-slate-400">Progress</p>
+                            <p className="text-xs text-slate-400">Progress</p>
                             <p className={cn("font-bold text-sm tabular-nums", isLight ? "text-slate-700" : "text-white")}>{s.progress}%</p>
                           </div>
                           <Button

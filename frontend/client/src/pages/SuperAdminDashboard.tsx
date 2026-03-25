@@ -132,7 +132,7 @@ export default function SuperAdminDashboard() {
                   <div className={`p-2 rounded-lg ${k.bg}`}>{k.icon}</div>
                   <div>
                     {loading ? <Skeleton className="h-6 w-10" /> : <p className={`text-lg font-bold ${k.c}`}>{typeof k.v === "number" ? k.v.toLocaleString() : k.v}</p>}
-                    <p className="text-[10px] text-slate-500">{k.label}</p>
+                    <p className="text-xs text-slate-500">{k.label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -158,7 +158,7 @@ export default function SuperAdminDashboard() {
                   <div className={`p-2 rounded-lg ${k.bg}`}>{k.icon}</div>
                   <div>
                     {loading ? <Skeleton className="h-6 w-10" /> : <p className={`text-lg font-bold ${k.c}`}>{typeof k.v === "number" ? k.v.toLocaleString() : k.v}</p>}
-                    <p className="text-[10px] text-slate-500">{k.label}</p>
+                    <p className="text-xs text-slate-500">{k.label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -177,7 +177,7 @@ export default function SuperAdminDashboard() {
                 <span className="text-white font-medium">{s?.pendingApprovals} user{(s?.pendingApprovals || 0) > 1 ? "s" : ""} awaiting approval</span>
                 <div className="flex -space-x-2 ml-2">
                   {pending.slice(0, 5).map((u: any) => (
-                    <div key={u.id} className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white text-[10px] font-bold border-2 border-slate-900">
+                    <div key={u.id} className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white text-xs font-bold border-2 border-slate-900">
                       {(u.name || u.email || "?").charAt(0).toUpperCase()}
                     </div>
                   ))}
@@ -232,7 +232,7 @@ export default function SuperAdminDashboard() {
               <div className="flex gap-1.5 flex-wrap">
                 {["all","load","bid","user","agreement","claim"].map(f => (
                   <button key={f} onClick={() => setActFilter(f)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${actFilter === f ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : "bg-slate-700/50 text-slate-400 hover:bg-slate-700"}`}>
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${actFilter === f ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : "bg-slate-700/50 text-slate-400 hover:bg-slate-700"}`}>
                     {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1) + "s"}
                   </button>
                 ))}
@@ -255,8 +255,8 @@ export default function SuperAdminDashboard() {
                       <p className="text-xs text-slate-500 truncate">{e.detail}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      <Badge className={`border-0 text-[9px] ${SEV[e.severity] || SEV.info}`}>{e.severity}</Badge>
-                      <span className="text-[10px] text-slate-500">{timeAgo(e.timestamp)}</span>
+                      <Badge className={`border-0 text-xs ${SEV[e.severity] || SEV.info}`}>{e.severity}</Badge>
+                      <span className="text-xs text-slate-500">{timeAgo(e.timestamp)}</span>
                     </div>
                   </div>
                 ))}
@@ -281,7 +281,7 @@ export default function SuperAdminDashboard() {
                 <div key={r.role} className="flex items-center gap-2.5">
                   <div className={`p-1.5 rounded-lg ${c.bg}`}><Users className={`w-3.5 h-3.5 ${c.color}`} /></div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5"><span className="text-xs text-white font-medium">{c.label}</span><span className="text-[10px] text-slate-400">{r.count} ({pct}%)</span></div>
+                    <div className="flex items-center justify-between mb-0.5"><span className="text-xs text-white font-medium">{c.label}</span><span className="text-xs text-slate-400">{r.count} ({pct}%)</span></div>
                     <div className="h-1 w-full rounded-full bg-slate-700/50"><div className="h-full rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" style={{ width: `${pct}%` }} /></div>
                   </div>
                 </div>
@@ -309,11 +309,11 @@ export default function SuperAdminDashboard() {
                     <div key={u.id} className="px-4 py-2.5 flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white text-xs font-bold">{(u.name || "?").charAt(0)}</div>
-                        <div><p className="text-white text-sm font-medium">{u.name}</p><p className="text-[10px] text-slate-500">{u.email}</p></div>
+                        <div><p className="text-white text-sm font-medium">{u.name}</p><p className="text-xs text-slate-500">{u.email}</p></div>
                       </div>
                       <div className="text-right">
-                        <Badge className={`border-0 ${rc.bg} ${rc.color} text-[10px]`}>{rc.label}</Badge>
-                        <p className="text-[9px] text-slate-500 mt-0.5">{u.createdAt ? timeAgo(u.createdAt) : ""}</p>
+                        <Badge className={`border-0 ${rc.bg} ${rc.color} text-xs`}>{rc.label}</Badge>
+                        <p className="text-xs text-slate-500 mt-0.5">{u.createdAt ? timeAgo(u.createdAt) : ""}</p>
                       </div>
                     </div>
                   );
@@ -342,7 +342,7 @@ export default function SuperAdminDashboard() {
                   </div>
                   <span className="text-white text-sm">{svc.name}</span>
                 </div>
-                <Badge className={`border-0 text-[10px] ${svc.ok ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{svc.ok ? "OK" : "Down"}</Badge>
+                <Badge className={`border-0 text-xs ${svc.ok ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{svc.ok ? "OK" : "Down"}</Badge>
               </div>
             ))}
             <div className="pt-2 border-t border-slate-700/50 grid grid-cols-2 gap-3 text-xs text-slate-500">

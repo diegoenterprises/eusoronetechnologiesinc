@@ -218,11 +218,11 @@ export default function ForgotPassword() {
             theme === "dark" ? "bg-green-500/10 border border-green-500/20" : "bg-green-50 border border-green-200"
           }`}>
             <Shield className="w-3 h-3 text-green-400" />
-            <span className="text-[10px] font-medium text-green-400">Secure Reset</span>
+            <span className="text-xs font-medium text-green-400">Secure Reset</span>
           </div>
         </div>
 
-        <p className={`text-center text-[10px] mt-3 ${theme === "dark" ? "text-slate-500" : "text-slate-400"}`}>
+        <p className={`text-center text-xs mt-3 ${theme === "dark" ? "text-slate-500" : "text-slate-400"}`}>
           &copy; 2026 EusoTrip - Eusorone Technologies, Inc. All rights reserved.
         </p>
       </div>

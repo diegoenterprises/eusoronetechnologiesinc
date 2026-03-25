@@ -153,7 +153,7 @@ export default function CustomerPortal() {
               <div className="hidden md:block">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="text-[10px] text-slate-500 uppercase border-b border-white/[0.06]">
+                    <tr className="text-xs text-slate-500 uppercase border-b border-white/[0.06]">
                       <th className="px-3 py-2 text-left">Load #</th>
                       <th className="px-3 py-2 text-left">Pickup</th>
                       <th className="px-3 py-2 text-left">Delivery</th>
@@ -174,8 +174,8 @@ export default function CustomerPortal() {
                             <td className="px-3 py-2 font-mono font-medium text-white">{l.loadNumber || `#${l.loadId}`}</td>
                             <td className="px-3 py-2 text-slate-300">{l.pickupLocation || "—"}</td>
                             <td className="px-3 py-2 text-slate-300">{l.deliveryLocation || "—"}</td>
-                            <td className="px-3 py-2">{l.cargoType ? <Badge className="bg-amber-500/10 text-amber-400 border-0 text-[10px]">{l.cargoType}</Badge> : "—"}</td>
-                            <td className="px-3 py-2"><Badge className={cn(st.bg, st.color, "border-0 text-[10px]")}>{st.label}</Badge></td>
+                            <td className="px-3 py-2">{l.cargoType ? <Badge className="bg-amber-500/10 text-amber-400 border-0 text-xs">{l.cargoType}</Badge> : "—"}</td>
+                            <td className="px-3 py-2"><Badge className={cn(st.bg, st.color, "border-0 text-xs")}>{st.label}</Badge></td>
                             <td className="px-3 py-2 text-slate-300">{l.pickupDate || "—"}</td>
                             <td className="px-3 py-2 text-slate-300">{l.deliveryDate || "—"}</td>
                             <td className="px-3 py-2 text-center">
@@ -192,7 +192,7 @@ export default function CustomerPortal() {
                                 </div>
                                 {detailQuery.data.timeline?.length > 0 && (
                                   <div className="space-y-1.5">
-                                    <div className="text-[10px] text-slate-500 uppercase font-semibold">Timeline</div>
+                                    <div className="text-xs text-slate-500 uppercase font-semibold">Timeline</div>
                                     {detailQuery.data.timeline.map((t: any, i: number) => (
                                       <div key={i} className="flex items-center gap-2 text-xs">
                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
@@ -225,10 +225,10 @@ export default function CustomerPortal() {
                   <Card key={l.loadId} className="bg-white/[0.02] border-white/[0.06] p-3 space-y-2" onClick={() => setExpandedLoad(expandedLoad === l.loadId ? null : l.loadId)}>
                     <div className="flex items-center justify-between">
                       <span className="font-mono font-medium text-sm text-white">{l.loadNumber || `#${l.loadId}`}</span>
-                      <Badge className={cn(st.bg, st.color, "border-0 text-[10px]")}>{st.label}</Badge>
+                      <Badge className={cn(st.bg, st.color, "border-0 text-xs")}>{st.label}</Badge>
                     </div>
                     <div className="text-xs text-slate-300">{l.pickupLocation} → {l.deliveryLocation}</div>
-                    <div className="text-[10px] text-slate-500">{l.cargoType} · {l.pickupDate}</div>
+                    <div className="text-xs text-slate-500">{l.cargoType} · {l.pickupDate}</div>
                   </Card>
                 );
               })}
@@ -259,7 +259,7 @@ export default function CustomerPortal() {
                     <Card key={i} className="bg-white/[0.02] border-white/[0.06] p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-white">Load #{p.loadId}</span>
-                        <Badge className={cn(st.bg, st.color, "border-0 text-[10px]")}>{st.label}</Badge>
+                        <Badge className={cn(st.bg, st.color, "border-0 text-xs")}>{st.label}</Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div><span className="text-slate-500">Lat:</span> <span className="text-white">{Number(p.latitude).toFixed(4)}</span></div>
@@ -267,7 +267,7 @@ export default function CustomerPortal() {
                         <div><span className="text-slate-500">Speed:</span> <span className="text-white">{p.speed || 0} mph</span></div>
                         <div><span className="text-slate-500">Heading:</span> <span className="text-white">{p.heading || 0}°</span></div>
                       </div>
-                      <div className="text-[10px] text-slate-500">Last update: {p.lastUpdate ? new Date(p.lastUpdate).toLocaleString() : "—"}</div>
+                      <div className="text-xs text-slate-500">Last update: {p.lastUpdate ? new Date(p.lastUpdate).toLocaleString() : "—"}</div>
                     </Card>
                   );
                 })}
@@ -298,7 +298,7 @@ export default function CustomerPortal() {
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/90 border-t border-white/[0.06] px-6 py-2 text-center text-[10px] text-slate-500 backdrop-blur">
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/90 border-t border-white/[0.06] px-6 py-2 text-center text-xs text-slate-500 backdrop-blur">
         Powered by EusoTrip · GPS data delayed 2 minutes for operational security
       </div>
     </div>

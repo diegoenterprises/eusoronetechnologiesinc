@@ -226,7 +226,7 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
           {needsSearch ? (
             <>
               <div>
-                <label className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1.5 block", isLight ? "text-slate-500" : "text-white/40")}>
+                <label className={cn("text-xs font-semibold uppercase tracking-wider mb-1.5 block", isLight ? "text-slate-500" : "text-white/40")}>
                   Search by Name, DOT#, or MC#
                 </label>
                 <div className="relative">
@@ -281,10 +281,10 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
                             <div className="flex items-center gap-2">
                               <p className={cn("font-medium text-sm truncate", isLight ? "text-slate-800" : "text-white")}>{r.name}</p>
                               {r.onPlatform && (
-                                <Badge className="text-[8px] px-1.5 py-0 bg-emerald-500/20 text-emerald-400 border-0">On Platform</Badge>
+                                <Badge className="text-xs px-1.5 py-0 bg-emerald-500/20 text-emerald-400 border-0">On Platform</Badge>
                               )}
                               {!r.onPlatform && r.fmcsaVerified && (
-                                <Badge className="text-[8px] px-1.5 py-0 bg-blue-500/20 text-blue-400 border-0">SAFER</Badge>
+                                <Badge className="text-xs px-1.5 py-0 bg-blue-500/20 text-blue-400 border-0">SAFER</Badge>
                               )}
                             </div>
                             <p className={cn("text-xs truncate", isLight ? "text-slate-400" : "text-slate-500")}>
@@ -335,12 +335,12 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
                         : (isLight ? "text-slate-700" : "text-white")
                       )}>{resolvedName}</p>
                       {activeTarget?.onPlatform && (
-                        <Badge className={cn("text-[8px] px-1.5 py-0", isLight ? "bg-emerald-100 text-emerald-600" : "bg-emerald-500/20 text-emerald-400")}>
+                        <Badge className={cn("text-xs px-1.5 py-0", isLight ? "bg-emerald-100 text-emerald-600" : "bg-emerald-500/20 text-emerald-400")}>
                           On Platform
                         </Badge>
                       )}
                       {!activeTarget?.onPlatform && activeTarget?.fmcsaVerified && (
-                        <Badge className={cn("text-[8px] px-1.5 py-0", isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/20 text-blue-400")}>
+                        <Badge className={cn("text-xs px-1.5 py-0", isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/20 text-blue-400")}>
                           FMCSA Verified
                         </Badge>
                       )}
@@ -390,7 +390,7 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
 
                   {/* Method Toggle */}
                   <div>
-                    <label className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1.5 block", isLight ? "text-slate-500" : "text-white/40")}>
+                    <label className={cn("text-xs font-semibold uppercase tracking-wider mb-1.5 block", isLight ? "text-slate-500" : "text-white/40")}>
                       Send Via
                     </label>
                     <div className="flex items-center gap-2">
@@ -421,7 +421,7 @@ export function InviteModal({ open, onClose, context, target, contextData, onSuc
 
                   {/* Contact Input */}
                   <div>
-                    <label className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1.5 block", isLight ? "text-slate-500" : "text-white/40")}>
+                    <label className={cn("text-xs font-semibold uppercase tracking-wider mb-1.5 block", isLight ? "text-slate-500" : "text-white/40")}>
                       {method === "email" ? "Email Address" : "Phone Number"}
                     </label>
                     <Input

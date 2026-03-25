@@ -235,7 +235,7 @@ function StateCrossingTracker({ origin, destination, statesCrossed, currentState
                   {state}
                 </p>
                 {crossing && (
-                  <p className="text-[10px] text-zinc-500 mt-0.5">
+                  <p className="text-xs text-zinc-500 mt-0.5">
                     {new Date(crossing.crossedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 )}
@@ -282,7 +282,7 @@ function CompliancePanel({ compliance }: { compliance: any }) {
                 <StatusIcon className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${statusColor}`} />
                 <div className="min-w-0">
                   <p className="text-xs text-zinc-300">{check.label}</p>
-                  <p className="text-[10px] text-zinc-500 leading-tight">{check.detail}</p>
+                  <p className="text-xs text-zinc-500 leading-tight">{check.detail}</p>
                 </div>
               </div>
             );
@@ -326,14 +326,14 @@ function ZeunMechanicsPanel({ loadId }: { loadId: number }) {
               isOk ? "bg-emerald-500/10 border-emerald-500/20" : "bg-amber-500/10 border-amber-500/20"
             }`}>
               <Icon className={`w-5 h-5 mx-auto mb-1 ${isOk ? "text-emerald-400" : "text-amber-400"}`} />
-              <p className="text-[10px] text-zinc-400">{item.label}</p>
+              <p className="text-xs text-zinc-400">{item.label}</p>
             </div>
           );
         })}
       </div>
 
       {zeunData?.nextService && (
-        <p className="text-[10px] text-zinc-500 mt-2 text-center">
+        <p className="text-xs text-zinc-500 mt-2 text-center">
           Next service: {zeunData.nextService}
         </p>
       )}
@@ -423,7 +423,7 @@ function VIGAVisualPanel({ loadId }: { loadId: number }) {
         </div>
         <div className="text-left flex-1">
           <span className="text-zinc-200 font-medium text-sm">Zeun Visual Intelligence</span>
-          <p className="text-[10px] text-zinc-500">Photo-based AI verification & diagnostics</p>
+          <p className="text-xs text-zinc-500">Photo-based AI verification & diagnostics</p>
         </div>
         {expanded ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
       </button>
@@ -439,7 +439,7 @@ function VIGAVisualPanel({ loadId }: { loadId: number }) {
                     className={`rounded-xl p-3 border text-left transition-all hover:scale-[1.02] ${m.bg}`}>
                     <Icon className={`w-5 h-5 mb-1.5 ${m.color}`} />
                     <p className="text-xs font-semibold text-zinc-200">{m.label}</p>
-                    <p className="text-[9px] text-zinc-500 mt-0.5">{m.desc}</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">{m.desc}</p>
                   </button>
                 );
               })}
@@ -496,23 +496,23 @@ function VIGAVisualPanel({ loadId }: { loadId: number }) {
                       <div className="flex items-center gap-2">
                         <Gauge className="w-4 h-4 text-blue-400" />
                         <span className="text-sm font-semibold text-blue-300">Gauge Reading</span>
-                        <span className="ml-auto text-[10px] text-blue-400/70">{((result.data.confidence || 0) * 100).toFixed(0)}%</span>
+                        <span className="ml-auto text-xs text-blue-400/70">{((result.data.confidence || 0) * 100).toFixed(0)}%</span>
                       </div>
                       <div className="bg-zinc-900/50 rounded-lg p-3">
                         <p className="text-2xl font-bold text-white">{result.data.reading} <span className="text-sm text-zinc-400">{result.data.unit}</span></p>
-                        <p className="text-[10px] text-zinc-500 mt-1">{result.data.gaugeType}</p>
+                        <p className="text-xs text-zinc-500 mt-1">{result.data.gaugeType}</p>
                       </div>
                       {result.data.additionalReadings?.length > 0 && (
                         <div className="grid grid-cols-2 gap-1.5">
                           {result.data.additionalReadings.map((r: any, i: number) => (
                             <div key={i} className="bg-zinc-900/30 rounded-lg p-2">
-                              <p className="text-[9px] text-zinc-500">{r.label}</p>
-                              <p className="text-sm font-medium text-zinc-200">{r.value} <span className="text-[10px] text-zinc-500">{r.unit}</span></p>
+                              <p className="text-xs text-zinc-500">{r.label}</p>
+                              <p className="text-sm font-medium text-zinc-200">{r.value} <span className="text-xs text-zinc-500">{r.unit}</span></p>
                             </div>
                           ))}
                         </div>
                       )}
-                      <div className={`flex items-center gap-1.5 text-[10px] ${result.data.isWithinNormal ? "text-emerald-400" : "text-amber-400"}`}>
+                      <div className={`flex items-center gap-1.5 text-xs ${result.data.isWithinNormal ? "text-emerald-400" : "text-amber-400"}`}>
                         {result.data.isWithinNormal ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
                         {result.data.isWithinNormal ? "Within normal range" : "Outside normal range"} ({result.data.normalRange})
                       </div>
@@ -529,16 +529,16 @@ function VIGAVisualPanel({ loadId }: { loadId: number }) {
                       <div className="flex items-center gap-2">
                         <Lock className="w-4 h-4 text-amber-400" />
                         <span className="text-sm font-semibold text-zinc-200">Seal Verification</span>
-                        <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-bold ${
                           result.data.condition === "INTACT" ? "bg-emerald-500/20 text-emerald-400" :
                           result.data.condition === "TAMPERED" || result.data.condition === "BROKEN" ? "bg-red-500/20 text-red-400" :
                           "bg-amber-500/20 text-amber-400"
                         }`}>{result.data.condition}</span>
                       </div>
                       <div className="bg-zinc-900/50 rounded-lg p-3">
-                        <p className="text-[10px] text-zinc-500">Seal Number</p>
+                        <p className="text-xs text-zinc-500">Seal Number</p>
                         <p className="text-lg font-bold text-white font-mono">{result.data.sealNumber || "Unreadable"}</p>
-                        <p className="text-[10px] text-zinc-500 mt-1">Type: {result.data.sealType}</p>
+                        <p className="text-xs text-zinc-500 mt-1">Type: {result.data.sealType}</p>
                       </div>
                       {result.data.matchesBOL !== null && (
                         <div className={`flex items-center gap-1.5 text-xs font-medium ${result.data.matchesBOL ? "text-emerald-400" : "text-red-400"}`}>
@@ -565,7 +565,7 @@ function VIGAVisualPanel({ loadId }: { loadId: number }) {
                       <div className="flex items-center gap-2">
                         <Shield className="w-4 h-4 text-emerald-400" />
                         <span className="text-sm font-semibold text-zinc-200">DVIR: {result.data.inspectionPoint}</span>
-                        <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-bold ${
                           result.data.condition === "PASS" ? "bg-emerald-500/20 text-emerald-400" :
                           result.data.condition === "FAIL" ? "bg-red-500/20 text-red-400" :
                           "bg-amber-500/20 text-amber-400"
@@ -575,7 +575,7 @@ function VIGAVisualPanel({ loadId }: { loadId: number }) {
                         <div className="space-y-1">
                           {result.data.defectsFound.map((d: any, i: number) => (
                             <div key={i} className="flex items-start gap-2 bg-zinc-900/50 rounded-lg p-2">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold flex-shrink-0 ${
+                              <span className={`px-1.5 py-0.5 rounded text-xs font-bold flex-shrink-0 ${
                                 d.severity === "CRITICAL_OOS" ? "bg-red-500/20 text-red-400" :
                                 d.severity === "MAJOR" ? "bg-orange-500/20 text-orange-400" :
                                 "bg-yellow-500/20 text-yellow-400"
@@ -588,7 +588,7 @@ function VIGAVisualPanel({ loadId }: { loadId: number }) {
                         <p className="text-xs text-emerald-400 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" />No defects found</p>
                       )}
                       {result.data.regulatoryNotes?.length > 0 && (
-                        <div className="text-[10px] text-zinc-500">
+                        <div className="text-xs text-zinc-500">
                           {result.data.regulatoryNotes.map((n: string, i: number) => <p key={i}>{n}</p>)}
                         </div>
                       )}
@@ -605,21 +605,21 @@ function VIGAVisualPanel({ loadId }: { loadId: number }) {
                       <div className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-purple-400" />
                         <span className="text-sm font-semibold text-zinc-200">Cargo: {result.data.cargoType}</span>
-                        <span className={`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-bold ${
                           result.data.condition === "SECURE" ? "bg-emerald-500/20 text-emerald-400" :
                           result.data.condition === "LEAKING" || result.data.condition === "DAMAGED" ? "bg-red-500/20 text-red-400" :
                           "bg-amber-500/20 text-amber-400"
                         }`}>{result.data.condition}</span>
                       </div>
                       <div className="bg-zinc-900/50 rounded-lg p-2">
-                        <p className="text-[10px] text-zinc-500">Securement</p>
+                        <p className="text-xs text-zinc-500">Securement</p>
                         <p className="text-xs text-zinc-300">{result.data.securementStatus}</p>
                       </div>
                       {result.data.issues?.length > 0 && (
                         <div className="space-y-1">
                           {result.data.issues.map((issue: any, i: number) => (
                             <div key={i} className="flex items-start gap-2 bg-zinc-900/50 rounded-lg p-2">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold flex-shrink-0 ${
+                              <span className={`px-1.5 py-0.5 rounded text-xs font-bold flex-shrink-0 ${
                                 issue.severity === "CRITICAL" || issue.severity === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"
                               }`}>{issue.severity}</span>
                               <span className="text-xs text-zinc-300">{issue.description}</span>
@@ -740,7 +740,7 @@ function CargoExceptionBanner({ status }: { status: string }) {
         <div>
           <p className="text-red-300 font-bold">{meta.label}</p>
           <p className="text-red-400/80 text-xs mt-0.5 leading-relaxed">{meta.desc}</p>
-          <p className="text-red-500/60 text-[10px] mt-1.5">Resolve this exception to continue the load lifecycle.</p>
+          <p className="text-red-500/60 text-xs mt-1.5">Resolve this exception to continue the load lifecycle.</p>
         </div>
       </div>
     </div>
@@ -811,7 +811,7 @@ function MissionProgressIndicator({ loadId }: { loadId: number }) {
                   <p className="text-[13px] font-semibold text-white tracking-tight truncate">{m.missionName}</p>
                   <Award className="w-3 h-3 text-[#BE01FF] flex-shrink-0" />
                 </div>
-                <p className="text-[11px] text-zinc-500 leading-tight mt-0.5 truncate">{m.matchReason}</p>
+                <p className="text-xs text-zinc-500 leading-tight mt-0.5 truncate">{m.matchReason}</p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <div className="flex-1 h-[3px] rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
                     <div
@@ -823,10 +823,10 @@ function MissionProgressIndicator({ loadId }: { loadId: number }) {
                       }}
                     />
                   </div>
-                  <span className="text-[10px] text-zinc-500 tabular-nums flex-shrink-0">
+                  <span className="text-xs text-zinc-500 tabular-nums flex-shrink-0">
                     {m.currentProgress}/{m.targetValue}
                   </span>
-                  <span className="text-[10px] font-medium text-[#BE01FF] flex-shrink-0">
+                  <span className="text-xs font-medium text-[#BE01FF] flex-shrink-0">
                     +{m.xpReward} XP
                   </span>
                 </div>
@@ -912,7 +912,7 @@ function HOSCompactPanel() {
       <div className="flex items-center gap-2 mb-3">
         <Gauge className="w-4 h-4 text-zinc-400" />
         <span className="text-zinc-300 font-medium text-sm">HOS Status</span>
-        <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium ${
+        <span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-medium ${
           currentStatus === "driving" ? "bg-emerald-500/20 text-emerald-300" :
           currentStatus === "on_duty" ? "bg-blue-500/20 text-blue-300" :
           currentStatus === "sleeper" ? "bg-purple-500/20 text-purple-300" :
@@ -937,7 +937,7 @@ function HOSCompactPanel() {
               } ${changeStatusMut?.isPending ? "opacity-50" : ""}`}
             >
               <Icon className={`w-4 h-4 ${isActive ? btn.text : "text-zinc-500"}`} />
-              <span className={`text-[9px] font-medium leading-tight ${isActive ? btn.text : "text-zinc-500"}`}>
+              <span className={`text-xs font-medium leading-tight ${isActive ? btn.text : "text-zinc-500"}`}>
                 {btn.label}
               </span>
             </button>
@@ -948,7 +948,7 @@ function HOSCompactPanel() {
       {/* Organic indicator */}
       <div className="flex items-center gap-1.5 mb-3 px-1">
         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-[9px] text-zinc-500">Trip events auto-update duty status</span>
+        <span className="text-xs text-zinc-500">Trip events auto-update duty status</span>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -971,13 +971,13 @@ function HOSCompactPanel() {
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`text-[11px] font-bold tabular-nums ${isLow ? "text-red-400" : "text-white"}`}>
+                  <span className={`text-xs font-bold tabular-nums ${isLow ? "text-red-400" : "text-white"}`}>
                     {remaining.toFixed(remaining < 10 ? 1 : 0)}
                   </span>
                 </div>
               </div>
-              <p className="text-[10px] text-zinc-500 mt-1">{g.label}</p>
-              <p className="text-[9px] text-zinc-600">{g.used.toFixed(1)}h/{g.max}h</p>
+              <p className="text-xs text-zinc-500 mt-1">{g.label}</p>
+              <p className="text-xs text-zinc-600">{g.used.toFixed(1)}h/{g.max}h</p>
             </div>
           );
         })}
@@ -989,11 +989,11 @@ function HOSCompactPanel() {
           <Coffee className="w-4 h-4 text-amber-400 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-amber-300 text-xs font-medium">30-min break required</p>
-            <p className="text-amber-400/60 text-[10px]">49 CFR 395.3(a)(3)(ii)</p>
+            <p className="text-amber-400/60 text-xs">49 CFR 395.3(a)(3)(ii)</p>
           </div>
           <button
             onClick={() => handleDutyChange("off_duty")}
-            className="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[10px] font-medium hover:bg-amber-500/30 transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-medium hover:bg-amber-500/30 transition-colors"
           >
             Take Break
           </button>
@@ -1006,7 +1006,7 @@ function HOSCompactPanel() {
           <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
           <div>
             <p className="text-red-300 text-xs font-medium">HOS Violation Active</p>
-            <p className="text-red-400/60 text-[10px]">{(hos.violations || [])[0]?.description}</p>
+            <p className="text-red-400/60 text-xs">{(hos.violations || [])[0]?.description}</p>
           </div>
         </div>
       )}
@@ -1715,19 +1715,19 @@ export default function ActiveTrip() {
         <div className="grid grid-cols-2 gap-2">
           {ld.commodity && (
             <div className="bg-zinc-800/50 rounded-lg p-2.5">
-              <p className="text-[10px] text-zinc-500 uppercase">Product</p>
+              <p className="text-xs text-zinc-500 uppercase">Product</p>
               <p className="text-sm font-medium text-zinc-200 truncate">{ld.commodity}</p>
             </div>
           )}
           {ld.equipmentType && (
             <div className="bg-zinc-800/50 rounded-lg p-2.5">
-              <p className="text-[10px] text-zinc-500 uppercase">Equipment</p>
+              <p className="text-xs text-zinc-500 uppercase">Equipment</p>
               <p className="text-sm font-medium text-zinc-200 capitalize truncate">{(ld.equipmentType || "").replace(/_/g, " ")}</p>
             </div>
           )}
           {(ld.quantity || ld.quantityUnit) && (
             <div className="bg-zinc-800/50 rounded-lg p-2.5">
-              <p className="text-[10px] text-zinc-500 uppercase">Quantity</p>
+              <p className="text-xs text-zinc-500 uppercase">Quantity</p>
               <p className="text-sm font-medium text-zinc-200">
                 {Number(ld.quantity || 0).toLocaleString()} {ld.quantityUnit || "units"}
               </p>
@@ -1735,7 +1735,7 @@ export default function ActiveTrip() {
           )}
           {Number(activeLoad.weight) > 0 && (
             <div className="bg-zinc-800/50 rounded-lg p-2.5">
-              <p className="text-[10px] text-zinc-500 uppercase">Gross Weight</p>
+              <p className="text-xs text-zinc-500 uppercase">Gross Weight</p>
               <p className="text-sm font-medium text-zinc-200">
                 {Number(activeLoad.weight).toLocaleString()} {ld.weightUnit || "lbs"}
               </p>
@@ -1746,24 +1746,24 @@ export default function ActiveTrip() {
         <div className="flex flex-wrap gap-1.5">
           {ld.equipmentType && (ld.equipmentType.includes("tank") || ld.equipmentType.includes("tanker")) && (
             <>
-              <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 text-[10px] font-medium">Tanker Endorsement Required</span>
-              {ld.hazmatClass && <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 text-[10px] font-medium">Hazmat Endorsement</span>}
+              <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 text-xs font-medium">Tanker Endorsement Required</span>
+              {ld.hazmatClass && <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 text-xs font-medium">Hazmat Endorsement</span>}
             </>
           )}
           {ld.hoseType && (
-            <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 text-[10px] font-medium">Hose: {ld.hoseType}</span>
+            <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 text-xs font-medium">Hose: {ld.hoseType}</span>
           )}
           {ld.hoseLength && (
-            <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 text-[10px] font-medium">{ld.hoseLength}ft hose</span>
+            <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-300 text-xs font-medium">{ld.hoseLength}ft hose</span>
           )}
           {ld.pumpRequired && (
-            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-medium">Pump Required</span>
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-xs font-medium">Pump Required</span>
           )}
           {ld.compressorRequired && (
-            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-medium">Compressor Required</span>
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-xs font-medium">Compressor Required</span>
           )}
           {ld.cargoType && (
-            <span className="px-2 py-0.5 rounded-full bg-zinc-700/50 text-zinc-300 text-[10px] font-medium capitalize">{ld.cargoType}</span>
+            <span className="px-2 py-0.5 rounded-full bg-zinc-700/50 text-zinc-300 text-xs font-medium capitalize">{ld.cargoType}</span>
           )}
         </div>
       </div>

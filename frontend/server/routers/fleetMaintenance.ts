@@ -86,7 +86,8 @@ function mapBreakdownToWoPriority(severity: string): "critical" | "high" | "medi
   }
 }
 
-// Static part catalog — TODO: create parts_inventory table
+// Static part catalog — reference config for common fleet parts
+// TODO: migrate to parts_inventory table for dynamic inventory management
 const PART_CATALOG = [
   { partNumber: "OIL-15W40-GAL", name: "15W-40 Diesel Engine Oil (gal)", category: "Fluids", unitCost: 22.50, qtyOnHand: 48, reorderPoint: 20, reorderQty: 50 },
   { partNumber: "FLT-OIL-DD15", name: "Oil Filter - DD15 Engine", category: "Filters", unitCost: 18.75, qtyOnHand: 12, reorderPoint: 10, reorderQty: 24 },
@@ -102,6 +103,8 @@ const PART_CATALOG = [
   { partNumber: "LAMP-TAIL-LED", name: "LED Tail Light Assembly", category: "Electrical", unitCost: 85.00, qtyOnHand: 6, reorderPoint: 4, reorderQty: 8 },
 ];
 
+// Static DOT inspection checklist — regulatory reference data (FMCSA 396.13 / Appendix G)
+// These items are mandated by federal regulation and do not change frequently
 const DOT_CHECKLIST_ITEMS = [
   { category: "Brakes", item: "Service brake system", critical: true },
   { category: "Brakes", item: "Parking brake system", critical: true },

@@ -120,8 +120,8 @@ function AuthBadge({ label, status }: { label: string; status: string }) {
     <div className="flex items-center justify-between p-2 rounded bg-slate-700/30">
       <span className="text-xs text-slate-400">{label}</span>
       {isActive
-        ? <Badge className="bg-green-500/15 text-green-400 text-[10px] px-1.5 py-0">Active</Badge>
-        : <Badge className="bg-slate-600/30 text-slate-500 text-[10px] px-1.5 py-0">N/A</Badge>
+        ? <Badge className="bg-green-500/15 text-green-400 text-xs px-1.5 py-0">Active</Badge>
+        : <Badge className="bg-slate-600/30 text-slate-500 text-xs px-1.5 py-0">N/A</Badge>
       }
     </div>
   );
@@ -133,8 +133,8 @@ function InsuranceLine({ label, onFile, required }: { label: string; onFile: boo
     <div className="flex items-center justify-between p-2 rounded bg-slate-700/30">
       <span className="text-xs text-slate-400">{label}</span>
       {onFile
-        ? <Badge className="bg-green-500/15 text-green-400 text-[10px] px-1.5 py-0">On File</Badge>
-        : <Badge className="bg-amber-500/15 text-amber-400 text-[10px] px-1.5 py-0">Not Filed</Badge>
+        ? <Badge className="bg-green-500/15 text-green-400 text-xs px-1.5 py-0">On File</Badge>
+        : <Badge className="bg-amber-500/15 text-amber-400 text-xs px-1.5 py-0">Not Filed</Badge>
       }
     </div>
   );
@@ -151,7 +151,7 @@ function SafetyScoreBar({ label, score, alert, maxScore = 100 }: { label: string
   const textColor = alert ? "text-red-400" : score > 65 ? "text-amber-400" : "text-green-400";
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[10px] text-slate-400 w-28 shrink-0">{label}</span>
+      <span className="text-xs text-slate-400 w-28 shrink-0">{label}</span>
       <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
       </div>
@@ -424,7 +424,7 @@ export function FMCSALookup({
               <div className="flex items-center gap-2 mb-3">
                 <Building2 className="w-4 h-4 text-blue-400" />
                 <span className="text-sm font-semibold text-white">Company Profile</span>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px] ml-auto">
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs ml-auto">
                   <CheckCircle className="w-3 h-3 mr-1" /> FMCSA Verified
                 </Badge>
               </div>
@@ -477,7 +477,7 @@ export function FMCSALookup({
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="p-2 rounded bg-slate-700/30">
-                  <span className="text-slate-500 text-[10px]">USDOT</span>
+                  <span className="text-slate-500 text-xs">USDOT</span>
                   <p className="text-white font-mono text-sm">{d.authority.dotNumber}</p>
                 </div>
                 <AuthBadge label="Common" status={d.authority.commonAuthority} />
@@ -496,7 +496,7 @@ export function FMCSALookup({
               <div className="flex items-center gap-2 mb-3">
                 <Activity className="w-4 h-4 text-pink-400" />
                 <span className="text-sm font-semibold text-white">Safety Record</span>
-                <Badge className={`text-[10px] ml-auto ${
+                <Badge className={`text-xs ml-auto ${
                   d.safety.rating === "SATISFACTORY" ? "bg-green-500/20 text-green-400" :
                   d.safety.rating === "CONDITIONAL" ? "bg-amber-500/20 text-amber-400" :
                   d.safety.rating === "UNSATISFACTORY" ? "bg-red-500/20 text-red-400" :
@@ -507,23 +507,23 @@ export function FMCSALookup({
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                 <div className="p-2 rounded bg-slate-700/30">
-                  <span className="text-slate-500 text-[10px]">Crashes</span>
+                  <span className="text-slate-500 text-xs">Crashes</span>
                   <p className="text-white font-medium">{d.safety.crashTotal}</p>
                 </div>
                 <div className="p-2 rounded bg-slate-700/30">
-                  <span className="text-slate-500 text-[10px]">Driver OOS Rate</span>
+                  <span className="text-slate-500 text-xs">Driver OOS Rate</span>
                   <p className={`font-medium ${d.safety.inspections.driver.rate > 25 ? "text-amber-400" : "text-white"}`}>
                     {d.safety.inspections.driver.rate}%
                   </p>
                 </div>
                 <div className="p-2 rounded bg-slate-700/30">
-                  <span className="text-slate-500 text-[10px]">Vehicle OOS Rate</span>
+                  <span className="text-slate-500 text-xs">Vehicle OOS Rate</span>
                   <p className={`font-medium ${d.safety.inspections.vehicle.rate > 25 ? "text-amber-400" : "text-white"}`}>
                     {d.safety.inspections.vehicle.rate}%
                   </p>
                 </div>
                 <div className="p-2 rounded bg-slate-700/30">
-                  <span className="text-slate-500 text-[10px]">Hazmat Auth</span>
+                  <span className="text-slate-500 text-xs">Hazmat Auth</span>
                   <p className="font-medium">{d.hazmat?.authorized ? <span className="text-green-400">YES</span> : <span className="text-slate-500">NO</span>}</p>
                 </div>
               </div>
@@ -536,7 +536,7 @@ export function FMCSALookup({
               <div className="flex items-center gap-2 mb-3">
                 <Database className="w-4 h-4 text-indigo-400" />
                 <span className="text-sm font-semibold text-white">Instant Verification</span>
-                <Badge className={`text-[10px] ml-auto ${
+                <Badge className={`text-xs ml-auto ${
                   bulkData.verification?.outOfService ? "bg-red-500/20 text-red-400" :
                   bulkData.verification?.authorityStatus === "ACTIVE" ? "bg-green-500/20 text-green-400" :
                   "bg-amber-500/20 text-amber-400"
@@ -550,44 +550,44 @@ export function FMCSALookup({
                   )}
                 </Badge>
                 {bulkData.source === "bulk_data" && (
-                  <Badge className="bg-blue-500/15 text-blue-400 text-[10px] px-1.5 py-0">Instant</Badge>
+                  <Badge className="bg-blue-500/15 text-blue-400 text-xs px-1.5 py-0">Instant</Badge>
                 )}
               </div>
 
               {/* Verification Checklist Grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
                 <div className="p-2 rounded bg-slate-700/30">
-                  <span className="text-slate-500 text-[10px] block">Authority</span>
+                  <span className="text-slate-500 text-xs block">Authority</span>
                   <p className={`text-xs font-medium ${
                     bulkData.verification?.authorityStatus === "ACTIVE" ? "text-green-400" : "text-red-400"
                   }`}>{bulkData.verification?.authorityStatus || "Unknown"}</p>
                 </div>
                 <div className="p-2 rounded bg-slate-700/30">
-                  <span className="text-slate-500 text-[10px] block">BIPD Insurance</span>
+                  <span className="text-slate-500 text-xs block">BIPD Insurance</span>
                   <p className={`text-xs font-medium ${
                     bulkData.verification?.bipdInsuranceOnFile ? "text-green-400" : "text-amber-400"
                   }`}>{bulkData.verification?.bipdInsuranceOnFile ? "On File" : "Not Filed"}</p>
                 </div>
                 <div className="p-2 rounded bg-slate-700/30">
-                  <span className="text-slate-500 text-[10px] block">BOC-3 Filing</span>
+                  <span className="text-slate-500 text-xs block">BOC-3 Filing</span>
                   <p className={`text-xs font-medium ${
                     bulkData.verification?.boc3OnFile ? "text-green-400" : "text-amber-400"
                   }`}>{bulkData.verification?.boc3OnFile ? "On File" : "Not Filed"}</p>
                 </div>
                 <div className="p-2 rounded bg-slate-700/30">
-                  <span className="text-slate-500 text-[10px] block">Inspection OOS Rate</span>
+                  <span className="text-slate-500 text-xs block">Inspection OOS Rate</span>
                   <p className={`text-xs font-medium ${
                     (bulkData.verification?.inspectionOosRate || 0) > 25 ? "text-red-400" : "text-green-400"
                   }`}>{bulkData.verification?.inspectionOosRate?.toFixed(1) || "0"}%</p>
                 </div>
                 <div className="p-2 rounded bg-slate-700/30">
-                  <span className="text-slate-500 text-[10px] block">Out of Service</span>
+                  <span className="text-slate-500 text-xs block">Out of Service</span>
                   <p className={`text-xs font-medium ${
                     bulkData.verification?.outOfService ? "text-red-400" : "text-green-400"
                   }`}>{bulkData.verification?.outOfService ? "YES" : "Clear"}</p>
                 </div>
                 <div className="p-2 rounded bg-slate-700/30">
-                  <span className="text-slate-500 text-[10px] block">Verification Score</span>
+                  <span className="text-slate-500 text-xs block">Verification Score</span>
                   <p className={`text-xs font-medium ${
                     (bulkData.verification?.verificationScore || 0) >= 80 ? "text-green-400" :
                     (bulkData.verification?.verificationScore || 0) >= 60 ? "text-blue-400" :
@@ -603,7 +603,7 @@ export function FMCSALookup({
                     <FlaskConical className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
                     <div>
                       <p className="text-xs text-amber-300 font-semibold">HazMat Carrier Detected</p>
-                      <p className="text-[10px] text-amber-300/70 mt-0.5">
+                      <p className="text-xs text-amber-300/70 mt-0.5">
                         HazMat carriers must upload required documents (CDL H-endorsement, TWIC card, Security Threat Assessment) 
                         for OCR/AI verification after registration. Platform access for hazmat loads is gated until documents are verified.
                       </p>
@@ -611,7 +611,7 @@ export function FMCSALookup({
                         {(bulkData.verification?.docsRequired || [])
                           .filter((doc: string) => doc.includes("HazMat") || doc.includes("TWIC") || doc.includes("Security") || doc.includes("PHMSA") || doc.includes("HMSP"))
                           .map((doc: string, i: number) => (
-                            <Badge key={i} className="bg-amber-500/20 text-amber-300 text-[9px] px-1.5 py-0 border border-amber-500/30">
+                            <Badge key={i} className="bg-amber-500/20 text-amber-300 text-xs px-1.5 py-0 border border-amber-500/30">
                               {doc}
                             </Badge>
                           ))}
@@ -634,7 +634,7 @@ export function FMCSALookup({
                     <SafetyScoreBar label="Vehicle Maint" score={bulkData.safety.vehicleMaintenanceScore} alert={bulkData.safety.vehicleMaintenanceAlert} />
                     <SafetyScoreBar label="Crash Indicator" score={bulkData.safety.crashIndicatorScore} />
                   </div>
-                  <div className="flex gap-4 mt-2 text-[10px] text-slate-500">
+                  <div className="flex gap-4 mt-2 text-xs text-slate-500">
                     <span>Inspections: {bulkData.safety.totalInspections || 0}</span>
                     <span>Driver OOS: {bulkData.safety.driverOosRate?.toFixed(1) || "0"}%</span>
                     <span>Vehicle OOS: {bulkData.safety.vehicleOosRate?.toFixed(1) || "0"}%</span>
@@ -645,10 +645,10 @@ export function FMCSALookup({
               {/* Insurance Policies from bulk data */}
               {bulkData.verification?.insurancePolicies?.length > 0 && (
                 <div className="mt-3">
-                  <span className="text-[10px] text-slate-500 block mb-1">Active Insurance Policies</span>
+                  <span className="text-xs text-slate-500 block mb-1">Active Insurance Policies</span>
                   <div className="space-y-1">
                     {bulkData.verification.insurancePolicies.slice(0, 3).map((p: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between p-1.5 rounded bg-slate-700/30 text-[10px]">
+                      <div key={i} className="flex items-center justify-between p-1.5 rounded bg-slate-700/30 text-xs">
                         <span className="text-slate-300">{p.type} — {p.carrier}</span>
                         <span className="text-green-400 font-medium">
                           {p.bipdLimit ? `$${(p.bipdLimit / 1000).toFixed(0)}K` : p.cargoLimit ? `$${(p.cargoLimit / 1000).toFixed(0)}K cargo` : "Active"}
@@ -661,7 +661,7 @@ export function FMCSALookup({
 
               {bulkData.verification?.outOfService && bulkData.verification.oosReason && (
                 <div className="mt-2 p-2 rounded bg-red-500/10 border border-red-500/20">
-                  <span className="text-[10px] text-red-400 font-medium">OOS Reason: {bulkData.verification.oosReason}</span>
+                  <span className="text-xs text-red-400 font-medium">OOS Reason: {bulkData.verification.oosReason}</span>
                 </div>
               )}
             </div>
@@ -726,7 +726,7 @@ function HMSPCompliancePanel({ dotNumber }: { dotNumber: string }) {
       <div className="flex items-center gap-2 mb-3">
         <FlaskConical className="w-4 h-4 text-purple-400" />
         <span className="text-sm font-semibold text-white">Hazmat Safety Permit (HMSP)</span>
-        <Badge className={`text-[10px] ml-auto ${
+        <Badge className={`text-xs ml-auto ${
           statusColor === "green" ? "bg-green-500/20 text-green-400" :
           statusColor === "amber" ? "bg-amber-500/20 text-amber-400" :
           "bg-red-500/20 text-red-400"
@@ -741,7 +741,7 @@ function HMSPCompliancePanel({ dotNumber }: { dotNumber: string }) {
           <div key={i} className="flex items-center justify-between p-2 rounded bg-slate-700/30">
             <span className="text-xs text-slate-400">{check.check}</span>
             <div className="flex items-center gap-1.5">
-              <span className={`text-[10px] ${
+              <span className={`text-xs ${
                 check.status === "pass" ? "text-green-400" :
                 check.status === "warn" ? "text-amber-400" : "text-red-400"
               }`}>
@@ -759,15 +759,15 @@ function HMSPCompliancePanel({ dotNumber }: { dotNumber: string }) {
       {h.hazmatInspections && (
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div className="p-2 rounded bg-slate-700/30 text-center">
-            <span className="text-slate-500 text-[10px] block">HM Inspections</span>
+            <span className="text-slate-500 text-xs block">HM Inspections</span>
             <p className="text-white font-medium text-sm">{h.hazmatInspections.total}</p>
           </div>
           <div className="p-2 rounded bg-slate-700/30 text-center">
-            <span className="text-slate-500 text-[10px] block">HM OOS</span>
+            <span className="text-slate-500 text-xs block">HM OOS</span>
             <p className="text-white font-medium text-sm">{h.hazmatInspections.oos}</p>
           </div>
           <div className="p-2 rounded bg-slate-700/30 text-center">
-            <span className="text-slate-500 text-[10px] block">HM OOS Rate</span>
+            <span className="text-slate-500 text-xs block">HM OOS Rate</span>
             <p className={`font-medium text-sm ${
               h.hazmatInspections.aboveAverage ? "text-amber-400" : "text-green-400"
             }`}>
@@ -780,10 +780,10 @@ function HMSPCompliancePanel({ dotNumber }: { dotNumber: string }) {
       {/* Cargo Types */}
       {h.cargoTypes?.length > 0 && (
         <div>
-          <span className="text-slate-500 text-[10px] block mb-1">Registered Cargo Types</span>
+          <span className="text-slate-500 text-xs block mb-1">Registered Cargo Types</span>
           <div className="flex flex-wrap gap-1">
             {h.cargoTypes.map((ct: any, i: number) => (
-              <Badge key={i} className="bg-slate-600/30 text-slate-300 text-[10px] px-1.5 py-0">
+              <Badge key={i} className="bg-slate-600/30 text-slate-300 text-xs px-1.5 py-0">
                 {ct.description || ct.code}
               </Badge>
             ))}
@@ -791,7 +791,7 @@ function HMSPCompliancePanel({ dotNumber }: { dotNumber: string }) {
         </div>
       )}
 
-      <p className="text-[10px] text-slate-600 mt-2">49 CFR Part 385 Subpart E</p>
+      <p className="text-xs text-slate-600 mt-2">49 CFR Part 385 Subpart E</p>
     </div>
   );
 }

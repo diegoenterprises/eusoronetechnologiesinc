@@ -29,7 +29,7 @@ export default function BlockchainAuditPage() {
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <Link2 className="w-5 h-5 text-cyan-400" />Blockchain Audit Trail
           </h1>
-          <p className="text-[10px] text-slate-400 mt-0.5">Immutable SHA-256 hash chain for compliance logging</p>
+          <p className="text-xs text-slate-400 mt-0.5">Immutable SHA-256 hash chain for compliance logging</p>
         </div>
         <Button variant="outline" size="sm" className="h-7 text-xs border-white/[0.08] text-slate-400" onClick={() => { statsQ.refetch?.(); recentQ.refetch?.(); }}>
           <RefreshCw className="w-3.5 h-3.5 mr-1" />Refresh
@@ -41,17 +41,17 @@ export default function BlockchainAuditPage() {
         <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
           <Hash className="w-4 h-4 text-cyan-400 mb-1" />
           <span className="text-xl font-bold font-mono text-white">{stats.totalBlocks.toLocaleString()}</span>
-          <p className="text-[9px] text-slate-500 mt-0.5">Total Blocks</p>
+          <p className="text-xs text-slate-500 mt-0.5">Total Blocks</p>
         </div>
         <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
           <Shield className="w-4 h-4 text-emerald-400 mb-1" />
           <span className="text-xl font-bold font-mono text-white">{stats.totalLoads}</span>
-          <p className="text-[9px] text-slate-500 mt-0.5">Audited Loads</p>
+          <p className="text-xs text-slate-500 mt-0.5">Audited Loads</p>
         </div>
         <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
           <Clock className="w-4 h-4 text-amber-400 mb-1" />
           <span className="text-xl font-bold font-mono text-white">{stats.recentEvents}</span>
-          <p className="text-[9px] text-slate-500 mt-0.5">Last 24h Events</p>
+          <p className="text-xs text-slate-500 mt-0.5">Last 24h Events</p>
         </div>
       </div>
 
@@ -73,10 +73,10 @@ export default function BlockchainAuditPage() {
               <p className={cn("text-sm font-bold", verification.valid ? "text-emerald-400" : "text-red-400")}>
                 {verification.valid ? "Chain Integrity Verified" : "Chain Integrity BROKEN"}
               </p>
-              <p className="text-[10px] text-slate-400">Load #{selectedLoadId} · {verification.blockCount} blocks</p>
+              <p className="text-xs text-slate-400">Load #{selectedLoadId} · {verification.blockCount} blocks</p>
               {verification.issues?.length > 0 && (
                 <ul className="mt-1 space-y-0.5">{verification.issues.map((issue: string, i: number) => (
-                  <li key={i} className="text-[9px] text-red-400">• {issue}</li>
+                  <li key={i} className="text-xs text-red-400">• {issue}</li>
                 ))}</ul>
               )}
             </div>
@@ -97,10 +97,10 @@ export default function BlockchainAuditPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <Badge className="text-[8px] bg-cyan-500/10 border-cyan-500/20 text-cyan-400">{block.eventType}</Badge>
-                    <span className="text-[8px] text-slate-600">{new Date(block.timestamp).toLocaleString()}</span>
+                    <Badge className="text-xs bg-cyan-500/10 border-cyan-500/20 text-cyan-400">{block.eventType}</Badge>
+                    <span className="text-xs text-slate-600">{new Date(block.timestamp).toLocaleString()}</span>
                   </div>
-                  <p className="text-[9px] text-slate-500 font-mono truncate mt-0.5">#{block.blockHash?.substring(0, 16)}...</p>
+                  <p className="text-xs text-slate-500 font-mono truncate mt-0.5">#{block.blockHash?.substring(0, 16)}...</p>
                 </div>
               </div>
             ))}
@@ -113,16 +113,16 @@ export default function BlockchainAuditPage() {
         <CardHeader className="pb-2"><CardTitle className="text-xs text-white">Recent Events (All Loads)</CardTitle></CardHeader>
         <CardContent>
           {recent.length === 0 ? (
-            <p className="text-[10px] text-slate-500 text-center py-6">No audit events recorded yet</p>
+            <p className="text-xs text-slate-500 text-center py-6">No audit events recorded yet</p>
           ) : (
             <div className="space-y-1 max-h-64 overflow-y-auto">
               {recent.map((e: any) => (
                 <div key={e.id} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] cursor-pointer" onClick={() => setSelectedLoadId(e.loadId)}>
                   <div className="flex items-center gap-2">
-                    <Badge className="text-[8px] bg-white/[0.04] border-white/[0.06] text-slate-300">{e.eventType}</Badge>
-                    <span className="text-[9px] text-slate-500">Load #{e.loadId}</span>
+                    <Badge className="text-xs bg-white/[0.04] border-white/[0.06] text-slate-300">{e.eventType}</Badge>
+                    <span className="text-xs text-slate-500">Load #{e.loadId}</span>
                   </div>
-                  <span className="text-[8px] text-slate-600 font-mono">{e.blockHash?.substring(0, 12)}...</span>
+                  <span className="text-xs text-slate-600 font-mono">{e.blockHash?.substring(0, 12)}...</span>
                 </div>
               ))}
             </div>

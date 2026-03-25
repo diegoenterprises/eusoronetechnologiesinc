@@ -324,7 +324,7 @@ export default function TerminalStaff() {
                       <Input type="number" step="any" value={form.locationLng} onChange={(e: any) => setForm({ ...form, locationLng: e.target.value })} placeholder="-95.3698" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-600">Lat/Lng enables geofence verification — staff must be within 500m of this location to validate arrivals</p>
+                  <p className="text-xs text-slate-600">Lat/Lng enables geofence verification — staff must be within 500m of this location to validate arrivals</p>
                 </div>
               )}
 
@@ -457,7 +457,7 @@ export default function TerminalStaff() {
                       <Input type="number" step="any" value={editForm.locationLng} onChange={(e: any) => setEditForm({ ...editForm, locationLng: e.target.value })} placeholder="-95.3698" className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-600">Lat/Lng enables geofence verification — staff must be within 500m of this location</p>
+                  <p className="text-xs text-slate-600">Lat/Lng enables geofence verification — staff must be within 500m of this location</p>
                 </div>
               )}
 
@@ -618,15 +618,15 @@ export default function TerminalStaff() {
                     {link && (
                       <div className="mt-2 ml-16 space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-600 font-mono truncate max-w-[300px]">{window.location.origin}/validate/{link.token.slice(0, 12)}...</span>
-                          <Badge className="bg-green-500/10 text-green-500 border-0 text-[10px]">Active 24h</Badge>
-                          <button onClick={() => revokeLinkMutation.mutate({ tokenId: link.tokenId })} className="text-[10px] text-red-500 hover:underline ml-1">Revoke</button>
+                          <span className="text-xs text-slate-600 font-mono truncate max-w-[300px]">{window.location.origin}/validate/{link.token.slice(0, 12)}...</span>
+                          <Badge className="bg-green-500/10 text-green-500 border-0 text-xs">Active 24h</Badge>
+                          <button onClick={() => revokeLinkMutation.mutate({ tokenId: link.tokenId })} className="text-xs text-red-500 hover:underline ml-1">Revoke</button>
                         </div>
                         {link.accessCode && (
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-slate-500">Access Code:</span>
+                            <span className="text-xs text-slate-500">Access Code:</span>
                             <span className="text-sm font-mono font-bold text-cyan-400 tracking-widest bg-cyan-500/10 px-2 py-0.5 rounded">{link.accessCode}</span>
-                            <span className="text-[10px] text-slate-600">Share this code with the staff member</span>
+                            <span className="text-xs text-slate-600">Share this code with the staff member</span>
                           </div>
                         )}
                       </div>

@@ -171,11 +171,11 @@ export default function CDLVerification() {
                   {/* Key details row */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className={cn("p-3 rounded-xl", sc)}>
-                      <p className={cn("text-[10px] uppercase tracking-wider mb-1", isLight ? "text-slate-400" : "text-slate-500")}>Class</p>
+                      <p className={cn("text-xs uppercase tracking-wider mb-1", isLight ? "text-slate-400" : "text-slate-500")}>Class</p>
                       <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>Class {cdlClass}</p>
                     </div>
                     <div className={cn("p-3 rounded-xl", sc)}>
-                      <p className={cn("text-[10px] uppercase tracking-wider mb-1", isLight ? "text-slate-400" : "text-slate-500")}>State</p>
+                      <p className={cn("text-xs uppercase tracking-wider mb-1", isLight ? "text-slate-400" : "text-slate-500")}>State</p>
                       <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{issuingState || "N/A"}</p>
                     </div>
                   </div>
@@ -208,7 +208,7 @@ export default function CDLVerification() {
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                     <div>
                       <p className={cn("text-xl font-bold tabular-nums", s.color)}>{s.value}</p>
-                      <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                      <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                     </div>
                   </div>
                 </CardContent>

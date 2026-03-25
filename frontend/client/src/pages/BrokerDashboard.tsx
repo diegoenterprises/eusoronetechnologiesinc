@@ -71,7 +71,7 @@ export default function BrokerDashboard() {
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                 <div>
                   {statsQuery.isLoading ? <Skeleton className="h-7 w-14" /> : <p className={cn("text-xl font-bold tabular-nums", s.color)}>{s.value}</p>}
-                  <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                  <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                 </div>
               </div>
             </CardContent>

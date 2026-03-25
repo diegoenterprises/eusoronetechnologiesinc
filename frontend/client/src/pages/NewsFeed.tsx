@@ -247,8 +247,8 @@ export default function NewsFeed() {
   const getTierBadge = (source: string) => {
     const info = sourceTiers[source];
     if (!info) return null;
-    if (info.tier === 1) return <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold ml-1">T1</span>;
-    if (info.tier === 3) return <span className="text-[8px] px-1 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold ml-1">GOV</span>;
+    if (info.tier === 1) return <span className="text-xs px-1 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold ml-1">T1</span>;
+    if (info.tier === 3) return <span className="text-xs px-1 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold ml-1">GOV</span>;
     return null;
   };
 
@@ -341,10 +341,10 @@ export default function NewsFeed() {
                 <div className="p-1.5 rounded-lg bg-purple-500/20"><Star className="w-4 h-4 text-purple-400" /></div>
                 <div>
                   <h3 className="text-white font-semibold text-sm">Your Daily Brief</h3>
-                  <p className="text-[10px] text-slate-500">{briefQuery.data.totalToday} articles today | Top {briefQuery.data.briefCount} for your role</p>
+                  <p className="text-xs text-slate-500">{briefQuery.data.totalToday} articles today | Top {briefQuery.data.briefCount} for your role</p>
                 </div>
               </div>
-              <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]">{briefQuery.data.role}</Badge>
+              <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs">{briefQuery.data.role}</Badge>
             </div>
             <div className="space-y-2">
               {briefQuery.data.articles.slice(0, 5).map((a: any, i: number) => (
@@ -352,7 +352,7 @@ export default function NewsFeed() {
                   <span className="text-xs font-bold text-slate-600 mt-0.5 w-4 shrink-0">{i + 1}</span>
                   <div className="min-w-0">
                     <p className="text-white text-xs line-clamp-1 group-hover:text-purple-400 transition-colors">{a.title}</p>
-                    <p className="text-[10px] text-slate-500">{a.source} | {a.category.replace('_', ' ')}</p>
+                    <p className="text-xs text-slate-500">{a.source} | {a.category.replace('_', ' ')}</p>
                   </div>
                 </a>
               ))}
@@ -419,10 +419,10 @@ export default function NewsFeed() {
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                            <Badge className={cn("text-[10px]", getCategoryColor(article.category))}>
+                            <Badge className={cn("text-xs", getCategoryColor(article.category))}>
                               <CategoryIcon className="w-3 h-3 mr-1" />{article.category.replace("_", " ")}
                             </Badge>
-                            <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                            <span className="text-xs text-slate-500 flex items-center gap-1">
                               <Clock className="w-3 h-3" />{formatDate(article.publishedAt)}
                             </span>
                           </div>
@@ -431,7 +431,7 @@ export default function NewsFeed() {
                           </a>
                           <p className="text-xs text-slate-400 line-clamp-2">{article.summary}</p>
                           <div className="flex items-center justify-between mt-2">
-                            <span className="text-[11px] text-slate-500 flex items-center">{article.source}{getTierBadge(article.source)}</span>
+                            <span className="text-xs text-slate-500 flex items-center">{article.source}{getTierBadge(article.source)}</span>
                             <div className="flex items-center gap-1">
                               <a href={article.link} target="_blank" rel="noopener noreferrer" className="h-8 w-8 flex items-center justify-center rounded-md text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" title="Open article" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                                 <ExternalLink className="w-4 h-4" />
@@ -476,23 +476,23 @@ export default function NewsFeed() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-slate-700/40 rounded-lg p-2.5 text-center">
                   <p className="text-lg font-bold text-white">{status?.articleCount ?? "..."}</p>
-                  <p className="text-[10px] text-slate-500 uppercase">Articles</p>
+                  <p className="text-xs text-slate-500 uppercase">Articles</p>
                 </div>
                 <div className="bg-slate-700/40 rounded-lg p-2.5 text-center">
                   <p className="text-lg font-bold text-white">{status?.healthyFeeds ?? "..."}</p>
-                  <p className="text-[10px] text-slate-500 uppercase">Live Feeds</p>
+                  <p className="text-xs text-slate-500 uppercase">Live Feeds</p>
                 </div>
                 <div className="bg-slate-700/40 rounded-lg p-2.5 text-center">
                   <p className="text-lg font-bold text-white">{status?.generation ?? 0}</p>
-                  <p className="text-[10px] text-slate-500 uppercase">Refreshes</p>
+                  <p className="text-xs text-slate-500 uppercase">Refreshes</p>
                 </div>
                 <div className="bg-slate-700/40 rounded-lg p-2.5 text-center">
                   <p className="text-lg font-bold text-red-400">{status?.unhealthyFeeds ?? 0}</p>
-                  <p className="text-[10px] text-slate-500 uppercase">Down</p>
+                  <p className="text-xs text-slate-500 uppercase">Down</p>
                 </div>
               </div>
               {status?.lastUpdated && (
-                <p className="text-[10px] text-slate-600 text-center mt-2">Last refresh: {formatDate(status.lastUpdated)}</p>
+                <p className="text-xs text-slate-600 text-center mt-2">Last refresh: {formatDate(status.lastUpdated)}</p>
               )}
             </CardContent>
           </Card>
@@ -520,13 +520,13 @@ export default function NewsFeed() {
               {followedTopics.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {followedTopics.map((topic: string) => (
-                    <Badge key={topic} className="bg-cyan-500/15 text-cyan-400 border-0 text-[10px] cursor-pointer hover:bg-red-500/20 hover:text-red-400 transition-colors" onClick={() => unfollowMut.mutate({ topic })}>
+                    <Badge key={topic} className="bg-cyan-500/15 text-cyan-400 border-0 text-xs cursor-pointer hover:bg-red-500/20 hover:text-red-400 transition-colors" onClick={() => unfollowMut.mutate({ topic })}>
                       #{topic} <X className="w-2.5 h-2.5 ml-1" />
                     </Badge>
                   ))}
                 </div>
               ) : (
-                <p className="text-[10px] text-slate-600 text-center">Follow topics to highlight relevant articles</p>
+                <p className="text-xs text-slate-600 text-center">Follow topics to highlight relevant articles</p>
               )}
             </CardContent>
           </Card>
@@ -551,7 +551,7 @@ export default function NewsFeed() {
                       <span className="text-xl font-bold text-slate-600 shrink-0 w-6 text-right">{idx + 1}</span>
                       <div className="min-w-0">
                         <p className="text-white text-xs line-clamp-2 group-hover:text-blue-400 transition-colors">{article.title}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">{article.source}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{article.source}</p>
                       </div>
                     </a>
                   ))}

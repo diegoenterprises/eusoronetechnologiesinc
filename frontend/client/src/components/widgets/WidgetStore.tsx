@@ -161,7 +161,7 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
               >
                 {tab.id === "premium" && <EsangIcon className="w-3 h-3" />}
                 {tab.label}
-                <span className={cn("px-1.5 py-0.5 rounded-full text-[10px]",
+                <span className={cn("px-1.5 py-0.5 rounded-full text-xs",
                   activeTab === tab.id ? "bg-white/20" : "bg-slate-700"
                 )}>{tab.count}</span>
               </button>
@@ -224,7 +224,7 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
                               <div className="flex items-center gap-2">
                                 <p className="text-sm font-medium text-white truncate">{widget.name}</p>
                                 {widget.premium && (
-                                  <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px] px-1.5 py-0">
+                                  <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs px-1.5 py-0">
                                     <EsangIcon className="w-2.5 h-2.5 mr-0.5" />PRO
                                   </Badge>
                                 )}

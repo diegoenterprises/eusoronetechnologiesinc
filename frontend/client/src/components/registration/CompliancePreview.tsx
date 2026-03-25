@@ -296,7 +296,7 @@ export function ProductPicker({ trailerTypes, selectedProducts, onProductsChange
                   <span className={selected ? "text-blue-400" : "text-slate-500"}>{icon}</span>
                   <span className="flex-1 truncate">{p.label}</span>
                   {p.requiresHazmat && (
-                    <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-500/15 text-red-400 border border-red-500/20">
+                    <span className="shrink-0 px-1.5 py-0.5 rounded text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/20">
                       HAZMAT
                     </span>
                   )}
@@ -390,7 +390,7 @@ export function CompliancePreview({ trailerTypes, products, operatingStates, has
           </div>
           <div className="text-left">
             <p className="text-sm font-medium text-slate-200">Smart Compliance Requirements</p>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-xs text-slate-500">
               {counts.total === 0
                 ? "Select products to see requirements"
                 : `${counts.total} document${counts.total !== 1 ? "s" : ""} required based on your selections`
@@ -400,12 +400,12 @@ export function CompliancePreview({ trailerTypes, products, operatingStates, has
         </div>
         <div className="flex items-center gap-2">
           {counts.CRITICAL > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/15 text-red-400 border border-red-500/20">
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/20">
               {counts.CRITICAL} Critical
             </span>
           )}
           {counts.HIGH > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/20">
               {counts.HIGH} High
             </span>
           )}
@@ -421,7 +421,7 @@ export function CompliancePreview({ trailerTypes, products, operatingStates, has
               <Lock className="w-3.5 h-3.5 text-slate-500" />
               <span className="text-xs text-slate-500">Required CDL Endorsements:</span>
               {endorsements.map(e => (
-                <span key={e} className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-gradient-to-r from-blue-500/15 to-purple-500/10 text-blue-300 border border-blue-500/25">
+                <span key={e} className="px-2 py-0.5 rounded-md text-xs font-bold bg-gradient-to-r from-blue-500/15 to-purple-500/10 text-blue-300 border border-blue-500/25">
                   {e === "H" ? "H (Hazmat)" : e === "N" ? "N (Tanker)" : e === "T" ? "T (Doubles/Triples)" : e === "X" ? "X (H+N Combo)" : e}
                 </span>
               ))}
@@ -436,7 +436,7 @@ export function CompliancePreview({ trailerTypes, products, operatingStates, has
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-amber-300">State-Specific Requirements</p>
                   {stateWarnings.map((w, i) => (
-                    <p key={i} className="text-[11px] text-amber-400/70">{w}</p>
+                    <p key={i} className="text-xs text-amber-400/70">{w}</p>
                   ))}
                 </div>
               </div>
@@ -456,14 +456,14 @@ export function CompliancePreview({ trailerTypes, products, operatingStates, has
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium text-slate-200 truncate">{rule.documentTypeId.replace(/_/g, " ")}</span>
-                      <span className={`text-[9px] font-semibold uppercase ${ps.text}`}>{rule.priority}</span>
+                      <span className={`text-xs font-semibold uppercase ${ps.text}`}>{rule.priority}</span>
                       {rule.federal && (
-                        <span className="text-[9px] text-slate-600 uppercase">Federal</span>
+                        <span className="text-xs text-slate-600 uppercase">Federal</span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{rule.reason}</p>
+                    <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{rule.reason}</p>
                   </div>
-                  <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded ${
+                  <span className={`shrink-0 text-xs px-1.5 py-0.5 rounded ${
                     rule.status === "REQUIRED" ? "bg-slate-700/50 text-slate-300" :
                     rule.status === "CONDITIONAL" ? "bg-slate-700/30 text-slate-400" :
                     "bg-slate-700/20 text-slate-500"
@@ -494,14 +494,14 @@ export function CompliancePreview({ trailerTypes, products, operatingStates, has
                 return (
                   <div key={priority} className="flex items-center gap-1">
                     <div className={`w-2 h-2 rounded-full ${ps.dot}`} />
-                    <span className="text-[10px] text-slate-500">{count} {priority.toLowerCase()}</span>
+                    <span className="text-xs text-slate-500">{count} {priority.toLowerCase()}</span>
                   </div>
                 );
               })}
             </div>
             <div className="flex items-center gap-1">
               <Info className="w-3 h-3 text-slate-600" />
-              <span className="text-[10px] text-slate-600">Updates as you select</span>
+              <span className="text-xs text-slate-600">Updates as you select</span>
             </div>
           </div>
         </div>

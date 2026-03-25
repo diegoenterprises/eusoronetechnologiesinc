@@ -167,7 +167,7 @@ export default function LoadTemplates() {
           { label: "Total Uses", value: stats.totalUsage, icon: <Zap className="w-4 h-4 text-emerald-500" /> },
         ].map((s) => (
           <div key={s.label} className={cellCls}>
-            <div className="flex items-center gap-2 mb-1">{s.icon}<span className="text-[10px] text-slate-400 uppercase">{s.label}</span></div>
+            <div className="flex items-center gap-2 mb-1">{s.icon}<span className="text-xs text-slate-400 uppercase">{s.label}</span></div>
             <p className={cn("text-xl font-bold", isLight ? "text-slate-800" : "text-white")}>{s.value}</p>
           </div>
         ))}
@@ -291,17 +291,17 @@ export default function LoadTemplates() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className={cn("text-sm font-semibold truncate", isLight ? "text-slate-800" : "text-white")}>{tmpl.name}</p>
                       {isHazmat && (
-                        <Badge className="text-[9px] bg-red-500/15 text-red-500 border-0">
+                        <Badge className="text-xs bg-red-500/15 text-red-500 border-0">
                           <AlertTriangle className="w-2.5 h-2.5 mr-0.5" />HZ {tmpl.hazmatClass}
                         </Badge>
                       )}
                       {tmpl.equipmentType && (
-                        <Badge className={cn("text-[9px] border-0", isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/15 text-blue-400")}>
+                        <Badge className={cn("text-xs border-0", isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/15 text-blue-400")}>
                           <Truck className="w-2.5 h-2.5 mr-0.5" />{tmpl.equipmentType}
                         </Badge>
                       )}
                       {tmpl.isArchived && (
-                        <Badge className="text-[9px] bg-slate-500/15 text-slate-400 border-0">Archived</Badge>
+                        <Badge className="text-xs bg-slate-500/15 text-slate-400 border-0">Archived</Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-400">
@@ -326,7 +326,7 @@ export default function LoadTemplates() {
                         ${Number(tmpl.rate).toLocaleString()}
                       </p>
                     )}
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-xs text-slate-400">
                       {tmpl.usageCount || 0} use{tmpl.usageCount !== 1 ? "s" : ""}
                     </p>
                   </div>
@@ -351,15 +351,15 @@ export default function LoadTemplates() {
                     </p>
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <label className="text-[10px] text-slate-400 uppercase">Pickup Date</label>
+                        <label className="text-xs text-slate-400 uppercase">Pickup Date</label>
                         <Input className={inputCls} type="datetime-local" value={usePickupDate} onChange={(e) => setUsePickupDate(e.target.value)} />
                       </div>
                       <div>
-                        <label className="text-[10px] text-slate-400 uppercase">Delivery Date</label>
+                        <label className="text-xs text-slate-400 uppercase">Delivery Date</label>
                         <Input className={inputCls} type="datetime-local" value={useDeliveryDate} onChange={(e) => setUseDeliveryDate(e.target.value)} />
                       </div>
                       <div>
-                        <label className="text-[10px] text-slate-400 uppercase">Rate Override ($)</label>
+                        <label className="text-xs text-slate-400 uppercase">Rate Override ($)</label>
                         <Input className={inputCls} type="number" placeholder={tmpl.rate ? `$${tmpl.rate}` : "Rate"} value={useRate} onChange={(e) => setUseRate(e.target.value)} />
                       </div>
                     </div>
@@ -386,49 +386,49 @@ export default function LoadTemplates() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-3">
                       {tmpl.commodity && (
                         <div className={cellCls}>
-                          <p className="text-[10px] text-slate-400 uppercase">Commodity</p>
+                          <p className="text-xs text-slate-400 uppercase">Commodity</p>
                           <p className={valCls}>{tmpl.commodity}</p>
                         </div>
                       )}
                       {tmpl.weight && (
                         <div className={cellCls}>
-                          <p className="text-[10px] text-slate-400 uppercase">Weight</p>
+                          <p className="text-xs text-slate-400 uppercase">Weight</p>
                           <p className={valCls}>{Number(tmpl.weight).toLocaleString()} {tmpl.weightUnit || "lbs"}</p>
                         </div>
                       )}
                       {tmpl.equipmentType && (
                         <div className={cellCls}>
-                          <p className="text-[10px] text-slate-400 uppercase">Equipment</p>
+                          <p className="text-xs text-slate-400 uppercase">Equipment</p>
                           <p className={valCls}>{tmpl.equipmentType}</p>
                         </div>
                       )}
                       {tmpl.rate && (
                         <div className={cellCls}>
-                          <p className="text-[10px] text-slate-400 uppercase">Rate</p>
+                          <p className="text-xs text-slate-400 uppercase">Rate</p>
                           <p className={valCls}>${Number(tmpl.rate).toLocaleString()} {tmpl.rateType !== "flat" ? `/${tmpl.rateType?.replace("per_", "")}` : ""}</p>
                         </div>
                       )}
                       {tmpl.distance && (
                         <div className={cellCls}>
-                          <p className="text-[10px] text-slate-400 uppercase">Distance</p>
+                          <p className="text-xs text-slate-400 uppercase">Distance</p>
                           <p className={valCls}>{Number(tmpl.distance).toLocaleString()} mi</p>
                         </div>
                       )}
                       {tmpl.hazmatClass && (
                         <div className={cellCls}>
-                          <p className="text-[10px] text-slate-400 uppercase">Hazmat</p>
+                          <p className="text-xs text-slate-400 uppercase">Hazmat</p>
                           <p className="text-red-500 font-medium text-sm">Class {tmpl.hazmatClass}{tmpl.unNumber ? ` / ${tmpl.unNumber}` : ""}</p>
                         </div>
                       )}
                       {tmpl.preferredPickupTime && (
                         <div className={cellCls}>
-                          <p className="text-[10px] text-slate-400 uppercase">Preferred Time</p>
+                          <p className="text-xs text-slate-400 uppercase">Preferred Time</p>
                           <p className={valCls}>{tmpl.preferredPickupTime}</p>
                         </div>
                       )}
                       {tmpl.usageCount > 0 && (
                         <div className={cellCls}>
-                          <p className="text-[10px] text-slate-400 uppercase">Last Used</p>
+                          <p className="text-xs text-slate-400 uppercase">Last Used</p>
                           <p className={valCls}>{tmpl.lastUsedAt ? new Date(tmpl.lastUsedAt).toLocaleDateString() : "Never"}</p>
                         </div>
                       )}
@@ -437,14 +437,14 @@ export default function LoadTemplates() {
                     {/* Stops */}
                     {tmpl.stops && Array.isArray(tmpl.stops) && tmpl.stops.length > 0 && (
                       <div className={cn("p-3 rounded-xl border", isLight ? "bg-blue-50/30 border-blue-200/50" : "bg-blue-500/5 border-blue-500/15")}>
-                        <p className={cn("text-[10px] font-semibold uppercase tracking-wider mb-2", isLight ? "text-blue-600" : "text-blue-400")}>
+                        <p className={cn("text-xs font-semibold uppercase tracking-wider mb-2", isLight ? "text-blue-600" : "text-blue-400")}>
                           Multi-Stop Route ({tmpl.stops.length} stops)
                         </p>
                         <div className="space-y-1">
                           {tmpl.stops.map((s: any, i: number) => (
                             <div key={i} className="flex items-center gap-2 text-xs">
-                              <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold", isLight ? "bg-slate-200 text-slate-600" : "bg-slate-700 text-slate-300")}>{i + 1}</span>
-                              <Badge className={cn("text-[9px] border-0", s.stopType === "pickup" ? "bg-blue-500/15 text-blue-400" : s.stopType === "delivery" ? "bg-purple-500/15 text-purple-400" : "bg-slate-500/15 text-slate-400")}>
+                              <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold", isLight ? "bg-slate-200 text-slate-600" : "bg-slate-700 text-slate-300")}>{i + 1}</span>
+                              <Badge className={cn("text-xs border-0", s.stopType === "pickup" ? "bg-blue-500/15 text-blue-400" : s.stopType === "delivery" ? "bg-purple-500/15 text-purple-400" : "bg-slate-500/15 text-slate-400")}>
                                 {s.stopType}
                               </Badge>
                               <span className={cn("text-xs", isLight ? "text-slate-600" : "text-slate-300")}>
@@ -458,7 +458,7 @@ export default function LoadTemplates() {
 
                     {(tmpl.notes || tmpl.specialInstructions || tmpl.description) && (
                       <div className={cellCls}>
-                        <p className="text-[10px] text-slate-400 uppercase">Notes</p>
+                        <p className="text-xs text-slate-400 uppercase">Notes</p>
                         <p className={cn("text-xs", isLight ? "text-slate-600" : "text-slate-300")}>
                           {tmpl.description || tmpl.notes || tmpl.specialInstructions}
                         </p>
@@ -469,7 +469,7 @@ export default function LoadTemplates() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <Button
                         size="sm"
-                        className="h-7 text-[11px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-lg"
+                        className="h-7 text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-lg"
                         onClick={() => { setUseDialogId(tmpl.id); setExpandedId(null); }}
                       >
                         <Zap className="w-3 h-3 mr-1" />Use Template
@@ -478,7 +478,7 @@ export default function LoadTemplates() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className={cn("h-7 text-[11px] rounded-lg", isLight ? "border-slate-200" : "border-slate-700")}
+                          className={cn("h-7 text-xs rounded-lg", isLight ? "border-slate-200" : "border-slate-700")}
                           onClick={() => archiveMutation.mutate({ id: tmpl.id, data: { isArchived: true } })}
                         >
                           <Archive className="w-3 h-3 mr-1" />Archive
@@ -487,7 +487,7 @@ export default function LoadTemplates() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 text-[11px] text-red-400 hover:text-red-300 ml-auto"
+                        className="h-7 text-xs text-red-400 hover:text-red-300 ml-auto"
                         onClick={() => removeMutation.mutate({ id: tmpl.id })}
                       >
                         <Trash2 className="w-3 h-3 mr-1" />Delete

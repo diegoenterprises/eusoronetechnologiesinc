@@ -44,7 +44,7 @@ export default function BrandingManagerPage() {
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <Fingerprint className="w-5 h-5 text-orange-400" />White-Label Branding
           </h1>
-          <p className="text-[10px] text-slate-400 mt-0.5">Custom logos, colors, fonts, and domains per tenant</p>
+          <p className="text-xs text-slate-400 mt-0.5">Custom logos, colors, fonts, and domains per tenant</p>
         </div>
         <Button variant="outline" size="sm" className="h-7 text-xs border-white/[0.08] text-slate-400" onClick={() => listQ.refetch?.()}>
           <RefreshCw className="w-3.5 h-3.5 mr-1" />Refresh
@@ -61,32 +61,32 @@ export default function BrandingManagerPage() {
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">Tenant ID</label>
+              <label className="text-xs text-slate-500 uppercase">Tenant ID</label>
               <Input value={form.tenantId} onChange={(e: any) => setForm({ ...form, tenantId: e.target.value })} placeholder="e.g., 1" disabled={!!editTenantId}
                 className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">Brand Name</label>
+              <label className="text-xs text-slate-500 uppercase">Brand Name</label>
               <Input value={form.brandName} onChange={(e: any) => setForm({ ...form, brandName: e.target.value })} placeholder="Acme Freight" className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">Primary Color</label>
+              <label className="text-xs text-slate-500 uppercase">Primary Color</label>
               <div className="flex items-center gap-2 mt-1">
                 <input type="color" value={form.primaryColor} onChange={(e) => setForm({ ...form, primaryColor: e.target.value })} className="w-7 h-7 rounded cursor-pointer bg-transparent border-0" />
                 <Input value={form.primaryColor} onChange={(e: any) => setForm({ ...form, primaryColor: e.target.value })} className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white font-mono flex-1" />
               </div>
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">Secondary Color</label>
+              <label className="text-xs text-slate-500 uppercase">Secondary Color</label>
               <div className="flex items-center gap-2 mt-1">
                 <input type="color" value={form.secondaryColor} onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })} className="w-7 h-7 rounded cursor-pointer bg-transparent border-0" />
                 <Input value={form.secondaryColor} onChange={(e: any) => setForm({ ...form, secondaryColor: e.target.value })} className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white font-mono flex-1" />
               </div>
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">Font Family</label>
+              <label className="text-xs text-slate-500 uppercase">Font Family</label>
               <select value={form.fontFamily} onChange={(e) => setForm({ ...form, fontFamily: e.target.value })} className="w-full h-7 text-xs bg-white/[0.04] border border-white/[0.08] text-white rounded-md px-2 mt-1">
                 <option value="Inter, system-ui">Inter</option>
                 <option value="'DM Sans', sans-serif">DM Sans</option>
@@ -98,27 +98,27 @@ export default function BrandingManagerPage() {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">Logo URL</label>
+              <label className="text-xs text-slate-500 uppercase">Logo URL</label>
               <Input value={form.logoUrl} onChange={(e: any) => setForm({ ...form, logoUrl: e.target.value })} placeholder="https://..." className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">Favicon URL</label>
+              <label className="text-xs text-slate-500 uppercase">Favicon URL</label>
               <Input value={form.faviconUrl} onChange={(e: any) => setForm({ ...form, faviconUrl: e.target.value })} placeholder="https://..." className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">Custom Domain</label>
+              <label className="text-xs text-slate-500 uppercase">Custom Domain</label>
               <Input value={form.customDomain} onChange={(e: any) => setForm({ ...form, customDomain: e.target.value })} placeholder="freight.acme.com" className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
             </div>
           </div>
 
           {/* Preview */}
           <div className="p-3 rounded-lg border border-white/[0.06]" style={{ background: `linear-gradient(135deg, ${form.primaryColor}15, ${form.secondaryColor}15)` }}>
-            <p className="text-[9px] text-slate-500 uppercase tracking-wider mb-2">Preview</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Preview</p>
             <div className="flex items-center gap-3">
               {form.logoUrl ? <img src={form.logoUrl} alt="logo" className="w-8 h-8 rounded object-contain" /> : <div className="w-8 h-8 rounded" style={{ backgroundColor: form.primaryColor }} />}
               <div>
                 <p className="text-sm font-bold" style={{ color: form.primaryColor, fontFamily: form.fontFamily }}>{form.brandName || "Brand Name"}</p>
-                <p className="text-[9px]" style={{ color: form.secondaryColor }}>Powered by EusoTrip</p>
+                <p className="text-xs" style={{ color: form.secondaryColor }}>Powered by EusoTrip</p>
               </div>
             </div>
           </div>
@@ -149,7 +149,7 @@ export default function BrandingManagerPage() {
       {/* Existing Brandings */}
       {brandings.length > 0 && (
         <div className="space-y-2">
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider">Existing Brandings</p>
+          <p className="text-xs text-slate-500 uppercase tracking-wider">Existing Brandings</p>
           {brandings.map((b: any) => (
             <Card key={b.id} className="bg-slate-800/50 border-slate-700/50 rounded-xl hover:border-slate-600/50 transition-colors cursor-pointer" onClick={() => startEdit(b)}>
               <CardContent className="p-3">
@@ -159,9 +159,9 @@ export default function BrandingManagerPage() {
                     <div>
                       <p className="text-xs font-semibold text-white">{b.brandName || `Tenant #${b.tenantId}`}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        {b.customDomain && <span className="text-[8px] text-blue-400"><Globe className="w-3 h-3 inline mr-0.5" />{b.customDomain}</span>}
-                        <span className="text-[8px] text-slate-500"><Type className="w-3 h-3 inline mr-0.5" />{b.fontFamily?.split(",")[0]}</span>
-                        <span className="text-[8px] text-slate-500 font-mono">{b.primaryColor}</span>
+                        {b.customDomain && <span className="text-xs text-blue-400"><Globe className="w-3 h-3 inline mr-0.5" />{b.customDomain}</span>}
+                        <span className="text-xs text-slate-500"><Type className="w-3 h-3 inline mr-0.5" />{b.fontFamily?.split(",")[0]}</span>
+                        <span className="text-xs text-slate-500 font-mono">{b.primaryColor}</span>
                       </div>
                     </div>
                   </div>

@@ -118,7 +118,7 @@ export default function DrugTestAcknowledgment() {
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                     <div>
                       <p className={cn("text-sm font-bold", s.color)}>{s.value}</p>
-                      <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                      <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -147,7 +147,7 @@ export default function DrugTestAcknowledgment() {
                     <div className="flex-1">
                       <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{tt.label}</p>
                       <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>{tt.description}</p>
-                      <p className={cn("text-[10px] font-mono mt-1", isLight ? "text-blue-500" : "text-blue-400")}>{tt.regulation}</p>
+                      <p className={cn("text-xs font-mono mt-1", isLight ? "text-blue-500" : "text-blue-400")}>{tt.regulation}</p>
                     </div>
                   </div>
                 ))}

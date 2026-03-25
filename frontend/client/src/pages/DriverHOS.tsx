@@ -54,7 +54,7 @@ export default function DriverHOS() {
   const subcard = cn("rounded-xl p-4", isLight ? "bg-slate-50/80 border border-slate-100" : "bg-white/[0.03] border border-white/[0.04]");
   const heading = cn("font-semibold", isLight ? "text-slate-900" : "text-white");
   const muted = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
-  const label = cn("text-[11px] font-medium tracking-wide uppercase", isLight ? "text-slate-400" : "text-slate-500");
+  const label = cn("text-xs font-medium tracking-wide uppercase", isLight ? "text-slate-400" : "text-slate-500");
 
   // Driving progress
   const drivingUsed = 11 - parseHours(hos?.drivingRemaining);
@@ -137,7 +137,7 @@ export default function DriverHOS() {
             <p className={cn("text-xs mt-1", muted)}>remaining</p>
           </div>
           <div>
-            <div className="flex justify-between text-[10px] mb-1">
+            <div className="flex justify-between text-xs mb-1">
               <span className={muted}>{drivingUsed.toFixed(1)}h used</span>
               <span className={muted}>11h total</span>
             </div>
@@ -163,7 +163,7 @@ export default function DriverHOS() {
             <p className={cn("text-xs mt-1", muted)}>remaining</p>
           </div>
           <div>
-            <div className="flex justify-between text-[10px] mb-1">
+            <div className="flex justify-between text-xs mb-1">
               <span className={muted}>{onDutyUsed.toFixed(1)}h used</span>
               <span className={muted}>14h total</span>
             </div>
@@ -189,7 +189,7 @@ export default function DriverHOS() {
             <p className={cn("text-xs mt-1", muted)}>remaining</p>
           </div>
           <div>
-            <div className="flex justify-between text-[10px] mb-1">
+            <div className="flex justify-between text-xs mb-1">
               <span className={muted}>{cycleUsed.toFixed(1)}h used</span>
               <span className={muted}>70h total</span>
             </div>
@@ -213,9 +213,9 @@ export default function DriverHOS() {
               <div className="flex items-center justify-between">
                 <span className={muted}>30-min break required</span>
                 {hos?.breakRequired ? (
-                  <Badge className="bg-amber-500/15 text-amber-500 border-0 text-[10px] font-bold">Required</Badge>
+                  <Badge className="bg-amber-500/15 text-amber-500 border-0 text-xs font-bold">Required</Badge>
                 ) : (
-                  <Badge className={cn("border-0 text-[10px] font-bold", isLight ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/15 text-emerald-400")}>Clear</Badge>
+                  <Badge className={cn("border-0 text-xs font-bold", isLight ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/15 text-emerald-400")}>Clear</Badge>
                 )}
               </div>
             </div>
@@ -271,11 +271,11 @@ export default function DriverHOS() {
               <div className="flex items-center justify-between">
                 <span className={muted}>Can accept load</span>
                 {hos?.canAcceptLoad ? (
-                  <Badge className={cn("border-0 text-[10px] font-bold", isLight ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/15 text-emerald-400")}>
+                  <Badge className={cn("border-0 text-xs font-bold", isLight ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/15 text-emerald-400")}>
                     <CheckCircle className="w-3 h-3 mr-1" />Yes
                   </Badge>
                 ) : (
-                  <Badge className="bg-red-500/15 text-red-500 border-0 text-[10px] font-bold">
+                  <Badge className="bg-red-500/15 text-red-500 border-0 text-xs font-bold">
                     <AlertTriangle className="w-3 h-3 mr-1" />No
                   </Badge>
                 )}
@@ -304,7 +304,7 @@ export default function DriverHOS() {
                     <p className={cn("text-xs", muted)}>{v.description || v.message || "HOS violation detected"}</p>
                   </div>
                 </div>
-                <Badge className="bg-red-500/15 text-red-500 border-0 text-[10px] font-bold">{v.severity || "Warning"}</Badge>
+                <Badge className="bg-red-500/15 text-red-500 border-0 text-xs font-bold">{v.severity || "Warning"}</Badge>
               </div>
             ))}
           </div>

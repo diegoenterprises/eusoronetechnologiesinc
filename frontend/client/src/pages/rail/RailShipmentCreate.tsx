@@ -183,7 +183,7 @@ export default function RailShipmentCreate() {
         <div className="flex items-center justify-between mb-1.5">
           <Label className={lbl}>Car Type *</Label>
           {selectedVertical && (
-            <button onClick={() => setSelectedVertical("")} className="text-[10px] text-slate-500 hover:text-slate-300 underline transition-colors">Show all car types</button>
+            <button onClick={() => setSelectedVertical("")} className="text-xs text-slate-500 hover:text-slate-300 underline transition-colors">Show all car types</button>
           )}
         </div>
         <Select value={form.carType} onValueChange={(v) => set("carType", v)}>

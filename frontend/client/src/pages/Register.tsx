@@ -446,7 +446,7 @@ export default function Register() {
             </div>
           ))}
         </div>
-        <div className="flex justify-center gap-[52px] text-[10px] mb-6">
+        <div className="flex justify-center gap-[52px] text-xs mb-6">
           <span className={step >= 1 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>{t('register.country', 'Country')}</span>
           <span className={step >= 2 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>{t('register.mode', 'Mode')}</span>
           <span className={step >= 3 ? (isLight ? 'text-slate-700 font-medium' : 'text-slate-300 font-medium') : (isLight ? 'text-slate-400' : 'text-slate-500')}>{t('register.role', 'Role')}</span>

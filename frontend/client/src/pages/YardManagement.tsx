@@ -78,7 +78,7 @@ function StatusBadge({ status, size = "sm" }: { status: string; size?: "sm" | "x
     high: "bg-amber-500/15 text-amber-400 border-amber-500/20",
   };
   const c = colors[status] || "bg-slate-500/15 text-slate-400 border-slate-500/20";
-  const textSize = size === "xs" ? "text-[10px]" : "text-xs";
+  const textSize = size === "xs" ? "text-xs" : "text-xs";
   const pad = size === "xs" ? "px-1.5 py-0.5" : "px-2 py-0.5";
   return (
     <span className={cn("rounded-full border font-medium whitespace-nowrap", c, textSize, pad)}>
@@ -121,7 +121,7 @@ function StatCard({ label, value, sub, icon, accent = "amber" }: { label: string
         <span className={accentBg}>{icon}</span>
       </div>
       <p className={`text-2xl font-bold ${isLight ? "text-slate-900" : "text-white"}`}>{value}</p>
-      {sub && <p className="text-[11px] text-slate-500">{sub}</p>}
+      {sub && <p className="text-xs text-slate-500">{sub}</p>}
     </div>
   );
 }
@@ -191,7 +191,7 @@ export default function YardManagement() {
           </select>
           <div className="flex items-center gap-1.5 px-3 py-2 bg-white/[0.04] rounded-lg border border-white/[0.06]">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] text-emerald-400 font-medium">LIVE</span>
+            <span className="text-xs text-emerald-400 font-medium">LIVE</span>
           </div>
         </div>
       </div>
@@ -297,15 +297,15 @@ function DashboardTab({ locationId, data, isLoading }: { locationId: string; dat
           <div className="flex items-center gap-6">
             <div>
               <p className="text-2xl font-bold text-emerald-400">{data.todayGateEntries}</p>
-              <p className="text-[11px] text-slate-500">Entries</p>
+              <p className="text-xs text-slate-500">Entries</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-orange-400">{data.todayGateExits}</p>
-              <p className="text-[11px] text-slate-500">Exits</p>
+              <p className="text-xs text-slate-500">Exits</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-amber-400">{data.pendingCheckIns}</p>
-              <p className="text-[11px] text-slate-500">Pending Check-Ins</p>
+              <p className="text-xs text-slate-500">Pending Check-Ins</p>
             </div>
           </div>
         </div>
@@ -318,11 +318,11 @@ function DashboardTab({ locationId, data, isLoading }: { locationId: string; dat
           <div className="flex items-center gap-6">
             <div>
               <p className="text-2xl font-bold text-amber-400">{data.crossDockActive}</p>
-              <p className="text-[11px] text-slate-500">Active Operations</p>
+              <p className="text-xs text-slate-500">Active Operations</p>
             </div>
             <div>
               <p className={`text-2xl font-bold ${isLight ? "text-slate-900" : "text-white"}`}>{data.avgTurnTimeMinutes}</p>
-              <p className="text-[11px] text-slate-500">Avg Turn (min)</p>
+              <p className="text-xs text-slate-500">Avg Turn (min)</p>
             </div>
           </div>
         </div>
@@ -335,7 +335,7 @@ function DashboardTab({ locationId, data, isLoading }: { locationId: string; dat
           <div className="flex items-center gap-6">
             <div>
               <p className="text-2xl font-bold text-orange-400">{data.pendingCheckOuts}</p>
-              <p className="text-[11px] text-slate-500">Pending</p>
+              <p className="text-xs text-slate-500">Pending</p>
             </div>
           </div>
         </div>
@@ -372,7 +372,7 @@ function YardMapTab({ locationId }: { locationId: string }) {
           <Grid3X3 className="w-4 h-4 text-amber-400" />
           Interactive Yard Map
         </h3>
-        <div className="flex items-center gap-3 text-[10px]">
+        <div className="flex items-center gap-3 text-xs">
           {[
             { label: "Empty", color: "bg-emerald-500" },
             { label: "Occupied", color: "bg-amber-500" },
@@ -394,7 +394,7 @@ function YardMapTab({ locationId }: { locationId: string }) {
               key={spot.id}
               onClick={() => setSelectedSpot(spot)}
               className={cn(
-                "relative h-12 rounded-md border text-[10px] font-mono flex flex-col items-center justify-center transition-all cursor-pointer",
+                "relative h-12 rounded-md border text-xs font-mono flex flex-col items-center justify-center transition-all cursor-pointer",
                 spotColors[spot.status] || spotColors.empty,
                 selectedSpot?.id === spot.id && "ring-2 ring-amber-400"
               )}
@@ -402,7 +402,7 @@ function YardMapTab({ locationId }: { locationId: string }) {
             >
               <span className="font-semibold text-white/80">{spot.label}</span>
               {spot.trailerNumber && (
-                <span className="text-[8px] text-white/50 truncate max-w-full px-0.5">{spot.trailerNumber}</span>
+                <span className="text-xs text-white/50 truncate max-w-full px-0.5">{spot.trailerNumber}</span>
               )}
               {spot.type === "dock" && <DoorOpen className="absolute top-0.5 right-0.5 w-2.5 h-2.5 text-white/30" />}
               {spot.type === "repair" && <Wrench className="absolute top-0.5 right-0.5 w-2.5 h-2.5 text-white/30" />}
@@ -466,7 +466,7 @@ function DockScheduleTab({ locationId }: { locationId: string }) {
               <div className="flex items-center gap-2">
                 <DoorOpen className="w-4 h-4 text-amber-400" />
                 <span className={`text-sm font-semibold ${isLight ? "text-slate-900" : "text-white"}`}>{dock.dockName}</span>
-                <span className="text-[10px] text-slate-500 uppercase">{dock.type}</span>
+                <span className="text-xs text-slate-500 uppercase">{dock.type}</span>
               </div>
               <StatusBadge status={dock.status} size="xs" />
             </div>
@@ -483,14 +483,14 @@ function DockScheduleTab({ locationId }: { locationId: string }) {
                         <span className={`font-medium ${isLight ? "text-slate-900" : "text-white"} truncate`}>{apt.carrierName}</span>
                         <StatusBadge status={apt.status} size="xs" />
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                      <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
                         <span>{fmtTime(apt.scheduledStart)} - {fmtTime(apt.scheduledEnd)}</span>
                         <span className="text-slate-600">|</span>
                         <span>{apt.trailerNumber}</span>
                         {apt.loadId && <><span className="text-slate-600">|</span><span>{apt.loadId}</span></>}
                       </div>
                     </div>
-                    <span className={cn("text-[10px] uppercase font-medium px-1.5 py-0.5 rounded", apt.type === "inbound" ? "text-emerald-400 bg-emerald-500/10" : "text-orange-400 bg-orange-500/10")}>
+                    <span className={cn("text-xs uppercase font-medium px-1.5 py-0.5 rounded", apt.type === "inbound" ? "text-emerald-400 bg-emerald-500/10" : "text-orange-400 bg-orange-500/10")}>
                       {apt.type}
                     </span>
                   </div>
@@ -543,7 +543,7 @@ function TrailerPoolTab() {
             )}
           >
             <p className={cn("text-xl font-bold", s.color)}>{s.count}</p>
-            <p className="text-[10px] text-slate-500">{s.label}</p>
+            <p className="text-xs text-slate-500">{s.label}</p>
           </button>
         ))}
       </div>
@@ -556,7 +556,7 @@ function TrailerPoolTab() {
               <span className={`text-sm font-semibold ${isLight ? "text-slate-900" : "text-white"}`}>{trailer.trailerNumber}</span>
               <StatusBadge status={trailer.status} size="xs" />
             </div>
-            <div className={`space-y-1 text-[11px] ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+            <div className={`space-y-1 text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
               <div className="flex justify-between"><span>Type:</span><span className={isLight ? "text-slate-900" : "text-white"}>{trailer.type.replace(/_/g, " ")}</span></div>
               <div className="flex justify-between"><span>Make:</span><span className={isLight ? "text-slate-900" : "text-white"}>{trailer.make} ({trailer.year})</span></div>
               <div className="flex justify-between"><span>Length:</span><span className={isLight ? "text-slate-900" : "text-white"}>{trailer.length}ft</span></div>
@@ -606,7 +606,7 @@ function CrossDockTab() {
                 {op.priority === "high" && <StatusBadge status="urgent" size="xs" />}
               </div>
               {op.status === "in_progress" && (
-                <span className="text-[10px] text-slate-500">
+                <span className="text-xs text-slate-500">
                   {op.palletsTransferred}/{op.palletCount} pallets
                 </span>
               )}
@@ -615,7 +615,7 @@ function CrossDockTab() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
               {/* Inbound */}
               <div className="p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg">
-                <p className="text-[10px] text-emerald-400 font-medium mb-1 uppercase">Inbound</p>
+                <p className="text-xs text-emerald-400 font-medium mb-1 uppercase">Inbound</p>
                 <p className={`${isLight ? "text-slate-900" : "text-white"} font-medium`}>{op.inboundCarrier}</p>
                 <p className="text-slate-500">Trailer: {op.inboundTrailer}</p>
                 <p className="text-slate-500">Dock: {op.inboundDock}</p>
@@ -627,7 +627,7 @@ function CrossDockTab() {
                   <ChevronRight className="w-4 h-4 text-amber-400" />
                   <div className="text-center">
                     <p className="text-lg font-bold text-amber-400">{op.palletCount}</p>
-                    <p className="text-[10px] text-slate-500">pallets</p>
+                    <p className="text-xs text-slate-500">pallets</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-amber-400" />
                 </div>
@@ -635,7 +635,7 @@ function CrossDockTab() {
 
               {/* Outbound */}
               <div className="p-3 bg-orange-500/5 border border-orange-500/10 rounded-lg">
-                <p className="text-[10px] text-orange-400 font-medium mb-1 uppercase">Outbound</p>
+                <p className="text-xs text-orange-400 font-medium mb-1 uppercase">Outbound</p>
                 <p className={`${isLight ? "text-slate-900" : "text-white"} font-medium`}>{op.outboundCarrier}</p>
                 <p className="text-slate-500">Trailer: {op.outboundTrailer}</p>
                 <p className="text-slate-500">Dock: {op.outboundDock}</p>
@@ -644,7 +644,7 @@ function CrossDockTab() {
 
             {op.status === "in_progress" && (
               <div className="mt-3">
-                <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
+                <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                   <span>Progress</span>
                   <span>{Math.round((op.palletsTransferred / op.palletCount) * 100)}%</span>
                 </div>
@@ -698,7 +698,7 @@ function YardMovesTab() {
                 <div className={cn("w-2 h-2 rounded-full", h.status === "available" ? "bg-emerald-400" : h.status === "busy" ? "bg-amber-400" : "bg-slate-400")} />
                 <div className="flex-1 min-w-0">
                   <p className={`text-xs ${isLight ? "text-slate-900" : "text-white"} truncate`}>{h.name}</p>
-                  <p className="text-[10px] text-slate-500">{h.movesCompleted} moves today</p>
+                  <p className="text-xs text-slate-500">{h.movesCompleted} moves today</p>
                 </div>
                 <StatusBadge status={h.status} size="xs" />
               </div>
@@ -868,7 +868,7 @@ function DetentionTab() {
                 <Timer className={cn("w-4 h-4", rec.status === "critical" ? "text-red-400" : rec.status === "warning" ? "text-amber-400" : "text-emerald-400")} />
                 <span className={`text-sm font-semibold ${isLight ? "text-slate-900" : "text-white"}`}>{rec.trailerNumber}</span>
                 <StatusBadge status={rec.status} size="xs" />
-                <span className="text-[10px] text-slate-500 uppercase">{rec.type}</span>
+                <span className="text-xs text-slate-500 uppercase">{rec.type}</span>
               </div>
               <span className="text-sm font-bold text-red-400">{fmtCurrency(rec.accruedCharge)}</span>
             </div>
@@ -887,7 +887,7 @@ function DetentionTab() {
                 <div className="h-full bg-emerald-500" style={{ width: `${(rec.freeTimeHours / rec.totalTimeHours) * 100}%` }} />
                 <div className={cn("h-full", rec.status === "critical" ? "bg-red-500" : "bg-amber-500")} style={{ width: `${(rec.detentionHours / rec.totalTimeHours) * 100}%` }} />
               </div>
-              <div className="flex justify-between text-[10px] text-slate-600 mt-1">
+              <div className="flex justify-between text-xs text-slate-600 mt-1">
                 <span>Free time</span>
                 <span>Detention</span>
               </div>
@@ -958,11 +958,11 @@ function AnalyticsTab() {
               const barColor = pct > 85 ? "bg-red-500" : pct > 70 ? "bg-amber-500" : "bg-emerald-500";
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <span className={`text-[10px] ${isLight ? "text-slate-500" : "text-slate-400"}`}>{pct}%</span>
+                  <span className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>{pct}%</span>
                   <div className="w-full rounded-t-sm bg-white/[0.04] flex-1 relative">
                     <div className={cn("absolute bottom-0 left-0 right-0 rounded-t-sm", barColor)} style={{ height: `${pct}%` }} />
                   </div>
-                  <span className="text-[9px] text-slate-600">{day.date.slice(5)}</span>
+                  <span className="text-xs text-slate-600">{day.date.slice(5)}</span>
                 </div>
               );
             })}
@@ -975,19 +975,19 @@ function AnalyticsTab() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className={`${isLight ? "bg-white border border-slate-200" : "bg-white/[0.03] border border-white/[0.06]"} rounded-xl p-4 text-center`}>
             <p className="text-2xl font-bold text-emerald-400">{aData.aggregated.totalGateEntries}</p>
-            <p className="text-[11px] text-slate-500">Gate Entries</p>
+            <p className="text-xs text-slate-500">Gate Entries</p>
           </div>
           <div className={`${isLight ? "bg-white border border-slate-200" : "bg-white/[0.03] border border-white/[0.06]"} rounded-xl p-4 text-center`}>
             <p className="text-2xl font-bold text-orange-400">{aData.aggregated.totalGateExits}</p>
-            <p className="text-[11px] text-slate-500">Gate Exits</p>
+            <p className="text-xs text-slate-500">Gate Exits</p>
           </div>
           <div className={`${isLight ? "bg-white border border-slate-200" : "bg-white/[0.03] border border-white/[0.06]"} rounded-xl p-4 text-center`}>
             <p className="text-2xl font-bold text-amber-400">{aData.aggregated.totalYardMoves}</p>
-            <p className="text-[11px] text-slate-500">Yard Moves</p>
+            <p className="text-xs text-slate-500">Yard Moves</p>
           </div>
           <div className={`${isLight ? "bg-white border border-slate-200" : "bg-white/[0.03] border border-white/[0.06]"} rounded-xl p-4 text-center`}>
             <p className="text-2xl font-bold text-red-400">{aData.aggregated.totalDetentionIncidents}</p>
-            <p className="text-[11px] text-slate-500">Detention Incidents</p>
+            <p className="text-xs text-slate-500">Detention Incidents</p>
           </div>
         </div>
       )}
@@ -1049,11 +1049,11 @@ function AnalyticsTab() {
               const pct = maxCount > 0 ? (ph.count / maxCount) * 100 : 0;
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[10px] text-amber-400 font-medium">{ph.count}</span>
+                  <span className="text-xs text-amber-400 font-medium">{ph.count}</span>
                   <div className="w-full rounded-t-sm bg-white/[0.04] flex-1 relative">
                     <div className="absolute bottom-0 left-0 right-0 rounded-t-sm bg-amber-500/60" style={{ height: `${pct}%` }} />
                   </div>
-                  <span className="text-[8px] text-slate-600 whitespace-nowrap">{ph.hour.split("-")[0]}</span>
+                  <span className="text-xs text-slate-600 whitespace-nowrap">{ph.hour.split("-")[0]}</span>
                 </div>
               );
             })}

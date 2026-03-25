@@ -627,7 +627,7 @@ export default function SpectraMatch() {
               <CardTitle className="text-white flex items-center gap-2 text-base">
                 <BarChart3 className="w-4 h-4 text-purple-400" />
                 SPECTRA-MATCH Learning Stats
-                <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px] ml-auto">
+                <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs ml-auto">
                   <Sparkles className="w-2.5 h-2.5 mr-0.5" />ESANG AI
                 </Badge>
               </CardTitle>
@@ -643,11 +643,11 @@ export default function SpectraMatch() {
                   <div className="grid grid-cols-3 gap-3">
                     <div className="p-3 rounded-lg bg-slate-800/50 text-center">
                       <p className="text-2xl font-bold text-cyan-400">{learningStatsQuery.data?.totalIdentifications || 0}</p>
-                      <p className="text-[10px] text-slate-500">Identifications</p>
+                      <p className="text-xs text-slate-500">Identifications</p>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-800/50 text-center">
                       <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{learningStatsQuery.data?.avgConfidence || 0}%</p>
-                      <p className="text-[10px] text-slate-500">Avg Confidence</p>
+                      <p className="text-xs text-slate-500">Avg Confidence</p>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-800/50 text-center">
                       <p className={cn(
@@ -658,7 +658,7 @@ export default function SpectraMatch() {
                         {learningStatsQuery.data?.recentTrend === "Improving" ? "Up" :
                          learningStatsQuery.data?.recentTrend === "Declining" ? "Down" : "--"}
                       </p>
-                      <p className="text-[10px] text-slate-500">Trend</p>
+                      <p className="text-xs text-slate-500">Trend</p>
                     </div>
                   </div>
                   {learningStatsQuery.data?.topProducts?.length > 0 && (

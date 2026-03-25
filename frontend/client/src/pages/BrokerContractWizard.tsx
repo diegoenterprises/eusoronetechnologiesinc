@@ -261,8 +261,8 @@ export default function BrokerContractWizard() {
                   <div><p className="text-slate-400">Platform Fee (both sides)</p><p className="text-lg font-bold text-purple-400">${totalPlatformFee.toFixed(2)}</p></div>
                   <div><p className="text-slate-400">Net Revenue</p><p className={cn("text-lg font-bold", netBrokerRevenue >= 0 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-red-400")}>${netBrokerRevenue.toFixed(2)}</p></div>
                 </div>
-                {marginPct < 10 && marginPct >= 0 && <p className="text-[11px] text-yellow-500 mt-2">Margin below 10%. Consider negotiating better shipper rates.</p>}
-                {margin < 0 && <p className="text-[11px] text-red-400 mt-2">Negative margin — catalyst rate exceeds shipper rate.</p>}
+                {marginPct < 10 && marginPct >= 0 && <p className="text-xs text-yellow-500 mt-2">Margin below 10%. Consider negotiating better shipper rates.</p>}
+                {margin < 0 && <p className="text-xs text-red-400 mt-2">Negative margin — catalyst rate exceeds shipper rate.</p>}
               </div>
 
               {/* Platform Fee Breakdown */}
@@ -330,7 +330,7 @@ export default function BrokerContractWizard() {
               { l: "Catalyst Rate", v: `$${cRate.toLocaleString()}` },
               { l: "Your Margin", v: `$${margin.toFixed(2)} (${marginPct.toFixed(1)}%)` },
               { l: "Platform Fee", v: `$${totalPlatformFee.toFixed(2)}` },
-            ].map(x => (<div key={x.l} className={cl}><p className="text-[10px] text-slate-400 uppercase">{x.l}</p><p className={vl}>{x.v}</p></div>))}
+            ].map(x => (<div key={x.l} className={cl}><p className="text-xs text-slate-400 uppercase">{x.l}</p><p className={vl}>{x.v}</p></div>))}
           </div>
           <div className="flex gap-3">
             <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setStep("terms")}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>

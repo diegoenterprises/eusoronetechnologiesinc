@@ -62,7 +62,7 @@ function KPICard({ label, value, icon: Icon, color, sub, loading, isLight = fals
               <p className={`text-2xl font-bold ${isLight ? "text-slate-900" : "text-white"} truncate`}>{value}</p>
             )}
             <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"} truncate`}>{label}</p>
-            {sub && <p className={`text-[10px] ${isLight ? "text-slate-400" : "text-slate-500"} mt-0.5`}>{sub}</p>}
+            {sub && <p className={`text-xs ${isLight ? "text-slate-400" : "text-slate-500"} mt-0.5`}>{sub}</p>}
           </div>
         </div>
       </CardContent>
@@ -241,8 +241,8 @@ function DemandForecastTab({ isLight = false }: { isLight?: boolean }) {
                         <div className="absolute inset-x-0 bottom-0 bg-indigo-500 rounded-t" style={{ height: `${(day.projected / day.high) * 100}%` }} />
                       </div>
                     </div>
-                    <span className="text-[9px] text-slate-500">{day.date?.slice(5)}</span>
-                    <span className="text-[10px] text-indigo-400 font-medium">{day.projected}</span>
+                    <span className="text-xs text-slate-500">{day.date?.slice(5)}</span>
+                    <span className="text-xs text-indigo-400 font-medium">{day.projected}</span>
                   </div>
                 );
               })}
@@ -335,15 +335,15 @@ function FleetRightSizingTab({ isLight = false }: { isLight?: boolean }) {
                   <div className="flex items-center gap-6 text-sm">
                     <div className="text-center">
                       <p className="text-white font-bold">{v.count}</p>
-                      <p className="text-[10px] text-slate-500">units</p>
+                      <p className="text-xs text-slate-500">units</p>
                     </div>
                     <div className="text-center">
                       <p className="text-slate-300">{v.avgAge}yr</p>
-                      <p className="text-[10px] text-slate-500">avg age</p>
+                      <p className="text-xs text-slate-500">avg age</p>
                     </div>
                     <div className="text-center">
                       <p className="text-slate-300">{(v.avgMileage / 1000).toFixed(0)}k</p>
-                      <p className="text-[10px] text-slate-500">avg mi</p>
+                      <p className="text-xs text-slate-500">avg mi</p>
                     </div>
                   </div>
                 </div>
@@ -429,9 +429,9 @@ function DriverOptimizerTab({ isLight = false }: { isLight?: boolean }) {
                   <div className="flex items-center gap-4 shrink-0">
                     <div className="w-20">
                       {intensityBar(driver.efficiency)}
-                      <p className="text-[10px] text-slate-500 text-center mt-0.5">{driver.efficiency}%</p>
+                      <p className="text-xs text-slate-500 text-center mt-0.5">{driver.efficiency}%</p>
                     </div>
-                    <Badge className={cn("text-[10px] border",
+                    <Badge className={cn("text-xs border",
                       driver.recommendedAction === "Optimal" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
                       driver.recommendedAction.includes("Reduce") ? "bg-red-500/20 text-red-400 border-red-500/30" :
                       "bg-amber-500/20 text-amber-400 border-amber-500/30"
@@ -665,7 +665,7 @@ function HeatMapTab({ isLight = false }: { isLight?: boolean }) {
                 )}>
                   <p className="text-lg font-bold text-white">{r.state}</p>
                   <p className="text-xs text-slate-400">{r.region}</p>
-                  <div className="mt-2 space-y-1 text-[11px]">
+                  <div className="mt-2 space-y-1 text-xs">
                     <div className="flex justify-between">
                       <span className="text-green-400">Out</span>
                       <span className="text-white">{r.outboundLoads}</span>
@@ -871,7 +871,7 @@ function ContractSpotTab({ isLight = false }: { isLight?: boolean }) {
                 <div key={i} className="text-center">
                   <p className="text-xs text-slate-500">{m.month}</p>
                   <p className="text-sm font-medium text-white mt-1">{m.loads}</p>
-                  <p className="text-[10px] text-indigo-400">${(m.revenue / 1000).toFixed(0)}k</p>
+                  <p className="text-xs text-indigo-400">${(m.revenue / 1000).toFixed(0)}k</p>
                 </div>
               ))}
             </div>

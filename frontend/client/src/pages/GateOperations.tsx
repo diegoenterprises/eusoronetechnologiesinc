@@ -104,7 +104,7 @@ export default function GateOperations() {
               </div>
               <div>
                 <p className={cn("text-xl font-bold", k.color)}>{k.value}</p>
-                <p className="text-[10px] text-slate-500">{k.label}</p>
+                <p className="text-xs text-slate-500">{k.label}</p>
               </div>
             </div>
           );
@@ -116,7 +116,7 @@ export default function GateOperations() {
         <div className="flex gap-1">
           {(["gate", "yard", "expected", "history"] as const).map(v => (
             <button key={v} onClick={() => setTab(v)} className={cn(
-              "text-[11px] px-3 py-1.5 rounded-lg font-medium transition-colors",
+              "text-xs px-3 py-1.5 rounded-lg font-medium transition-colors",
               tab === v ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-slate-50 dark:bg-white/[0.03] text-slate-500 hover:text-slate-300"
             )}>{v === "gate" ? `Gate Queue (${scheduled.length})` : v === "yard" ? `In Yard (${checkedIn.length})` : v === "expected" ? "Expected Arrivals" : "History"}</button>
           ))}
@@ -148,28 +148,28 @@ export default function GateOperations() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-semibold text-slate-800 dark:text-white">{a.driver || "Unknown Driver"}</p>
-                        <span className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md font-medium">Appointment #{a.id}</span>
+                        <span className="text-xs text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md font-medium">Appointment #{a.id}</span>
                       </div>
                       <div className="flex items-center gap-4 mt-1.5 flex-wrap">
-                        <span className="text-[11px] text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{time}</span>
-                        <span className="text-[11px] text-slate-500 flex items-center gap-1"><Package className="w-3 h-3" />{a.type}</span>
-                        {a.dock && <span className="text-[11px] text-slate-500 flex items-center gap-1"><MapPin className="w-3 h-3" />{a.dock}</span>}
+                        <span className="text-xs text-slate-400 flex items-center gap-1"><Clock className="w-3 h-3" />{time}</span>
+                        <span className="text-xs text-slate-500 flex items-center gap-1"><Package className="w-3 h-3" />{a.type}</span>
+                        {a.dock && <span className="text-xs text-slate-500 flex items-center gap-1"><MapPin className="w-3 h-3" />{a.dock}</span>}
                       </div>
 
                       {/* Verification Status Row */}
                       <div className="flex items-center gap-2 mt-3 flex-wrap">
-                        <span className="text-[9px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md"><ShieldCheck className="w-2.5 h-2.5 inline mr-0.5" />CDL Valid</span>
-                        <span className="text-[9px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md"><ShieldCheck className="w-2.5 h-2.5 inline mr-0.5" />Insurance</span>
-                        <span className="text-[9px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md"><ShieldCheck className="w-2.5 h-2.5 inline mr-0.5" />FMCSA</span>
-                        <span className="text-[9px] text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-md"><Shield className="w-2.5 h-2.5 inline mr-0.5" />TWIC Pending</span>
+                        <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md"><ShieldCheck className="w-2.5 h-2.5 inline mr-0.5" />CDL Valid</span>
+                        <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md"><ShieldCheck className="w-2.5 h-2.5 inline mr-0.5" />Insurance</span>
+                        <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md"><ShieldCheck className="w-2.5 h-2.5 inline mr-0.5" />FMCSA</span>
+                        <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-md"><Shield className="w-2.5 h-2.5 inline mr-0.5" />TWIC Pending</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">
-                    <Button size="sm" onClick={() => setCheckInId(a.id)} className="h-8 px-3 text-[11px] rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-slate-800 dark:text-white border-0 shadow-none font-medium">
+                    <Button size="sm" onClick={() => setCheckInId(a.id)} className="h-8 px-3 text-xs rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-slate-800 dark:text-white border-0 shadow-none font-medium">
                       <UserCheck className="w-3.5 h-3.5 mr-1" />Check In
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => updateMut.mutate({ appointmentId: a.id, status: "cancelled" })} className="h-8 px-3 text-[11px] text-red-400 hover:bg-red-400/10">
+                    <Button size="sm" variant="ghost" onClick={() => updateMut.mutate({ appointmentId: a.id, status: "cancelled" })} className="h-8 px-3 text-xs text-red-400 hover:bg-red-400/10">
                       <UserX className="w-3.5 h-3.5 mr-1" />Deny
                     </Button>
                   </div>
@@ -186,9 +186,9 @@ export default function GateOperations() {
               </div>
               <div className="flex-1">
                 <p className="text-xs text-slate-800 dark:text-white font-medium">Gate Staff Verification Active</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">Staff members use their validation links to verify drivers at the gate with QR scan, access codes, and GPS geofencing</p>
+                <p className="text-xs text-slate-500 mt-0.5">Staff members use their validation links to verify drivers at the gate with QR scan, access codes, and GPS geofencing</p>
               </div>
-              <Button size="sm" onClick={() => navigate("/staff")} className="h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.08] shadow-none text-[10px]">
+              <Button size="sm" onClick={() => navigate("/staff")} className="h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.08] shadow-none text-xs">
                 View Staff Links
               </Button>
             </div>
@@ -216,15 +216,15 @@ export default function GateOperations() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-800 dark:text-white">{a.driver || "Unknown"}</p>
                     <div className="flex items-center gap-3 mt-0.5">
-                      <span className="text-[11px] text-slate-400"><Clock className="w-3 h-3 inline mr-1" />{time}</span>
-                      <span className="text-[11px] text-slate-500">{a.type}</span>
-                      <span className="text-[11px] text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded">In Yard</span>
+                      <span className="text-xs text-slate-400"><Clock className="w-3 h-3 inline mr-1" />{time}</span>
+                      <span className="text-xs text-slate-500">{a.type}</span>
+                      <span className="text-xs text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded">In Yard</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[10px] text-slate-500 flex items-center gap-1"><Timer className="w-3 h-3" />Waiting</span>
-                  <Button size="sm" onClick={() => updateMut.mutate({ appointmentId: a.id, status: "completed" })} className="h-8 px-3 text-[11px] rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/20 shadow-none">
+                  <span className="text-xs text-slate-500 flex items-center gap-1"><Timer className="w-3 h-3" />Waiting</span>
+                  <Button size="sm" onClick={() => updateMut.mutate({ appointmentId: a.id, status: "completed" })} className="h-8 px-3 text-xs rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/20 shadow-none">
                     <ArrowRight className="w-3.5 h-3.5 mr-1" />Send to Dock
                   </Button>
                 </div>
@@ -261,10 +261,10 @@ export default function GateOperations() {
                       <CheckCircle className="w-4 h-4 text-emerald-400" />
                       <div>
                         <p className="text-sm text-slate-800 dark:text-white">{a.driver || "Unknown"}</p>
-                        <p className="text-[10px] text-slate-500">{time} - {a.type}</p>
+                        <p className="text-xs text-slate-500">{time} - {a.type}</p>
                       </div>
                     </div>
-                    <span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md">Completed</span>
+                    <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md">Completed</span>
                   </div>
                 );
               })}
@@ -289,7 +289,7 @@ export default function GateOperations() {
 
             {/* Verification Checklist */}
             <div className="space-y-2">
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Verification Checklist</p>
+              <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Verification Checklist</p>
               {["CDL Valid", "Hazmat Endorsement", "TWIC Card", "Medical Certificate", "FMCSA Authority", "Insurance Valid", "Vehicle Inspection"].map(item => (
                 <div key={item} className="flex items-center gap-2 py-1">
                   <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
@@ -300,17 +300,17 @@ export default function GateOperations() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">CDL Number</label>
+                <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">CDL Number</label>
                 <Input value={cdlNumber} onChange={e => setCdlNumber(e.target.value)} placeholder="TX 12345678" className={cn("h-10", inp)} />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Truck Number</label>
+                <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Truck Number</label>
                 <Input value={truckNumber} onChange={e => setTruckNumber(e.target.value)} placeholder="#103" className={cn("h-10", inp)} />
               </div>
             </div>
 
             <div>
-              <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Notes</label>
+              <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Notes</label>
               <Input value={checkNotes} onChange={e => setCheckNotes(e.target.value)} placeholder="Safety orientation, special instructions..." className={cn("h-10", inp)} />
             </div>
 

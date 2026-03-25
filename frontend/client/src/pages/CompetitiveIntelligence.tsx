@@ -92,7 +92,7 @@ function SectionLoader({ rows = 4 }: { rows?: number }) {
 function TrendBadge({ value, suffix = "%" }: { value: number; suffix?: string }) {
   const positive = value >= 0;
   return (
-    <span className={cn("inline-flex items-center gap-0.5 text-[11px] font-bold", positive ? "text-emerald-400" : "text-red-400")}>
+    <span className={cn("inline-flex items-center gap-0.5 text-xs font-bold", positive ? "text-emerald-400" : "text-red-400")}>
       {positive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
       {Math.abs(value).toFixed(1)}{suffix}
     </span>
@@ -166,12 +166,12 @@ export default function CompetitiveIntelligence() {
           <div className={cn("px-5 py-3 rounded-2xl border flex items-center gap-4", cardCls)}>
             <div className="text-center">
               <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">{scorecard.overallScore}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Growth Score</div>
+              <div className="text-xs text-slate-500 uppercase tracking-wider">Growth Score</div>
             </div>
             <div className="w-px h-10 bg-slate-700" />
             <div className="text-center">
               <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">{scorecard.quarterlyGoalProgress}%</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-wider">Q Goal</div>
+              <div className="text-xs text-slate-500 uppercase tracking-wider">Q Goal</div>
             </div>
           </div>
         )}
@@ -212,7 +212,7 @@ export default function CompetitiveIntelligence() {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-2">
                         <m.icon className={cn("w-4 h-4", m.color)} />
-                        <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-300">Live</Badge>
+                        <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-300">Live</Badge>
                       </div>
                       <div className="text-xl font-bold text-white">{m.value}</div>
                       <div className={subtitleCls}>{m.label}</div>
@@ -282,11 +282,11 @@ export default function CompetitiveIntelligence() {
                           <div key={i} className={cn(cellCls, "flex items-center justify-between")}>
                             <div>
                               <div className="text-xs font-medium text-white">{r.lane}</div>
-                              <div className="text-[10px] text-slate-500">Market: ${r.marketAvg} | Range: ${r.marketLow}-${r.marketHigh}</div>
+                              <div className="text-xs text-slate-500">Market: ${r.marketAvg} | Range: ${r.marketLow}-${r.marketHigh}</div>
                             </div>
                             <div className="text-right">
                               <div className="text-xs font-bold text-white">${r.ourRate}</div>
-                              <Badge variant="outline" className={cn("text-[9px]",
+                              <Badge variant="outline" className={cn("text-xs",
                                 r.position === "competitive" ? "border-emerald-500/30 text-emerald-400" :
                                 r.position === "above_market" ? "border-amber-500/30 text-amber-400" :
                                 "border-blue-500/30 text-blue-400"
@@ -317,9 +317,9 @@ export default function CompetitiveIntelligence() {
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="text-sm font-semibold text-white">{c.name}</div>
-                          <div className="text-[10px] text-slate-500">DOT: {c.dotNumber} | {c.mcNumber}</div>
+                          <div className="text-xs text-slate-500">DOT: {c.dotNumber} | {c.mcNumber}</div>
                         </div>
-                        <Badge variant="outline" className={cn("text-[10px]",
+                        <Badge variant="outline" className={cn("text-xs",
                           c.threatLevel === "high" ? "border-red-500/30 text-red-400" :
                           c.threatLevel === "medium" ? "border-amber-500/30 text-amber-400" :
                           "border-emerald-500/30 text-emerald-400"
@@ -330,34 +330,34 @@ export default function CompetitiveIntelligence() {
                       <div className="grid grid-cols-3 gap-2">
                         <div className="text-center">
                           <div className="text-xs font-bold text-purple-400">{fmt(c.fleetSize)}</div>
-                          <div className="text-[9px] text-slate-500">Fleet</div>
+                          <div className="text-xs text-slate-500">Fleet</div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs font-bold text-indigo-400">{fmt(c.estimatedRevenue, "currency")}</div>
-                          <div className="text-[9px] text-slate-500">Est. Revenue</div>
+                          <div className="text-xs text-slate-500">Est. Revenue</div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs font-bold text-amber-400">{c.operatingRatio}%</div>
-                          <div className="text-[9px] text-slate-500">OR</div>
+                          <div className="text-xs text-slate-500">OR</div>
                         </div>
                       </div>
                       <div className="border-t border-slate-700/30 pt-2">
-                        <div className="text-[10px] text-slate-500 mb-1">Strengths</div>
+                        <div className="text-xs text-slate-500 mb-1">Strengths</div>
                         <div className="flex flex-wrap gap-1">
                           {(c.strengths || []).slice(0, 3).map((s: string, j: number) => (
-                            <Badge key={j} variant="outline" className="text-[9px] border-emerald-500/20 text-emerald-400">{s}</Badge>
+                            <Badge key={j} variant="outline" className="text-xs border-emerald-500/20 text-emerald-400">{s}</Badge>
                           ))}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-slate-500 mb-1">Weaknesses</div>
+                        <div className="text-xs text-slate-500 mb-1">Weaknesses</div>
                         <div className="flex flex-wrap gap-1">
                           {(c.weaknesses || []).slice(0, 2).map((w: string, j: number) => (
-                            <Badge key={j} variant="outline" className="text-[9px] border-red-500/20 text-red-400">{w}</Badge>
+                            <Badge key={j} variant="outline" className="text-xs border-red-500/20 text-red-400">{w}</Badge>
                           ))}
                         </div>
                       </div>
-                      <div className="text-[10px] text-slate-500">
+                      <div className="text-xs text-slate-500">
                         <MapPin className="w-3 h-3 inline mr-1" />{c.serviceArea}
                         <span className="mx-2">|</span>
                         <Shield className="w-3 h-3 inline mr-1" />{c.safetyRating}
@@ -387,7 +387,7 @@ export default function CompetitiveIntelligence() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-medium text-white">{opp.lane}</span>
-                            <Badge variant="outline" className={cn("text-[9px]",
+                            <Badge variant="outline" className={cn("text-xs",
                               opp.competitionLevel === "low" ? "border-emerald-500/30 text-emerald-400" :
                               opp.competitionLevel === "medium" ? "border-amber-500/30 text-amber-400" :
                               "border-red-500/30 text-red-400"
@@ -395,11 +395,11 @@ export default function CompetitiveIntelligence() {
                               {opp.competitionLevel} comp.
                             </Badge>
                           </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5">{opp.recommendation}</div>
+                          <div className="text-xs text-slate-500 mt-0.5">{opp.recommendation}</div>
                         </div>
                         <div className="text-right ml-3">
                           <div className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">{opp.demandScore}</div>
-                          <div className="text-[9px] text-slate-500">demand score</div>
+                          <div className="text-xs text-slate-500">demand score</div>
                         </div>
                       </div>
                     ))}
@@ -422,7 +422,7 @@ export default function CompetitiveIntelligence() {
                       <div key={i} className={cellCls}>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium text-white">{gap.capability}</span>
-                          <Badge variant="outline" className={cn("text-[9px]",
+                          <Badge variant="outline" className={cn("text-xs",
                             gap.priority === "critical" ? "border-red-500/30 text-red-400" :
                             gap.priority === "high" ? "border-amber-500/30 text-amber-400" :
                             "border-slate-500/30 text-slate-400"
@@ -432,7 +432,7 @@ export default function CompetitiveIntelligence() {
                         </div>
                         <div className="flex items-center gap-3 mb-1.5">
                           <div className="flex-1">
-                            <div className="flex justify-between text-[10px] text-slate-500 mb-0.5">
+                            <div className="flex justify-between text-xs text-slate-500 mb-0.5">
                               <span>Current: {gap.currentCapability}%</span>
                               <span>Demand: {gap.marketDemand}%</span>
                             </div>
@@ -443,7 +443,7 @@ export default function CompetitiveIntelligence() {
                           </div>
                           <div className="text-xs font-bold text-red-400 whitespace-nowrap">-{gap.gap}%</div>
                         </div>
-                        <div className="text-[10px] text-slate-500">
+                        <div className="text-xs text-slate-500">
                           Investment: {fmt(gap.investment, "currency")} | Timeline: {gap.timeToClose}
                         </div>
                       </div>
@@ -467,21 +467,21 @@ export default function CompetitiveIntelligence() {
                     <div className="grid grid-cols-3 gap-2">
                       <div className="text-center">
                         <div className="text-lg font-bold text-white">{bidData.totalBids}</div>
-                        <div className="text-[10px] text-slate-500">Total Bids</div>
+                        <div className="text-xs text-slate-500">Total Bids</div>
                       </div>
                       <div className="text-center">
                         <div className="text-lg font-bold text-emerald-400">{bidData.wonBids}</div>
-                        <div className="text-[10px] text-slate-500">Won</div>
+                        <div className="text-xs text-slate-500">Won</div>
                       </div>
                       <div className="text-center">
                         <div className="text-lg font-bold text-red-400">{bidData.lostBids}</div>
-                        <div className="text-[10px] text-slate-500">Lost</div>
+                        <div className="text-xs text-slate-500">Lost</div>
                       </div>
                     </div>
                     <div className={cellCls}>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">{bidData.winRate}%</div>
-                        <div className="text-[10px] text-slate-500">Win Rate</div>
+                        <div className="text-xs text-slate-500">Win Rate</div>
                       </div>
                     </div>
                   </div>
@@ -490,7 +490,7 @@ export default function CompetitiveIntelligence() {
                     {(bidData.lossReasons || []).map((r: any, i: number) => (
                       <div key={i} className="flex items-center gap-2">
                         <div className="flex-1">
-                          <div className="flex justify-between text-[10px] text-slate-400 mb-0.5">
+                          <div className="flex justify-between text-xs text-slate-400 mb-0.5">
                             <span>{r.reason}</span>
                             <span>{r.percentage}%</span>
                           </div>
@@ -506,7 +506,7 @@ export default function CompetitiveIntelligence() {
                     {(bidData.competitiveInsights || []).map((insight: string, i: number) => (
                       <div key={i} className="flex items-start gap-2">
                         <Lightbulb className="w-3 h-3 text-amber-400 mt-0.5 shrink-0" />
-                        <span className="text-[10px] text-slate-400">{insight}</span>
+                        <span className="text-xs text-slate-400">{insight}</span>
                       </div>
                     ))}
                   </div>
@@ -544,7 +544,7 @@ export default function CompetitiveIntelligence() {
                               <span className="text-xs font-medium text-white">{stage.stage}</span>
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-bold text-purple-300">{fmt(stage.count)}</span>
-                                {i > 0 && <span className="text-[10px] text-slate-400">{stage.conversionRate}%</span>}
+                                {i > 0 && <span className="text-xs text-slate-400">{stage.conversionRate}%</span>}
                               </div>
                             </div>
                           </div>
@@ -558,11 +558,11 @@ export default function CompetitiveIntelligence() {
                     <div className="grid grid-cols-2 gap-2 mt-2">
                       <div className={cellCls}>
                         <div className="text-xs font-bold text-white">{pipeline.avgDealCycle} days</div>
-                        <div className="text-[10px] text-slate-500">Avg Deal Cycle</div>
+                        <div className="text-xs text-slate-500">Avg Deal Cycle</div>
                       </div>
                       <div className={cellCls}>
                         <div className="text-xs font-bold text-white">{fmt(pipeline.pipelineValue, "currency")}</div>
-                        <div className="text-[10px] text-slate-500">Pipeline Value</div>
+                        <div className="text-xs text-slate-500">Pipeline Value</div>
                       </div>
                     </div>
                   </div>
@@ -577,7 +577,7 @@ export default function CompetitiveIntelligence() {
                   <UserMinus className="w-4 h-4 text-red-400" />
                   Churn Risk Alerts
                   {churnRisks.length > 0 && (
-                    <Badge className="bg-red-500/20 text-red-400 text-[10px]">{churnRisks.length} at risk</Badge>
+                    <Badge className="bg-red-500/20 text-red-400 text-xs">{churnRisks.length} at risk</Badge>
                   )}
                 </h3>
                 {churnQ.isLoading ? <SectionLoader rows={5} /> : (
@@ -589,17 +589,17 @@ export default function CompetitiveIntelligence() {
                       )}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-medium text-white">{c.name}</span>
-                          <Badge variant="outline" className={cn("text-[9px]",
+                          <Badge variant="outline" className={cn("text-xs",
                             c.riskLevel === "critical" ? "border-red-500/30 text-red-400" :
                             c.riskLevel === "high" ? "border-amber-500/30 text-amber-400" : "border-yellow-500/30 text-yellow-400"
                           )}>
                             {c.churnProbability}% risk
                           </Badge>
                         </div>
-                        <div className="text-[10px] text-slate-500 mb-1">
+                        <div className="text-xs text-slate-500 mb-1">
                           Last load: {c.lastLoadDate} | Volume drop: {c.loadFrequencyDrop}% | At-risk revenue: {fmt(c.estimatedRevenueLoss, "currency")}
                         </div>
-                        <div className="flex items-center gap-1 text-[10px] text-indigo-400">
+                        <div className="flex items-center gap-1 text-xs text-indigo-400">
                           <Lightbulb className="w-3 h-3" />
                           {c.intervention}
                         </div>
@@ -627,19 +627,19 @@ export default function CompetitiveIntelligence() {
                       <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">
                         {fmt(seg.avgCLV, "currency")}
                       </div>
-                      <div className="text-[10px] text-slate-500">Avg CLV</div>
+                      <div className="text-xs text-slate-500">Avg CLV</div>
                       <div className="grid grid-cols-3 gap-1 pt-2 border-t border-slate-700/30">
                         <div>
                           <div className="text-xs font-bold text-white">{seg.customerCount}</div>
-                          <div className="text-[9px] text-slate-500">Customers</div>
+                          <div className="text-xs text-slate-500">Customers</div>
                         </div>
                         <div>
                           <div className="text-xs font-bold text-white">{seg.avgTenureMonths}mo</div>
-                          <div className="text-[9px] text-slate-500">Avg Tenure</div>
+                          <div className="text-xs text-slate-500">Avg Tenure</div>
                         </div>
                         <div>
                           <div className="text-xs font-bold text-emerald-400">{seg.retentionRate}%</div>
-                          <div className="text-[9px] text-slate-500">Retention</div>
+                          <div className="text-xs text-slate-500">Retention</div>
                         </div>
                       </div>
                     </div>
@@ -663,7 +663,7 @@ export default function CompetitiveIntelligence() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium text-white">{r.customer}</span>
-                          <Badge variant="outline" className={cn("text-[9px]",
+                          <Badge variant="outline" className={cn("text-xs",
                             r.daysUntilExpiry <= 30 ? "border-red-500/30 text-red-400" :
                             r.daysUntilExpiry <= 60 ? "border-amber-500/30 text-amber-400" :
                             "border-slate-500/30 text-slate-400"
@@ -671,18 +671,18 @@ export default function CompetitiveIntelligence() {
                             {r.daysUntilExpiry}d
                           </Badge>
                         </div>
-                        <div className="text-[10px] text-slate-500 mt-0.5">
+                        <div className="text-xs text-slate-500 mt-0.5">
                           {fmt(r.annualValue, "currency")}/yr | Renewal probability: {r.renewalProbability}%
                         </div>
                         {r.riskFactors.length > 0 && (
-                          <div className="flex items-center gap-1 text-[10px] text-amber-400 mt-0.5">
+                          <div className="flex items-center gap-1 text-xs text-amber-400 mt-0.5">
                             <AlertTriangle className="w-3 h-3" />
                             {r.riskFactors[0]}
                           </div>
                         )}
                       </div>
                       <div className="text-right ml-3">
-                        <div className="text-[10px] text-indigo-400">{r.action}</div>
+                        <div className="text-xs text-indigo-400">{r.action}</div>
                       </div>
                     </div>
                   ))}
@@ -702,7 +702,7 @@ export default function CompetitiveIntelligence() {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className={cellCls}>
-                  <label className="text-[10px] text-slate-400 block mb-1">New Trucks</label>
+                  <label className="text-xs text-slate-400 block mb-1">New Trucks</label>
                   <input
                     type="range" min="1" max="100" value={fleetTrucks}
                     onChange={e => setFleetTrucks(Number(e.target.value))}
@@ -711,7 +711,7 @@ export default function CompetitiveIntelligence() {
                   <div className="text-center text-sm font-bold text-purple-400">{fleetTrucks}</div>
                 </div>
                 <div className={cellCls}>
-                  <label className="text-[10px] text-slate-400 block mb-1">New Drivers</label>
+                  <label className="text-xs text-slate-400 block mb-1">New Drivers</label>
                   <input
                     type="range" min="1" max="100" value={fleetDrivers}
                     onChange={e => setFleetDrivers(Number(e.target.value))}
@@ -720,7 +720,7 @@ export default function CompetitiveIntelligence() {
                   <div className="text-center text-sm font-bold text-indigo-400">{fleetDrivers}</div>
                 </div>
                 <div className={cellCls}>
-                  <label className="text-[10px] text-slate-400 block mb-1">New Terminals</label>
+                  <label className="text-xs text-slate-400 block mb-1">New Terminals</label>
                   <input
                     type="range" min="0" max="10" value={fleetTerminals}
                     onChange={e => setFleetTerminals(Number(e.target.value))}
@@ -742,7 +742,7 @@ export default function CompetitiveIntelligence() {
                     ].map((m, i) => (
                       <div key={i} className={cellCls}>
                         <div className={cn("text-lg font-bold", m.color)}>{m.value}</div>
-                        <div className="text-[10px] text-slate-500">{m.label}</div>
+                        <div className="text-xs text-slate-500">{m.label}</div>
                       </div>
                     ))}
                   </div>
@@ -762,7 +762,7 @@ export default function CompetitiveIntelligence() {
                               style={{ height: `${Math.max(heightPct, 2)}%` }}
                               title={`Month ${p.month}: ${fmt(p.cumulativeProfit, "currency")}`}
                             />
-                            {i % 3 === 0 && <span className="text-[8px] text-slate-500 mt-1">M{p.month}</span>}
+                            {i % 3 === 0 && <span className="text-xs text-slate-500 mt-1">M{p.month}</span>}
                           </div>
                         );
                       })}
@@ -780,7 +780,7 @@ export default function CompetitiveIntelligence() {
                           )} />
                           <div>
                             <div className="text-xs font-medium text-white">{r.risk}</div>
-                            <div className="text-[10px] text-slate-500">{r.impact}</div>
+                            <div className="text-xs text-slate-500">{r.impact}</div>
                           </div>
                         </div>
                       ))}
@@ -806,7 +806,7 @@ export default function CompetitiveIntelligence() {
                     <div key={i} className={cn(cellCls, "space-y-2")}>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-white">{t.region}</span>
-                        <Badge variant="outline" className={cn("text-[9px]",
+                        <Badge variant="outline" className={cn("text-xs",
                           t.growthPotential === "high" ? "border-emerald-500/30 text-emerald-400" :
                           t.growthPotential === "medium" ? "border-amber-500/30 text-amber-400" :
                           "border-slate-500/30 text-slate-400"
@@ -817,26 +817,26 @@ export default function CompetitiveIntelligence() {
                       <div className="grid grid-cols-3 gap-2">
                         <div>
                           <div className="text-xs font-bold text-purple-400">{fmt(t.loadCount)}</div>
-                          <div className="text-[9px] text-slate-500">Loads</div>
+                          <div className="text-xs text-slate-500">Loads</div>
                         </div>
                         <div>
                           <div className="text-xs font-bold text-indigo-400">{fmt(t.revenue, "currency")}</div>
-                          <div className="text-[9px] text-slate-500">Revenue</div>
+                          <div className="text-xs text-slate-500">Revenue</div>
                         </div>
                         <div>
                           <div className="text-xs font-bold text-amber-400">{t.penetration}%</div>
-                          <div className="text-[9px] text-slate-500">Penetration</div>
+                          <div className="text-xs text-slate-500">Penetration</div>
                         </div>
                       </div>
                       <div className="h-2 rounded-full bg-slate-700 overflow-hidden">
                         <div className={cn("h-full rounded-full bg-gradient-to-r", accentGradient)} style={{ width: `${Math.min(t.penetration * 3, 100)}%` }} />
                       </div>
                       {t.topLanes && t.topLanes.length > 0 && (
-                        <div className="text-[10px] text-slate-500">
+                        <div className="text-xs text-slate-500">
                           Top lanes: {t.topLanes.join(", ")}
                         </div>
                       )}
-                      <div className="text-[10px] text-indigo-400 flex items-center gap-1">
+                      <div className="text-xs text-indigo-400 flex items-center gap-1">
                         <ArrowRight className="w-3 h-3" />
                         {t.recommendedAction}
                       </div>
@@ -868,7 +868,7 @@ export default function CompetitiveIntelligence() {
                             <span className="text-xs font-medium text-white">{kpi.metric}</span>
                             <div className="flex items-center gap-2">
                               <TrendBadge value={kpi.trend} />
-                              <Badge variant="outline" className={cn("text-[9px]",
+                              <Badge variant="outline" className={cn("text-xs",
                                 kpi.status === "on_track" ? "border-emerald-500/30 text-emerald-400" :
                                 kpi.status === "at_risk" ? "border-amber-500/30 text-amber-400" :
                                 "border-red-500/30 text-red-400"
@@ -877,7 +877,7 @@ export default function CompetitiveIntelligence() {
                               </Badge>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
+                          <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                             <span>Actual: {kpi.unit === "USD" ? fmt(kpi.actual, "currency") : `${kpi.actual} ${kpi.unit}`}</span>
                             <span>Target: {kpi.unit === "USD" ? fmt(kpi.target, "currency") : `${kpi.target} ${kpi.unit}`}</span>
                           </div>
@@ -908,22 +908,22 @@ export default function CompetitiveIntelligence() {
                         <div className="text-xs font-medium text-white mb-1">{b.metric}</div>
                         <div className="grid grid-cols-3 gap-2">
                           <div className="text-center">
-                            <div className="text-[10px] text-emerald-400 font-bold">{b.top25}{b.unit === "%" ? "%" : ""}</div>
-                            <div className="text-[8px] text-slate-500">Top 25%</div>
+                            <div className="text-xs text-emerald-400 font-bold">{b.top25}{b.unit === "%" ? "%" : ""}</div>
+                            <div className="text-xs text-slate-500">Top 25%</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-[10px] text-white font-bold">{b.industryAvg}{b.unit === "%" ? "%" : ""}</div>
-                            <div className="text-[8px] text-slate-500">Average</div>
+                            <div className="text-xs text-white font-bold">{b.industryAvg}{b.unit === "%" ? "%" : ""}</div>
+                            <div className="text-xs text-slate-500">Average</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-[10px] text-red-400 font-bold">{b.bottom25}{b.unit === "%" ? "%" : ""}</div>
-                            <div className="text-[8px] text-slate-500">Bottom 25%</div>
+                            <div className="text-xs text-red-400 font-bold">{b.bottom25}{b.unit === "%" ? "%" : ""}</div>
+                            <div className="text-xs text-slate-500">Bottom 25%</div>
                           </div>
                         </div>
                       </div>
                     ))}
                     {benchmarks.source && (
-                      <div className="text-[9px] text-slate-600 text-center pt-2">{benchmarks.source}</div>
+                      <div className="text-xs text-slate-600 text-center pt-2">{benchmarks.source}</div>
                     )}
                   </div>
                 )}
@@ -955,7 +955,7 @@ export default function CompetitiveIntelligence() {
                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
                           <div>
                             <div className="text-xs font-medium text-white">{s.item}</div>
-                            <div className="text-[10px] text-slate-400">{s.detail}</div>
+                            <div className="text-xs text-slate-400">{s.detail}</div>
                           </div>
                         </div>
                       ))}
@@ -974,7 +974,7 @@ export default function CompetitiveIntelligence() {
                           <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 shrink-0" />
                           <div>
                             <div className="text-xs font-medium text-white">{w.item}</div>
-                            <div className="text-[10px] text-slate-400">{w.detail}</div>
+                            <div className="text-xs text-slate-400">{w.detail}</div>
                           </div>
                         </div>
                       ))}
@@ -993,7 +993,7 @@ export default function CompetitiveIntelligence() {
                           <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1.5 shrink-0" />
                           <div>
                             <div className="text-xs font-medium text-white">{o.item}</div>
-                            <div className="text-[10px] text-slate-400">{o.detail}</div>
+                            <div className="text-xs text-slate-400">{o.detail}</div>
                           </div>
                         </div>
                       ))}
@@ -1012,7 +1012,7 @@ export default function CompetitiveIntelligence() {
                           <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
                           <div>
                             <div className="text-xs font-medium text-white">{t.item}</div>
-                            <div className="text-[10px] text-slate-400">{t.detail}</div>
+                            <div className="text-xs text-slate-400">{t.detail}</div>
                           </div>
                         </div>
                       ))}
@@ -1036,17 +1036,17 @@ export default function CompetitiveIntelligence() {
                     <div key={i} className={cn(cellCls, "space-y-2")}>
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={cn("text-[9px]",
+                          <Badge variant="outline" className={cn("text-xs",
                             rec.priority === "critical" ? "border-red-500/30 text-red-400" :
                             rec.priority === "high" ? "border-amber-500/30 text-amber-400" :
                             "border-slate-500/30 text-slate-400"
                           )}>
                             {rec.priority}
                           </Badge>
-                          <Badge variant="outline" className="text-[9px] border-purple-500/30 text-purple-400">{rec.category}</Badge>
+                          <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">{rec.category}</Badge>
                         </div>
                         <div className="flex items-center gap-1">
-                          <div className="text-[10px] text-slate-500">Confidence:</div>
+                          <div className="text-xs text-slate-500">Confidence:</div>
                           <div className={cn("text-xs font-bold", rec.confidence > 80 ? "text-emerald-400" : rec.confidence > 60 ? "text-amber-400" : "text-slate-400")}>
                             {rec.confidence}%
                           </div>
@@ -1056,15 +1056,15 @@ export default function CompetitiveIntelligence() {
                       <div className="text-xs text-slate-400">{rec.description}</div>
                       <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-700/30">
                         <div>
-                          <div className="text-[10px] text-slate-500">Impact</div>
+                          <div className="text-xs text-slate-500">Impact</div>
                           <div className="text-xs font-medium text-emerald-400">{rec.expectedImpact}</div>
                         </div>
                         <div>
-                          <div className="text-[10px] text-slate-500">Investment</div>
+                          <div className="text-xs text-slate-500">Investment</div>
                           <div className="text-xs font-medium text-amber-400">{rec.investmentRequired}</div>
                         </div>
                         <div>
-                          <div className="text-[10px] text-slate-500">Timeline</div>
+                          <div className="text-xs text-slate-500">Timeline</div>
                           <div className="text-xs font-medium text-indigo-400">{rec.timeframe}</div>
                         </div>
                       </div>
@@ -1092,9 +1092,9 @@ export default function CompetitiveIntelligence() {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <div className="text-sm font-medium text-white">{reg.regulation}</div>
-                          <div className="text-[10px] text-slate-500">Effective: {reg.effectiveDate} | Status: {reg.status}</div>
+                          <div className="text-xs text-slate-500">Effective: {reg.effectiveDate} | Status: {reg.status}</div>
                         </div>
-                        <Badge variant="outline" className={cn("text-[9px]",
+                        <Badge variant="outline" className={cn("text-xs",
                           reg.severity === "high" ? "border-red-500/30 text-red-400" :
                           reg.severity === "medium" ? "border-amber-500/30 text-amber-400" :
                           "border-emerald-500/30 text-emerald-400"
@@ -1104,20 +1104,20 @@ export default function CompetitiveIntelligence() {
                       </div>
                       <div className="flex gap-4 mb-2">
                         <div>
-                          <div className="text-[10px] text-slate-500">Annual Cost Impact</div>
+                          <div className="text-xs text-slate-500">Annual Cost Impact</div>
                           <div className={cn("text-xs font-bold", reg.financialImpact.annualCost >= 0 ? "text-red-400" : "text-emerald-400")}>
                             {reg.financialImpact.annualCost >= 0 ? "+" : ""}{fmt(reg.financialImpact.annualCost, "currency")}
                           </div>
                         </div>
                         <div>
-                          <div className="text-[10px] text-slate-500">Capital Required</div>
+                          <div className="text-xs text-slate-500">Capital Required</div>
                           <div className="text-xs font-bold text-amber-400">{fmt(reg.financialImpact.capitalRequired, "currency")}</div>
                         </div>
                       </div>
-                      <div className="text-[10px] text-slate-500 mb-1">Preparation Steps:</div>
+                      <div className="text-xs text-slate-500 mb-1">Preparation Steps:</div>
                       <div className="space-y-0.5">
                         {(reg.preparationSteps || []).slice(0, 3).map((step: string, j: number) => (
-                          <div key={j} className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                          <div key={j} className="flex items-center gap-1.5 text-xs text-slate-400">
                             <div className="w-1 h-1 rounded-full bg-indigo-400 shrink-0" />
                             {step}
                           </div>

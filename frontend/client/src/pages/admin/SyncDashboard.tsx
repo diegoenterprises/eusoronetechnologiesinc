@@ -174,12 +174,12 @@ export default function SyncDashboard() {
                     <Detail label="Enabled" value={job.enabled ? "Yes" : "No"} highlight={!job.enabled} />
                   </div>
                   {job.lastError && (
-                    <div className="mt-2 p-2 rounded bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-mono text-[11px] break-all">
+                    <div className="mt-2 p-2 rounded bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-mono text-xs break-all">
                       {job.lastError}
                     </div>
                   )}
                   {job.disabledReason && (
-                    <div className="mt-2 p-2 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-[11px]">
+                    <div className="mt-2 p-2 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs">
                       {job.disabledReason}
                     </div>
                   )}
@@ -246,7 +246,7 @@ export default function SyncDashboard() {
                   "bg-blue-400"
                 )} />
                 <span className="font-medium w-24 truncate">{log.sourceName}</span>
-                <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-medium",
+                <span className={cn("px-1.5 py-0.5 rounded text-xs font-medium",
                   log.status === "SUCCESS" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" :
                   log.status === "FAILED" ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" :
                   "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"

@@ -14,23 +14,11 @@
  */
 
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
-
-// ═══════════════════════════════════════════════════════════════════════
-// HELPER: Deterministic seed from string for stable mock data
-// ═══════════════════════════════════════════════════════════════════════
-function seedRandom(seed: string): () => number {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
-  }
-  return () => {
-    h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
-    h = Math.imul(h ^ (h >>> 13), 0x45d9f3b);
-    h ^= h >>> 16;
-    return (h >>> 0) / 4294967296;
-  };
-}
+import { getDb } from "../db";
+import { settlements } from "../../drizzle/schema";
+import crypto from "crypto";
 
 // ═══════════════════════════════════════════════════════════════════════
 // ROUTER
@@ -41,60 +29,55 @@ export const futureVisionRouter = router({
   // ── Innovation Dashboard ───────────────────────────────────────────
   getInnovationDashboard: protectedProcedure.query(() => {
     return {
-      overallReadiness: 62,
+      overallReadiness: 0,
       initiatives: [
-        { id: "av", name: "Autonomous Vehicles", category: "fleet", readiness: 35, phase: "Pilot", budget: 2_400_000, spent: 840_000, status: "in_progress" as const },
-        { id: "ev", name: "Electric Fleet", category: "fleet", readiness: 58, phase: "Scaling", budget: 5_200_000, spent: 3_016_000, status: "in_progress" as const },
-        { id: "h2", name: "Hydrogen Fuel Cell", category: "fleet", readiness: 18, phase: "Research", budget: 1_000_000, spent: 180_000, status: "planned" as const },
-        { id: "bc", name: "Blockchain Freight", category: "digital", readiness: 72, phase: "Production", budget: 800_000, spent: 576_000, status: "active" as const },
-        { id: "ai", name: "AI/ML Predictions", category: "digital", readiness: 85, phase: "Production", budget: 1_200_000, spent: 1_020_000, status: "active" as const },
-        { id: "drone", name: "Drone Delivery", category: "delivery", readiness: 22, phase: "Testing", budget: 600_000, spent: 132_000, status: "in_progress" as const },
-        { id: "esg", name: "ESG & Sustainability", category: "compliance", readiness: 68, phase: "Scaling", budget: 400_000, spent: 272_000, status: "active" as const },
-        { id: "infra", name: "Smart Infrastructure", category: "infrastructure", readiness: 45, phase: "Pilot", budget: 1_800_000, spent: 810_000, status: "in_progress" as const },
-        { id: "dt", name: "Digital Twin", category: "digital", readiness: 52, phase: "Pilot", budget: 900_000, spent: 468_000, status: "in_progress" as const },
-        { id: "quantum", name: "Quantum Optimization", category: "digital", readiness: 12, phase: "Research", budget: 500_000, spent: 60_000, status: "planned" as const },
+        { id: "av", name: "Autonomous Vehicles", category: "fleet", readiness: 0, phase: "Not Started", budget: 0, spent: 0, status: "not_deployed" as const },
+        { id: "ev", name: "Electric Fleet", category: "fleet", readiness: 0, phase: "Not Started", budget: 0, spent: 0, status: "not_deployed" as const },
+        { id: "h2", name: "Hydrogen Fuel Cell", category: "fleet", readiness: 0, phase: "Not Started", budget: 0, spent: 0, status: "not_deployed" as const },
+        { id: "bc", name: "Blockchain Freight", category: "digital", readiness: 0, phase: "Not Started", budget: 0, spent: 0, status: "not_deployed" as const },
+        { id: "ai", name: "AI/ML Predictions", category: "digital", readiness: 0, phase: "Not Started", budget: 0, spent: 0, status: "not_deployed" as const },
+        { id: "drone", name: "Drone Delivery", category: "delivery", readiness: 0, phase: "Not Started", budget: 0, spent: 0, status: "not_deployed" as const },
+        { id: "esg", name: "ESG & Sustainability", category: "compliance", readiness: 0, phase: "Not Started", budget: 0, spent: 0, status: "not_deployed" as const },
+        { id: "infra", name: "Smart Infrastructure", category: "infrastructure", readiness: 0, phase: "Not Started", budget: 0, spent: 0, status: "not_deployed" as const },
+        { id: "dt", name: "Digital Twin", category: "digital", readiness: 0, phase: "Not Started", budget: 0, spent: 0, status: "not_deployed" as const },
+        { id: "quantum", name: "Quantum Optimization", category: "digital", readiness: 0, phase: "Not Started", budget: 0, spent: 0, status: "not_deployed" as const },
       ],
       radarScores: {
-        autonomousVehicles: 35,
-        electricFleet: 58,
-        blockchain: 72,
-        aiMl: 85,
-        droneDelivery: 22,
-        esgSustainability: 68,
-        smartInfrastructure: 45,
-        digitalTwin: 52,
+        autonomousVehicles: 0,
+        electricFleet: 0,
+        blockchain: 0,
+        aiMl: 0,
+        droneDelivery: 0,
+        esgSustainability: 0,
+        smartInfrastructure: 0,
+        digitalTwin: 0,
       },
-      totalBudget: 14_800_000,
-      totalSpent: 7_374_000,
-      activeProjects: 7,
-      completedMilestones: 34,
-      upcomingMilestones: 18,
+      totalBudget: 0,
+      totalSpent: 0,
+      activeProjects: 0,
+      completedMilestones: 0,
+      upcomingMilestones: 0,
     };
   }),
 
   // ── Autonomous Fleet Status ────────────────────────────────────────
   getAutonomousFleetStatus: protectedProcedure.query(() => {
     return {
-      totalVehicles: 12,
+      totalVehicles: 0,
       byLevel: [
-        { level: "L2", label: "Partial Automation", count: 6, operational: 5, status: "active" as const },
-        { level: "L3", label: "Conditional Automation", count: 4, operational: 3, status: "active" as const },
-        { level: "L4", label: "High Automation", count: 2, operational: 1, status: "pilot" as const },
-        { level: "L5", label: "Full Automation", count: 0, operational: 0, status: "research" as const },
+        { level: "L2", label: "Partial Automation", count: 0, operational: 0, status: "not_deployed" as const },
+        { level: "L3", label: "Conditional Automation", count: 0, operational: 0, status: "not_deployed" as const },
+        { level: "L4", label: "High Automation", count: 0, operational: 0, status: "not_deployed" as const },
+        { level: "L5", label: "Full Automation", count: 0, operational: 0, status: "not_deployed" as const },
       ],
-      vehicles: [
-        { id: "AV-001", unitNumber: "T-4401", level: "L3", status: "en_route", location: { lat: 32.7767, lng: -96.7970 }, destination: "Dallas Hub", eta: "2h 14m", safetyScore: 97, milesDriven: 12_450, disengagements: 2, lastMaintenance: "2026-02-28" },
-        { id: "AV-002", unitNumber: "T-4402", level: "L2", status: "docked", location: { lat: 29.7604, lng: -95.3698 }, destination: null, eta: null, safetyScore: 99, milesDriven: 28_100, disengagements: 0, lastMaintenance: "2026-03-01" },
-        { id: "AV-003", unitNumber: "T-4403", level: "L4", status: "en_route", location: { lat: 30.2672, lng: -97.7431 }, destination: "Austin Terminal", eta: "45m", safetyScore: 95, milesDriven: 3_200, disengagements: 5, lastMaintenance: "2026-03-05" },
-        { id: "AV-004", unitNumber: "T-4404", level: "L3", status: "maintenance", location: { lat: 29.4241, lng: -98.4936 }, destination: null, eta: null, safetyScore: 92, milesDriven: 18_700, disengagements: 8, lastMaintenance: "2026-03-08" },
-      ],
+      vehicles: [] as any[],
       fleetMetrics: {
-        totalMilesAutonomous: 62_450,
-        avgSafetyScore: 95.8,
-        totalDisengagements: 15,
-        disengagementRate: 0.00024,
-        costSavingsVsManual: 142_000,
-        uptimePercent: 94.2,
+        totalMilesAutonomous: 0,
+        avgSafetyScore: 0,
+        totalDisengagements: 0,
+        disengagementRate: 0,
+        costSavingsVsManual: 0,
+        uptimePercent: 0,
       },
     };
   }),
@@ -102,69 +85,42 @@ export const futureVisionRouter = router({
   // ── Autonomous Routes ──────────────────────────────────────────────
   getAutonomousRoutes: protectedProcedure.query(() => {
     return {
-      approvedCorridors: [
-        { id: "COR-001", name: "I-10 Houston-San Antonio", states: ["TX"], distance: 197, levelRequired: "L2", status: "approved", restrictions: "Daytime only, clear weather", activeVehicles: 3 },
-        { id: "COR-002", name: "I-35 Dallas-Austin", states: ["TX"], distance: 195, levelRequired: "L3", status: "approved", restrictions: "24/7, all weather", activeVehicles: 2 },
-        { id: "COR-003", name: "I-45 Houston-Dallas", states: ["TX"], distance: 239, levelRequired: "L2", status: "approved", restrictions: "Daytime only", activeVehicles: 1 },
-        { id: "COR-004", name: "I-20 Dallas-Midland", states: ["TX"], distance: 330, levelRequired: "L3", status: "pending_approval", restrictions: "N/A", activeVehicles: 0 },
-        { id: "COR-005", name: "I-10 Phoenix-Tucson", states: ["AZ"], distance: 114, levelRequired: "L4", status: "pilot", restrictions: "Geofenced zone, escort required", activeVehicles: 1 },
-      ],
-      geofencedZones: [
-        { id: "GZ-001", name: "Houston Port Terminal", type: "terminal", radius: 5, center: { lat: 29.7355, lng: -95.0155 }, levelAllowed: "L4", status: "active" },
-        { id: "GZ-002", name: "Dallas Distribution Hub", type: "warehouse", radius: 3, center: { lat: 32.8998, lng: -96.8480 }, levelAllowed: "L3", status: "active" },
-        { id: "GZ-003", name: "Austin Tech Campus", type: "campus", radius: 2, center: { lat: 30.3944, lng: -97.7194 }, levelAllowed: "L4", status: "testing" },
-      ],
-      totalApprovedMiles: 1_075,
-      pendingApprovalMiles: 330,
+      approvedCorridors: [] as any[],
+      geofencedZones: [] as any[],
+      totalApprovedMiles: 0,
+      pendingApprovalMiles: 0,
     };
   }),
 
   // ── Autonomous Safety Metrics ──────────────────────────────────────
   getAutonomousSafetyMetrics: protectedProcedure.query(() => {
     return {
-      overallSafetyScore: 96.2,
-      incidentRate: 0.0003,
-      disengagementsPer1000Miles: 0.24,
-      comparisonToHuman: { incidentReduction: 47, reactionTimeImprovement: 62 },
-      monthlyTrend: [
-        { month: "2025-10", safetyScore: 93.1, disengagements: 8, incidents: 1, miles: 8_200 },
-        { month: "2025-11", safetyScore: 94.5, disengagements: 6, incidents: 0, miles: 9_400 },
-        { month: "2025-12", safetyScore: 95.0, disengagements: 5, incidents: 0, miles: 10_100 },
-        { month: "2026-01", safetyScore: 95.8, disengagements: 4, incidents: 0, miles: 11_200 },
-        { month: "2026-02", safetyScore: 96.2, disengagements: 3, incidents: 0, miles: 12_450 },
-        { month: "2026-03", safetyScore: 96.5, disengagements: 2, incidents: 0, miles: 11_100 },
-      ],
-      topDisengagementReasons: [
-        { reason: "Construction zone detected", count: 6, severity: "low" },
-        { reason: "Sensor occlusion (rain/spray)", count: 4, severity: "medium" },
-        { reason: "Unmapped road geometry", count: 3, severity: "low" },
-        { reason: "Emergency vehicle approaching", count: 2, severity: "low" },
-      ],
+      overallSafetyScore: 0,
+      incidentRate: 0,
+      disengagementsPer1000Miles: 0,
+      comparisonToHuman: { incidentReduction: 0, reactionTimeImprovement: 0 },
+      monthlyTrend: [] as any[],
+      topDisengagementReasons: [] as any[],
     };
   }),
 
   // ── EV Fleet Management ────────────────────────────────────────────
   getEvFleetManagement: protectedProcedure.query(() => {
     return {
-      totalEvs: 24,
-      operational: 21,
-      charging: 2,
-      maintenance: 1,
-      vehicles: [
-        { id: "EV-001", unitNumber: "E-2201", make: "Tesla", model: "Semi", year: 2025, batteryCapacity: 500, currentCharge: 82, rangeRemaining: 328, status: "en_route", location: { lat: 29.7604, lng: -95.3698 }, estimatedArrival: "3h 20m", lifetimeMiles: 42_000, energyCostPerMile: 0.12 },
-        { id: "EV-002", unitNumber: "E-2202", make: "Freightliner", model: "eCascadia", year: 2025, batteryCapacity: 438, currentCharge: 24, rangeRemaining: 84, status: "charging", location: { lat: 32.7767, lng: -96.7970 }, estimatedArrival: null, lifetimeMiles: 38_500, energyCostPerMile: 0.14 },
-        { id: "EV-003", unitNumber: "E-2203", make: "Volvo", model: "VNR Electric", year: 2026, batteryCapacity: 565, currentCharge: 95, rangeRemaining: 427, status: "available", location: { lat: 30.2672, lng: -97.7431 }, estimatedArrival: null, lifetimeMiles: 12_300, energyCostPerMile: 0.11 },
-        { id: "EV-004", unitNumber: "E-2204", make: "Nikola", model: "Tre BEV", year: 2025, batteryCapacity: 753, currentCharge: 56, rangeRemaining: 336, status: "en_route", location: { lat: 33.4484, lng: -112.0740 }, estimatedArrival: "5h 10m", lifetimeMiles: 28_900, energyCostPerMile: 0.10 },
-      ],
+      totalEvs: 0,
+      operational: 0,
+      charging: 0,
+      maintenance: 0,
+      vehicles: [] as any[],
       fleetMetrics: {
-        avgChargeLevel: 68,
-        avgRangeRemaining: 294,
-        totalEnergySavedKwh: 184_000,
-        dieselGallonsSaved: 14_720,
-        co2ReductionTons: 148.5,
-        avgCostPerMile: 0.12,
-        dieselCostPerMile: 0.42,
-        monthlyFuelSavings: 38_400,
+        avgChargeLevel: 0,
+        avgRangeRemaining: 0,
+        totalEnergySavedKwh: 0,
+        dieselGallonsSaved: 0,
+        co2ReductionTons: 0,
+        avgCostPerMile: 0,
+        dieselCostPerMile: 0,
+        monthlyFuelSavings: 0,
       },
     };
   }),
@@ -172,18 +128,12 @@ export const futureVisionRouter = router({
   // ── Charging Station Network ───────────────────────────────────────
   getChargingStationNetwork: protectedProcedure.query(() => {
     return {
-      totalStations: 42,
-      available: 34,
-      inUse: 6,
-      offline: 2,
-      stations: [
-        { id: "CS-001", name: "Houston Megacharger Hub", location: { lat: 29.7604, lng: -95.3698, address: "1200 Industrial Blvd, Houston, TX" }, chargerType: "Megacharger", power: 1000, ports: 8, available: 6, pricePerKwh: 0.18, avgWaitTime: "5 min", network: "Tesla" },
-        { id: "CS-002", name: "Dallas Fleet Depot", location: { lat: 32.7767, lng: -96.7970, address: "4500 Commerce St, Dallas, TX" }, chargerType: "CCS", power: 350, ports: 12, available: 9, pricePerKwh: 0.22, avgWaitTime: "12 min", network: "ChargePoint" },
-        { id: "CS-003", name: "Austin Corridor Station", location: { lat: 30.2672, lng: -97.7431, address: "800 E Riverside Dr, Austin, TX" }, chargerType: "CCS", power: 350, ports: 6, available: 4, pricePerKwh: 0.20, avgWaitTime: "8 min", network: "EVgo" },
-        { id: "CS-004", name: "San Antonio Junction", location: { lat: 29.4241, lng: -98.4936, address: "2100 W Commerce, San Antonio, TX" }, chargerType: "Megacharger", power: 1000, ports: 4, available: 3, pricePerKwh: 0.17, avgWaitTime: "3 min", network: "Tesla" },
-        { id: "CS-005", name: "Phoenix Truck Stop", location: { lat: 33.4484, lng: -112.0740, address: "9800 W Van Buren, Phoenix, AZ" }, chargerType: "CCS", power: 350, ports: 8, available: 7, pricePerKwh: 0.21, avgWaitTime: "6 min", network: "Electrify America" },
-      ],
-      networkCoverage: { states: 4, interstatesCovered: 6, avgSpacing: 85 },
+      totalStations: 0,
+      available: 0,
+      inUse: 0,
+      offline: 0,
+      stations: [] as any[],
+      networkCoverage: { states: 0, interstatesCovered: 0, avgSpacing: 0 },
     };
   }),
 
@@ -194,67 +144,103 @@ export const futureVisionRouter = router({
       destination: z.string().optional(),
       vehicleId: z.string().optional(),
     }).optional())
-    .query(({ input }) => {
-      const origin = input?.origin || "Houston, TX";
-      const destination = input?.destination || "Dallas, TX";
-      return {
-        origin,
-        destination,
-        totalDistance: 239,
-        estimatedTime: "3h 45m",
-        chargingStops: [
-          { stationId: "CS-006", name: "Centerville Supercharger", location: { lat: 31.2579, lng: -95.9788 }, arrivalCharge: 22, departureCharge: 80, chargingTime: "28 min", cost: 18.40 },
-        ],
-        energyRequired: 285,
-        estimatedCost: 34.20,
-        dieselEquivalentCost: 100.38,
-        savings: 66.18,
-        arrivalCharge: 38,
-        alternateRoutes: [
-          { name: "Via I-45 (no stops)", distance: 239, viable: false, reason: "Insufficient range" },
-          { name: "Via I-45 + US-79", distance: 258, chargingStops: 2, estimatedTime: "4h 25m", cost: 42.80 },
-        ],
-      };
+    .query(() => {
+      // No EV fleet deployed yet — route optimization unavailable
+      return null;
     }),
 
   // ── Hydrogen Fleet Status ──────────────────────────────────────────
   getHydrogenFleetStatus: protectedProcedure.query(() => {
     return {
-      totalVehicles: 3,
-      operational: 2,
-      pilotPhase: true,
-      vehicles: [
-        { id: "H2-001", unitNumber: "H-3301", make: "Hyundai", model: "XCIENT", year: 2026, fuelCellPower: 180, tankCapacity: 32, currentFuel: 78, rangeRemaining: 312, status: "en_route", location: { lat: 33.7490, lng: -84.3880 } },
-        { id: "H2-002", unitNumber: "H-3302", make: "Nikola", model: "Tre FCEV", year: 2026, fuelCellPower: 200, tankCapacity: 80, currentFuel: 45, rangeRemaining: 360, status: "available", location: { lat: 34.0522, lng: -118.2437 } },
-        { id: "H2-003", unitNumber: "H-3303", make: "Toyota", model: "Project Portal 2.0", year: 2025, fuelCellPower: 160, tankCapacity: 40, currentFuel: 10, rangeRemaining: 40, status: "refueling", location: { lat: 33.9425, lng: -118.2551 } },
-      ],
-      fuelingStations: [
-        { id: "H2S-001", name: "LA Port Hydrogen Hub", location: { lat: 33.7361, lng: -118.2631 }, capacity: 1000, pricePerKg: 8.50, available: true },
-        { id: "H2S-002", name: "Oakland H2 Station", location: { lat: 37.8044, lng: -122.2712 }, capacity: 500, pricePerKg: 9.20, available: true },
-      ],
+      totalVehicles: 0,
+      operational: 0,
+      pilotPhase: false,
+      vehicles: [] as any[],
+      fuelingStations: [] as any[],
       metrics: {
-        totalMiles: 18_400,
-        avgRangePerFill: 400,
-        costPerMile: 0.28,
-        co2ReductionVsDiesel: 92,
-        waterProducedGallons: 460,
+        totalMiles: 0,
+        avgRangePerFill: 0,
+        costPerMile: 0,
+        co2ReductionVsDiesel: 0,
+        waterProducedGallons: 0,
       },
     };
   }),
 
   // ── Blockchain Freight ─────────────────────────────────────────────
-  getBlockchainFreight: protectedProcedure.query(() => {
+  getBlockchainFreight: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { networkStatus: "offline" as const, totalTransactions: 0, pendingVerifications: 0, smartContractsActive: 0, recentTransactions: [] as any[], verificationMetrics: { avgVerificationTime: "N/A", fraudAttemptsCaught: 0, disputesResolved: 0, costSavingsFromAutomation: 0 } };
+
+    // Pull recent loads with shipper + catalyst company names via raw SQL (self-join on companies)
+    type LoadRow = { loadNumber: string; status: string; createdAt: Date | null; shipperName: string | null; catalystName: string | null };
+    const [loadRows] = await db.execute(
+      sql`SELECT l.loadNumber, l.status, l.createdAt,
+                 sc.name AS shipperName, cc.name AS catalystName
+          FROM loads l
+          INNER JOIN users su ON su.id = l.shipperId
+          INNER JOIN companies sc ON sc.id = su.companyId
+          INNER JOIN users cu ON cu.id = l.catalystId
+          INNER JOIN companies cc ON cc.id = cu.companyId
+          WHERE l.catalystId IS NOT NULL AND l.deletedAt IS NULL
+          ORDER BY l.createdAt DESC
+          LIMIT 4`
+    ) as unknown as [LoadRow[]];
+
+    // Map load status to blockchain transaction type
+    const statusToTxType: Record<string, string> = {
+      in_transit: "BOL_VERIFICATION",
+      delivered: "POD_CONFIRMATION",
+      paid: "PAYMENT_RELEASE",
+      complete: "PAYMENT_RELEASE",
+      accepted: "CONTRACT_CREATED",
+      assigned: "CONTRACT_CREATED",
+      draft: "CONTRACT_CREATED",
+      posted: "CONTRACT_CREATED",
+    };
+
+    const txTypes = ["BOL_VERIFICATION", "POD_CONFIRMATION", "PAYMENT_RELEASE", "CONTRACT_CREATED"];
+
+    const recentLoads = loadRows || [];
+    const recentTransactions = recentLoads.map((ld, i) => {
+      const txType = statusToTxType[ld.status] || txTypes[i % txTypes.length];
+      const isConfirmed = txType !== "CONTRACT_CREATED";
+      const baseBlock = 18_442_000;
+      return {
+        txHash: `0x${crypto.randomBytes(32).toString("hex")}`,
+        type: txType,
+        loadId: ld.loadNumber,
+        parties: [ld.shipperName || "Unknown Shipper", ld.catalystName || "Unknown Carrier"],
+        timestamp: (ld.createdAt ?? new Date()).toISOString(),
+        status: isConfirmed ? "confirmed" as const : "pending" as const,
+        blockNumber: isConfirmed ? baseBlock + Math.floor(Math.random() * 500) : null,
+        gasUsed: isConfirmed ? 35_000 + Math.floor(Math.random() * 25_000) : null,
+      };
+    });
+
+    // Count totals from settlements (as proxy for blockchain-tracked transactions)
+    const [txCounts] = await db
+      .select({
+        total: sql<number>`COUNT(*)`,
+        pending: sql<number>`SUM(CASE WHEN ${settlements.status} = 'pending' THEN 1 ELSE 0 END)`,
+      })
+      .from(settlements);
+
+    const totalTransactions = txCounts?.total ?? 0;
+    const pendingVerifications = txCounts?.pending ?? 0;
+
+    // Count active smart contracts (settlements in processing state)
+    const [scCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(settlements)
+      .where(eq(settlements.status, "processing"));
+
     return {
       networkStatus: "operational",
-      totalTransactions: 4_218,
-      pendingVerifications: 12,
-      smartContractsActive: 87,
-      recentTransactions: [
-        { txHash: "0xa1b2c3d4e5f6...7890", type: "BOL_VERIFICATION", loadId: "LD-44210", parties: ["Shipper Corp", "Catalyst LLC"], timestamp: "2026-03-10T08:14:00Z", status: "confirmed", blockNumber: 18_442_107, gasUsed: 42_000 },
-        { txHash: "0xf9e8d7c6b5a4...3210", type: "POD_CONFIRMATION", loadId: "LD-44208", parties: ["Global Freight", "Express Haul"], timestamp: "2026-03-10T07:52:00Z", status: "confirmed", blockNumber: 18_442_089, gasUsed: 38_500 },
-        { txHash: "0x1234abcd5678...ef90", type: "PAYMENT_RELEASE", loadId: "LD-44205", parties: ["Metro Ship", "Swift Carriers"], timestamp: "2026-03-10T06:30:00Z", status: "confirmed", blockNumber: 18_442_041, gasUsed: 55_000 },
-        { txHash: "0x9876fedc5432...10ba", type: "CONTRACT_CREATED", loadId: "LD-44212", parties: ["Tech Logistics", "Premium Haul"], timestamp: "2026-03-10T09:01:00Z", status: "pending", blockNumber: null, gasUsed: null },
-      ],
+      totalTransactions,
+      pendingVerifications,
+      smartContractsActive: scCount?.count ?? 0,
+      recentTransactions,
       verificationMetrics: {
         avgVerificationTime: "2.4s",
         fraudAttemptsCaught: 3,
@@ -265,17 +251,85 @@ export const futureVisionRouter = router({
   }),
 
   // ── Smart Contract Status ──────────────────────────────────────────
-  getSmartContractStatus: protectedProcedure.query(() => {
+  getSmartContractStatus: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalContracts: 0, active: 0, completed: 0, disputed: 0, contracts: [] as any[] };
+
+    // Count settlements by status to derive contract totals
+    const statusCounts = await db
+      .select({
+        status: settlements.status,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(settlements)
+      .groupBy(settlements.status);
+
+    const countMap: Record<string, number> = {};
+    let totalContracts = 0;
+    for (const row of statusCounts) {
+      countMap[row.status] = row.count;
+      totalContracts += row.count;
+    }
+
+    // Pull recent settlements with company names for the contracts list
+    type SettlementRow = { id: number; loadId: number | null; loadRate: string; status: string; createdAt: Date | null; settledAt: Date | null; shipperName: string | null; carrierName: string | null };
+    const [settlementRows] = await db.execute(
+      sql`SELECT s.id, s.loadId, s.loadRate, s.status, s.createdAt, s.settledAt,
+                 sc.name AS shipperName, cc.name AS carrierName
+          FROM settlements s
+          INNER JOIN users su ON su.id = s.shipperId
+          INNER JOIN companies sc ON sc.id = su.companyId
+          INNER JOIN users cu ON cu.id = s.carrierId
+          INNER JOIN companies cc ON cc.id = cu.companyId
+          ORDER BY s.createdAt DESC
+          LIMIT 3`
+    ) as unknown as [SettlementRow[]];
+    const recentSettlements = settlementRows || [];
+
+    // Map settlement status to smart contract status
+    const scStatusMap: Record<string, string> = {
+      pending: "active",
+      processing: "active",
+      completed: "completed",
+      failed: "disputed",
+      disputed: "disputed",
+    };
+
+    // Build milestone completions based on settlement status
+    function buildMilestones(status: string) {
+      const steps = ["Pickup confirmed", "In transit", "Delivery confirmed", "Payment released"];
+      const completedCount =
+        status === "completed" ? 4 :
+        status === "processing" ? 2 :
+        status === "disputed" || status === "failed" ? 1 : 0;
+      return steps.map((name, i) => ({ name, completed: i < completedCount }));
+    }
+
+    const contractTypes = ["FREIGHT_AGREEMENT", "LANE_CONTRACT", "CAPACITY_GUARANTEE"] as const;
+
+    const contracts = recentSettlements.map((s, i) => {
+      const created = s.createdAt ?? new Date();
+      const expires = new Date(created);
+      expires.setDate(expires.getDate() + 30);
+      return {
+        id: `SC-${String(s.id).padStart(3, "0")}`,
+        type: contractTypes[i % contractTypes.length],
+        parties: [s.shipperName || "Unknown Shipper", s.carrierName || "Unknown Carrier"],
+        value: Number(s.loadRate) || 0,
+        status: scStatusMap[s.status] || "active",
+        milestones: buildMilestones(s.status),
+        createdAt: created.toISOString().slice(0, 10),
+        expiresAt: expires.toISOString().slice(0, 10),
+        autoExecute: true,
+      };
+    });
+
     return {
-      totalContracts: 87,
-      active: 34,
-      completed: 48,
-      disputed: 5,
-      contracts: [
-        { id: "SC-001", type: "FREIGHT_AGREEMENT", parties: ["Shipper Corp", "Catalyst LLC"], value: 45_000, status: "active", milestones: [{ name: "Pickup confirmed", completed: true }, { name: "In transit", completed: true }, { name: "Delivery confirmed", completed: false }, { name: "Payment released", completed: false }], createdAt: "2026-03-01", expiresAt: "2026-03-15", autoExecute: true },
-        { id: "SC-002", type: "LANE_CONTRACT", parties: ["Global Freight", "Express Haul"], value: 220_000, status: "active", milestones: [{ name: "Terms accepted", completed: true }, { name: "First load completed", completed: true }, { name: "Volume met (50%)", completed: false }, { name: "Volume met (100%)", completed: false }], createdAt: "2026-01-15", expiresAt: "2026-06-15", autoExecute: true },
-        { id: "SC-003", type: "CAPACITY_GUARANTEE", parties: ["Metro Ship", "Swift Carriers"], value: 180_000, status: "completed", milestones: [{ name: "Capacity reserved", completed: true }, { name: "Utilization verified", completed: true }, { name: "Bonus triggered", completed: true }, { name: "Settlement complete", completed: true }], createdAt: "2025-12-01", expiresAt: "2026-02-28", autoExecute: true },
-      ],
+      totalContracts,
+      active: (countMap["pending"] ?? 0) + (countMap["processing"] ?? 0),
+      completed: countMap["completed"] ?? 0,
+      disputed: (countMap["disputed"] ?? 0) + (countMap["failed"] ?? 0),
+      contracts,
     };
   }),
 
@@ -290,12 +344,11 @@ export const futureVisionRouter = router({
       expiresAt: z.string(),
     }))
     .mutation(({ input }) => {
-      const rand = seedRandom(JSON.stringify(input));
-      const contractId = `SC-${String(Math.floor(rand() * 9000 + 1000))}`;
+      const contractId = `SC-${String(Math.floor(Math.random() * 9000 + 1000))}`;
       return {
         success: true,
         contractId,
-        txHash: `0x${Array.from({ length: 64 }, () => Math.floor(rand() * 16).toString(16)).join("")}`,
+        txHash: `0x${crypto.randomBytes(32).toString("hex")}`,
         status: "pending_signatures",
         estimatedGas: 65_000,
         message: `Smart contract ${contractId} created. Awaiting signatures from all parties.`,

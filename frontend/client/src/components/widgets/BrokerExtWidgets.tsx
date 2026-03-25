@@ -16,7 +16,7 @@ export const CustomerAccountsWidget: React.FC = () => {
           <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
             <Users className="w-3 h-3 text-purple-400 flex-shrink-0" />
             <span className="text-xs text-white flex-1 truncate">{a.name || `Account ${i+1}`}</span>
-            <span className="text-[10px] text-green-400">${a.revenue?.toLocaleString() || 0}</span>
+            <span className="text-xs text-green-400">${a.revenue?.toLocaleString() || 0}</span>
           </div>
         )} empty="No customer accounts" />
       </div>
@@ -69,7 +69,7 @@ export const CoverageMapWidget: React.FC = () => {
           <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
             <Route className="w-3 h-3 text-cyan-400 flex-shrink-0" />
             <span className="text-xs text-white flex-1 truncate">{l.origin || "A"} to {l.destination || "B"}</span>
-            <span className="text-[10px] text-green-400">{l.volume || 0} loads</span>
+            <span className="text-xs text-green-400">{l.volume || 0} loads</span>
           </div>
         )} empty="No lanes configured" />
       </div>
@@ -120,7 +120,7 @@ export const CatalystScorecardsWidget: React.FC = () => {
         <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
           <Award className="w-3 h-3 text-yellow-400 flex-shrink-0" />
           <span className="text-xs text-white flex-1 truncate">{c.name || `Catalyst ${i+1}`}</span>
-          <Badge className={`border-0 text-[10px] ${(c.score||0)>=90?"bg-green-500/20 text-green-400":(c.score||0)>=70?"bg-yellow-500/20 text-yellow-400":"bg-red-500/20 text-red-400"}`}>
+          <Badge className={`border-0 text-xs ${(c.score||0)>=90?"bg-green-500/20 text-green-400":(c.score||0)>=70?"bg-yellow-500/20 text-yellow-400":"bg-red-500/20 text-red-400"}`}>
             {c.score || 0}%
           </Badge>
         </div>
@@ -144,9 +144,9 @@ export const LoadMatchingAIWidget: React.FC = () => {
             <Package className="w-3 h-3 text-blue-400 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs text-white truncate">{m.loadNumber || `Match #${i+1}`}</p>
-              <p className="text-[10px] text-gray-500">{m.lane || "N/A"}</p>
+              <p className="text-xs text-gray-500">{m.lane || "N/A"}</p>
             </div>
-            <span className="text-[10px] text-green-400">{m.confidence || 0}%</span>
+            <span className="text-xs text-green-400">{m.confidence || 0}%</span>
           </div>
         )} empty="No AI matches" />
       </div>
@@ -180,7 +180,7 @@ export const LaneAnalysisWidget: React.FC = () => {
         <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
           <Route className="w-3 h-3 text-blue-400 flex-shrink-0" />
           <span className="text-xs text-white flex-1 truncate">{l.lane || `Lane ${i+1}`}</span>
-          <span className="text-[10px] text-green-400">${l.avgRate || 0}/mi</span>
+          <span className="text-xs text-green-400">${l.avgRate || 0}/mi</span>
         </div>
       )} empty="No lane data" />
     )}</ResponsiveWidget>

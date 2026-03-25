@@ -47,7 +47,7 @@ export default function BidReviewPage() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Compare bids, negotiate, and award lanes</p>
         </div>
-        <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-400">{rfpId}</Badge>
+        <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400">{rfpId}</Badge>
       </div>
 
       {/* Tabs */}
@@ -58,7 +58,7 @@ export default function BidReviewPage() {
           { id: "awards" as Tab, icon: <Trophy className="w-3.5 h-3.5 mr-1" />, label: "Awards", color: "bg-emerald-600" },
           { id: "analytics" as Tab, icon: <BarChart3 className="w-3.5 h-3.5 mr-1" />, label: "Analytics", color: "bg-purple-600" },
         ].map(t => (
-          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-[11px]", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
+          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-xs", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
             {t.icon}{t.label}
           </Button>
         ))}
@@ -75,9 +75,9 @@ export default function BidReviewPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-xs text-white flex items-center gap-2">
                     <Target className="w-4 h-4 text-blue-400" />{comp.laneLabel}
-                    <Badge variant="outline" className="text-[7px] text-slate-400">{comp.laneId}</Badge>
+                    <Badge variant="outline" className="text-xs text-slate-400">{comp.laneId}</Badge>
                   </CardTitle>
-                  <div className="flex items-center gap-3 text-[9px]">
+                  <div className="flex items-center gap-3 text-xs">
                     <span className="text-slate-500">Target: <span className="text-emerald-400 font-mono">${comp.targetRate?.toLocaleString()}</span></span>
                     <span className="text-slate-500">Avg: <span className="text-white font-mono">${comp.averageBid?.toLocaleString()}</span></span>
                     <span className="text-slate-500">Spread: <span className="text-amber-400 font-mono">{comp.spreadPct}%</span></span>
@@ -90,17 +90,17 @@ export default function BidReviewPage() {
                     const isOver = bid.deltaPct > 0;
                     return (
                       <div key={bid.carrierId} className={cn("flex items-center gap-3 p-2 rounded-lg", bid.isLowest ? "bg-emerald-500/5 border border-emerald-500/20" : "bg-slate-900/20")}>
-                        <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold", bid.rank === 1 ? "bg-emerald-500/20 text-emerald-400" : bid.rank === 2 ? "bg-blue-500/20 text-blue-400" : "bg-slate-700/50 text-slate-400")}>
+                        <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold", bid.rank === 1 ? "bg-emerald-500/20 text-emerald-400" : bid.rank === 2 ? "bg-blue-500/20 text-blue-400" : "bg-slate-700/50 text-slate-400")}>
                           #{bid.rank}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-semibold text-white">{bid.carrierName}</span>
-                            <Badge variant="outline" className={cn("text-[7px]", TIER_COLORS[bid.carrierTier])}>{bid.carrierTier}</Badge>
-                            {bid.isLowest && <Badge className="text-[7px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Lowest</Badge>}
+                            <span className="text-xs font-semibold text-white">{bid.carrierName}</span>
+                            <Badge variant="outline" className={cn("text-xs", TIER_COLORS[bid.carrierTier])}>{bid.carrierTier}</Badge>
+                            {bid.isLowest && <Badge className="text-xs bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Lowest</Badge>}
                           </div>
                         </div>
-                        <div className="flex items-center gap-4 text-[10px]">
+                        <div className="flex items-center gap-4 text-xs">
                           <span className="text-slate-400">{bid.transitDays}d transit</span>
                           <span className="text-slate-400">{bid.capacityPerWeek}/wk</span>
                           <span className={cn("font-mono font-bold", isOver ? "text-red-400" : "text-emerald-400")}>
@@ -127,7 +127,7 @@ export default function BidReviewPage() {
               <CardContent className="p-8 text-center">
                 <MessageSquare className="w-8 h-8 text-orange-400 mx-auto mb-2" />
                 <p className="text-sm text-white font-semibold">No Counter-Offers</p>
-                <p className="text-[10px] text-slate-500">Use the comparison tab to identify bids and send counter-offers</p>
+                <p className="text-xs text-slate-500">Use the comparison tab to identify bids and send counter-offers</p>
               </CardContent>
             </Card>
           )}
@@ -140,30 +140,30 @@ export default function BidReviewPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Truck className="w-4 h-4 text-slate-400" />
-                      <span className="text-[11px] font-semibold text-white">{co.carrierName}</span>
-                      <Badge variant="outline" className="text-[7px] text-slate-400">{co.laneId}</Badge>
+                      <span className="text-xs font-semibold text-white">{co.carrierName}</span>
+                      <Badge variant="outline" className="text-xs text-slate-400">{co.laneId}</Badge>
                     </div>
-                    <Badge variant="outline" className={cn("text-[8px]", isAccepted ? "text-emerald-400 border-emerald-500/30" : isPending ? "text-orange-400 border-orange-500/30" : "text-red-400 border-red-500/30")}>
+                    <Badge variant="outline" className={cn("text-xs", isAccepted ? "text-emerald-400 border-emerald-500/30" : isPending ? "text-orange-400 border-orange-500/30" : "text-red-400 border-red-500/30")}>
                       {isAccepted ? <CheckCircle className="w-3 h-3 mr-0.5" /> : isPending ? <Clock className="w-3 h-3 mr-0.5" /> : <XCircle className="w-3 h-3 mr-0.5" />}
                       {co.status}
                     </Badge>
                   </div>
                   <div className="grid grid-cols-3 gap-2 mb-2">
                     <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                      <p className="text-[8px] text-slate-500">Original Bid</p>
+                      <p className="text-xs text-slate-500">Original Bid</p>
                       <p className="text-sm font-bold font-mono text-red-400">${co.originalRate.toLocaleString()}</p>
                     </div>
                     <div className="flex items-center justify-center"><ArrowRight className="w-4 h-4 text-slate-500" /></div>
                     <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                      <p className="text-[8px] text-slate-500">Counter Rate</p>
+                      <p className="text-xs text-slate-500">Counter Rate</p>
                       <p className="text-sm font-bold font-mono text-emerald-400">${co.counterRate.toLocaleString()}</p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 italic">"{co.counterMessage}"</p>
+                  <p className="text-xs text-slate-400 italic">"{co.counterMessage}"</p>
                   {co.carrierResponse && (
                     <div className="mt-2 p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                      <p className="text-[9px] text-emerald-400 font-semibold">Carrier Response:</p>
-                      <p className="text-[10px] text-slate-300">"{co.carrierResponse}"</p>
+                      <p className="text-xs text-emerald-400 font-semibold">Carrier Response:</p>
+                      <p className="text-xs text-slate-300">"{co.carrierResponse}"</p>
                     </div>
                   )}
                 </CardContent>
@@ -181,7 +181,7 @@ export default function BidReviewPage() {
               <CardContent className="p-8 text-center">
                 <Trophy className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
                 <p className="text-sm text-white font-semibold">No Awards Yet</p>
-                <p className="text-[10px] text-slate-500">Review bids and score carriers to make award decisions</p>
+                <p className="text-xs text-slate-500">Review bids and score carriers to make award decisions</p>
               </CardContent>
             </Card>
           )}
@@ -191,33 +191,33 @@ export default function BidReviewPage() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Award className="w-4 h-4 text-emerald-400" />
-                    <span className="text-[11px] font-semibold text-white">{award.carrierName}</span>
-                    <Badge variant="outline" className={cn("text-[7px]", TIER_COLORS[award.carrierTier])}>{award.carrierTier}</Badge>
-                    <Badge variant="outline" className="text-[7px] text-slate-400">{award.laneId}</Badge>
+                    <span className="text-xs font-semibold text-white">{award.carrierName}</span>
+                    <Badge variant="outline" className={cn("text-xs", TIER_COLORS[award.carrierTier])}>{award.carrierTier}</Badge>
+                    <Badge variant="outline" className="text-xs text-slate-400">{award.laneId}</Badge>
                   </div>
-                  <Badge className="text-[8px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                  <Badge className="text-xs bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
                     <CheckCircle className="w-3 h-3 mr-0.5" />Awarded
                   </Badge>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
                   <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                    <p className="text-[8px] text-slate-500">Awarded Rate</p>
+                    <p className="text-xs text-slate-500">Awarded Rate</p>
                     <p className="text-sm font-bold font-mono text-emerald-400">${award.awardedRate.toLocaleString()}</p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                    <p className="text-[8px] text-slate-500">Annual Value</p>
-                    <p className="text-[11px] font-bold font-mono text-white">${(award.annualValue / 1000000).toFixed(1)}M</p>
+                    <p className="text-xs text-slate-500">Annual Value</p>
+                    <p className="text-xs font-bold font-mono text-white">${(award.annualValue / 1000000).toFixed(1)}M</p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                    <p className="text-[8px] text-slate-500">Savings vs Target</p>
-                    <p className="text-[11px] font-bold font-mono text-green-400">${award.savingsVsTarget}/load</p>
+                    <p className="text-xs text-slate-500">Savings vs Target</p>
+                    <p className="text-xs font-bold font-mono text-green-400">${award.savingsVsTarget}/load</p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                    <p className="text-[8px] text-slate-500">Contract</p>
-                    <p className="text-[9px] font-mono text-white">{award.contractStartDate}</p>
+                    <p className="text-xs text-slate-500">Contract</p>
+                    <p className="text-xs font-mono text-white">{award.contractStartDate}</p>
                   </div>
                 </div>
-                {award.notes && <p className="text-[9px] text-slate-500 mt-2 italic">{award.notes}</p>}
+                {award.notes && <p className="text-xs text-slate-500 mt-2 italic">{award.notes}</p>}
               </CardContent>
             </Card>
           ))}
@@ -239,7 +239,7 @@ export default function BidReviewPage() {
                 <CardContent className="p-3 text-center">
                   <div className="flex justify-center mb-1">{kpi.icon}</div>
                   <p className={cn("text-lg font-bold font-mono", kpi.color)}>{kpi.value}</p>
-                  <p className="text-[8px] text-slate-500">{kpi.label}</p>
+                  <p className="text-xs text-slate-500">{kpi.label}</p>
                 </CardContent>
               </Card>
             ))}
@@ -253,15 +253,15 @@ export default function BidReviewPage() {
                 <div className="flex items-center gap-4">
                   <div className="text-center flex-1">
                     <p className="text-2xl font-bold text-emerald-400">{analytics.lanesCovered}</p>
-                    <p className="text-[9px] text-slate-500">Covered</p>
+                    <p className="text-xs text-slate-500">Covered</p>
                   </div>
                   <div className="text-center flex-1">
                     <p className="text-2xl font-bold text-red-400">{analytics.lanesUncovered}</p>
-                    <p className="text-[9px] text-slate-500">Uncovered</p>
+                    <p className="text-xs text-slate-500">Uncovered</p>
                   </div>
                   <div className="text-center flex-1">
                     <p className="text-2xl font-bold text-amber-400">{analytics.negotiationSuccessRate}%</p>
-                    <p className="text-[9px] text-slate-500">Negotiation Win</p>
+                    <p className="text-xs text-slate-500">Negotiation Win</p>
                   </div>
                 </div>
               </CardContent>
@@ -275,9 +275,9 @@ export default function BidReviewPage() {
                     <div key={t.tier} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/20">
                       <div className="flex items-center gap-2">
                         <Star className={cn("w-3.5 h-3.5", t.tier === "Gold" ? "text-amber-400" : t.tier === "Silver" ? "text-slate-300" : "text-orange-400")} />
-                        <span className="text-[10px] text-white">{t.tier}</span>
+                        <span className="text-xs text-white">{t.tier}</span>
                       </div>
-                      <div className="flex items-center gap-3 text-[9px]">
+                      <div className="flex items-center gap-3 text-xs">
                         <span className="text-slate-400">{t.count} bids</span>
                         <span className="text-white font-mono font-bold">${t.avgRate.toLocaleString()} avg</span>
                       </div>

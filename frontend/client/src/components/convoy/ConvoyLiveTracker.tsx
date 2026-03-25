@@ -42,10 +42,10 @@ function metersToDisplay(m: number): string {
 }
 
 function speedBadge(speed: number) {
-  if (speed <= 0) return <Badge variant="outline" className="text-[9px] border-slate-600 text-slate-500">Stopped</Badge>;
-  if (speed < 25) return <Badge variant="outline" className="text-[9px] border-yellow-500/40 text-yellow-400">{speed} mph</Badge>;
-  if (speed < 45) return <Badge variant="outline" className="text-[9px] border-emerald-500/40 text-emerald-400">{speed} mph</Badge>;
-  return <Badge variant="outline" className="text-[9px] border-red-500/40 text-red-400">{speed} mph</Badge>;
+  if (speed <= 0) return <Badge variant="outline" className="text-xs border-slate-600 text-slate-500">Stopped</Badge>;
+  if (speed < 25) return <Badge variant="outline" className="text-xs border-yellow-500/40 text-yellow-400">{speed} mph</Badge>;
+  if (speed < 45) return <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-400">{speed} mph</Badge>;
+  return <Badge variant="outline" className="text-xs border-red-500/40 text-red-400">{speed} mph</Badge>;
 }
 
 function FormationHealth({ leadDist, rearDist, targetLead, targetRear }: {
@@ -82,7 +82,7 @@ function FormationHealth({ leadDist, rearDist, targetLead, targetRear }: {
        status === "good" ? <Gauge className="w-3.5 h-3.5" /> :
        <AlertTriangle className="w-3.5 h-3.5" />}
       <span className="text-xs font-semibold">{score}%</span>
-      <span className="text-[10px] opacity-80">{status === "excellent" ? "Tight Formation" : issues[0] || status}</span>
+      <span className="text-xs opacity-80">{status === "excellent" ? "Tight Formation" : issues[0] || status}</span>
     </div>
   );
 }
@@ -286,13 +286,13 @@ export default function ConvoyLiveTracker({ convoyId, loadId, className, compact
             <div>
               <p className="text-sm font-semibold text-white">Live Convoy Tracker</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <Badge variant="outline" className={cn("text-[9px]",
+                <Badge variant="outline" className={cn("text-xs",
                   isActive ? "border-emerald-500/40 text-emerald-400" : "border-slate-600 text-slate-400"
                 )}>
                   {isActive ? <><Wifi className="w-2.5 h-2.5 mr-1" />LIVE</> : convoy.status}
                 </Badge>
                 {lastRefresh && (
-                  <span className="text-[9px] text-slate-500">
+                  <span className="text-xs text-slate-500">
                     Updated {Math.round((Date.now() - lastRefresh.getTime()) / 1000)}s ago
                   </span>
                 )}
@@ -309,7 +309,7 @@ export default function ConvoyLiveTracker({ convoyId, loadId, className, compact
               />
             )}
             <Select value={String(refreshRate)} onValueChange={v => setRefreshRate(Number(v))}>
-              <SelectTrigger className="w-20 h-7 text-[10px] bg-slate-700/50 border-slate-600">
+              <SelectTrigger className="w-20 h-7 text-xs bg-slate-700/50 border-slate-600">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -352,7 +352,7 @@ export default function ConvoyLiveTracker({ convoyId, loadId, className, compact
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className={meta.color}>{meta.icon}</span>
-                      <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">{meta.label}</span>
+                      <span className="text-xs uppercase tracking-wider text-slate-500 font-medium">{meta.label}</span>
                     </div>
                     {hasSignal ? <Wifi className="w-3 h-3 text-emerald-400" /> : <WifiOff className="w-3 h-3 text-red-400" />}
                   </div>
@@ -360,12 +360,12 @@ export default function ConvoyLiveTracker({ convoyId, loadId, className, compact
                   {v.pos ? (
                     <div className="flex items-center gap-2 flex-wrap">
                       {speedBadge(Math.round(v.pos.speed))}
-                      <span className="text-[9px] text-slate-500">
+                      <span className="text-xs text-slate-500">
                         {v.pos.lat.toFixed(4)}, {v.pos.lng.toFixed(4)}
                       </span>
                     </div>
                   ) : (
-                    <span className="text-[10px] text-slate-600">No position data</span>
+                    <span className="text-xs text-slate-600">No position data</span>
                   )}
                 </div>
               );
@@ -377,7 +377,7 @@ export default function ConvoyLiveTracker({ convoyId, loadId, className, compact
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="p-3 rounded-xl border border-slate-700/30 bg-slate-900/20">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] uppercase tracking-wider text-slate-500">Lead ↔ Load Distance</span>
+                  <span className="text-xs uppercase tracking-wider text-slate-500">Lead ↔ Load Distance</span>
                   {posData?.leadDistance != null && posData.leadDistance > (convoy.targetLeadDistance || 800) && (
                     <AlertTriangle className="w-3.5 h-3.5 text-red-400 animate-pulse" />
                   )}
@@ -390,7 +390,7 @@ export default function ConvoyLiveTracker({ convoyId, loadId, className, compact
                   )}>
                     {posData?.leadDistance != null ? metersToDisplay(posData.leadDistance) : "—"}
                   </span>
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-xs text-slate-500">
                     target: {metersToDisplay(convoy.targetLeadDistance || 800)}
                   </span>
                 </div>
@@ -411,7 +411,7 @@ export default function ConvoyLiveTracker({ convoyId, loadId, className, compact
               {convoy.rear && (
                 <div className="p-3 rounded-xl border border-slate-700/30 bg-slate-900/20">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] uppercase tracking-wider text-slate-500">Load ↔ Rear Distance</span>
+                    <span className="text-xs uppercase tracking-wider text-slate-500">Load ↔ Rear Distance</span>
                     {posData?.rearDistance != null && posData.rearDistance > (convoy.targetRearDistance || 500) && (
                       <AlertTriangle className="w-3.5 h-3.5 text-red-400 animate-pulse" />
                     )}
@@ -424,7 +424,7 @@ export default function ConvoyLiveTracker({ convoyId, loadId, className, compact
                     )}>
                       {posData?.rearDistance != null ? metersToDisplay(posData.rearDistance) : "—"}
                     </span>
-                    <span className="text-[10px] text-slate-500">
+                    <span className="text-xs text-slate-500">
                       target: {metersToDisplay(convoy.targetRearDistance || 500)}
                     </span>
                   </div>
@@ -449,32 +449,32 @@ export default function ConvoyLiveTracker({ convoyId, loadId, className, compact
             <div className="p-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-[10px] uppercase tracking-wider text-cyan-400 font-medium">AI Optimal Spacing</span>
-                <Badge variant="outline" className="text-[8px] border-cyan-500/30 text-cyan-400">
+                <span className="text-xs uppercase tracking-wider text-cyan-400 font-medium">AI Optimal Spacing</span>
+                <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">
                   {spacing.confidence}% confidence
                 </Badge>
-                <Badge variant="outline" className="text-[8px] border-slate-600 text-slate-400">
+                <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
                   {spacing.model === "ml_blended" ? "ML Blended" : "Rule Based"}
                 </Badge>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-[9px] text-slate-500">Lead Distance</p>
+                  <p className="text-xs text-slate-500">Lead Distance</p>
                   <p className="text-sm font-bold text-cyan-400 font-mono">{metersToDisplay(spacing.recommendedLeadDistance)}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-slate-500">Rear Distance</p>
+                  <p className="text-xs text-slate-500">Rear Distance</p>
                   <p className="text-sm font-bold text-cyan-400 font-mono">{metersToDisplay(spacing.recommendedRearDistance)}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-slate-500">Max Speed</p>
+                  <p className="text-xs text-slate-500">Max Speed</p>
                   <p className="text-sm font-bold text-cyan-400 font-mono">{spacing.recommendedMaxSpeed} mph</p>
                 </div>
               </div>
               {spacing.warnings?.length > 0 && (
                 <div className="mt-2 space-y-1">
                   {spacing.warnings.map((w: string, i: number) => (
-                    <div key={i} className="flex items-center gap-1.5 text-[10px] text-amber-400">
+                    <div key={i} className="flex items-center gap-1.5 text-xs text-amber-400">
                       <AlertTriangle className="w-2.5 h-2.5" />
                       <span>{w}</span>
                     </div>

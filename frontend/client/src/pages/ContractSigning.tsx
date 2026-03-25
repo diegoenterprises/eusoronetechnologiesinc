@@ -221,7 +221,7 @@ export default function ContractSigning() {
             <div className="bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 px-6 py-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Accepted Rate</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Accepted Rate</p>
                   <p className="text-4xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mt-1">${Number(rate).toLocaleString()}</p>
                   {load.distance && <p className="text-sm text-slate-400 mt-1">${(Number(rate) / (Number(load.distance) || 1)).toFixed(2)}/mile · {load.distance} miles</p>}
                 </div>
@@ -242,7 +242,7 @@ export default function ContractSigning() {
                   </div>
                   <div>
                     <p className={cn("font-bold", valCls)}>{originCity}{originState ? `, ${originState}` : ""}</p>
-                    <p className="text-[10px] text-slate-400">PICKUP</p>
+                    <p className="text-xs text-slate-400">PICKUP</p>
                   </div>
                 </div>
                 <div className="flex-1 mx-4 flex items-center">
@@ -253,7 +253,7 @@ export default function ContractSigning() {
                 <div className="flex items-center gap-3">
                   <div>
                     <p className={cn("font-bold text-right", valCls)}>{destCity}{destState ? `, ${destState}` : ""}</p>
-                    <p className="text-[10px] text-slate-400 text-right">DELIVERY</p>
+                    <p className="text-xs text-slate-400 text-right">DELIVERY</p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#BE01FF]/15 to-[#1473FF]/15 flex items-center justify-center">
                     <Building2 className="w-5 h-5 text-[#BE01FF]" />
@@ -272,7 +272,7 @@ export default function ContractSigning() {
               { label: "Distance", value: load.distance ? `${load.distance} mi` : "TBD" },
             ].map((item) => (
               <div key={item.label} className={cellCls}>
-                <p className="text-[10px] text-slate-400 uppercase">{item.label}</p>
+                <p className="text-xs text-slate-400 uppercase">{item.label}</p>
                 <p className={valCls}>{item.value}</p>
               </div>
             ))}
@@ -440,7 +440,7 @@ export default function ContractSigning() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-slate-400">Status</span>
-                  <Badge className="bg-green-500/15 text-green-500 border-green-500/30 border text-[10px]">Signed</Badge>
+                  <Badge className="bg-green-500/15 text-green-500 border-green-500/30 border text-xs">Signed</Badge>
                 </div>
               </div>
             </div>

@@ -110,7 +110,7 @@ export default function DriverRoster({ drivers, loading, onDriverSelect, selecte
           <h2 className="text-sm font-semibold text-white flex items-center gap-1.5">
             <User className="w-4 h-4 text-cyan-400" />
             Driver Roster
-            <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-[10px] ml-1">{drivers.length}</Badge>
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-xs ml-1">{drivers.length}</Badge>
           </h2>
         </div>
         <div className="relative">
@@ -129,7 +129,7 @@ export default function DriverRoster({ drivers, loading, onDriverSelect, selecte
               size="sm"
               variant={filter === f ? "default" : "ghost"}
               className={cn(
-                "h-6 px-2 text-[10px] rounded-md",
+                "h-6 px-2 text-xs rounded-md",
                 filter === f
                   ? "bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30"
                   : "text-slate-500 hover:text-slate-300"
@@ -192,17 +192,17 @@ export default function DriverRoster({ drivers, loading, onDriverSelect, selecte
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <Badge className={cn("border-0 text-[9px] px-1.5 py-0", cfg.bg, cfg.color)}>
+                    <Badge className={cn("border-0 text-xs px-1.5 py-0", cfg.bg, cfg.color)}>
                       {cfg.label}
                     </Badge>
                     {hosHrs !== undefined && hosHrs !== null && (
-                      <span className={cn("text-[9px] flex items-center gap-0.5", hosLow ? "text-red-400" : "text-slate-500")}>
+                      <span className={cn("text-xs flex items-center gap-0.5", hosLow ? "text-red-400" : "text-slate-500")}>
                         <Clock className="w-2.5 h-2.5" />{hosHrs}h
                         {hosLow && <AlertTriangle className="w-2.5 h-2.5" />}
                       </span>
                     )}
                     {driver.currentLoad && (
-                      <span className="text-[9px] text-blue-400">{driver.currentLoad}</span>
+                      <span className="text-xs text-blue-400">{driver.currentLoad}</span>
                     )}
                   </div>
                 </div>
@@ -217,7 +217,7 @@ export default function DriverRoster({ drivers, loading, onDriverSelect, selecte
 
               {/* Expanded details */}
               {isExpanded && (
-                <div className="mt-2 pt-2 border-t border-white/[0.06] space-y-1 text-[10px]">
+                <div className="mt-2 pt-2 border-t border-white/[0.06] space-y-1 text-xs">
                   {driver.phone && (
                     <div className="flex items-center gap-1.5 text-slate-400">
                       <Phone className="w-3 h-3" />{driver.phone}
@@ -229,9 +229,9 @@ export default function DriverRoster({ drivers, loading, onDriverSelect, selecte
                     </div>
                   )}
                   <div className="flex gap-2 flex-wrap">
-                    {driver.hazmatEndorsement && <Badge className="bg-orange-500/20 text-orange-400 border-0 text-[9px]">HazMat</Badge>}
-                    {driver.tankerEndorsement && <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[9px]">Tanker</Badge>}
-                    {driver.twicCard && <Badge className="bg-blue-500/20 text-blue-400 border-0 text-[9px]">TWIC</Badge>}
+                    {driver.hazmatEndorsement && <Badge className="bg-orange-500/20 text-orange-400 border-0 text-xs">HazMat</Badge>}
+                    {driver.tankerEndorsement && <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs">Tanker</Badge>}
+                    {driver.twicCard && <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">TWIC</Badge>}
                   </div>
                   {driver.completedLoads !== undefined && (
                     <div className="flex gap-3 text-slate-500">

@@ -67,7 +67,7 @@ export default function TerminalMap({ facilityLat, facilityLng, facilityName, ra
                       <p className="text-muted-foreground">Load {t.loadNumber}</p>
                     </div>
                   </div>
-                  <Badge className="bg-green-100 text-green-700 border-0 text-[10px]">At Gate</Badge>
+                  <Badge className="bg-green-100 text-green-700 border-0 text-xs">At Gate</Badge>
                 </div>
               ))
             )}

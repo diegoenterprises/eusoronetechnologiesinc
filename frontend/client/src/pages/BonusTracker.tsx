@@ -107,7 +107,7 @@ export default function BonusTracker() {
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                     <div>
                       <p className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}</p>
-                      <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                      <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -150,7 +150,7 @@ export default function BonusTracker() {
                           <div>
                             <div className="flex items-center gap-2">
                               <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{bonus.name}</p>
-                              <Badge className={cn("text-[9px] border", cat.bg, cat.color, "border-current/20")}>{cat.label}</Badge>
+                              <Badge className={cn("text-xs border", cat.bg, cat.color, "border-current/20")}>{cat.label}</Badge>
                             </div>
                             <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>{bonus.description}</p>
                           </div>
@@ -179,7 +179,7 @@ export default function BonusTracker() {
                       {bonus.expiresAt && (
                         <div className="flex items-center gap-1.5 mt-2">
                           <Clock className="w-3 h-3 text-slate-400" />
-                          <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                          <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
                             Expires {new Date(bonus.expiresAt).toLocaleDateString()}
                           </p>
                         </div>

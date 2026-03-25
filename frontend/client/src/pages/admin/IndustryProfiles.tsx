@@ -90,11 +90,11 @@ export default function IndustryProfiles() {
               <div className="flex-1 min-w-0">
                 <p className={cn("text-sm font-medium truncate", L ? "text-slate-800" : "text-white")}>{p.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className={cn("text-[10px]", L ? "text-slate-400" : "text-slate-500")}>{p.ruleCount} rules · {p.certCount} certs · {p.docCount} docs</span>
+                  <span className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{p.ruleCount} rules · {p.certCount} certs · {p.docCount} docs</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <Badge className={cn("text-[9px]", p.pricingMultiplier > 1.5 ? "bg-amber-500/15 text-amber-500" : "bg-green-500/15 text-green-500")}>×{p.pricingMultiplier}</Badge>
+                <Badge className={cn("text-xs", p.pricingMultiplier > 1.5 ? "bg-amber-500/15 text-amber-500" : "bg-green-500/15 text-green-500")}>×{p.pricingMultiplier}</Badge>
                 {p.enabled ? <ToggleRight className="w-4 h-4 text-green-500" /> : <ToggleLeft className="w-4 h-4 text-slate-400" />}
               </div>
             </button>
@@ -135,8 +135,8 @@ export default function IndustryProfiles() {
                     </Button>
                   </div>
                   <div className="flex gap-2 flex-wrap">
-                    {detail.hazmatClasses?.map((c: string) => <Badge key={c} variant="outline" className="text-[10px]">Class {c}</Badge>)}
-                    <Badge className="bg-[#1473FF]/10 text-[#1473FF] text-[10px]">×{detail.pricingMultiplier} pricing</Badge>
+                    {detail.hazmatClasses?.map((c: string) => <Badge key={c} variant="outline" className="text-xs">Class {c}</Badge>)}
+                    <Badge className="bg-[#1473FF]/10 text-[#1473FF] text-xs">×{detail.pricingMultiplier} pricing</Badge>
                   </div>
                 </CardContent>
               </Card>
@@ -149,7 +149,7 @@ export default function IndustryProfiles() {
                     <div key={i} className={cn("flex items-center gap-3 p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                       {rule.s === "critical" ? <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" /> : <CheckCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />}
                       <p className={cn("text-sm", L ? "text-slate-700" : "text-slate-300")}>{rule.r?.replace(/_/g, " ")}</p>
-                      <Badge className={cn("ml-auto text-[9px]", rule.s === "critical" ? "bg-red-500/15 text-red-500" : "bg-amber-500/15 text-amber-500")}>{rule.s}</Badge>
+                      <Badge className={cn("ml-auto text-xs", rule.s === "critical" ? "bg-red-500/15 text-red-500" : "bg-amber-500/15 text-amber-500")}>{rule.s}</Badge>
                     </div>
                   ))}
                 </CardContent>

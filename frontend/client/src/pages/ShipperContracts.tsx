@@ -164,21 +164,21 @@ export default function ShipperContracts() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
-              <p className="text-[10px] text-slate-400 uppercase mb-1">Initiator</p>
+              <p className="text-xs text-slate-400 uppercase mb-1">Initiator</p>
               <p className="text-white font-medium">{negDetail.initiator?.name || "Unknown"}</p>
               <p className="text-xs text-slate-500">{negDetail.initiator?.role}</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
-              <p className="text-[10px] text-slate-400 uppercase mb-1">Respondent</p>
+              <p className="text-xs text-slate-400 uppercase mb-1">Respondent</p>
               <p className="text-white font-medium">{negDetail.respondent?.name || "Unknown"}</p>
               <p className="text-xs text-slate-500">{negDetail.respondent?.role}</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
-              <p className="text-[10px] text-slate-400 uppercase mb-1">Current Offer</p>
+              <p className="text-xs text-slate-400 uppercase mb-1">Current Offer</p>
               <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                 {negDetail.currentOffer?.amount ? `$${Number(negDetail.currentOffer.amount).toLocaleString()}` : "Pending"}
               </p>
@@ -200,8 +200,8 @@ export default function ShipperContracts() {
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium text-white">{msg.sender?.name || "System"}</span>
                   <div className="flex items-center gap-2">
-                    <Badge className="text-[9px] bg-slate-700/50 text-slate-300">R{msg.round}</Badge>
-                    <span className="text-[10px] text-slate-500">{msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}</span>
+                    <Badge className="text-xs bg-slate-700/50 text-slate-300">R{msg.round}</Badge>
+                    <span className="text-xs text-slate-500">{msg.createdAt ? new Date(msg.createdAt).toLocaleString() : ""}</span>
                   </div>
                 </div>
                 <p className="text-sm text-slate-300">{msg.content}</p>
@@ -278,7 +278,7 @@ export default function ShipperContracts() {
             <tab.icon className="w-4 h-4" />
             {tab.label}
             {tab.count > 0 && (
-              <Badge className={cn("text-[9px] px-1.5 border-0 ml-1", mainTab === tab.key ? "bg-[#1473FF]/20 text-[#1473FF]" : "bg-slate-700/50 text-slate-400")}>
+              <Badge className={cn("text-xs px-1.5 border-0 ml-1", mainTab === tab.key ? "bg-[#1473FF]/20 text-[#1473FF]" : "bg-slate-700/50 text-slate-400")}>
                 {tab.count}
               </Badge>
             )}
@@ -499,7 +499,7 @@ export default function ShipperContracts() {
                     <div className="p-2 rounded-full bg-slate-700/30"><s.icon className={cn("w-5 h-5", s.iconColor)} /></div>
                     <div>
                       {negStatsQuery?.isLoading ? <Skeleton className="h-7 w-10" /> : <p className={cn("text-xl font-bold", s.color)}>{s.value}</p>}
-                      <p className="text-[10px] text-slate-400 uppercase">{s.label}</p>
+                      <p className="text-xs text-slate-400 uppercase">{s.label}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -531,11 +531,11 @@ export default function ShipperContracts() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="text-white font-medium truncate">{neg.subject}</p>
-                          <Badge className={cn("text-[9px] shrink-0", STATUS_NEG_COLORS[neg.status])}>{neg.status?.replace(/_/g, " ")}</Badge>
+                          <Badge className={cn("text-xs shrink-0", STATUS_NEG_COLORS[neg.status])}>{neg.status?.replace(/_/g, " ")}</Badge>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-slate-500">
                           <span>#{neg.negotiationNumber}</span>
-                          <Badge variant="outline" className="text-[9px] border-slate-600">{NEG_TYPE_LABELS[neg.negotiationType] || neg.negotiationType}</Badge>
+                          <Badge variant="outline" className="text-xs border-slate-600">{NEG_TYPE_LABELS[neg.negotiationType] || neg.negotiationType}</Badge>
                           <span>{neg.initiator?.name || "Unknown"} vs {neg.respondent?.name || "Unknown"}</span>
                         </div>
                       </div>

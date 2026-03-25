@@ -329,7 +329,7 @@ export default function LoadCreatePage() {
                       </div>
                       {showErg && ergRes?.data?.results?.length > 0 && (
                         <div className="absolute z-50 left-0 right-0 mt-1 border border-slate-600/50 rounded-lg shadow-xl max-h-56 overflow-y-auto" style={{ backgroundColor: '#0c0e18' }}>
-                          <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2024 — {ergRes.data.count} results</div>
+                          <div className="px-3 py-1.5 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2024 — {ergRes.data.count} results</div>
                           {ergRes.data.results.map((m: any, i: number) => (
                             <button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors" onClick={() => {
                               setFormData({ ...formData, unNumber: `UN${m.unNumber}`, hazmatClass: `Class ${m.hazardClass}` });
@@ -338,9 +338,9 @@ export default function LoadCreatePage() {
                             }}>
                               <div className="flex-1 min-w-0"><p className="text-white text-sm font-medium truncate">{m.name}</p></div>
                               <div className="flex items-center gap-1.5 flex-shrink-0">
-                                <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
-                                <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
-                                <Badge variant="outline" className="text-[10px] border-slate-500/30 text-slate-400">G{m.guide}</Badge>
+                                <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
+                                <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
+                                <Badge variant="outline" className="text-xs border-slate-500/30 text-slate-400">G{m.guide}</Badge>
                               </div>
                             </button>
                           ))}

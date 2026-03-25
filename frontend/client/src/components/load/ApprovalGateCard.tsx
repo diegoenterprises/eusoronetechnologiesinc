@@ -131,7 +131,7 @@ export default function ApprovalGateCard({
       <div className={`flex items-center gap-3 py-2 px-3 rounded-lg border border-slate-700/30 bg-slate-800/30 ${className}`}>
         {statusIcon}
         <span className="text-xs text-slate-400 flex-1">{gate.label}</span>
-        <span className="text-[10px] text-slate-500 uppercase font-medium">{approval.status}</span>
+        <span className="text-xs text-slate-500 uppercase font-medium">{approval.status}</span>
       </div>
     );
   }
@@ -145,13 +145,13 @@ export default function ApprovalGateCard({
           <div>
             <p className="text-sm font-semibold text-white">{gate.label}</p>
             {approval.loadNumber && (
-              <p className="text-[10px] text-slate-400">Load {approval.loadNumber}</p>
+              <p className="text-xs text-slate-400">Load {approval.loadNumber}</p>
             )}
           </div>
         </div>
         <div className="flex items-center gap-2">
           {isPending && timeLeft && (
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
               timeLeft.expired ? "bg-red-500/15 text-red-400 border-red-500/30" :
               timeLeft.urgent ? "bg-amber-500/15 text-amber-400 border-amber-500/30 animate-pulse" :
               "bg-slate-700/50 text-slate-400 border-slate-600/50"
@@ -160,7 +160,7 @@ export default function ApprovalGateCard({
               {timeLeft.text}
             </span>
           )}
-          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${styles.badge}`}>
+          <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded-full border ${styles.badge}`}>
             {gate.severity}
           </span>
           <button
@@ -176,12 +176,12 @@ export default function ApprovalGateCard({
       {showDetails && (
         <div className="px-4 pb-3 space-y-2">
           <p className="text-xs text-slate-400 leading-relaxed">{gate.description}</p>
-          <div className="flex items-center gap-4 text-[10px] text-slate-500">
+          <div className="flex items-center gap-4 text-xs text-slate-500">
             <span>Requested: {formatDate(approval.requestedAt)}</span>
             {approval.transitionId && <span>Transition: {approval.transitionId}</span>}
           </div>
           {approval.resolvedAt && (
-            <div className="flex items-center gap-2 text-[10px] text-slate-500">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
               <User className="w-3 h-3" />
               <span>Resolved {formatDate(approval.resolvedAt)}</span>
               {approval.notes && <span>— {approval.notes}</span>}
@@ -251,7 +251,7 @@ export default function ApprovalGateCard({
 export function ApprovalBadge({ count, className = "" }: { count: number; className?: string }) {
   if (count <= 0) return null;
   return (
-    <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold animate-pulse ${className}`}>
+    <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-xs font-bold animate-pulse ${className}`}>
       {count > 99 ? "99+" : count}
     </span>
   );

@@ -131,7 +131,7 @@ export default function LoadTrackingMap({ loadId }: LoadTrackingMapProps) {
               {/* Geofence indicators */}
               {tracking.geofences?.length > 0 && (
                 <div className="absolute top-2 right-2">
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-xs">
                     <Shield className="h-3 w-3 mr-1" />
                     {tracking.geofences.length} Geofences Active
                   </Badge>
@@ -140,7 +140,7 @@ export default function LoadTrackingMap({ loadId }: LoadTrackingMapProps) {
 
               {/* Route info */}
               {tracking.route && (
-                <div className="absolute bottom-2 left-2 text-[10px] text-muted-foreground bg-white/80 dark:bg-black/40 rounded px-2 py-1">
+                <div className="absolute bottom-2 left-2 text-xs text-muted-foreground bg-white/80 dark:bg-black/40 rounded px-2 py-1">
                   {tracking.route.distanceMiles} mi | {Math.round(tracking.route.durationSeconds / 60)} min
                   {tracking.route.isHazmatCompliant && (
                     <span className="ml-1 text-amber-600 font-medium">HAZMAT</span>
@@ -181,7 +181,7 @@ export default function LoadTrackingMap({ loadId }: LoadTrackingMapProps) {
                     </p>
                   )}
                   {(eta?.confidence || tracking.eta?.confidence) && (
-                    <Badge variant="outline" className="mt-2 text-[10px]">
+                    <Badge variant="outline" className="mt-2 text-xs">
                       Confidence: {(eta?.confidence || tracking.eta!.confidence)?.toUpperCase()}
                     </Badge>
                   )}
@@ -206,7 +206,7 @@ export default function LoadTrackingMap({ loadId }: LoadTrackingMapProps) {
                     <div className="text-right">
                       <span className="font-medium">{d.totalDwellMinutes || 0} min</span>
                       {d.isBillable && (
-                        <Badge variant="destructive" className="ml-1 text-[9px]">
+                        <Badge variant="destructive" className="ml-1 text-xs">
                           ${d.detentionCharge?.toFixed(2)}
                         </Badge>
                       )}

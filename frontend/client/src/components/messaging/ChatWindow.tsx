@@ -220,7 +220,7 @@ export function ChatWindow({
                       {!isOwn && (
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-xs font-medium text-slate-300">{message.senderName}</span>
-                          <Badge variant="outline" className="text-[10px] py-0 px-1 text-slate-500 capitalize">
+                          <Badge variant="outline" className="text-xs py-0 px-1 text-slate-500 capitalize">
                             {message.senderRole}
                           </Badge>
                         </div>
@@ -254,7 +254,7 @@ export function ChatWindow({
                         ))}
                       </div>
                       <div className={cn("flex items-center gap-1 mt-1", isOwn ? "justify-end" : "justify-start")}>
-                        <span className="text-[10px] text-slate-500">{formatTime(message.timestamp)}</span>
+                        <span className="text-xs text-slate-500">{formatTime(message.timestamp)}</span>
                         {isOwn && renderMessageStatus(message.status)}
                       </div>
                     </div>

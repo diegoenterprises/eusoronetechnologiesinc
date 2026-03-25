@@ -90,14 +90,14 @@ export default function TerminalDashboard() {
         <div className="relative overflow-hidden rounded-2xl border border-slate-200/60 dark:border-white/[0.04] bg-white dark:bg-white/[0.02]">
           <div className="flex items-center gap-1 px-4 py-1.5 border-b border-slate-100 dark:border-white/[0.04]">
             <Droplets className="w-3 h-3 text-amber-400" />
-            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">OPIS Rack Pricing</span>
-            <span className="text-[9px] text-slate-400 ml-auto">Updated {new Date(market.asOf).toLocaleTimeString()}</span>
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">OPIS Rack Pricing</span>
+            <span className="text-xs text-slate-400 ml-auto">Updated {new Date(market.asOf).toLocaleTimeString()}</span>
           </div>
           <div className="flex items-center divide-x divide-slate-100 dark:divide-white/[0.04] overflow-x-auto scrollbar-hide">
             {market.prices.map((p: any) => (
               <div key={p.product} className="flex items-center gap-3 px-5 py-3 min-w-[180px] group hover:bg-slate-50/50 dark:hover:bg-white/[0.02] transition-colors">
                 <div>
-                  <p className="text-[10px] text-slate-500 font-medium truncate">{p.product}</p>
+                  <p className="text-xs text-slate-500 font-medium truncate">{p.product}</p>
                   <p className="text-lg font-semibold text-slate-800 dark:text-white tabular-nums">${p.price.toFixed(4)}</p>
                 </div>
                 <div className={cn("flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded-md",
@@ -118,16 +118,16 @@ export default function TerminalDashboard() {
         <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide px-1">
           {crude.benchmarks.slice(0, 4).map((b: any) => (
             <div key={b.name} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.04] min-w-fit">
-              <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">{b.name}</span>
+              <span className="text-xs text-slate-500 font-medium whitespace-nowrap">{b.name}</span>
               <span className="text-sm font-semibold text-slate-800 dark:text-white tabular-nums">${b.price.toFixed(2)}</span>
-              <span className={cn("text-[10px] font-medium",
+              <span className={cn("text-xs font-medium",
                 b.change > 0 ? "text-emerald-500" : b.change < 0 ? "text-red-400" : "text-slate-400"
               )}>
                 {b.change > 0 ? "+" : ""}{b.change.toFixed(2)}
               </span>
             </div>
           ))}
-          <div className="flex items-center gap-1 text-[10px] text-slate-400 min-w-fit">
+          <div className="flex items-center gap-1 text-xs text-slate-400 min-w-fit">
             <BarChart3 className="w-3 h-3" /> Enverus
           </div>
         </div>
@@ -272,7 +272,7 @@ export default function TerminalDashboard() {
             { value: "appointments", label: "Appointments" },
           ] as const).map(t => (
             <button key={t.value} onClick={() => setActiveTab(t.value)} className={cn(
-              "text-[11px] px-3 py-1.5 rounded-lg font-medium transition-colors",
+              "text-xs px-3 py-1.5 rounded-lg font-medium transition-colors",
               activeTab === t.value ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-slate-50 dark:bg-white/[0.03] text-slate-500 hover:text-slate-300"
             )}>{t.label}</button>
           ))}
@@ -291,7 +291,7 @@ export default function TerminalDashboard() {
                     <div key={rack.id} className={cn("p-4 rounded-xl border", getRackStatusColor(rack.status))}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-slate-800 dark:text-white font-medium text-sm">Rack {rack.number}</span>
-                        <Badge className={cn("border-0 text-[10px]", getRackStatusColor(rack.status))}>{rack.status}</Badge>
+                        <Badge className={cn("border-0 text-xs", getRackStatusColor(rack.status))}>{rack.status}</Badge>
                       </div>
                       {rack.currentTruck && <p className="text-xs text-slate-500">{rack.currentTruck}</p>}
                     </div>
@@ -334,7 +334,7 @@ export default function TerminalDashboard() {
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-slate-800 dark:text-white">Pipeline Flows</h3>
-                    <p className="text-[10px] text-slate-400">Genscape</p>
+                    <p className="text-xs text-slate-400">Genscape</p>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -360,7 +360,7 @@ export default function TerminalDashboard() {
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-slate-800 dark:text-white">Storage Hubs</h3>
-                    <p className="text-[10px] text-slate-400">Genscape</p>
+                    <p className="text-xs text-slate-400">Genscape</p>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -368,11 +368,11 @@ export default function TerminalDashboard() {
                     <div key={sh.hub} className="flex items-center justify-between">
                       <div>
                         <p className="text-xs text-slate-800 dark:text-white font-medium">{sh.hub}</p>
-                        <p className="text-[10px] text-slate-500">{(sh.inventory / 1000000).toFixed(1)}M bbl / {(sh.capacity / 1000000).toFixed(0)}M</p>
+                        <p className="text-xs text-slate-500">{(sh.inventory / 1000000).toFixed(1)}M bbl / {(sh.capacity / 1000000).toFixed(0)}M</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold text-slate-800 dark:text-white tabular-nums">{sh.utilization}%</p>
-                        <p className={cn("text-[10px] font-medium", sh.weekChange > 0 ? "text-emerald-500" : "text-red-400")}>
+                        <p className={cn("text-xs font-medium", sh.weekChange > 0 ? "text-emerald-500" : "text-red-400")}>
                           {sh.weekChange > 0 ? "+" : ""}{(sh.weekChange / 1000000).toFixed(1)}M
                         </p>
                       </div>
@@ -389,7 +389,7 @@ export default function TerminalDashboard() {
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-slate-800 dark:text-white">Refinery Utilization</h3>
-                    <p className="text-[10px] text-slate-400">Genscape</p>
+                    <p className="text-xs text-slate-400">Genscape</p>
                   </div>
                 </div>
                 {supply.refineryUtilization && (
@@ -509,7 +509,7 @@ export default function TerminalDashboard() {
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-slate-800 dark:text-white">Pipeline Flow Rates</h3>
-                      <p className="text-[10px] text-slate-400">Genscape / Wood Mackenzie real-time monitoring</p>
+                      <p className="text-xs text-slate-400">Genscape / Wood Mackenzie real-time monitoring</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -517,7 +517,7 @@ export default function TerminalDashboard() {
                       <div key={pf.pipeline} className="rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/[0.04] p-4">
                         <div className="flex items-center justify-between mb-3">
                           <p className="text-xs font-medium text-slate-800 dark:text-white">{pf.pipeline}</p>
-                          <span className="text-[10px] text-slate-400">{pf.direction}</span>
+                          <span className="text-xs text-slate-400">{pf.direction}</span>
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between text-xs">
@@ -527,7 +527,7 @@ export default function TerminalDashboard() {
                           <div className="h-2 bg-slate-200 dark:bg-white/[0.06] rounded-full overflow-hidden">
                             <div className="h-full bg-gradient-to-r from-violet-500 to-purple-400 rounded-full transition-all duration-1000 ease-out" style={{ width: `${pf.utilization}%` }} />
                           </div>
-                          <div className="flex justify-between text-[10px]">
+                          <div className="flex justify-between text-xs">
                             <span className="text-slate-400">{pf.product}</span>
                             <span className="text-violet-400 font-medium">{pf.utilization}% capacity</span>
                           </div>
@@ -547,7 +547,7 @@ export default function TerminalDashboard() {
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-slate-800 dark:text-white">Crude Storage Levels</h3>
-                        <p className="text-[10px] text-slate-400">Genscape satellite-verified inventory</p>
+                        <p className="text-xs text-slate-400">Genscape satellite-verified inventory</p>
                       </div>
                     </div>
                     <div className="space-y-4">
@@ -563,15 +563,15 @@ export default function TerminalDashboard() {
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-center mb-2">
                             <div>
-                              <p className="text-[10px] text-slate-400">Inventory</p>
+                              <p className="text-xs text-slate-400">Inventory</p>
                               <p className="text-sm font-semibold text-slate-800 dark:text-white tabular-nums">{(sh.inventory / 1000000).toFixed(1)}M</p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-slate-400">Capacity</p>
+                              <p className="text-xs text-slate-400">Capacity</p>
                               <p className="text-sm font-semibold text-slate-800 dark:text-white tabular-nums">{(sh.capacity / 1000000).toFixed(0)}M</p>
                             </div>
                             <div>
-                              <p className="text-[10px] text-slate-400">Utilization</p>
+                              <p className="text-xs text-slate-400">Utilization</p>
                               <p className="text-sm font-semibold text-cyan-400 tabular-nums">{sh.utilization}%</p>
                             </div>
                           </div>
@@ -591,7 +591,7 @@ export default function TerminalDashboard() {
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-slate-800 dark:text-white">Energy Benchmarks</h3>
-                        <p className="text-[10px] text-slate-400">Enverus market data</p>
+                        <p className="text-xs text-slate-400">Enverus market data</p>
                       </div>
                     </div>
                     {crude?.benchmarks && (
@@ -600,11 +600,11 @@ export default function TerminalDashboard() {
                           <div key={b.name} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/[0.04]">
                             <div>
                               <p className="text-xs font-medium text-slate-800 dark:text-white">{b.name}</p>
-                              <p className="text-[10px] text-slate-400">{b.unit}</p>
+                              <p className="text-xs text-slate-400">{b.unit}</p>
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-semibold text-slate-800 dark:text-white tabular-nums">${b.price.toFixed(2)}</p>
-                              <p className={cn("text-[10px] font-medium",
+                              <p className={cn("text-xs font-medium",
                                 b.change > 0 ? "text-emerald-500" : b.change < 0 ? "text-red-400" : "text-slate-400"
                               )}>
                                 {b.change > 0 ? "+" : ""}{b.change.toFixed(2)} ({b.change > 0 ? "+" : ""}{((b.change / b.price) * 100).toFixed(2)}%)
@@ -618,15 +618,15 @@ export default function TerminalDashboard() {
                     {/* Production snapshot */}
                     {crude?.productionSnapshot && (
                       <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-white/[0.04]">
-                        <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-3">US Production Snapshot</p>
+                        <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">US Production Snapshot</p>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="text-center">
                             <p className="text-lg font-semibold text-slate-800 dark:text-white tabular-nums">{(crude.productionSnapshot.usProduction / 1000000).toFixed(1)}M</p>
-                            <p className="text-[10px] text-slate-400">Total US (bbl/day)</p>
+                            <p className="text-xs text-slate-400">Total US (bbl/day)</p>
                           </div>
                           <div className="text-center">
                             <p className="text-lg font-semibold text-[#1473FF] tabular-nums">{(crude.productionSnapshot.permianBasin / 1000000).toFixed(1)}M</p>
-                            <p className="text-[10px] text-slate-400">Permian Basin</p>
+                            <p className="text-xs text-slate-400">Permian Basin</p>
                           </div>
                         </div>
                       </div>
@@ -665,11 +665,11 @@ export default function TerminalDashboard() {
                         <div>
                           <p className="text-sm font-medium text-slate-800 dark:text-white">{appt.catalystName}</p>
                           <p className="text-xs text-slate-500">{appt.truckNumber} - {appt.driverName}</p>
-                          <p className="text-[10px] text-slate-400">{appt.product} | {(appt as any).weight || appt.quantity} gal | Rack {appt.rackNumber}</p>
+                          <p className="text-xs text-slate-400">{appt.product} | {(appt as any).weight || appt.quantity} gal | Rack {appt.rackNumber}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge className={cn("border-0 text-[10px]",
+                        <Badge className={cn("border-0 text-xs",
                           appt.status === "completed" ? "bg-emerald-500/10 text-emerald-400" :
                           appt.status === "loading" ? "bg-blue-500/10 text-blue-400" :
                           "bg-amber-500/10 text-amber-400"

@@ -34,7 +34,7 @@ export default function InHouseFleet() {
             <p className="text-xs text-slate-400 mt-1">GPS Tracking & Telematics</p>
             <div className="flex items-center justify-center gap-1 mt-2">
               <Wifi className="w-3 h-3 text-green-400" />
-              <span className="text-[10px] text-green-400">Live</span>
+              <span className="text-xs text-green-400">Live</span>
             </div>
           </CardContent>
         </Card>
@@ -45,7 +45,7 @@ export default function InHouseFleet() {
             <p className="text-xs text-slate-400 mt-1">SMS & Push Notifications</p>
             <div className="flex items-center justify-center gap-1 mt-2">
               <Activity className="w-3 h-3 text-purple-400" />
-              <span className="text-[10px] text-purple-400">Ready</span>
+              <span className="text-xs text-purple-400">Ready</span>
             </div>
           </CardContent>
         </Card>
@@ -56,7 +56,7 @@ export default function InHouseFleet() {
             <p className="text-xs text-slate-400 mt-1">Payment Processing</p>
             <div className="flex items-center justify-center gap-1 mt-2">
               <DollarSign className="w-3 h-3 text-green-400" />
-              <span className="text-[10px] text-green-400">Connected</span>
+              <span className="text-xs text-green-400">Connected</span>
             </div>
           </CardContent>
         </Card>
@@ -80,7 +80,7 @@ export default function InHouseFleet() {
               ].map(item => (
                 <div key={item.label} className="p-3 rounded-xl bg-slate-900/30 border border-slate-700/20">
                   <div className="flex items-center gap-2 mb-1">{item.icon}<span className="text-white text-sm font-medium">{item.label}</span></div>
-                  <p className="text-[10px] text-slate-400">{item.desc}</p>
+                  <p className="text-xs text-slate-400">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -106,7 +106,7 @@ export default function InHouseFleet() {
               ].map(item => (
                 <div key={item.label} className="p-3 rounded-xl bg-slate-900/30 border border-slate-700/20">
                   <div className="flex items-center gap-2 mb-1">{item.icon}<span className="text-white text-sm font-medium">{item.label}</span></div>
-                  <p className="text-[10px] text-slate-400">{item.desc}</p>
+                  <p className="text-xs text-slate-400">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -132,7 +132,7 @@ export default function InHouseFleet() {
               ].map(item => (
                 <div key={item.label} className="p-3 rounded-xl bg-slate-900/30 border border-slate-700/20">
                   <div className="flex items-center gap-2 mb-1">{item.icon}<span className="text-white text-sm font-medium">{item.label}</span></div>
-                  <p className="text-[10px] text-slate-400">{item.desc}</p>
+                  <p className="text-xs text-slate-400">{item.desc}</p>
                 </div>
               ))}
             </div>

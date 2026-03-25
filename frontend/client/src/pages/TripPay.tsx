@@ -97,7 +97,7 @@ export default function TripPay() {
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                     <div>
                       <p className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}</p>
-                      <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                      <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -148,14 +148,14 @@ export default function TripPay() {
                           <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                             ${pay.net.toFixed(2)}
                           </p>
-                          <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>Net Pay</p>
+                          <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Net Pay</p>
                         </div>
                       </div>
 
                       {/* Pay breakdown */}
                       <div className="px-5 py-4 space-y-2">
                         {/* Earnings */}
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-1", isLight ? "text-slate-400" : "text-slate-500")}>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium mb-1", isLight ? "text-slate-400" : "text-slate-500")}>
                           Earnings
                         </p>
                         {[
@@ -181,7 +181,7 @@ export default function TripPay() {
                         </div>
 
                         {/* Deductions */}
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium mt-3 mb-1", isLight ? "text-red-400" : "text-red-400/70")}>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium mt-3 mb-1", isLight ? "text-red-400" : "text-red-400/70")}>
                           Deductions
                         </p>
                         {[

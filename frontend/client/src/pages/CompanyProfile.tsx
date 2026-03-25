@@ -116,7 +116,7 @@ export default function CompanyProfile() {
                 )}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center rounded-xl">
                   <Upload className="w-5 h-5 text-white mb-1" />
-                  <span className="text-white text-[10px] font-medium">Upload</span>
+                  <span className="text-white text-xs font-medium">Upload</span>
                 </div>
                 {updateMutation.isPending && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl">

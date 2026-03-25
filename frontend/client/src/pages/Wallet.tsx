@@ -652,7 +652,7 @@ export default function Wallet() {
                   { label: "Instant", value: connectBalanceQuery?.data?.instantAvailable ?? balance?.stripeBalance?.instantAvailable ?? 0 },
                 ].map((box) => (
                   <div key={box.label} className="text-center">
-                    <p className={`text-[10px] ${isLight ? 'text-emerald-600' : 'text-emerald-500/80'}`}>{box.label}</p>
+                    <p className={`text-xs ${isLight ? 'text-emerald-600' : 'text-emerald-500/80'}`}>{box.label}</p>
                     <p className={`font-bold text-sm ${isLight ? 'text-emerald-800' : 'text-emerald-300'}`}>
                       {showBalance ? formatCurrency(box.value) : '••••'}
                     </p>
@@ -721,38 +721,38 @@ export default function Wallet() {
           <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/5 border-blue-500/20")}>
             <Building2 className="w-4 h-4 text-blue-500 flex-shrink-0" />
             <span className={cn("text-xs font-semibold", isLight ? "text-blue-700" : "text-blue-400")}>Shipper Finance</span>
-            <span className="text-[10px] text-slate-400">•</span>
-            <span className="text-[10px] text-slate-400">${escrowTotal.toLocaleString()} in escrow</span>
-            <span className="text-[10px] text-slate-400">•</span>
-            <span className="text-[10px] text-slate-400">${pendingAmt.toLocaleString()} pending to carriers</span>
+            <span className="text-xs text-slate-400">•</span>
+            <span className="text-xs text-slate-400">${escrowTotal.toLocaleString()} in escrow</span>
+            <span className="text-xs text-slate-400">•</span>
+            <span className="text-xs text-slate-400">${pendingAmt.toLocaleString()} pending to carriers</span>
           </div>
         );
         if (isCarrier || isDriver) return (
           <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-emerald-50 border-emerald-200" : "bg-emerald-500/5 border-emerald-500/20")}>
             <CircleDollarSign className="w-4 h-4 text-emerald-500 flex-shrink-0" />
             <span className={cn("text-xs font-semibold", isLight ? "text-emerald-700" : "text-emerald-400")}>{isDriver ? "Driver" : "Carrier"} Earnings</span>
-            <span className="text-[10px] text-slate-400">•</span>
-            <span className="text-[10px] text-emerald-500 font-semibold">${(balance?.available || 0).toLocaleString()} available</span>
-            <span className="text-[10px] text-slate-400">•</span>
-            <span className="text-[10px] text-slate-400">${pendingAmt.toLocaleString()} pending settlement</span>
+            <span className="text-xs text-slate-400">•</span>
+            <span className="text-xs text-emerald-500 font-semibold">${(balance?.available || 0).toLocaleString()} available</span>
+            <span className="text-xs text-slate-400">•</span>
+            <span className="text-xs text-slate-400">${pendingAmt.toLocaleString()} pending settlement</span>
           </div>
         );
         if (isBroker) return (
           <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-purple-50 border-purple-200" : "bg-purple-500/5 border-purple-500/20")}>
             <Scale className="w-4 h-4 text-purple-500 flex-shrink-0" />
             <span className={cn("text-xs font-semibold", isLight ? "text-purple-700" : "text-purple-400")}>Broker Finance</span>
-            <span className="text-[10px] text-slate-400">•</span>
-            <span className="text-[10px] text-slate-400">${escrowTotal.toLocaleString()} in escrow</span>
-            <span className="text-[10px] text-slate-400">•</span>
-            <span className="text-[10px] text-slate-400">${(balance?.monthVolume || 0).toLocaleString()} month volume</span>
+            <span className="text-xs text-slate-400">•</span>
+            <span className="text-xs text-slate-400">${escrowTotal.toLocaleString()} in escrow</span>
+            <span className="text-xs text-slate-400">•</span>
+            <span className="text-xs text-slate-400">${(balance?.monthVolume || 0).toLocaleString()} month volume</span>
           </div>
         );
         if (isFactoring) return (
           <div className={cn("rounded-xl border p-3 flex items-center gap-3 flex-wrap", isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/5 border-amber-500/20")}>
             <Receipt className="w-4 h-4 text-amber-500 flex-shrink-0" />
             <span className={cn("text-xs font-semibold", isLight ? "text-amber-700" : "text-amber-400")}>Factoring Portfolio</span>
-            <span className="text-[10px] text-slate-400">•</span>
-            <span className="text-[10px] text-slate-400">${pendingAmt.toLocaleString()} receivables</span>
+            <span className="text-xs text-slate-400">•</span>
+            <span className="text-xs text-slate-400">${pendingAmt.toLocaleString()} receivables</span>
           </div>
         );
         return null;
@@ -814,7 +814,7 @@ export default function Wallet() {
                     <div>
                       <div className="flex items-center gap-2">
                         <p className={cn("font-semibold text-sm", isLight ? "text-slate-900" : "text-white")}>Payout Account</p>
-                        <Badge className={cn("border-0 text-[10px] font-bold",
+                        <Badge className={cn("border-0 text-xs font-bold",
                           connectAccountQuery?.data?.chargesEnabled && connectAccountQuery?.data?.payoutsEnabled
                             ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
                             : connectAccountQuery?.data?.hasAccount && connectAccountQuery?.data?.detailsSubmitted
@@ -1166,25 +1166,25 @@ export default function Wallet() {
                     <div className={cn("p-3 rounded-xl border", isLight ? "bg-white/80 border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
                       <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>Transaction Fee</p>
                       <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{feeSchedule.transactionFeePercent}%</p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>Min ${feeSchedule.minimumFee} / Max ${feeSchedule.maximumFee}</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Min ${feeSchedule.minimumFee} / Max ${feeSchedule.maximumFee}</p>
                     </div>
                     <div className={cn("p-3 rounded-xl border", isLight ? "bg-white/80 border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
                       <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>Payment Processing</p>
                       <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{feeSchedule.paymentProcessingPercent}% + ${feeSchedule.paymentProcessingFlat}</p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>EusoConnect</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>EusoConnect</p>
                     </div>
                     <div className={cn("p-3 rounded-xl border", isLight ? "bg-white/80 border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
                       <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>Included Free</p>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {(feeSchedule.includes || []).slice(0, 3).map((item: string) => (
-                          <Badge key={item} className={cn("text-[9px] border-0", isLight ? "bg-green-100 text-green-700" : "bg-green-500/15 text-green-400")}>{item}</Badge>
+                          <Badge key={item} className={cn("text-xs border-0", isLight ? "bg-green-100 text-green-700" : "bg-green-500/15 text-green-400")}>{item}</Badge>
                         ))}
                       </div>
                     </div>
                   </div>
                   {/* Who pays what breakdown */}
                   <div className={cn("mt-3 p-3 rounded-xl border", isLight ? "bg-white/60 border-slate-200" : "bg-slate-800/40 border-slate-700/50")}>
-                    <p className={cn("text-[10px] font-semibold uppercase tracking-wider mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Settlement Flow</p>
+                    <p className={cn("text-xs font-semibold uppercase tracking-wider mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Settlement Flow</p>
                     <div className="flex items-center justify-between text-xs">
                       <div className="text-center">
                         <p className={cn("font-semibold", isLight ? "text-slate-700" : "text-slate-300")}>Shipper</p>
@@ -1246,9 +1246,9 @@ export default function Wallet() {
                             <div>
                               <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{doc.name}</p>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <Badge className={cn("text-[9px] border-0", tc.bg, tc.text)}>{typeLabel[doc.type]}</Badge>
-                                <span className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : ""}</span>
-                                {doc.isOwner && <Badge className={cn("text-[9px] border-0", isLight ? "bg-slate-100 text-slate-500" : "bg-slate-700 text-slate-400")}>Owner</Badge>}
+                                <Badge className={cn("text-xs border-0", tc.bg, tc.text)}>{typeLabel[doc.type]}</Badge>
+                                <span className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : ""}</span>
+                                {doc.isOwner && <Badge className={cn("text-xs border-0", isLight ? "bg-slate-100 text-slate-500" : "bg-slate-700 text-slate-400")}>Owner</Badge>}
                               </div>
                             </div>
                           </div>
@@ -1304,12 +1304,12 @@ export default function Wallet() {
                         </h3>
                         {isShipper ? (
                           <Button size="sm" onClick={() => walletTicketReconQ.refetch?.()} disabled={walletTicketReconQ.isLoading}
-                            className="h-8 px-3 text-[10px] rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0">
+                            className="h-8 px-3 text-xs rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0">
                             <RefreshCw className={cn("w-3 h-3 mr-1", walletTicketReconQ.isLoading && "animate-spin")} />Run Reconciliation
                           </Button>
                         ) : (
                           <Button size="sm" variant="outline" onClick={() => walletTicketReconQ.refetch?.()} disabled={walletTicketReconQ.isLoading}
-                            className={cn("h-8 px-3 text-[10px] rounded-xl", isLight ? "border-slate-200 text-slate-600" : "border-slate-600 text-slate-300")}>
+                            className={cn("h-8 px-3 text-xs rounded-xl", isLight ? "border-slate-200 text-slate-600" : "border-slate-600 text-slate-300")}>
                             <RefreshCw className={cn("w-3 h-3 mr-1", walletTicketReconQ.isLoading && "animate-spin")} />Refresh Status
                           </Button>
                         )}
@@ -1322,17 +1322,17 @@ export default function Wallet() {
                       {isShipper ? (
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className={cn("text-[10px] font-semibold uppercase tracking-wider block mb-1", isLight ? "text-slate-500" : "text-slate-400")}>Period Start</label>
+                            <label className={cn("text-xs font-semibold uppercase tracking-wider block mb-1", isLight ? "text-slate-500" : "text-slate-400")}>Period Start</label>
                             <DatePicker value={walletReconPeriod.start} onChange={(v) => setWalletReconPeriod(p => ({ ...p, start: v }))} />
                           </div>
                           <div>
-                            <label className={cn("text-[10px] font-semibold uppercase tracking-wider block mb-1", isLight ? "text-slate-500" : "text-slate-400")}>Period End</label>
+                            <label className={cn("text-xs font-semibold uppercase tracking-wider block mb-1", isLight ? "text-slate-500" : "text-slate-400")}>Period End</label>
                             <DatePicker value={walletReconPeriod.end} onChange={(v) => setWalletReconPeriod(p => ({ ...p, end: v }))} />
                           </div>
                         </div>
                       ) : (
                         <div className={cn("p-3 rounded-xl border", isLight ? "bg-blue-50/50 border-blue-200/50" : "bg-blue-500/5 border-blue-500/15")}>
-                          <p className={cn("text-[11px] flex items-center gap-1.5", isLight ? "text-blue-700" : "text-blue-400")}>
+                          <p className={cn("text-xs flex items-center gap-1.5", isLight ? "text-blue-700" : "text-blue-400")}>
                             <Clock className="w-3 h-3 shrink-0" />
                             Reconciliation is performed by the shipper. Once your tickets are matched and verified, payment will be released to your EusoWallet.
                           </p>
@@ -1354,7 +1354,7 @@ export default function Wallet() {
                         <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
                           <CardContent className="p-4 text-center">
                             <div className={cn("text-2xl font-bold", s.color)}>{s.value}</div>
-                            <p className={cn("text-[10px] mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>{s.label}</p>
+                            <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>{s.label}</p>
                           </CardContent>
                         </Card>
                       ))}
@@ -1364,7 +1364,7 @@ export default function Wallet() {
                   {/* Reconciliation Process Steps */}
                   <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
                     <CardContent className="p-5">
-                      <h4 className={cn("text-[10px] font-semibold uppercase tracking-wider mb-3", isLight ? "text-slate-500" : "text-slate-400")}>Reconciliation Process</h4>
+                      <h4 className={cn("text-xs font-semibold uppercase tracking-wider mb-3", isLight ? "text-slate-500" : "text-slate-400")}>Reconciliation Process</h4>
                       <div className="grid grid-cols-4 gap-3">
                         {[
                           { step: 1, title: "Record Retrieval", desc: "gather run tickets & BOLs" },
@@ -1373,10 +1373,10 @@ export default function Wallet() {
                           { step: 4, title: "Adjustment", desc: "correct errors in general ledger" },
                         ].map(s => (
                           <div key={s.step} className="flex items-start gap-2">
-                            <div className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0", isLight ? "bg-slate-100 text-slate-600" : "bg-slate-700 text-slate-300")}>{s.step}</div>
+                            <div className={cn("w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0", isLight ? "bg-slate-100 text-slate-600" : "bg-slate-700 text-slate-300")}>{s.step}</div>
                             <div>
                               <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-300")}>{s.title}</p>
-                              <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{s.desc}</p>
+                              <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{s.desc}</p>
                             </div>
                           </div>
                         ))}
@@ -1390,7 +1390,7 @@ export default function Wallet() {
                         ].map(l => (
                           <div key={l.label} className="flex items-center gap-1.5">
                             <div className={cn("w-2 h-2 rounded-full", l.color)} />
-                            <span className={cn("text-[10px]", isLight ? "text-slate-500" : "text-slate-400")}>{l.label}</span>
+                            <span className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>{l.label}</span>
                           </div>
                         ))}
                       </div>
@@ -1420,13 +1420,13 @@ export default function Wallet() {
                                   <ArrowRight className="w-3 h-3 text-slate-400" />
                                   <span className="text-xs font-medium text-blue-500">{m.bolNumber}</span>
                                 </div>
-                                <Badge className={cn("text-[10px] border-0",
+                                <Badge className={cn("text-xs border-0",
                                   m.overallStatus === "green" ? "bg-emerald-500/10 text-emerald-500" :
                                   m.overallStatus === "amber" ? "bg-amber-500/10 text-amber-500" :
                                   "bg-red-500/10 text-red-500"
                                 )}>{m.overallStatus === "green" ? "MATCHED" : m.overallStatus === "amber" ? "VARIANCE" : "DISCREPANCY"}</Badge>
                               </div>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[10px]">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                                 <div>
                                   <span className={cn(isLight ? "text-slate-500" : "text-slate-400")}>Volume</span>
                                   <div className="flex items-center gap-1 mt-0.5">
@@ -1476,9 +1476,9 @@ export default function Wallet() {
                                   {u.type === "run_ticket" ? "Run Ticket" : "BOL"}
                                 </Badge>
                                 <span className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-300")}>{u.number}</span>
-                                <span className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{u.product} · {u.volume} BBL</span>
+                                <span className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{u.product} · {u.volume} BBL</span>
                               </div>
-                              <span className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{u.reason}</span>
+                              <span className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{u.reason}</span>
                             </div>
                           ))}
                         </div>
@@ -1594,15 +1594,15 @@ export default function Wallet() {
               <p className="text-white font-mono text-xl tracking-[0.25em] mb-6">•••• •••• •••• {cards[0]?.last4 || '0000'}</p>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-500 text-[10px]">CARD HOLDER</p>
+                  <p className="text-slate-500 text-xs">CARD HOLDER</p>
                   <p className="text-white text-sm font-medium">{cardHolderName}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500 text-[10px]">EXPIRES</p>
+                  <p className="text-slate-500 text-xs">EXPIRES</p>
                   <p className="text-white text-sm font-medium">{cards[0]?.expiry || 'MM/YY'}</p>
                 </div>
                 <div className="text-right">
-                  <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-[10px]">
+                  <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-xs">
                     {cards[0]?.status === 'active' ? 'ACTIVE' : 'VIRTUAL'}
                   </Badge>
                 </div>
@@ -1848,7 +1848,7 @@ export default function Wallet() {
                     </div>
                     <div>
                       <p className={`text-xl font-bold ${k.color}`}>{k.value}</p>
-                      <p className={`text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>{k.label}</p>
+                      <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>{k.label}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -2012,7 +2012,7 @@ export default function Wallet() {
           <Lock className="w-3.5 h-3.5" />
           <span className="text-xs font-medium">EusoWallet · Bank-level security · FDIC eligible</span>
         </div>
-        <span className="text-[10px] opacity-60">Powered by Stripe</span>
+        <span className="text-xs opacity-60">Powered by Stripe</span>
       </div>
     </div>
   );

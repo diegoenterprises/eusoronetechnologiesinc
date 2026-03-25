@@ -79,7 +79,7 @@ export default function DisasterResilience() {
         ]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} className={cn("flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all border", tab === t.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-md" : L ? "bg-white border-slate-200 text-slate-600 hover:border-slate-300" : "bg-slate-800/60 border-slate-700/50 text-slate-400 hover:border-slate-600")}>
             {t.icon}{t.label}
-            {t.badge ? <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{t.badge}</span> : null}
+            {t.badge ? <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{t.badge}</span> : null}
           </button>
         ))}
       </div>
@@ -113,13 +113,13 @@ export default function DisasterResilience() {
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {t.eta && <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>ETA</p><p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{t.eta}</p></div>}
-                  <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Affected Loads</p><p className={cn("text-sm font-bold mt-0.5", t.affectedLoads > 0 ? "text-red-500" : (L ? "text-slate-800" : "text-white"))}>{t.affectedLoads}</p></div>
-                  {t.windSpeed && <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Wind Speed</p><p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{t.windSpeed}</p></div>}
-                  {t.category && <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Category</p><p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{t.category}</p></div>}
-                  {t.acresBurned && <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Acres Burned</p><p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{t.acresBurned?.toLocaleString()}</p></div>}
-                  {t.containment !== undefined && <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Containment</p><p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{t.containment}%</p></div>}
-                  {t.floodStage && <div className={sc}><p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Flood Stage</p><p className={cn("text-sm font-bold mt-0.5 text-red-500")}>{t.floodStage}</p></div>}
+                  {t.eta && <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>ETA</p><p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{t.eta}</p></div>}
+                  <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Affected Loads</p><p className={cn("text-sm font-bold mt-0.5", t.affectedLoads > 0 ? "text-red-500" : (L ? "text-slate-800" : "text-white"))}>{t.affectedLoads}</p></div>
+                  {t.windSpeed && <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Wind Speed</p><p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{t.windSpeed}</p></div>}
+                  {t.category && <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Category</p><p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{t.category}</p></div>}
+                  {t.acresBurned && <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Acres Burned</p><p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{t.acresBurned?.toLocaleString()}</p></div>}
+                  {t.containment !== undefined && <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Containment</p><p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{t.containment}%</p></div>}
+                  {t.floodStage && <div className={sc}><p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Flood Stage</p><p className={cn("text-sm font-bold mt-0.5 text-red-500")}>{t.floodStage}</p></div>}
                 </div>
               </CardContent>
             </Card>
@@ -145,8 +145,8 @@ export default function DisasterResilience() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <p className={cn("text-base font-bold", L ? "text-slate-800" : "text-white")}>{load.loadId}</p>
-                      <Badge variant="outline" className="text-[10px]">Class {load.hazmatClass}</Badge>
-                      <Badge className={cn("text-[10px]", load.status === "in_transit" ? "bg-green-500/15 text-green-500" : "bg-blue-500/15 text-blue-500")}>{load.status?.replace(/_/g, " ")}</Badge>
+                      <Badge variant="outline" className="text-xs">Class {load.hazmatClass}</Badge>
+                      <Badge className={cn("text-xs", load.status === "in_transit" ? "bg-green-500/15 text-green-500" : "bg-blue-500/15 text-blue-500")}>{load.status?.replace(/_/g, " ")}</Badge>
                     </div>
                     <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>
                       {load.origin} <ArrowRight className="w-3 h-3 inline mx-1" /> {load.destination} · Driver: {load.driverName}
@@ -158,11 +158,11 @@ export default function DisasterResilience() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className={sc}>
-                    <p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>Threat</p>
+                    <p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>Threat</p>
                     <p className={cn("text-xs font-medium mt-0.5", L ? "text-slate-700" : "text-white")}>{load.threatType}</p>
                   </div>
                   <div className={sc}>
-                    <p className={cn("text-[10px] uppercase", L ? "text-slate-400" : "text-slate-500")}>ETA Impact</p>
+                    <p className={cn("text-xs uppercase", L ? "text-slate-400" : "text-slate-500")}>ETA Impact</p>
                     <p className={cn("text-xs font-medium mt-0.5", load.etaImpact !== "N/A" ? "text-amber-500" : (L ? "text-slate-700" : "text-white"))}>{load.etaImpact}</p>
                   </div>
                   {load.recommendedAction === "REROUTE" && (
@@ -218,17 +218,17 @@ export default function DisasterResilience() {
                       <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{s.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{s.type} · {s.distance}</span>
-                        {s.hazmat && <Badge className="bg-green-500/15 text-green-500 text-[9px]">Hazmat OK</Badge>}
-                        {!s.hazmat && <Badge className="bg-red-500/15 text-red-500 text-[9px]">No Hazmat</Badge>}
+                        {s.hazmat && <Badge className="bg-green-500/15 text-green-500 text-xs">Hazmat OK</Badge>}
+                        {!s.hazmat && <Badge className="bg-red-500/15 text-red-500 text-xs">No Hazmat</Badge>}
                       </div>
                       <div className="flex gap-1 mt-1">
-                        {s.amenities.map(a => <Badge key={a} variant="outline" className="text-[9px]">{a}</Badge>)}
+                        {s.amenities.map(a => <Badge key={a} variant="outline" className="text-xs">{a}</Badge>)}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>{s.available}/{s.total}</p>
-                    <p className={cn("text-[10px]", L ? "text-slate-400" : "text-slate-500")}>spots avail</p>
+                    <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>spots avail</p>
                   </div>
                 </div>
               ))}

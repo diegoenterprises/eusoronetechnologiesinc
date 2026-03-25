@@ -237,7 +237,7 @@ export default function MyLoads() {
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                 <div>
                   <p className={cn("text-2xl font-bold tabular-nums", s.color)}>{s.count}</p>
-                  <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                  <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                 </div>
               </div>
             </CardContent>
@@ -277,11 +277,11 @@ export default function MyLoads() {
               {formatMonthYear(selectedDate)}
             </p>
             {dateFilterActive ? (
-              <button onClick={() => setDateFilterActive(false)} className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-medium">
+              <button onClick={() => setDateFilterActive(false)} className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-medium">
                 Show All
               </button>
             ) : (
-              <button onClick={() => setDateFilterActive(true)} className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-slate-700")}>
+              <button onClick={() => setDateFilterActive(true)} className={cn("text-xs px-2 py-0.5 rounded-full font-medium border", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-slate-700")}>
                 Showing All
               </button>
             )}
@@ -308,7 +308,7 @@ export default function MyLoads() {
                       : isLight ? "hover:bg-slate-50 text-slate-600" : "hover:bg-slate-700/50 text-slate-400"
                 )}
               >
-                <span className="text-[10px] font-medium mb-0.5">{DAY_LABELS[day.getDay()]}</span>
+                <span className="text-xs font-medium mb-0.5">{DAY_LABELS[day.getDay()]}</span>
                 <span className={cn("text-base font-bold", isSelected ? "text-white" : "")}>{day.getDate()}</span>
               </button>
             );
@@ -631,7 +631,7 @@ export default function MyLoads() {
                     <Badge className={cn("border-0 text-xs font-bold", getStatusConfig(previewLoad.status).bg, getStatusConfig(previewLoad.status).text)}>
                       {getStatusConfig(previewLoad.status).label}
                     </Badge>
-                    {previewLoad.hazmatClass && <Badge className="bg-orange-500/20 text-orange-400 border-0 text-[10px]">HAZMAT</Badge>}
+                    {previewLoad.hazmatClass && <Badge className="bg-orange-500/20 text-orange-400 border-0 text-xs">HAZMAT</Badge>}
                   </div>
                 </DialogHeader>
               </div>
@@ -641,11 +641,11 @@ export default function MyLoads() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20 flex items-center justify-center"><MapPin className="w-4 h-4 text-[#1473FF]" /></div>
-                      <div><p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{previewLoad.origin?.city}{previewLoad.origin?.state ? `, ${previewLoad.origin.state}` : ""}</p><p className="text-[11px] text-slate-500">{previewLoad.origin?.address || "Origin"}</p></div>
+                      <div><p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{previewLoad.origin?.city}{previewLoad.origin?.state ? `, ${previewLoad.origin.state}` : ""}</p><p className="text-xs text-slate-500">{previewLoad.origin?.address || "Origin"}</p></div>
                     </div>
                     <div className="flex-1 mx-4 flex items-center"><div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} /><Truck className="w-5 h-5 mx-2 text-[#8B5CF6]" /><div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} /></div>
                     <div className="flex items-center gap-2">
-                      <div><p className={cn("text-sm font-semibold text-right", isLight ? "text-slate-800" : "text-white")}>{previewLoad.destination?.city}{previewLoad.destination?.state ? `, ${previewLoad.destination.state}` : ""}</p><p className="text-[11px] text-slate-500 text-right">{previewLoad.destination?.address || "Destination"}</p></div>
+                      <div><p className={cn("text-sm font-semibold text-right", isLight ? "text-slate-800" : "text-white")}>{previewLoad.destination?.city}{previewLoad.destination?.state ? `, ${previewLoad.destination.state}` : ""}</p><p className="text-xs text-slate-500 text-right">{previewLoad.destination?.address || "Destination"}</p></div>
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#BE01FF]/20 to-[#1473FF]/20 flex items-center justify-center"><Building2 className="w-4 h-4 text-[#BE01FF]" /></div>
                     </div>
                   </div>
@@ -663,7 +663,7 @@ export default function MyLoads() {
                     { label: "Driver", value: previewLoad.driverName || "Unassigned" },
                   ].map((item: any) => (
                     <div key={item.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                      <p className="text-[10px] text-slate-500 mb-0.5">{item.label}</p>
+                      <p className="text-xs text-slate-500 mb-0.5">{item.label}</p>
                       <p className={item.gradient && previewLoad.rate > 0 ? "font-bold text-sm bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white")}>{item.value}</p>
                     </div>
                   ))}

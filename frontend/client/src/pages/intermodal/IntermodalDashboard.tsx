@@ -261,7 +261,7 @@ export default function IntermodalDashboard() {
                     {c.modes.map((m, j) => (
                       <React.Fragment key={m}>
                         {j > 0 && (
-                          <span className="text-slate-500 text-[10px]">→</span>
+                          <span className="text-slate-500 text-xs">→</span>
                         )}
                         {MODE_ICON_MAP[m]}
                       </React.Fragment>
@@ -279,7 +279,7 @@ export default function IntermodalDashboard() {
                   </div>
                   <div
                     className={cn(
-                      "text-[10px]",
+                      "text-xs",
                       isLight ? "text-slate-400" : "text-slate-500"
                     )}
                   >

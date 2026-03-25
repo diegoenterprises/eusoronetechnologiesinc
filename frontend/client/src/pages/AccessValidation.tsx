@@ -296,7 +296,7 @@ export default function AccessValidation() {
           </div>
 
           {staff && (
-            <p className="text-center text-slate-600 text-[11px] mt-5 tracking-wide">
+            <p className="text-center text-slate-600 text-xs mt-5 tracking-wide">
               {staff.name} &middot; {ROLE_LABELS[staff.staffRole] || staff.staffRole}
             </p>
           )}
@@ -339,8 +339,8 @@ export default function AccessValidation() {
 
           {staff && (
             <div className="text-center mt-5">
-              <p className="text-slate-600 text-[11px] tracking-wide">{staff.name} &middot; {ROLE_LABELS[staff.staffRole] || staff.staffRole}</p>
-              {staff.terminalName && <p className="text-[#1473FF]/40 text-[11px] mt-0.5">{staff.terminalName}</p>}
+              <p className="text-slate-600 text-xs tracking-wide">{staff.name} &middot; {ROLE_LABELS[staff.staffRole] || staff.staffRole}</p>
+              {staff.terminalName && <p className="text-[#1473FF]/40 text-xs mt-0.5">{staff.terminalName}</p>}
             </div>
           )}
         </div>
@@ -392,18 +392,18 @@ export default function AccessValidation() {
         {staff && (
           <div className="mt-1.5">
             <p className="text-slate-300 text-[13px] font-medium">{staff.name}</p>
-            <p className="text-slate-500 text-[11px] tracking-wide">{ROLE_LABELS[staff.staffRole] || staff.staffRole}{staff.assignedZone ? ` \u00b7 ${staff.assignedZone}` : ""}</p>
-            {staff.terminalName && <p className="text-[#1473FF]/50 text-[11px]">{staff.terminalName}</p>}
+            <p className="text-slate-500 text-xs tracking-wide">{ROLE_LABELS[staff.staffRole] || staff.staffRole}{staff.assignedZone ? ` \u00b7 ${staff.assignedZone}` : ""}</p>
+            {staff.terminalName && <p className="text-[#1473FF]/50 text-xs">{staff.terminalName}</p>}
           </div>
         )}
       </div>
 
       {/* Security badges */}
       <div className="flex items-center justify-center gap-2 mb-5">
-        <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-400/8 border border-emerald-400/10 px-2.5 py-1 rounded-full font-medium">
+        <span className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-400/8 border border-emerald-400/10 px-2.5 py-1 rounded-full font-medium">
           <KeyRound className="w-3 h-3" />Verified
         </span>
-        <span className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-medium border ${
+        <span className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium border ${
           geoDistance !== null && geoDistance <= GEOFENCE_RADIUS_METERS
             ? "text-emerald-400 bg-emerald-400/8 border-emerald-400/10"
             : geoDistance !== null
@@ -418,7 +418,7 @@ export default function AccessValidation() {
             : "Located"}
         </span>
         {expiresAt && (
-          <span className="flex items-center gap-1 text-[10px] text-slate-500 bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/[0.04] px-2.5 py-1 rounded-full">
+          <span className="flex items-center gap-1 text-xs text-slate-500 bg-slate-50 dark:bg-white/[0.03] border border-slate-200/60 dark:border-white/[0.04] px-2.5 py-1 rounded-full">
             <Clock className="w-3 h-3" />{new Date(expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </span>
         )}
@@ -464,7 +464,7 @@ export default function AccessValidation() {
               <h2 className="text-slate-800 dark:text-white font-semibold text-[14px] flex items-center gap-2 tracking-tight">
                 <Truck className="w-4 h-4 text-[#1473FF]" />Load #{loadData.load.id}
               </h2>
-              <span className={`text-[11px] px-2.5 py-1 rounded-full font-medium border ${
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${
                 loadData.load.status === "in_transit" ? "bg-blue-500/8 text-blue-400 border-blue-400/10" :
                 loadData.load.status === "at_pickup" ? "bg-amber-500/8 text-amber-400 border-amber-400/10" :
                 loadData.load.status === "delivered" ? "bg-emerald-500/8 text-emerald-400 border-emerald-400/10" :
@@ -475,36 +475,36 @@ export default function AccessValidation() {
             </div>
             <div className="grid grid-cols-2 gap-2.5 text-[12px]">
               <div className={`${glassInner} p-3`}>
-                <p className="text-slate-500 mb-1 flex items-center gap-1 text-[11px]"><MapPin className="w-3 h-3" />Origin</p>
+                <p className="text-slate-500 mb-1 flex items-center gap-1 text-xs"><MapPin className="w-3 h-3" />Origin</p>
                 <p className="text-slate-800 dark:text-white font-medium">{loadData.load.pickupLocation?.city || "—"}, {loadData.load.pickupLocation?.state || ""}</p>
               </div>
               <div className={`${glassInner} p-3`}>
-                <p className="text-slate-500 mb-1 flex items-center gap-1 text-[11px]"><MapPin className="w-3 h-3" />Destination</p>
+                <p className="text-slate-500 mb-1 flex items-center gap-1 text-xs"><MapPin className="w-3 h-3" />Destination</p>
                 <p className="text-slate-800 dark:text-white font-medium">{loadData.load.deliveryLocation?.city || "—"}, {loadData.load.deliveryLocation?.state || ""}</p>
               </div>
               <div className={`${glassInner} p-3`}>
-                <p className="text-slate-500 mb-1 flex items-center gap-1 text-[11px]"><Package className="w-3 h-3" />Cargo</p>
+                <p className="text-slate-500 mb-1 flex items-center gap-1 text-xs"><Package className="w-3 h-3" />Cargo</p>
                 <p className="text-slate-800 dark:text-white font-medium">{loadData.load.cargoType || "N/A"}</p>
               </div>
               <div className={`${glassInner} p-3`}>
-                <p className="text-slate-500 mb-1 text-[11px]">Weight</p>
+                <p className="text-slate-500 mb-1 text-xs">Weight</p>
                 <p className="text-slate-800 dark:text-white font-medium">{loadData.load.weight ? `${Number(loadData.load.weight).toLocaleString()} lbs` : "N/A"}</p>
               </div>
             </div>
-            {loadData.load.loadNumber && <p className="text-slate-600 text-[11px] mt-2">Load# {loadData.load.loadNumber}</p>}
+            {loadData.load.loadNumber && <p className="text-slate-600 text-xs mt-2">Load# {loadData.load.loadNumber}</p>}
           </div>
 
           {loadData.driver && (
             <div className={`${glassInner} p-3`}>
-              <p className="text-slate-500 text-[11px] mb-1 flex items-center gap-1"><User className="w-3 h-3" />Driver</p>
+              <p className="text-slate-500 text-xs mb-1 flex items-center gap-1"><User className="w-3 h-3" />Driver</p>
               <p className="text-slate-800 dark:text-white font-medium text-[13px]">{loadData.driver.name}</p>
-              {loadData.driver.email && <p className="text-slate-500 text-[11px]">{loadData.driver.email}</p>}
+              {loadData.driver.email && <p className="text-slate-500 text-xs">{loadData.driver.email}</p>}
             </div>
           )}
 
           {loadData.shipper && (
             <div className={`${glassInner} p-3`}>
-              <p className="text-slate-500 text-[11px] mb-1">Shipper</p>
+              <p className="text-slate-500 text-xs mb-1">Shipper</p>
               <p className="text-slate-800 dark:text-white font-medium text-[13px]">{loadData.shipper.name}</p>
             </div>
           )}
@@ -532,10 +532,10 @@ export default function AccessValidation() {
                   </div>
                   <div>
                     <p className="text-[12px] font-semibold text-slate-800 dark:text-white">Carrier Safety</p>
-                    <p className="text-[10px] text-slate-500">FMCSA SaferSys</p>
+                    <p className="text-xs text-slate-500">FMCSA SaferSys</p>
                   </div>
                 </div>
-                <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
+                <span className={`text-xs font-bold uppercase px-2.5 py-1 rounded-full ${
                   loadData.carrierSafety.riskLevel === "high" ? "text-red-400 bg-red-500/10 border border-red-500/20" :
                   loadData.carrierSafety.riskLevel === "elevated" ? "text-amber-400 bg-amber-500/10 border border-amber-500/20" :
                   loadData.carrierSafety.riskLevel === "low" ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20" :
@@ -549,16 +549,16 @@ export default function AccessValidation() {
               {/* Carrier identity */}
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div className={`${glassInner} p-2.5`}>
-                  <p className="text-[10px] text-slate-500 mb-0.5">Carrier</p>
+                  <p className="text-xs text-slate-500 mb-0.5">Carrier</p>
                   <p className="text-[12px] text-slate-800 dark:text-white font-medium truncate">{loadData.carrierSafety.carrierName || "—"}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className={`${glassInner} p-2.5`}>
-                    <p className="text-[10px] text-slate-500 mb-0.5">DOT#</p>
+                    <p className="text-xs text-slate-500 mb-0.5">DOT#</p>
                     <p className="text-[12px] text-slate-800 dark:text-white font-medium tabular-nums">{loadData.carrierSafety.dotNumber || "—"}</p>
                   </div>
                   <div className={`${glassInner} p-2.5`}>
-                    <p className="text-[10px] text-slate-500 mb-0.5">MC#</p>
+                    <p className="text-xs text-slate-500 mb-0.5">MC#</p>
                     <p className="text-[12px] text-slate-800 dark:text-white font-medium tabular-nums">{loadData.carrierSafety.mcNumber || "—"}</p>
                   </div>
                 </div>
@@ -567,7 +567,7 @@ export default function AccessValidation() {
               {/* BASICs scores — the core of FMCSA safety intelligence */}
               {loadData.carrierSafety.basics && (
                 <div>
-                  <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-2">BASICs Scores</p>
+                  <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-2">BASICs Scores</p>
                   <div className="space-y-1.5">
                     {[
                       { label: "Unsafe Driving", value: loadData.carrierSafety.basics.unsafeDriving, threshold: 65 },
@@ -579,7 +579,7 @@ export default function AccessValidation() {
                       { label: "Hazmat", value: loadData.carrierSafety.basics.hazmatCompliance, threshold: 80 },
                     ].filter(b => b.value !== null).map(b => (
                       <div key={b.label} className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-500 w-28 shrink-0">{b.label}</span>
+                        <span className="text-xs text-slate-500 w-28 shrink-0">{b.label}</span>
                         <div className="flex-1 h-1.5 bg-slate-200 dark:bg-white/[0.06] rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all duration-700 ${
@@ -590,7 +590,7 @@ export default function AccessValidation() {
                             style={{ width: `${Math.min(b.value || 0, 100)}%` }}
                           />
                         </div>
-                        <span className={`text-[10px] font-medium tabular-nums w-8 text-right ${
+                        <span className={`text-xs font-medium tabular-nums w-8 text-right ${
                           (b.value || 0) >= b.threshold ? "text-red-400" :
                           (b.value || 0) >= b.threshold * 0.7 ? "text-amber-400" :
                           "text-emerald-400"
@@ -606,8 +606,8 @@ export default function AccessValidation() {
               {/* Safety rating */}
               {loadData.carrierSafety.safetyRating && (
                 <div className="mt-3 flex items-center gap-2">
-                  <span className="text-[10px] text-slate-500">Safety Rating:</span>
-                  <span className={`text-[11px] font-semibold ${
+                  <span className="text-xs text-slate-500">Safety Rating:</span>
+                  <span className={`text-xs font-semibold ${
                     loadData.carrierSafety.safetyRating === "Satisfactory" ? "text-emerald-400" :
                     loadData.carrierSafety.safetyRating === "Conditional" ? "text-amber-400" :
                     loadData.carrierSafety.safetyRating === "Unsatisfactory" ? "text-red-400" :
@@ -621,8 +621,8 @@ export default function AccessValidation() {
                 <div className="mt-3 bg-red-500/10 border border-red-500/20 rounded-lg p-2.5 flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-red-400 text-[11px] font-semibold">High-Risk Carrier</p>
-                    <p className="text-red-400/60 text-[10px]">One or more BASICs scores exceed FMCSA intervention thresholds. Exercise elevated caution.</p>
+                    <p className="text-red-400 text-xs font-semibold">High-Risk Carrier</p>
+                    <p className="text-red-400/60 text-xs">One or more BASICs scores exceed FMCSA intervention thresholds. Exercise elevated caution.</p>
                   </div>
                 </div>
               )}
@@ -635,7 +635,7 @@ export default function AccessValidation() {
               <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
               <div>
                 <p className="text-amber-400 text-[12px] font-medium">Outside geofence</p>
-                <p className="text-amber-500/60 text-[11px]">You are {geoDistance}m from the terminal. Expected within {GEOFENCE_RADIUS_METERS}m. This will be logged.</p>
+                <p className="text-amber-500/60 text-xs">You are {geoDistance}m from the terminal. Expected within {GEOFENCE_RADIUS_METERS}m. This will be logged.</p>
               </div>
             </div>
           )}
@@ -680,7 +680,7 @@ export default function AccessValidation() {
 
       {/* Footer */}
       <div className="text-center mt-6">
-        <p className="text-[10px] tracking-[0.08em] text-slate-700 uppercase">
+        <p className="text-xs tracking-[0.08em] text-slate-700 uppercase">
           <span className="bg-gradient-to-r from-[#1473FF]/30 to-[#BE01FF]/30 bg-clip-text text-transparent">EusoTrip</span>
           {" "}&middot; Token + Code + Geofence Secured
         </p>

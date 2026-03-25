@@ -101,7 +101,7 @@ export default function ZeunFleetDashboard() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Fleet Dashboard</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
               <Zap className="w-3 h-3 text-purple-500" />
-              <span className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">ZEUN</span>
+              <span className="text-xs font-bold text-purple-500 uppercase tracking-wider">ZEUN</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>Fleet-wide breakdown, maintenance intelligence & predictive analytics</p>
@@ -141,7 +141,7 @@ export default function ZeunFleetDashboard() {
                     <s.icon className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className={cn("text-[10px] font-medium uppercase tracking-wider", L ? "text-slate-400" : "text-slate-500")}>{s.label}</p>
+                    <p className={cn("text-xs font-medium uppercase tracking-wider", L ? "text-slate-400" : "text-slate-500")}>{s.label}</p>
                     {s.loading ? <Skeleton className="h-7 w-16 mt-0.5" /> : (
                       <p className={cn("text-xl font-bold truncate", L ? "text-slate-800" : "text-white")}>{s.value}</p>
                     )}
@@ -158,15 +158,15 @@ export default function ZeunFleetDashboard() {
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-4 items-end">
             <div>
-              <label className={cn("text-[10px] font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>Start Date</label>
+              <label className={cn("text-xs font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>Start Date</label>
               <DatePicker value={dateRange.startDate} onChange={(v) => setDateRange({ ...dateRange, startDate: v })} />
             </div>
             <div>
-              <label className={cn("text-[10px] font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>End Date</label>
+              <label className={cn("text-xs font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>End Date</label>
               <DatePicker value={dateRange.endDate} onChange={(v) => setDateRange({ ...dateRange, endDate: v })} />
             </div>
             <div>
-              <label className={cn("text-[10px] font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>Status</label>
+              <label className={cn("text-xs font-medium uppercase tracking-wider block mb-1.5", L ? "text-slate-400" : "text-slate-500")}>Status</label>
               <div className="flex gap-1.5">
                 {(["ALL", "OPEN", "RESOLVED"] as const).map((status) => (
                   <button key={status} onClick={() => setStatusFilter(status)}
@@ -193,13 +193,13 @@ export default function ZeunFleetDashboard() {
               <Shield className="w-4 h-4 text-blue-500" />
               <p className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>Predictive Maintenance</p>
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
-                <span className="text-[9px] font-bold text-blue-500 uppercase tracking-wider">AI</span>
+                <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">AI</span>
               </div>
             </div>
             <div className="flex gap-1.5">
               {(["all", "critical", "high", "medium", "low"] as const).map((r) => (
                 <button key={r} onClick={() => setRiskFilter(r)}
-                  className={cn("px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border capitalize",
+                  className={cn("px-2.5 py-1 rounded-lg text-xs font-bold transition-all border capitalize",
                     riskFilter === r
                       ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent"
                       : L ? "border-slate-200 text-slate-500 hover:border-blue-300" : "border-slate-700 text-slate-400 hover:border-blue-500/50"
@@ -219,7 +219,7 @@ export default function ZeunFleetDashboard() {
                 return (
                   <div key={comp} className={cn("p-3 rounded-xl border text-center", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                     <Icon className={cn("w-4 h-4 mx-auto mb-1.5", atRisk > 0 ? "text-orange-500" : "text-green-500")} />
-                    <p className={cn("text-[10px] font-bold uppercase tracking-wider capitalize", L ? "text-slate-500" : "text-slate-400")}>{comp}</p>
+                    <p className={cn("text-xs font-bold uppercase tracking-wider capitalize", L ? "text-slate-500" : "text-slate-400")}>{comp}</p>
                     {summaryLoading ? <Skeleton className="h-5 w-8 mx-auto mt-1" /> : (
                       <p className={cn("text-sm font-bold mt-0.5", atRisk > 0 ? (L ? "text-orange-600" : "text-orange-400") : (L ? "text-green-600" : "text-green-400"))}>
                         {atRisk > 0 ? `${atRisk} at risk` : "OK"}
@@ -259,7 +259,7 @@ export default function ZeunFleetDashboard() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className={cn("font-semibold text-sm", L ? "text-slate-800" : "text-white")}>{v.vehicleUnit}</p>
-                          <Badge className={cn("border-0 text-[10px] font-bold capitalize", getRiskBadge(v.overallRisk))}>{v.overallRisk}</Badge>
+                          <Badge className={cn("border-0 text-xs font-bold capitalize", getRiskBadge(v.overallRisk))}>{v.overallRisk}</Badge>
                         </div>
                         <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>
                           {v.year} {v.make} {v.model} — {(v.currentMileage || 0).toLocaleString()} mi
@@ -298,8 +298,8 @@ export default function ZeunFleetDashboard() {
                                   p.riskLevel === "high" ? "text-orange-500" :
                                   p.riskLevel === "medium" ? "text-yellow-500" : "text-green-500"
                                 )} />
-                                <span className={cn("text-[10px] font-bold uppercase tracking-wider capitalize", L ? "text-slate-500" : "text-slate-400")}>{p.component}</span>
-                                <Badge className={cn("border-0 text-[9px] font-bold ml-auto capitalize", getRiskBadge(p.riskLevel))}>{p.riskLevel}</Badge>
+                                <span className={cn("text-xs font-bold uppercase tracking-wider capitalize", L ? "text-slate-500" : "text-slate-400")}>{p.component}</span>
+                                <Badge className={cn("border-0 text-xs font-bold ml-auto capitalize", getRiskBadge(p.riskLevel))}>{p.riskLevel}</Badge>
                               </div>
                               {/* Mileage gauge */}
                               <div className={cn("h-1.5 rounded-full overflow-hidden mb-2", L ? "bg-slate-100" : "bg-slate-700")}>
@@ -309,11 +309,11 @@ export default function ZeunFleetDashboard() {
                                   p.riskLevel === "medium" ? "bg-yellow-500" : "bg-green-500"
                                 )} style={{ width: `${mileagePercent}%` }} />
                               </div>
-                              <div className="flex justify-between text-[10px]">
+                              <div className="flex justify-between text-xs">
                                 <span className={L ? "text-slate-500" : "text-slate-400"}>{milesRemaining.toLocaleString()} mi left</span>
                                 <span className={L ? "text-slate-500" : "text-slate-400"}>{daysRemaining}d</span>
                               </div>
-                              <p className={cn("text-[9px] mt-1", L ? "text-slate-400" : "text-slate-500")}>
+                              <p className={cn("text-xs mt-1", L ? "text-slate-400" : "text-slate-500")}>
                                 Confidence: {(p.confidenceScore * 100).toFixed(0)}% ({p.sampleCount} records)
                               </p>
                             </div>
@@ -385,8 +385,8 @@ export default function ZeunFleetDashboard() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className={cn("text-xs font-bold", L ? "text-slate-400" : "text-slate-500")}>#{b.id}</span>
-                        <Badge className={cn("border-0 text-[10px] font-bold", getSeverityBadge(b.severity))}>{b.severity}</Badge>
-                        <Badge className={cn("border-0 text-[10px] font-bold", getStatusBadge(b.status))}>{b.status.replace(/_/g, " ")}</Badge>
+                        <Badge className={cn("border-0 text-xs font-bold", getSeverityBadge(b.severity))}>{b.severity}</Badge>
+                        <Badge className={cn("border-0 text-xs font-bold", getStatusBadge(b.status))}>{b.status.replace(/_/g, " ")}</Badge>
                       </div>
                       <p className={cn("font-semibold text-sm", L ? "text-slate-800" : "text-white")}>{b.issueCategory.replace(/_/g, " ")}</p>
                       <p className={cn("text-xs mt-0.5", L ? "text-slate-400" : "text-slate-500")}>Driver: {b.driverName || "Unknown"}</p>
@@ -439,7 +439,7 @@ export default function ZeunFleetDashboard() {
                     ) : (
                       <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>No cost recorded</p>
                     )}
-                    <p className={cn("text-[10px] mt-0.5", L ? "text-slate-400" : "text-slate-500")}>
+                    <p className={cn("text-xs mt-0.5", L ? "text-slate-400" : "text-slate-500")}>
                       {b.createdAt ? new Date(b.createdAt).toLocaleDateString() : ""}
                     </p>
                   </div>

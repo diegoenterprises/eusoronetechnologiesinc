@@ -225,7 +225,7 @@ export default function AccountStatus() {
                 <item.icon className={cn("w-4 h-4 flex-shrink-0", isLight ? "text-gray-400" : "text-gray-500")} />
                 <div className="min-w-0">
                   <p className={cn("text-xs font-medium", vl)}>{item.label}</p>
-                  <p className={cn("text-[10px]", sl)}>{item.desc}</p>
+                  <p className={cn("text-xs", sl)}>{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -256,7 +256,7 @@ export default function AccountStatus() {
                 <item.icon className={cn("w-4 h-4 flex-shrink-0", isApproved ? (isLight ? "text-gray-400" : "text-gray-500") : "text-gray-600")} />
                 <div className="min-w-0">
                   <p className={cn("text-xs font-medium", isApproved ? vl : (isLight ? "text-gray-400" : "text-gray-500"))}>{item.label}</p>
-                  <p className={cn("text-[10px]", isApproved ? sl : "text-gray-600")}>{item.desc}</p>
+                  <p className={cn("text-xs", isApproved ? sl : "text-gray-600")}>{item.desc}</p>
                 </div>
                 {!isApproved && <Lock className="w-3 h-3 text-gray-600 ml-auto flex-shrink-0" />}
               </div>

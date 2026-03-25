@@ -98,7 +98,7 @@ export default function FleetTracking() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Fleet Tracking</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20">
               <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Live</span>
+              <span className="text-xs font-bold text-green-500 uppercase tracking-wider">Live</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>Real-time fleet intelligence — 10s refresh</p>
@@ -122,7 +122,7 @@ export default function FleetTracking() {
             {fleetLoading ? <Skeleton className="h-7 w-10 rounded-lg" /> : (
               <p className={cn("text-2xl font-bold tracking-tight", s.c)}>{s.v}{s.suffix || ""}</p>
             )}
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{s.l}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-0.5">{s.l}</p>
           </div>
         ))}
       </div>
@@ -150,8 +150,8 @@ export default function FleetTracking() {
                 <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Fleet Map</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /><span className="text-[10px] text-slate-400">Moving</span></div>
-                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-[10px] text-slate-400">Stopped</span></div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /><span className="text-xs text-slate-400">Moving</span></div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-xs text-slate-400">Stopped</span></div>
               </div>
             </div>
             <CardContent className="p-0">
@@ -208,13 +208,13 @@ export default function FleetTracking() {
                         <div className="flex items-center gap-2.5">
                           <div className={cn("w-2 h-2 rounded-full", driver.isMoving ? "bg-green-500 animate-pulse" : "bg-slate-400")} />
                           <span className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{driver.name}</span>
-                          {eld?.hasViolation && <Badge className="border-0 bg-red-500/15 text-red-500 text-[9px] font-bold">HOS</Badge>}
+                          {eld?.hasViolation && <Badge className="border-0 bg-red-500/15 text-red-500 text-xs font-bold">HOS</Badge>}
                         </div>
-                        <Badge className={cn("border-0 text-[10px] font-bold", driver.isMoving ? "bg-green-500/15 text-green-500" : "bg-slate-500/15 text-slate-400")}>
+                        <Badge className={cn("border-0 text-xs font-bold", driver.isMoving ? "bg-green-500/15 text-green-500" : "bg-slate-500/15 text-slate-400")}>
                           {driver.isMoving ? `${driver.speed?.toFixed(0) || 0} mph` : "Stopped"}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+                      <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
                         {driver.loadId && <span className="text-blue-500 font-medium">Load #{driver.loadId}</span>}
                         {driveLeft !== null && (
                           <span className={cn("flex items-center gap-1", driveLeft <= 1 ? "text-red-400" : "text-slate-400")}>
@@ -238,7 +238,7 @@ export default function FleetTracking() {
                 <Circle className={cn("w-4 h-4", L ? "text-slate-500" : "text-slate-400")} />
                 <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Geofences</span>
               </div>
-              <span className="text-[10px] text-slate-400 font-medium">{geofences?.length || 0}</span>
+              <span className="text-xs text-slate-400 font-medium">{geofences?.length || 0}</span>
             </div>
             <CardContent className="p-0 max-h-[180px] overflow-y-auto">
               {geofencesLoading ? <div className="p-3"><Skeleton className="h-16 w-full rounded-xl" /></div>
@@ -249,9 +249,9 @@ export default function FleetTracking() {
                     <div key={gf.id} className="px-4 py-2.5 flex items-center justify-between">
                       <div>
                         <p className={cn("text-xs font-medium", L ? "text-slate-700" : "text-slate-200")}>{gf.name}</p>
-                        <p className="text-[10px] text-slate-400">{gf.type}</p>
+                        <p className="text-xs text-slate-400">{gf.type}</p>
                       </div>
-                      <Badge className="border-0 bg-slate-500/10 text-slate-400 text-[10px]">{gf.shape}</Badge>
+                      <Badge className="border-0 bg-slate-500/10 text-slate-400 text-xs">{gf.shape}</Badge>
                     </div>
                   ))}
                 </div>
@@ -279,22 +279,22 @@ export default function FleetTracking() {
                   <p className={cn("font-semibold", L ? "text-slate-800" : "text-white")}>{selectedData.name}</p>
                   <p className="text-xs text-slate-400">{selectedData.lat?.toFixed(5)}, {selectedData.lng?.toFixed(5)}</p>
                 </div>
-                {eld?.hasViolation && <Badge className="border-0 bg-red-500/15 text-red-500 text-[10px] font-bold ml-2">HOS VIOLATION</Badge>}
+                {eld?.hasViolation && <Badge className="border-0 bg-red-500/15 text-red-500 text-xs font-bold ml-2">HOS VIOLATION</Badge>}
               </div>
               <button onClick={() => setSelectedDriver(null)} className="text-xs text-slate-400 hover:text-slate-600">Dismiss</button>
             </div>
             <div className="grid grid-cols-3 gap-3 mb-3">
               <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-slate-800/50")}>
                 <p className="text-lg font-bold text-green-500">{selectedData.speed?.toFixed(0) || 0}</p>
-                <p className="text-[10px] text-slate-400 uppercase">mph</p>
+                <p className="text-xs text-slate-400 uppercase">mph</p>
               </div>
               <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-slate-800/50")}>
                 <p className="text-lg font-bold text-blue-500">{selectedData.heading ? `${Math.round(selectedData.heading)}°` : "—"}</p>
-                <p className="text-[10px] text-slate-400 uppercase">Heading</p>
+                <p className="text-xs text-slate-400 uppercase">Heading</p>
               </div>
               <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-slate-800/50")}>
                 <p className={cn("text-lg font-bold", selectedData.isMoving ? "text-green-500" : "text-slate-400")}>{selectedData.isMoving ? "En Route" : "Idle"}</p>
-                <p className="text-[10px] text-slate-400 uppercase">Status</p>
+                <p className="text-xs text-slate-400 uppercase">Status</p>
               </div>
             </div>
 
@@ -304,7 +304,7 @@ export default function FleetTracking() {
                 <div className="flex items-center gap-2 mb-2.5">
                   <Activity className="w-3.5 h-3.5 text-cyan-500" />
                   <span className={cn("text-xs font-semibold", L ? "text-slate-700" : "text-white")}>ELD Hours of Service</span>
-                  <Badge className={cn("border-0 text-[9px] font-bold ml-auto",
+                  <Badge className={cn("border-0 text-xs font-bold ml-auto",
                     (eld.currentStatus || eld.status) === "driving" ? "bg-green-500/15 text-green-500" :
                     ["onDuty","on_duty"].includes(eld.currentStatus || eld.status) ? "bg-blue-500/15 text-blue-500" :
                     "bg-slate-500/15 text-slate-400"
@@ -322,7 +322,7 @@ export default function FleetTracking() {
                     const remaining = Math.max(0, h.max - h.used);
                     return (
                       <div key={h.label}>
-                        <div className="flex justify-between text-[10px] mb-1">
+                        <div className="flex justify-between text-xs mb-1">
                           <span className="text-slate-400">{h.label}</span>
                           <span className={cn("font-bold tabular-nums",
                             pct >= 85 ? "text-red-400" : h.color === "green" ? "text-green-400" : h.color === "blue" ? "text-blue-400" : "text-purple-400"
@@ -342,8 +342,8 @@ export default function FleetTracking() {
 
             {/* Quick actions */}
             <div className="flex items-center gap-2 mt-3">
-              <Button size="sm" variant="outline" className="rounded-lg text-[10px] h-7 gap-1"><Phone className="w-3 h-3" />Call</Button>
-              <Button size="sm" variant="outline" className="rounded-lg text-[10px] h-7 gap-1"><MessageSquare className="w-3 h-3" />Message</Button>
+              <Button size="sm" variant="outline" className="rounded-lg text-xs h-7 gap-1"><Phone className="w-3 h-3" />Call</Button>
+              <Button size="sm" variant="outline" className="rounded-lg text-xs h-7 gap-1"><MessageSquare className="w-3 h-3" />Message</Button>
             </div>
           </CardContent>
         </Card>
@@ -356,17 +356,17 @@ export default function FleetTracking() {
           <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
             <AlertTriangle className="w-4 h-4 text-orange-500" />
             <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Active Alerts</span>
-            <Badge className="border-0 bg-red-500/15 text-red-500 text-[10px] font-bold ml-auto">{activeAlerts.length}</Badge>
+            <Badge className="border-0 bg-red-500/15 text-red-500 text-xs font-bold ml-auto">{activeAlerts.length}</Badge>
           </div>
           <CardContent className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {activeAlerts.map((alert: any) => (
                 <div key={alert.id} className={cn("p-3.5 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                   <div className="flex items-center justify-between mb-2">
-                    <Badge className={cn("border-0 text-[10px] font-bold uppercase",
+                    <Badge className={cn("border-0 text-xs font-bold uppercase",
                       alert.severity === "emergency" || alert.severity === "critical" ? "bg-red-500/15 text-red-500" : "bg-yellow-500/15 text-yellow-500"
                     )}>{alert.severity}</Badge>
-                    <span className="text-[10px] text-slate-400">{alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString() : ""}</span>
+                    <span className="text-xs text-slate-400">{alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString() : ""}</span>
                   </div>
                   <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{alert.userName}</p>
                   <p className="text-xs text-slate-400 mt-0.5">{alert.type?.replace(/_/g, " ")}</p>

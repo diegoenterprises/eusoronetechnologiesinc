@@ -245,10 +245,10 @@ export function VerticalFieldsPanel({
           {VERTICAL_ICONS[vertical.icon] || <Package className="w-5 h-5 text-blue-400" />}
           <span className="text-sm font-semibold text-white">{vertical.name}</span>
           {vertical.temperatureControlled && (
-            <Badge variant="outline" className="text-[10px] border-cyan-500/40 text-cyan-400">Temp Controlled</Badge>
+            <Badge variant="outline" className="text-xs border-cyan-500/40 text-cyan-400">Temp Controlled</Badge>
           )}
           {vertical.hazmatApplicable && (
-            <Badge variant="outline" className="text-[10px] border-orange-500/40 text-orange-400">Hazmat</Badge>
+            <Badge variant="outline" className="text-xs border-orange-500/40 text-orange-400">Hazmat</Badge>
           )}
         </div>
         <button
@@ -320,7 +320,7 @@ export function VerticalFieldsPanel({
                 <div key={doc.id} className="flex items-center gap-2 text-xs text-slate-300">
                   <CheckCircle className={cn("w-3 h-3 shrink-0", doc.required ? "text-red-400" : "text-slate-500")} />
                   <span>{doc.name}</span>
-                  {doc.required && <span className="text-red-400 text-[10px]">Required</span>}
+                  {doc.required && <span className="text-red-400 text-xs">Required</span>}
                 </div>
               ))}
             </div>
@@ -334,7 +334,7 @@ export function VerticalFieldsPanel({
           <DollarSign className="w-3.5 h-3.5 text-green-400" />
           <span className="text-xs text-slate-400 mr-1">Pricing:</span>
           {vertical.pricingFactors.filter((f: any) => f.factor !== "base").map((f: any) => (
-            <Badge key={f.factor} variant="outline" className="text-[10px] border-green-500/30 text-green-400">
+            <Badge key={f.factor} variant="outline" className="text-xs border-green-500/30 text-green-400">
               {f.description} ({((f.multiplier - 1) * 100).toFixed(0)}%)
             </Badge>
           ))}

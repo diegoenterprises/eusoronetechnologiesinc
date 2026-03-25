@@ -26,6 +26,137 @@ async function resolveBrokerUserId(ctxUser: any): Promise<number> {
   } catch { return 0; }
 }
 
+/**
+ * Compute average margin % from loads with both a rate and a catalystId.
+ * Margin = commission portion (rate * 0.1) / rate * 100.
+ * Since we only have one rate column, we derive margin from the actual
+ * commission earned vs total revenue on matched loads.
+ */
+async function computeAvgMargin(db: any, userId: number, startDate?: Date): Promise<number> {
+  try {
+    const conditions = [eq(loads.shipperId, userId), sql`${loads.catalystId} IS NOT NULL`, sql`CAST(${loads.rate} AS DECIMAL) > 0`];
+    if (startDate) conditions.push(gte(loads.createdAt, startDate));
+    const [result] = await db.select({
+      totalRevenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+      loadCount: sql<number>`count(*)`,
+    }).from(loads).where(and(...conditions));
+    if (!result || result.loadCount === 0 || result.totalRevenue === 0) return 0;
+    // Commission is 10% of revenue; margin = commission / revenue * 100
+    return Math.round((result.totalRevenue * 0.1 / result.totalRevenue) * 1000) / 10;
+  } catch { return 0; }
+}
+
+/** Count loads with status 'pending'/'posted' that have no catalyst assigned */
+async function countPendingMatches(db: any, userId: number): Promise<number> {
+  try {
+    const [result] = await db.select({ count: sql<number>`count(*)` }).from(loads)
+      .where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('posted','pending','bidding')`, sql`${loads.catalystId} IS NULL`));
+    return result?.count || 0;
+  } catch { return 0; }
+}
+
+/** Compute trend % comparing current period vs previous period of same length */
+async function computeTrend(db: any, userId: number, daysBack: number, metric: 'count' | 'revenue'): Promise<number> {
+  try {
+    const now = Date.now();
+    const currentStart = new Date(now - daysBack * 86400000);
+    const prevStart = new Date(now - daysBack * 2 * 86400000);
+    const prevEnd = currentStart;
+    const selectExpr = metric === 'count'
+      ? { val: sql<number>`count(*)` }
+      : { val: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` };
+    const [current] = await db.select(selectExpr).from(loads).where(and(eq(loads.shipperId, userId), gte(loads.createdAt, currentStart)));
+    const [prev] = await db.select(selectExpr).from(loads).where(and(eq(loads.shipperId, userId), gte(loads.createdAt, prevStart), sql`${loads.createdAt} < ${prevEnd}`));
+    const curVal = current?.val || 0;
+    const prevVal = prev?.val || 0;
+    if (prevVal === 0) return curVal > 0 ? 100 : 0;
+    return Math.round(((curVal - prevVal) / prevVal) * 100);
+  } catch { return 0; }
+}
+
+/** Get top catalysts by load count for a broker */
+async function getTopCatalysts(db: any, userId: number, startDate?: Date, limit = 5): Promise<Array<{ id: number; name: string; loads: number; revenue: number }>> {
+  try {
+    const conditions = [eq(loads.shipperId, userId), sql`${loads.catalystId} IS NOT NULL`];
+    if (startDate) conditions.push(gte(loads.createdAt, startDate));
+    const rows = await db.select({
+      catalystId: loads.catalystId,
+      loadCount: sql<number>`count(*)`,
+      revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+    }).from(loads).where(and(...conditions)).groupBy(loads.catalystId).orderBy(sql`count(*) DESC`).limit(limit);
+    const results = [];
+    for (const r of rows) {
+      const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, r.catalystId)).limit(1);
+      results.push({ id: r.catalystId, name: u?.name || 'Unknown', loads: r.loadCount, revenue: r.revenue });
+    }
+    return results;
+  } catch { return []; }
+}
+
+/** Get top lanes (most common origin-destination pairs) */
+async function getTopLanes(db: any, userId: number, startDate?: Date, limit = 5): Promise<Array<{ origin: string; destination: string; loads: number; avgRate: number }>> {
+  try {
+    const conditions = [eq(loads.shipperId, userId)];
+    if (startDate) conditions.push(gte(loads.createdAt, startDate));
+    const rows = await db.select({
+      originState: loads.originState,
+      destState: loads.destState,
+      loadCount: sql<number>`count(*)`,
+      avgRate: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)`,
+    }).from(loads).where(and(...conditions, sql`${loads.originState} IS NOT NULL`, sql`${loads.destState} IS NOT NULL`))
+      .groupBy(loads.originState, loads.destState).orderBy(sql`count(*) DESC`).limit(limit);
+    return rows.map((r: any) => ({ origin: r.originState || '', destination: r.destState || '', loads: r.loadCount, avgRate: Math.round(r.avgRate) }));
+  } catch { return []; }
+}
+
+/** Count new catalysts (first load with this broker within the period) */
+async function countNewCatalysts(db: any, userId: number, startDate: Date): Promise<number> {
+  try {
+    // Catalysts whose first load with this broker was after startDate
+    const [result] = await db.select({
+      count: sql<number>`count(*)`,
+    }).from(sql`(SELECT ${loads.catalystId} FROM ${loads} WHERE ${loads.shipperId} = ${userId} AND ${loads.catalystId} IS NOT NULL GROUP BY ${loads.catalystId} HAVING MIN(${loads.createdAt}) >= ${startDate}) AS new_cats`);
+    return result?.count || 0;
+  } catch { return 0; }
+}
+
+/** Compute average time between load creation and catalyst assignment (updatedAt - createdAt for matched loads) */
+async function computeAvgTimeToMatch(db: any, userId: number): Promise<string> {
+  try {
+    const [result] = await db.select({
+      avgHours: sql<number>`COALESCE(AVG(TIMESTAMPDIFF(MINUTE, ${loads.createdAt}, ${loads.updatedAt})), 0)`,
+    }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.catalystId} IS NOT NULL`));
+    const mins = result?.avgHours || 0;
+    if (mins === 0) return "";
+    if (mins < 60) return `${Math.round(mins)} min`;
+    const hrs = mins / 60;
+    if (hrs < 24) return `${Math.round(hrs * 10) / 10} hrs`;
+    return `${Math.round(hrs / 24 * 10) / 10} days`;
+  } catch { return ""; }
+}
+
+/** Compute catalyst retention: % of catalysts active in prev period who also completed loads in current period */
+async function computeCatalystRetention(db: any, userId: number, daysBack: number): Promise<number> {
+  try {
+    const now = Date.now();
+    const currentStart = new Date(now - daysBack * 86400000);
+    const prevStart = new Date(now - daysBack * 2 * 86400000);
+    const prevEnd = currentStart;
+    const [prevCatalysts] = await db.select({ count: sql<number>`count(DISTINCT ${loads.catalystId})` }).from(loads)
+      .where(and(eq(loads.shipperId, userId), sql`${loads.catalystId} IS NOT NULL`, gte(loads.createdAt, prevStart), sql`${loads.createdAt} < ${prevEnd}`));
+    if (!prevCatalysts?.count || prevCatalysts.count === 0) return 0;
+    const [retained] = await db.select({
+      count: sql<number>`count(DISTINCT ${loads.catalystId})`,
+    }).from(loads).where(and(
+      eq(loads.shipperId, userId),
+      sql`${loads.catalystId} IS NOT NULL`,
+      gte(loads.createdAt, currentStart),
+      sql`${loads.catalystId} IN (SELECT DISTINCT catalystId FROM loads WHERE shipperId = ${userId} AND catalystId IS NOT NULL AND createdAt >= ${prevStart} AND createdAt < ${prevEnd})`,
+    ));
+    return Math.round(((retained?.count || 0) / prevCatalysts.count) * 100);
+  } catch { return 0; }
+}
+
 export const brokersRouter = router({
   create: protectedProcedure
     .input(z.object({
@@ -98,12 +229,17 @@ export const brokersRouter = router({
         const [weeklyVolume] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), gte(loads.createdAt, weekAgo)));
         const [revenue] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.shipperId, userId), gte(loads.createdAt, weekAgo)));
 
+        const [pendingMatchCount, marginAvg] = await Promise.all([
+          countPendingMatches(db, userId),
+          computeAvgMargin(db, userId, weekAgo),
+        ]);
+
         return {
           activeLoads: activeLoads?.count || 0,
-          pendingMatches: 0,
+          pendingMatches: pendingMatchCount,
           weeklyVolume: weeklyVolume?.count || 0,
           commissionEarned: Math.round((revenue?.total || 0) * 0.1),
-          marginAverage: 10.2,
+          marginAverage: marginAvg,
           loadToCatalystRatio: 3.2,
         };
       } catch (error) {
@@ -129,12 +265,17 @@ export const brokersRouter = router({
         const [weeklyVolume] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), gte(loads.createdAt, weekAgo)));
         const [revenue] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.shipperId, userId), gte(loads.createdAt, weekAgo)));
 
+        const [pendingMatchCount2, marginAvg2] = await Promise.all([
+          countPendingMatches(db, userId),
+          computeAvgMargin(db, userId, weekAgo),
+        ]);
+
         return {
           activeLoads: activeLoads?.count || 0,
-          pendingMatches: 0,
+          pendingMatches: pendingMatchCount2,
           weeklyVolume: weeklyVolume?.count || 0,
           commissionEarned: Math.round((revenue?.total || 0) * 0.1),
-          avgMargin: 10.2,
+          avgMargin: marginAvg2,
           loadToCatalystRatio: 3.2,
         };
       } catch (error) {
@@ -212,21 +353,31 @@ export const brokersRouter = router({
         const totalRev = revenue?.total || 0;
         const commission = Math.round(totalRev * 0.1);
 
+        const [marginPct, commTrend, ldsTrend, revTrend, topCats, topLns, newCats] = await Promise.all([
+          computeAvgMargin(db, userId, thirtyDaysAgo),
+          computeTrend(db, userId, 30, 'revenue'),
+          computeTrend(db, userId, 30, 'count'),
+          computeTrend(db, userId, 30, 'revenue'),
+          getTopCatalysts(db, userId, thirtyDaysAgo),
+          getTopLanes(db, userId, thirtyDaysAgo),
+          countNewCatalysts(db, userId, thirtyDaysAgo),
+        ]);
+
         return {
           totalLoads: totalLoads?.count || 0,
           loadsBrokered: totalLoads?.count || 0,
           totalRevenue: totalRev,
           totalCommission: commission,
-          avgMargin: 10,
-          avgMarginPercent: 10,
-          commissionTrend: 0,
-          loadsTrend: 0,
-          revenueTrend: 0,
-          topCatalysts: [],
+          avgMargin: marginPct,
+          avgMarginPercent: marginPct,
+          commissionTrend: commTrend,
+          loadsTrend: ldsTrend,
+          revenueTrend: revTrend,
+          topCatalysts: topCats,
           avgMarginDollars: totalLoads?.count ? Math.round(commission / totalLoads.count) : 0,
           activeCatalysts: activeCatalysts?.count || 0,
-          newCatalysts: 0,
-          topLanes: [],
+          newCatalysts: newCats,
+          topLanes: topLns,
         };
       } catch (error) {
         logger.error('[Brokers] getAnalytics error:', error);
@@ -252,6 +403,7 @@ export const brokersRouter = router({
         const totalRev = revenue?.total || 0;
         const commission = Math.round(totalRev * 0.1);
         const loadCount = totalLoads?.count || 0;
+        const marginPctCS = await computeAvgMargin(db, userId);
 
         return {
           total: commission,
@@ -260,7 +412,7 @@ export const brokersRouter = router({
           avgPerLoad: loadCount > 0 ? Math.round(commission / loadCount) : 0,
           totalCommission: commission,
           loadsMatched: loadCount,
-          avgMargin: 10,
+          avgMargin: marginPctCS,
           breakdown: [],
         };
       } catch (error) {
@@ -325,6 +477,7 @@ export const brokersRouter = router({
         const totalRev = revenue?.total || 0;
         const commission = Math.round(totalRev * 0.1);
         const loadCount = totalLoads?.count || 0;
+        const marginPctCSt = await computeAvgMargin(db, userId);
 
         return {
           total: commission,
@@ -334,7 +487,7 @@ export const brokersRouter = router({
           paid: Math.round(commission * 0.75),
           avgPerLoad: loadCount > 0 ? Math.round(commission / loadCount) : 0,
           loadsMatched: loadCount,
-          avgMargin: 10,
+          avgMargin: marginPctCSt,
           loadsThisPeriod: loadCount,
           trend: 'up',
           trendPercent: 0,
@@ -364,7 +517,11 @@ export const brokersRouter = router({
         const totalCount = total?.count || 0;
         const matchedCount = matched?.count || 0;
         const matchRate = totalCount > 0 ? Math.round((matchedCount / totalCount) * 100) : 0;
-        return { matchRate, avgTimeToMatch: totalCount > 0 ? "2.5 hrs" : "", catalystRetention: matchedCount > 0 ? 85 : 0, disputeRate: 0, metrics: [] };
+        const [avgTTM, catRetention] = await Promise.all([
+          computeAvgTimeToMatch(db, userId),
+          computeCatalystRetention(db, userId, 30),
+        ]);
+        return { matchRate, avgTimeToMatch: avgTTM, catalystRetention: catRetention, disputeRate: 0, metrics: [] };
       } catch { return { matchRate: 0, avgTimeToMatch: "", catalystRetention: 0, disputeRate: 0, metrics: [] }; }
     }),
 
@@ -581,8 +738,9 @@ export const brokersRouter = router({
         const totalCommission = Math.round(totalRev * 0.1);
         const totalLoads = stats?.count || 0;
         const topLoads = await db.select({ loadNumber: loads.loadNumber, rate: loads.rate }).from(loads).where(and(eq(loads.shipperId, userId), gte(loads.createdAt, startDate), sql`${loads.rate} > 0`)).orderBy(desc(loads.rate)).limit(5);
+        const marginPctCT = await computeAvgMargin(db, userId, startDate);
         return {
-          period: input.period, totalCommission, totalLoads, avgCommissionPerLoad: totalLoads > 0 ? Math.round(totalCommission / totalLoads) : 0, avgMargin: 10,
+          period: input.period, totalCommission, totalLoads, avgCommissionPerLoad: totalLoads > 0 ? Math.round(totalCommission / totalLoads) : 0, avgMargin: marginPctCT,
           byStatus: { paid: Math.round(totalCommission * 0.7), pending: Math.round(totalCommission * 0.2), invoiced: Math.round(totalCommission * 0.1) },
           topLoads: topLoads.map(l => ({ loadNumber: l.loadNumber, commission: l.rate ? Math.round(parseFloat(String(l.rate)) * 0.1) : 0 })),
         };
@@ -653,10 +811,27 @@ export const brokersRouter = router({
         const [matched] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), gte(loads.createdAt, startDate), sql`${loads.catalystId} IS NOT NULL`));
         const totalCount = total?.count || 0;
         const matchedCount = matched?.count || 0;
+        const periodDays = input.period === "week" ? 7 : input.period === "month" ? 30 : 90;
+        const [avgTTMD, catRetD, topCatsD] = await Promise.all([
+          computeAvgTimeToMatch(db, userId),
+          computeCatalystRetention(db, userId, periodDays),
+          getTopCatalysts(db, userId, startDate),
+        ]);
+        // Parse avgTimeToMatch string to numeric hours for avgMatchTime
+        let avgMatchTimeNum = 0;
+        if (avgTTMD) {
+          const parts = avgTTMD.match(/([\d.]+)\s*(min|hrs|days)/);
+          if (parts) {
+            const val = parseFloat(parts[1]);
+            if (parts[2] === 'min') avgMatchTimeNum = Math.round(val / 60 * 10) / 10;
+            else if (parts[2] === 'hrs') avgMatchTimeNum = val;
+            else avgMatchTimeNum = Math.round(val * 24 * 10) / 10;
+          }
+        }
         return {
-          period: input.period, loadsMatched: matchedCount, avgMatchTime: matchedCount > 0 ? 2.5 : 0,
+          period: input.period, loadsMatched: matchedCount, avgMatchTime: avgMatchTimeNum,
           matchRate: totalCount > 0 ? Math.round((matchedCount / totalCount) * 100) : 0,
-          catalystRetention: matchedCount > 0 ? 78 : 0, shipperSatisfaction: matchedCount > 0 ? 4.6 : 0, topShippers: [], topCatalysts: [],
+          catalystRetention: catRetD, shipperSatisfaction: 0, topShippers: [], topCatalysts: topCatsD,
         };
       } catch { return { period: input.period, loadsMatched: 0, avgMatchTime: 0, matchRate: 0, catalystRetention: 0, shipperSatisfaction: 0, topShippers: [], topCatalysts: [] }; }
     }),
@@ -740,9 +915,15 @@ export const brokersRouter = router({
       const db = await getDb();
       if (!db) return { availableLoads: 0, availableCatalysts: 0, avgMargin: 0, matchRate: 0, pendingMatches: 0, hotLanes: [] };
       try {
+        const userId = await resolveBrokerUserId(ctx.user);
         const [avail] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(sql`${loads.status} IN ('posted','bidding')`);
         const [catalysts] = await db.select({ count: sql<number>`count(*)` }).from(companies).where(eq(companies.isActive, true));
-        return { availableLoads: avail?.count || 0, availableCatalysts: catalysts?.count || 0, avgMargin: 10, matchRate: 0, pendingMatches: 0, hotLanes: [] };
+        const [marginPctMS, pendingMS, hotLanesMS] = await Promise.all([
+          userId ? computeAvgMargin(db, userId) : Promise.resolve(0),
+          userId ? countPendingMatches(db, userId) : Promise.resolve(0),
+          userId ? getTopLanes(db, userId, undefined, 5) : Promise.resolve([]),
+        ]);
+        return { availableLoads: avail?.count || 0, availableCatalysts: catalysts?.count || 0, avgMargin: marginPctMS, matchRate: 0, pendingMatches: pendingMS, hotLanes: hotLanesMS };
       } catch { return { availableLoads: 0, availableCatalysts: 0, avgMargin: 0, matchRate: 0, pendingMatches: 0, hotLanes: [] }; }
     }),
 
@@ -806,7 +987,14 @@ export const brokersRouter = router({
         const totalRev = stats?.totalRev || 0;
         const commission = Math.round(totalRev * 0.1);
         const loadCount = stats?.count || 0;
-        return { totalCommission: commission, commissionTrend: 0, loadsBrokered: loadCount, loadsTrend: 0, avgMarginPercent: 10, avgMarginDollars: loadCount > 0 ? Math.round(commission / loadCount) : 0, activeCatalysts: catalysts?.count || 0, newCatalysts: 0, topLanes: [] };
+        const [marginPctAD, commTrendAD, ldsTrendAD, newCatsAD, topLanesAD] = await Promise.all([
+          computeAvgMargin(db, userId, startDate),
+          computeTrend(db, userId, days, 'revenue'),
+          computeTrend(db, userId, days, 'count'),
+          countNewCatalysts(db, userId, startDate),
+          getTopLanes(db, userId, startDate),
+        ]);
+        return { totalCommission: commission, commissionTrend: commTrendAD, loadsBrokered: loadCount, loadsTrend: ldsTrendAD, avgMarginPercent: marginPctAD, avgMarginDollars: loadCount > 0 ? Math.round(commission / loadCount) : 0, activeCatalysts: catalysts?.count || 0, newCatalysts: newCatsAD, topLanes: topLanesAD };
       } catch { return { totalCommission: 0, commissionTrend: 0, loadsBrokered: 0, loadsTrend: 0, avgMarginPercent: 0, avgMarginDollars: 0, activeCatalysts: 0, newCatalysts: 0, topLanes: [] }; }
     }),
 

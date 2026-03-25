@@ -14,9 +14,36 @@ export const tollsRouter = router({
    */
   getRecentRoutes: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(5) }))
-    .query(async () => {
-      return [
-      ];
+    .query(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) return [];
+        const { loads } = await import("../../drizzle/schema");
+
+        const recentLoads = await db.select({
+          id: loads.id,
+          pickupLocation: loads.pickupLocation,
+          deliveryLocation: loads.deliveryLocation,
+          completedAt: loads.actualDeliveryDate,
+        })
+          .from(loads)
+          .where(sql`${loads.status} IN ('delivered', 'complete')`)
+          .orderBy(sql`${loads.actualDeliveryDate} DESC`)
+          .limit(input.limit);
+
+        return recentLoads.map(l => {
+          const p = l.pickupLocation as any;
+          const d = l.deliveryLocation as any;
+          return {
+            id: l.id,
+            origin: p ? `${p.city || "Unknown"}, ${p.state || ""}`.trim() : "Unknown",
+            destination: d ? `${d.city || "Unknown"}, ${d.state || ""}`.trim() : "Unknown",
+            completedAt: l.completedAt?.toISOString() || null,
+          };
+        });
+      } catch {
+        return [];
+      }
     }),
 
   /**
@@ -29,6 +56,7 @@ export const tollsRouter = router({
       vehicleType: z.string().optional().default("5_axle"),
     }))
     .mutation(async ({ input }) => {
+      // Requires external toll API integration (e.g. HERE Toll Cost, TollGuru)
       return {
         origin: input.origin,
         destination: input.destination,

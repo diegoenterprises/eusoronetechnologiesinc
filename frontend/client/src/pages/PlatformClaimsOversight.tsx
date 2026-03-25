@@ -141,25 +141,25 @@ export default function PlatformClaimsOversight() {
                       <span className="text-white font-mono text-sm">{c.claimNumber}</span>
                     </div>
                     <div className="col-span-2">
-                      <Badge className={`border-0 text-[10px] ${tc} capitalize`}>{c.type}</Badge>
+                      <Badge className={`border-0 text-xs ${tc} capitalize`}>{c.type}</Badge>
                     </div>
                     <div className="col-span-2">
                       <span className="text-slate-300 text-sm">{c.loadNumber || "N/A"}</span>
                     </div>
                     <div className="col-span-2">
                       <p className="text-white text-xs">{c.shipper || "—"}</p>
-                      <p className="text-[10px] text-slate-500">{c.catalyst || "—"}</p>
+                      <p className="text-xs text-slate-500">{c.catalyst || "—"}</p>
                     </div>
                     <div className="col-span-1">
                       <span className="text-emerald-400 font-medium text-sm">{c.amount ? `$${c.amount.toLocaleString()}` : "—"}</span>
                     </div>
                     <div className="col-span-1">
-                      <Badge className={`border-0 text-[10px] ${st.bg} ${st.color} gap-1`}>
+                      <Badge className={`border-0 text-xs ${st.bg} ${st.color} gap-1`}>
                         {st.icon}{st.label}
                       </Badge>
                     </div>
                     <div className="col-span-1">
-                      <span className="text-[10px] text-slate-500">{c.filedDate || ""}</span>
+                      <span className="text-xs text-slate-500">{c.filedDate || ""}</span>
                     </div>
                     <div className="col-span-1 flex justify-end">
                       <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-8 w-8 p-0">

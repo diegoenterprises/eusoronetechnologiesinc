@@ -156,7 +156,7 @@ export default function UserManagement() {
                         {getRoleBadge(user.role)}
                         {getStatusBadge(user.status)}
                         {user.approvalStatus && user.approvalStatus !== "unknown" && (
-                          <Badge className={cn("border-0 text-[10px]",
+                          <Badge className={cn("border-0 text-xs",
                             user.approvalStatus === "approved" ? "bg-green-500/20 text-green-400" :
                             user.approvalStatus === "pending_review" ? "bg-yellow-500/20 text-yellow-400" :
                             user.approvalStatus === "rejected" ? "bg-red-500/20 text-red-400" :
@@ -178,7 +178,7 @@ export default function UserManagement() {
                         )}
                         {user.location && <span className="flex items-center gap-1.5 truncate"><MapPin className="w-3 h-3 text-slate-500 flex-shrink-0" />{user.location}</span>}
                       </div>
-                      <div className="flex items-center gap-4 mt-1.5 text-[11px] text-slate-500">
+                      <div className="flex items-center gap-4 mt-1.5 text-xs text-slate-500">
                         <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />Joined: {user.createdAt || "—"}</span>
                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" />Last login: {user.lastLogin || "Never"}</span>
                       </div>

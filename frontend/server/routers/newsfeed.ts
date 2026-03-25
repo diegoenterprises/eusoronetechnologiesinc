@@ -22,16 +22,9 @@ export const newsfeedRouter = router({
       limit: z.number().default(20),
       offset: z.number().default(0),
     }))
-    .query(async ({ input }) => {
-      const articles: any[] = [];
-
-      let filtered = articles;
-      if (input.category) filtered = filtered.filter(a => a.category === input.category);
-
-      return {
-        articles: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+    .query(async () => {
+      // No newsfeed articles table exists yet
+      return { articles: [], total: 0 };
     }),
 
   /**
@@ -39,6 +32,7 @@ export const newsfeedRouter = router({
    */
   getFeatured: publicProcedure
     .query(async () => {
+      // No featured articles table exists yet
       return [];
     }),
 
@@ -47,20 +41,17 @@ export const newsfeedRouter = router({
    */
   getArticle: publicProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return {
-        id: input.id,
-        title: "", content: "", category: "", author: "",
-        publishedAt: "", readTime: 0, imageUrl: "",
-        tags: [], relatedArticles: [],
-      };
+    .query(async () => {
+      // No newsfeed articles table exists yet
+      return null;
     }),
 
   /**
    * Get platform announcements
    */
   getAnnouncements: protectedProcedure
-    .query(async ({ ctx }) => {
+    .query(async () => {
+      // No announcements table exists yet
       return [];
     }),
 
@@ -84,16 +75,41 @@ export const newsfeedRouter = router({
     .input(z.object({
       region: z.string().optional(),
     }))
-    .query(async ({ input }) => {
+    .query(async () => {
+      const db = await getDb();
+      const averages: Record<string, number> = { general: 0, hazmat: 0, refrigerated: 0, liquid: 0 };
+
+      if (db) {
+        try {
+          const rows = await db.select({
+            cargoType: sql<string>`cargoType`,
+            avgRate: sql<number>`AVG(CAST(rate AS DECIMAL(10,2)))`,
+          })
+            .from(sql`loads`)
+            .where(sql`rate IS NOT NULL AND rate > 0 AND distance IS NOT NULL AND distance > 0 AND status NOT IN ('draft','cancelled')`)
+            .groupBy(sql`cargoType`);
+
+          for (const row of rows) {
+            const ct = String(row.cargoType || "").toLowerCase();
+            if (ct in averages) averages[ct] = Number(row.avgRate) || 0;
+          }
+        } catch { /* loads table may not exist */ }
+      }
+
       return {
         lastUpdated: new Date().toISOString(),
-        nationalAverage: { flatbed: 0, van: 0, reefer: 0, tanker: 0 },
+        nationalAverage: {
+          flatbed: averages.general,
+          van: averages.general,
+          reefer: averages.refrigerated,
+          tanker: averages.liquid,
+        },
         byRegion: [],
         trends: {
-          flatbed: { change: 0, direction: "stable" },
-          van: { change: 0, direction: "stable" },
-          reefer: { change: 0, direction: "stable" },
-          tanker: { change: 0, direction: "stable" },
+          flatbed: { change: 0, direction: "stable" as const },
+          van: { change: 0, direction: "stable" as const },
+          reefer: { change: 0, direction: "stable" as const },
+          tanker: { change: 0, direction: "stable" as const },
         },
       };
     }),
@@ -103,10 +119,56 @@ export const newsfeedRouter = router({
    */
   getDieselPrices: publicProcedure
     .query(async () => {
+      const db = await getDb();
+      let nationalAverage = 0;
+      let weeklyChange = 0;
+      let lastUpdated = new Date().toISOString();
+      const byRegion: { region: string; price: number }[] = [];
+
+      if (db) {
+        try {
+          // Query latest diesel prices from hz_fuel_prices table
+          const [avgRow] = await db.select({
+            avg: sql<number>`AVG(CAST(diesel_retail AS DECIMAL(6,3)))`,
+            latest: sql<string>`MAX(report_date)`,
+          })
+            .from(sql`hz_fuel_prices`)
+            .where(sql`diesel_retail IS NOT NULL AND report_date >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)`);
+
+          nationalAverage = Number(avgRow?.avg) || 0;
+          if (avgRow?.latest) lastUpdated = String(avgRow.latest);
+
+          // Weekly change: compare current avg vs 7 days prior
+          const [prevRow] = await db.select({
+            avg: sql<number>`AVG(CAST(diesel_retail AS DECIMAL(6,3)))`,
+          })
+            .from(sql`hz_fuel_prices`)
+            .where(sql`diesel_retail IS NOT NULL AND report_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 21 DAY) AND DATE_SUB(CURDATE(), INTERVAL 7 DAY)`);
+
+          const prevAvg = Number(prevRow?.avg) || 0;
+          if (prevAvg > 0) weeklyChange = nationalAverage - prevAvg;
+
+          // By PADD region
+          const regionRows = await db.select({
+            region: sql<string>`padd_region`,
+            price: sql<number>`AVG(CAST(diesel_retail AS DECIMAL(6,3)))`,
+          })
+            .from(sql`hz_fuel_prices`)
+            .where(sql`diesel_retail IS NOT NULL AND padd_region IS NOT NULL AND report_date >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)`)
+            .groupBy(sql`padd_region`);
+
+          for (const r of regionRows) {
+            byRegion.push({ region: String(r.region), price: Number(r.price) || 0 });
+          }
+        } catch { /* hz_fuel_prices table may not exist */ }
+      }
+
       return {
-        lastUpdated: new Date().toISOString(),
-        nationalAverage: 0, byRegion: [],
-        weeklyChange: 0, yearOverYear: 0,
+        lastUpdated,
+        nationalAverage,
+        byRegion,
+        weeklyChange,
+        yearOverYear: 0,
       };
     }),
 

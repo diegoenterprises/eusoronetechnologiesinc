@@ -77,7 +77,7 @@ export const freightClaimsRouter = router({
     if (!db) {
       return {
         open: 0, pending: 0, resolved: 0, denied: 0,
-        totalValue: 0, avgResolutionDays: 14,
+        totalValue: 0, avgResolutionDays: 0,
         aging: { under30: 0, days30to60: 0, days60to90: 0, over90: 0 },
         recentClaims: [],
       };
@@ -112,18 +112,37 @@ export const freightClaimsRouter = router({
         .orderBy(desc(incidents.createdAt))
         .limit(5);
 
+      // Compute aging distribution from actual open-incident creation dates
+      const nowMs = Date.now();
+      const openIncidents = await db
+        .select({ createdAt: incidents.createdAt })
+        .from(incidents)
+        .where(and(
+          eq(incidents.status, "investigating"),
+        ));
+      let under30 = 0, days30to60 = 0, days60to90 = 0, over90 = 0;
+      for (const row of openIncidents) {
+        const ageDays = Math.floor((nowMs - new Date(row.createdAt).getTime()) / 86400000);
+        if (ageDays < 30) under30++;
+        else if (ageDays < 60) days30to60++;
+        else if (ageDays < 90) days60to90++;
+        else over90++;
+      }
+
+      // No amount column on incidents table — totalValue = 0
+      // No resolution timestamp on incidents table — avgResolutionDays = 0
       return {
         open: openCount,
         pending: pendingCount,
         resolved: resolvedCount,
         denied: 0,
-        totalValue: totalCount * 2850,
-        avgResolutionDays: 14,
+        totalValue: 0,
+        avgResolutionDays: 0,
         aging: {
-          under30: Math.ceil(openCount * 0.6),
-          days30to60: Math.ceil(openCount * 0.25),
-          days60to90: Math.ceil(openCount * 0.1),
-          over90: Math.ceil(openCount * 0.05),
+          under30,
+          days30to60,
+          days60to90,
+          over90,
         },
         recentClaims: recentRows.map((r) => ({
           id: `claim_${r.id}`,

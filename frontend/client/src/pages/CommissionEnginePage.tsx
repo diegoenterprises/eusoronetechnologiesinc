@@ -49,7 +49,7 @@ export default function CommissionEnginePage() {
         <CardContent className="p-4">
           <p className="text-xs text-slate-400 mb-2">Fee Formula</p>
           <p className="text-sm text-white font-mono">PLATFORM_FEE = BASE(8%) * (1 + RISK - GAMIFICATION_BONUS) * COMMODITY_FACTOR</p>
-          <div className="flex gap-4 mt-2 text-[10px] text-slate-400">
+          <div className="flex gap-4 mt-2 text-xs text-slate-400">
             <span>Range: 5% - 15%</span>
             <span>Driver Commission: 25%</span>
             <span>Hazmat Premium: +2%</span>
@@ -68,15 +68,15 @@ export default function CommissionEnginePage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <label className="text-[10px] text-slate-400 uppercase block mb-1">Gross Rate ($)</label>
+              <label className="text-xs text-slate-400 uppercase block mb-1">Gross Rate ($)</label>
               <Input type="number" value={grossRate} onChange={e => setGrossRate(e.target.value)} className="bg-slate-900/50 border-slate-700 text-white" />
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase block mb-1">Distance (miles)</label>
+              <label className="text-xs text-slate-400 uppercase block mb-1">Distance (miles)</label>
               <Input type="number" value={distance} onChange={e => setDistance(e.target.value)} className="bg-slate-900/50 border-slate-700 text-white" />
             </div>
             <div>
-              <label className="text-[10px] text-slate-400 uppercase block mb-1">Cargo Type</label>
+              <label className="text-xs text-slate-400 uppercase block mb-1">Cargo Type</label>
               <div className="flex gap-1 flex-wrap">
                 {["general", "liquid", "petroleum", "gas", "chemicals", "hazmat"].map(t => (
                   <Button key={t} size="sm" variant={cargoType === t ? "default" : "outline"} onClick={() => setCargoType(t)}
@@ -88,11 +88,11 @@ export default function CommissionEnginePage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-slate-400 uppercase block mb-1">Hazmat Class</label>
+                <label className="text-xs text-slate-400 uppercase block mb-1">Hazmat Class</label>
                 <Input value={hazmatClass} onChange={e => setHazmatClass(e.target.value)} placeholder="e.g. 3" className="bg-slate-900/50 border-slate-700 text-white" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-400 uppercase block mb-1">Driver Score (0-100)</label>
+                <label className="text-xs text-slate-400 uppercase block mb-1">Driver Score (0-100)</label>
                 <Input type="number" value={driverScore} onChange={e => setDriverScore(e.target.value)} className="bg-slate-900/50 border-slate-700 text-white" />
               </div>
             </div>
@@ -129,9 +129,9 @@ export default function CommissionEnginePage() {
                 </div>
                 {result.factors && (
                   <div className="flex gap-2 flex-wrap mt-2">
-                    {result.factors.riskFactor > 0 && <Badge className="bg-red-500/20 text-red-400 text-[9px]"><Flame className="w-3 h-3 mr-0.5" />Risk +{(result.factors.riskFactor * 100).toFixed(1)}%</Badge>}
-                    {result.factors.gamificationBonus > 0 && <Badge className="bg-green-500/20 text-green-400 text-[9px]"><Zap className="w-3 h-3 mr-0.5" />Bonus -{(result.factors.gamificationBonus * 100).toFixed(1)}%</Badge>}
-                    {result.factors.commodityFactor !== 1 && <Badge className="bg-blue-500/20 text-blue-400 text-[9px]"><Activity className="w-3 h-3 mr-0.5" />Commodity x{result.factors.commodityFactor?.toFixed(2)}</Badge>}
+                    {result.factors.riskFactor > 0 && <Badge className="bg-red-500/20 text-red-400 text-xs"><Flame className="w-3 h-3 mr-0.5" />Risk +{(result.factors.riskFactor * 100).toFixed(1)}%</Badge>}
+                    {result.factors.gamificationBonus > 0 && <Badge className="bg-green-500/20 text-green-400 text-xs"><Zap className="w-3 h-3 mr-0.5" />Bonus -{(result.factors.gamificationBonus * 100).toFixed(1)}%</Badge>}
+                    {result.factors.commodityFactor !== 1 && <Badge className="bg-blue-500/20 text-blue-400 text-xs"><Activity className="w-3 h-3 mr-0.5" />Commodity x{result.factors.commodityFactor?.toFixed(2)}</Badge>}
                   </div>
                 )}
               </div>
@@ -152,7 +152,7 @@ export default function CommissionEnginePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {Object.entries(indexes).map(([key, val]: [string, any]) => (
                 <div key={key} className="p-3 rounded-xl bg-slate-900/30 border border-slate-700/20 text-center">
-                  <p className="text-[10px] text-slate-400 uppercase">{key}</p>
+                  <p className="text-xs text-slate-400 uppercase">{key}</p>
                   <p className="text-lg font-bold text-white">{typeof val === "number" ? val.toFixed(2) : String(val)}</p>
                 </div>
               ))}

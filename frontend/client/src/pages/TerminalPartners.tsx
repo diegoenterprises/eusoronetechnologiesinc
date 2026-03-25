@@ -154,7 +154,7 @@ export default function TerminalPartners() {
     const s = m[status] || m.pending;
     const Icon = s.icon;
     return (
-      <Badge className={cn("border text-[10px] font-semibold px-2 py-0.5 gap-1", s.cls)}>
+      <Badge className={cn("border text-xs font-semibold px-2 py-0.5 gap-1", s.cls)}>
         <Icon className="w-3 h-3" />{s.label}
       </Badge>
     );
@@ -170,7 +170,7 @@ export default function TerminalPartners() {
         : type === "broker"
         ? (isLight ? "bg-cyan-100 text-cyan-700 border-cyan-200" : "bg-cyan-500/20 text-cyan-400 border-cyan-500/30")
         : (isLight ? "bg-slate-100 text-slate-700 border-slate-200" : "bg-slate-500/20 text-slate-400 border-slate-500/30");
-    return <Badge className={cn("border text-[10px] font-semibold px-2 py-0.5", cls)}>{label}</Badge>;
+    return <Badge className={cn("border text-xs font-semibold px-2 py-0.5", cls)}>{label}</Badge>;
   };
 
   const getRackBadge = (level: string) => {
@@ -178,7 +178,7 @@ export default function TerminalPartners() {
       level === "full" ? (isLight ? "bg-emerald-50 text-emerald-600" : "text-green-400")
       : level === "limited" ? (isLight ? "bg-amber-50 text-amber-600" : "text-yellow-400")
       : (isLight ? "bg-slate-50 text-slate-500" : "text-slate-400");
-    return <span className={cn("text-[10px] font-medium", cls)}>{level.toUpperCase()} access</span>;
+    return <span className={cn("text-xs font-medium", cls)}>{level.toUpperCase()} access</span>;
   };
 
   const statCards = [
@@ -236,7 +236,7 @@ export default function TerminalPartners() {
                 <div key={i} className={cn("flex flex-col items-center gap-1 px-4 py-3 rounded-xl min-w-[120px]", cellCls)}>
                   <step.icon className={cn("w-5 h-5", step.active ? "text-purple-500" : (isLight ? "text-slate-400" : "text-slate-500"))} />
                   <span className={cn("text-xs font-semibold", isLight ? "text-slate-700" : "text-white")}>{step.label}</span>
-                  <span className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{step.sub}</span>
+                  <span className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{step.sub}</span>
                 </div>
               )
             )}
@@ -244,15 +244,15 @@ export default function TerminalPartners() {
           <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-dashed" style={{ borderColor: isLight ? "#e2e8f0" : "#334155" }}>
             <div className="text-center">
               <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{flow?.inbound || 0}</p>
-              <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>Inbound Loads</p>
+              <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Inbound Loads</p>
             </div>
             <div className="text-center">
               <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{flow?.outbound || 0}</p>
-              <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>Outbound Loads</p>
+              <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Outbound Loads</p>
             </div>
             <div className="text-center">
               <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{flow?.activePartners || 0}</p>
-              <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>Active Partners</p>
+              <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Active Partners</p>
             </div>
           </div>
         </CardContent>
@@ -273,7 +273,7 @@ export default function TerminalPartners() {
                   ) : (
                     <p className={cn("text-xl font-bold", stat.color)}>{stat.value}</p>
                   )}
-                  <p className="text-[10px] text-slate-400">{stat.label}</p>
+                  <p className="text-xs text-slate-400">{stat.label}</p>
                 </div>
               </div>
             </CardContent>
@@ -385,19 +385,19 @@ export default function TerminalPartners() {
                     <div className="flex items-center gap-4 mt-3 flex-wrap">
                       {partner.rackAccessLevel && getRackBadge(partner.rackAccessLevel)}
                       {partner.monthlyVolumeCommitment > 0 && (
-                        <span className={cn("text-[10px]", isLight ? "text-slate-500" : "text-slate-400")}>
+                        <span className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>
                           <BarChart3 className="w-3 h-3 inline mr-1" />
                           {Number(partner.monthlyVolumeCommitment).toLocaleString()} bbl/mo commitment
                         </span>
                       )}
                       {partner.productTypes?.length > 0 && (
-                        <span className={cn("text-[10px]", isLight ? "text-slate-500" : "text-slate-400")}>
+                        <span className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>
                           <Droplets className="w-3 h-3 inline mr-1" />
                           {partner.productTypes.join(", ")}
                         </span>
                       )}
                       {partner.terminalName && (
-                        <span className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                        <span className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
                           at {partner.terminalName} {partner.terminalCode ? `(${partner.terminalCode})` : ""}
                         </span>
                       )}
@@ -456,7 +456,7 @@ export default function TerminalPartners() {
             <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
               {/* Company Search */}
               <div ref={companySuggestRef} className="relative">
-                <label className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1 block", isLight ? "text-slate-400" : "text-white/30")}>Company *</label>
+                <label className={cn("text-xs font-semibold uppercase tracking-wider mb-1 block", isLight ? "text-slate-400" : "text-white/30")}>Company *</label>
                 {apSelectedCompany ? (
                   <div className={cn("flex items-center justify-between p-3 rounded-xl border", 
                     apSelectedCompany.onPlatform 
@@ -473,12 +473,12 @@ export default function TerminalPartners() {
                         <div className="flex items-center gap-2">
                           <p className={cn("text-sm font-semibold", apSelectedCompany.onPlatform ? (isLight ? "text-emerald-700" : "text-emerald-400") : (isLight ? "text-blue-700" : "text-blue-400"))}>{apSelectedCompany.name}</p>
                           {apSelectedCompany.onPlatform ? (
-                            <Badge className={cn("text-[8px] px-1.5 py-0", isLight ? "bg-emerald-100 text-emerald-600" : "bg-emerald-500/20 text-emerald-400")}>On Platform</Badge>
+                            <Badge className={cn("text-xs px-1.5 py-0", isLight ? "bg-emerald-100 text-emerald-600" : "bg-emerald-500/20 text-emerald-400")}>On Platform</Badge>
                           ) : apSelectedCompany.fmcsaVerified ? (
-                            <Badge className={cn("text-[8px] px-1.5 py-0", isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/20 text-blue-400")}>FMCSA Verified</Badge>
+                            <Badge className={cn("text-xs px-1.5 py-0", isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/20 text-blue-400")}>FMCSA Verified</Badge>
                           ) : null}
                         </div>
-                        <p className={cn("text-[10px]", apSelectedCompany.onPlatform ? (isLight ? "text-emerald-600/70" : "text-emerald-400/50") : (isLight ? "text-blue-600/70" : "text-blue-400/50"))}>
+                        <p className={cn("text-xs", apSelectedCompany.onPlatform ? (isLight ? "text-emerald-600/70" : "text-emerald-400/50") : (isLight ? "text-blue-600/70" : "text-blue-400/50"))}>
                           {[apSelectedCompany.dotNumber && `DOT ${apSelectedCompany.dotNumber}`, apSelectedCompany.mcNumber && `MC ${apSelectedCompany.mcNumber}`, apSelectedCompany.city && `${apSelectedCompany.city}, ${apSelectedCompany.state}`].filter(Boolean).join(" • ")}
                         </p>
                       </div>
@@ -509,21 +509,21 @@ export default function TerminalPartners() {
                               <div className="flex items-center gap-2">
                                 <p className={cn("text-sm font-medium truncate", isLight ? "text-slate-800" : "text-white")}>{c.name}</p>
                                 {c.onPlatform ? (
-                                  <Badge className={cn("text-[8px] px-1.5 py-0 shrink-0", isLight ? "bg-emerald-100 text-emerald-600" : "bg-emerald-500/20 text-emerald-400")}>
+                                  <Badge className={cn("text-xs px-1.5 py-0 shrink-0", isLight ? "bg-emerald-100 text-emerald-600" : "bg-emerald-500/20 text-emerald-400")}>
                                     <CheckCircle className="w-2.5 h-2.5 mr-0.5" />On Platform
                                   </Badge>
                                 ) : c.fmcsaVerified ? (
-                                  <Badge className={cn("text-[8px] px-1.5 py-0 shrink-0", isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/20 text-blue-400")}>
+                                  <Badge className={cn("text-xs px-1.5 py-0 shrink-0", isLight ? "bg-blue-100 text-blue-600" : "bg-blue-500/20 text-blue-400")}>
                                     <BadgeCheck className="w-2.5 h-2.5 mr-0.5" />FMCSA
                                   </Badge>
                                 ) : null}
                               </div>
-                              <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                              <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
                                 {[c.dotNumber && `DOT ${c.dotNumber}`, c.mcNumber && `MC ${c.mcNumber}`, c.city && `${c.city}, ${c.state}`, c.hmFlag === "Y" && "Hazmat"].filter(Boolean).join(" • ")}
                               </p>
                             </div>
                             {!c.onPlatform && (
-                              <span className={cn("text-[9px] font-medium flex items-center gap-1 shrink-0", isLight ? "text-purple-600" : "text-purple-400")}>
+                              <span className={cn("text-xs font-medium flex items-center gap-1 shrink-0", isLight ? "text-purple-600" : "text-purple-400")}>
                                 <UserPlus className="w-3 h-3" />Invite
                               </span>
                             )}
@@ -602,7 +602,7 @@ export default function TerminalPartners() {
 
               {/* Partner Type */}
               <div>
-                <label className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1.5 block", isLight ? "text-slate-400" : "text-white/30")}>Partner Type *</label>
+                <label className={cn("text-xs font-semibold uppercase tracking-wider mb-1.5 block", isLight ? "text-slate-400" : "text-white/30")}>Partner Type *</label>
                 <div className="grid grid-cols-4 gap-2">
                   {(["shipper", "marketer", "broker", "transporter"] as const).map((t) => (
                     <button key={t} onClick={() => setApPartnerType(t)} className={cn(
@@ -617,7 +617,7 @@ export default function TerminalPartners() {
 
               {/* Rack Access Level */}
               <div>
-                <label className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1.5 block", isLight ? "text-slate-400" : "text-white/30")}>Rack Access Level</label>
+                <label className={cn("text-xs font-semibold uppercase tracking-wider mb-1.5 block", isLight ? "text-slate-400" : "text-white/30")}>Rack Access Level</label>
                 <div className="grid grid-cols-3 gap-2">
                   {(["full", "limited", "scheduled"] as const).map((level) => (
                     <button key={level} onClick={() => setApRackAccess(level)} className={cn(
@@ -633,18 +633,18 @@ export default function TerminalPartners() {
               {/* Volume + Products */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1 block", isLight ? "text-slate-400" : "text-white/30")}>Monthly Volume (bbl)</label>
+                  <label className={cn("text-xs font-semibold uppercase tracking-wider mb-1 block", isLight ? "text-slate-400" : "text-white/30")}>Monthly Volume (bbl)</label>
                   <Input type="number" value={apVolume} onChange={(e) => setApVolume(e.target.value)} placeholder="e.g., 50000" className={cn(isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.08]")} />
                 </div>
                 <div>
-                  <label className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1 block", isLight ? "text-slate-400" : "text-white/30")}>Products (comma-sep)</label>
+                  <label className={cn("text-xs font-semibold uppercase tracking-wider mb-1 block", isLight ? "text-slate-400" : "text-white/30")}>Products (comma-sep)</label>
                   <Input value={apProducts} onChange={(e) => setApProducts(e.target.value)} placeholder="Gasoline, Diesel, Jet A" className={cn(isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.08]")} />
                 </div>
               </div>
 
               {/* Notes */}
               <div>
-                <label className={cn("text-[10px] font-semibold uppercase tracking-wider mb-1 block", isLight ? "text-slate-400" : "text-white/30")}>Notes</label>
+                <label className={cn("text-xs font-semibold uppercase tracking-wider mb-1 block", isLight ? "text-slate-400" : "text-white/30")}>Notes</label>
                 <Input value={apNotes} onChange={(e) => setApNotes(e.target.value)} placeholder="Special instructions or context..." className={cn(isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.08]")} />
               </div>
             </div>

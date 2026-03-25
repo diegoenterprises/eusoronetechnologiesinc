@@ -116,7 +116,7 @@ export default function PlatformAgreementsOversight() {
                         <Users className="w-3.5 h-3.5 text-slate-500" />
                         <div>
                           <p className="text-white text-xs">User #{a.partyAUserId || "—"}</p>
-                          <p className="text-[10px] text-slate-500 capitalize">{a.partyARole || ""}</p>
+                          <p className="text-xs text-slate-500 capitalize">{a.partyARole || ""}</p>
                         </div>
                       </div>
                     </div>
@@ -125,7 +125,7 @@ export default function PlatformAgreementsOversight() {
                         <Users className="w-3.5 h-3.5 text-slate-500" />
                         <div>
                           <p className="text-white text-xs">User #{a.partyBUserId || "—"}</p>
-                          <p className="text-[10px] text-slate-500 capitalize">{a.partyBRole || ""}</p>
+                          <p className="text-xs text-slate-500 capitalize">{a.partyBRole || ""}</p>
                         </div>
                       </div>
                     </div>
@@ -134,15 +134,15 @@ export default function PlatformAgreementsOversight() {
                         <DollarSign className="w-3 h-3 text-emerald-400" />
                         <span className="text-emerald-400 font-medium text-sm">{a.baseRate ? Number(a.baseRate).toLocaleString() : "—"}</span>
                       </div>
-                      <p className="text-[10px] text-slate-500">{a.rateType || ""}</p>
+                      <p className="text-xs text-slate-500">{a.rateType || ""}</p>
                     </div>
                     <div className="col-span-1">
-                      <Badge className={`border-0 text-[10px] ${st.bg} ${st.color} gap-1`}>
+                      <Badge className={`border-0 text-xs ${st.bg} ${st.color} gap-1`}>
                         {st.icon}{st.label}
                       </Badge>
                     </div>
                     <div className="col-span-1">
-                      <span className="text-[10px] text-slate-500">{a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : "—"}</span>
+                      <span className="text-xs text-slate-500">{a.effectiveDate ? new Date(a.effectiveDate).toLocaleDateString() : "—"}</span>
                     </div>
                     <div className="col-span-1 flex justify-end">
                       <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-8 w-8 p-0" onClick={() => nav(`/agreements/${a.id}`)}>

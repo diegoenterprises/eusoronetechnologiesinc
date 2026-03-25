@@ -62,7 +62,7 @@ export default function VendorManagement() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-full bg-slate-700/30">{s.icon}</div>
-                  <div><p className={cn("text-xl font-bold", s.color)}>{s.value}</p><p className="text-[10px] text-slate-400 uppercase">{s.label}</p></div>
+                  <div><p className={cn("text-xl font-bold", s.color)}>{s.value}</p><p className="text-xs text-slate-400 uppercase">{s.label}</p></div>
                 </div>
               </CardContent>
             </Card>
@@ -82,7 +82,7 @@ export default function VendorManagement() {
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <Building2 className="w-5 h-5 text-[#1473FF]" />{detail.name}
-              <Badge className={cn("text-[9px] ml-2", STATUS_COLORS[detail.status])}>{detail.status}</Badge>
+              <Badge className={cn("text-xs ml-2", STATUS_COLORS[detail.status])}>{detail.status}</Badge>
               <Button size="sm" variant="ghost" onClick={() => setSelectedId("")} className="ml-auto text-slate-400">Close</Button>
             </CardTitle>
           </CardHeader>
@@ -101,7 +101,7 @@ export default function VendorManagement() {
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <Building2 className="w-5 h-5 text-cyan-400" />All Vendors
-            <Badge variant="outline" className="text-[10px] border-slate-600 ml-auto">{listQuery.data?.total || 0}</Badge>
+            <Badge variant="outline" className="text-xs border-slate-600 ml-auto">{listQuery.data?.total || 0}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -124,7 +124,7 @@ export default function VendorManagement() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={cn("text-[9px]", STATUS_COLORS[v.status])}>{v.status}</Badge>
+                    <Badge className={cn("text-xs", STATUS_COLORS[v.status])}>{v.status}</Badge>
                     <ChevronRight className="w-4 h-4 text-slate-500" />
                   </div>
                 </button>

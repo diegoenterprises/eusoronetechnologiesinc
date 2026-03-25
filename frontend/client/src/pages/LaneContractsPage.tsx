@@ -61,9 +61,9 @@ export default function LaneContractsPage() {
           <circle cx="40" cy="40" r={r} fill="none" stroke={L ? "#e2e8f0" : "#334155"} strokeWidth="6" />
           <circle cx="40" cy="40" r={r} fill="none" stroke={stroke} strokeWidth="6" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={offset} transform="rotate(-90 40 40)" className="transition-all duration-700" />
           <text x="40" y="38" textAnchor="middle" className={cn("text-sm font-bold fill-current", color)}>{pct}%</text>
-          <text x="40" y="50" textAnchor="middle" className="text-[8px] fill-slate-400">{filled}/{total}</text>
+          <text x="40" y="50" textAnchor="middle" className="text-xs fill-slate-400">{filled}/{total}</text>
         </svg>
-        {period && <span className="text-[9px] text-slate-400 mt-0.5 capitalize">{period}</span>}
+        {period && <span className="text-xs text-slate-400 mt-0.5 capitalize">{period}</span>}
       </div>
     );
   };
@@ -84,7 +84,7 @@ export default function LaneContractsPage() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">EusoLane</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
               <Shield className="w-3 h-3 text-blue-500" />
-              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Contracted</span>
+              <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">Contracted</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>Lane procurement, rate commitments, and performance tracking</p>
@@ -104,7 +104,7 @@ export default function LaneContractsPage() {
           <div key={k.l} className={cn("rounded-2xl p-3 bg-gradient-to-br border", L ? `${k.b} border-slate-200/60` : `${k.b} border-slate-700/30`)}>
             <k.I className={cn("w-4 h-4 mb-1", k.c)} />
             {ld ? <Skeleton className="h-6 w-10" /> : <p className={cn("text-xl font-bold", k.c)}>{k.v}</p>}
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{k.l}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{k.l}</p>
           </div>
         ))}
       </div>
@@ -133,9 +133,9 @@ export default function LaneContractsPage() {
               <div>
                 <p className={cn("font-bold text-sm", L ? "text-slate-800" : "text-white")}>{detail.originCity}, {detail.originState} → {detail.destinationCity}, {detail.destinationState}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <Badge className={cn("border text-[9px] font-bold", st(detail.status).bg, st(detail.status).text)}>{st(detail.status).label}</Badge>
-                  {detail.hazmatRequired && <Badge className="bg-orange-500/15 text-orange-500 border border-orange-500/30 text-[9px]"><Flame className="w-3 h-3 mr-0.5" />Hazmat</Badge>}
-                  {detail.equipmentType && <span className="text-[10px] text-slate-400">{detail.equipmentType}</span>}
+                  <Badge className={cn("border text-xs font-bold", st(detail.status).bg, st(detail.status).text)}>{st(detail.status).label}</Badge>
+                  {detail.hazmatRequired && <Badge className="bg-orange-500/15 text-orange-500 border border-orange-500/30 text-xs"><Flame className="w-3 h-3 mr-0.5" />Hazmat</Badge>}
+                  {detail.equipmentType && <span className="text-xs text-slate-400">{detail.equipmentType}</span>}
                 </div>
               </div>
             </div>
@@ -152,14 +152,14 @@ export default function LaneContractsPage() {
                   { l: "Est. Miles", v: detail.estimatedMiles ? `${Number(detail.estimatedMiles).toLocaleString()} mi` : "—", sub: "per trip", c: "from-purple-500/10 to-purple-600/5", tc: "text-purple-500" },
                 ].map((k) => (
                   <div key={k.l} className={cellCls}>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">{k.l}</p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">{k.l}</p>
                     <p className={cn("text-lg font-bold", k.tc)}>{k.v}</p>
-                    <p className="text-[10px] text-slate-500 capitalize">{k.sub}</p>
+                    <p className="text-xs text-slate-500 capitalize">{k.sub}</p>
                   </div>
                 ))}
                 {/* Contract period */}
                 <div className={cn(cellCls, "col-span-2")}>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-2">Contract Period</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Contract Period</p>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-blue-500" />
@@ -172,25 +172,25 @@ export default function LaneContractsPage() {
                     </div>
                     {detail.expirationDate && (() => {
                       const d = Math.ceil((new Date(detail.expirationDate).getTime() - Date.now()) / 86400000);
-                      return d > 0 ? <Badge className="ml-auto bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[9px]">{d} days left</Badge> : <Badge className="ml-auto bg-red-500/15 text-red-400 border border-red-500/30 text-[9px]">Expired</Badge>;
+                      return d > 0 ? <Badge className="ml-auto bg-blue-500/15 text-blue-400 border border-blue-500/30 text-xs">{d} days left</Badge> : <Badge className="ml-auto bg-red-500/15 text-red-400 border border-red-500/30 text-xs">Expired</Badge>;
                     })()}
                   </div>
                 </div>
                 {/* Parties */}
                 <div className={cn(cellCls, "col-span-2")}>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-2">Parties</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Parties</p>
                   <div className="flex items-center gap-4 flex-wrap">
-                    {detail.shipper && <div className="flex items-center gap-1.5"><div className="w-6 h-6 rounded-lg bg-blue-500/15 flex items-center justify-center text-blue-500 text-[10px] font-bold">{detail.shipper.name?.charAt(0)}</div><span className={cn("text-xs", L ? "text-slate-700" : "text-white")}>{detail.shipper.name}</span><Badge className="text-[8px] bg-blue-500/10 text-blue-400 border-0">Shipper</Badge></div>}
-                    {detail.catalyst && <div className="flex items-center gap-1.5"><div className="w-6 h-6 rounded-lg bg-green-500/15 flex items-center justify-center text-green-500 text-[10px] font-bold">{detail.catalyst.name?.charAt(0)}</div><span className={cn("text-xs", L ? "text-slate-700" : "text-white")}>{detail.catalyst.name}</span><Badge className="text-[8px] bg-green-500/10 text-green-400 border-0">Carrier</Badge></div>}
-                    {detail.broker && <div className="flex items-center gap-1.5"><div className="w-6 h-6 rounded-lg bg-purple-500/15 flex items-center justify-center text-purple-500 text-[10px] font-bold">{detail.broker.name?.charAt(0)}</div><span className={cn("text-xs", L ? "text-slate-700" : "text-white")}>{detail.broker.name}</span><Badge className="text-[8px] bg-purple-500/10 text-purple-400 border-0">Broker</Badge></div>}
+                    {detail.shipper && <div className="flex items-center gap-1.5"><div className="w-6 h-6 rounded-lg bg-blue-500/15 flex items-center justify-center text-blue-500 text-xs font-bold">{detail.shipper.name?.charAt(0)}</div><span className={cn("text-xs", L ? "text-slate-700" : "text-white")}>{detail.shipper.name}</span><Badge className="text-xs bg-blue-500/10 text-blue-400 border-0">Shipper</Badge></div>}
+                    {detail.catalyst && <div className="flex items-center gap-1.5"><div className="w-6 h-6 rounded-lg bg-green-500/15 flex items-center justify-center text-green-500 text-xs font-bold">{detail.catalyst.name?.charAt(0)}</div><span className={cn("text-xs", L ? "text-slate-700" : "text-white")}>{detail.catalyst.name}</span><Badge className="text-xs bg-green-500/10 text-green-400 border-0">Carrier</Badge></div>}
+                    {detail.broker && <div className="flex items-center gap-1.5"><div className="w-6 h-6 rounded-lg bg-purple-500/15 flex items-center justify-center text-purple-500 text-xs font-bold">{detail.broker.name?.charAt(0)}</div><span className={cn("text-xs", L ? "text-slate-700" : "text-white")}>{detail.broker.name}</span><Badge className="text-xs bg-purple-500/10 text-purple-400 border-0">Broker</Badge></div>}
                   </div>
                 </div>
                 {/* Fuel Surcharge */}
                 {detail.fuelSurchargeType && detail.fuelSurchargeType !== "none" && (
                   <div className={cn(cellCls, "col-span-2")}>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Fuel Surcharge</p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Fuel Surcharge</p>
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[9px] capitalize">{detail.fuelSurchargeType}</Badge>
+                      <Badge className="bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs capitalize">{detail.fuelSurchargeType}</Badge>
                       {detail.fuelSurchargeValue && <span className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>{detail.fuelSurchargeType === "percentage" ? `${detail.fuelSurchargeValue}%` : `$${detail.fuelSurchargeValue}`}</span>}
                     </div>
                   </div>
@@ -198,7 +198,7 @@ export default function LaneContractsPage() {
               </div>
               {/* Right: Volume Fulfillment */}
               <div className={cellCls}>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-3 text-center">Volume Fulfillment</p>
+                <p className="text-xs text-slate-400 uppercase tracking-wider mb-3 text-center">Volume Fulfillment</p>
                 <div className="flex justify-center">
                   <VolGauge filled={detail.volumeFulfilled || 0} total={detail.volumeCommitment || 0} period={detail.volumePeriod} />
                 </div>
@@ -238,7 +238,7 @@ export default function LaneContractsPage() {
                 statusFilter === f ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800/60 text-slate-400 hover:bg-slate-700"
               )}>{f ? f.charAt(0).toUpperCase() + f.slice(1) : "All"}</button>
             ))}
-            <Badge className={cn("ml-auto border text-[10px]", L ? "border-slate-200 text-slate-500" : "border-slate-600 text-slate-400")}>{listQuery.data?.total || 0} total</Badge>
+            <Badge className={cn("ml-auto border text-xs", L ? "border-slate-200 text-slate-500" : "border-slate-600 text-slate-400")}>{listQuery.data?.total || 0} total</Badge>
           </div>
 
           {/* Lane Cards Grid */}
@@ -267,7 +267,7 @@ export default function LaneContractsPage() {
                           </div>
                           <div>
                             <p className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>{l.originCity}, {l.originState}</p>
-                            <p className="text-[10px] text-slate-400">Origin</p>
+                            <p className="text-xs text-slate-400">Origin</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -279,7 +279,7 @@ export default function LaneContractsPage() {
                           <div className="flex items-center gap-2 justify-end">
                             <div>
                               <p className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>{l.destinationCity}, {l.destinationState}</p>
-                              <p className="text-[10px] text-slate-400 text-right">Destination</p>
+                              <p className="text-xs text-slate-400 text-right">Destination</p>
                             </div>
                             <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", L ? "bg-purple-50" : "bg-purple-500/15")}>
                               <MapPin className="w-4 h-4 text-purple-500" />
@@ -289,26 +289,26 @@ export default function LaneContractsPage() {
                       </div>
                       {/* Badges */}
                       <div className="flex items-center gap-2 mb-3 flex-wrap">
-                        <Badge className={cn("border text-[9px] font-bold", s.bg, s.text)}>{s.label}</Badge>
-                        {l.hazmatRequired && <Badge className="bg-orange-500/15 text-orange-500 border border-orange-500/30 text-[9px]"><Flame className="w-3 h-3 mr-0.5" />Hazmat</Badge>}
-                        {l.equipmentType && <Badge className={cn("border text-[9px]", L ? "bg-slate-100 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>{l.equipmentType}</Badge>}
-                        {l.estimatedMiles && <span className="text-[10px] text-slate-400">{Number(l.estimatedMiles).toLocaleString()} mi</span>}
-                        {daysLeft !== null && daysLeft > 0 && daysLeft <= 30 && <Badge className="bg-yellow-500/15 text-yellow-500 border border-yellow-500/30 text-[9px]">{daysLeft}d left</Badge>}
+                        <Badge className={cn("border text-xs font-bold", s.bg, s.text)}>{s.label}</Badge>
+                        {l.hazmatRequired && <Badge className="bg-orange-500/15 text-orange-500 border border-orange-500/30 text-xs"><Flame className="w-3 h-3 mr-0.5" />Hazmat</Badge>}
+                        {l.equipmentType && <Badge className={cn("border text-xs", L ? "bg-slate-100 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>{l.equipmentType}</Badge>}
+                        {l.estimatedMiles && <span className="text-xs text-slate-400">{Number(l.estimatedMiles).toLocaleString()} mi</span>}
+                        {daysLeft !== null && daysLeft > 0 && daysLeft <= 30 && <Badge className="bg-yellow-500/15 text-yellow-500 border border-yellow-500/30 text-xs">{daysLeft}d left</Badge>}
                       </div>
                       {/* Bottom metrics */}
                       <div className="grid grid-cols-3 gap-2">
                         <div className={cn("p-2 rounded-lg text-center", L ? "bg-slate-50" : "bg-slate-900/30")}>
                           <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${Number(l.contractedRate || 0).toLocaleString()}</p>
-                          <p className="text-[9px] text-slate-400 uppercase">{l.rateType || "flat"}</p>
+                          <p className="text-xs text-slate-400 uppercase">{l.rateType || "flat"}</p>
                         </div>
                         <div className={cn("p-2 rounded-lg text-center", L ? "bg-slate-50" : "bg-slate-900/30")}>
                           <p className="text-lg font-bold text-cyan-500">{l.totalLoadsBooked || 0}</p>
-                          <p className="text-[9px] text-slate-400 uppercase">Loads</p>
+                          <p className="text-xs text-slate-400 uppercase">Loads</p>
                         </div>
                         <div className={cn("p-2 rounded-lg", L ? "bg-slate-50" : "bg-slate-900/30")}>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-[9px] text-slate-400">Vol</span>
-                            <span className={cn("text-[9px] font-bold", volPct >= 75 ? "text-green-500" : volPct >= 40 ? "text-blue-500" : "text-yellow-500")}>{volPct}%</span>
+                            <span className="text-xs text-slate-400">Vol</span>
+                            <span className={cn("text-xs font-bold", volPct >= 75 ? "text-green-500" : volPct >= 40 ? "text-blue-500" : "text-yellow-500")}>{volPct}%</span>
                           </div>
                           <div className={cn("h-1.5 rounded-full overflow-hidden", L ? "bg-slate-200" : "bg-slate-700")}>
                             <div className="h-full rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] transition-all duration-500" style={{ width: `${volPct}%` }} />
@@ -330,7 +330,7 @@ export default function LaneContractsPage() {
           <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
             <AlertTriangle className="w-4 h-4 text-yellow-500" />
             <span className={titleCls}>Contracts Expiring Within 30 Days</span>
-            <Badge className="ml-auto bg-yellow-500/15 text-yellow-500 border border-yellow-500/30 text-[10px]">{expiring.length}</Badge>
+            <Badge className="ml-auto bg-yellow-500/15 text-yellow-500 border border-yellow-500/30 text-xs">{expiring.length}</Badge>
           </div>
           <CardContent className="p-4">
             {expiring.length === 0 ? (
@@ -353,12 +353,12 @@ export default function LaneContractsPage() {
                           </div>
                           <div>
                             <p className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>{l.originCity}, {l.originState} → {l.destinationCity}, {l.destinationState}</p>
-                            <p className="text-[10px] text-slate-400">${Number(l.contractedRate || 0).toLocaleString()} {l.rateType} · {l.totalLoadsBooked || 0} loads booked</p>
+                            <p className="text-xs text-slate-400">${Number(l.contractedRate || 0).toLocaleString()} {l.rateType} · {l.totalLoadsBooked || 0} loads booked</p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className={cn("text-sm font-bold", urgent ? "text-red-500" : "text-yellow-500")}>{daysLeft} days</p>
-                          <p className="text-[10px] text-slate-400">{new Date(l.expirationDate).toLocaleDateString()}</p>
+                          <p className="text-xs text-slate-400">{new Date(l.expirationDate).toLocaleDateString()}</p>
                         </div>
                       </div>
                     </div>
@@ -390,7 +390,7 @@ export default function LaneContractsPage() {
                   <div key={k.l} className={cellCls}>
                     <div className="flex items-center gap-2 mb-1">
                       <k.I className={cn("w-3.5 h-3.5", k.c)} />
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wider">{k.l}</span>
+                      <span className="text-xs text-slate-400 uppercase tracking-wider">{k.l}</span>
                     </div>
                     <p className={cn("text-lg font-bold", k.c)}>{k.v}</p>
                   </div>
@@ -416,7 +416,7 @@ export default function LaneContractsPage() {
                   {activeLanes.filter((l: any) => l.volumeCommitment > 0).slice(0, 6).map((l: any) => (
                     <div key={l.id} className="text-center cursor-pointer" onClick={() => { setSelectedId(l.id); setTab("lanes"); }}>
                       <VolGauge filled={l.volumeFulfilled || 0} total={l.volumeCommitment || 0} period={l.volumePeriod} />
-                      <p className={cn("text-[10px] font-medium mt-1 max-w-[80px] truncate", L ? "text-slate-600" : "text-slate-300")}>{l.originState}→{l.destinationState}</p>
+                      <p className={cn("text-xs font-medium mt-1 max-w-[80px] truncate", L ? "text-slate-600" : "text-slate-300")}>{l.originState}→{l.destinationState}</p>
                     </div>
                   ))}
                 </div>
@@ -442,12 +442,12 @@ export default function LaneContractsPage() {
                       <div key={l.id} className={cn(cellCls, "cursor-pointer hover:shadow-sm transition-shadow")} onClick={() => { setSelectedId(l.id); setTab("lanes"); }}>
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-2">
-                            <span className={cn("text-[10px] font-bold w-5 text-center", idx < 3 ? "text-amber-500" : "text-slate-400")}>#{idx + 1}</span>
+                            <span className={cn("text-xs font-bold w-5 text-center", idx < 3 ? "text-amber-500" : "text-slate-400")}>#{idx + 1}</span>
                             <span className={cn("text-xs font-medium", L ? "text-slate-700" : "text-white")}>{l.originCity}, {l.originState} → {l.destinationCity}, {l.destinationState}</span>
                           </div>
                           <div className="text-right">
                             <span className="text-xs font-bold text-green-500">${Number(l.totalRevenue || 0).toLocaleString()}</span>
-                            <span className="text-[10px] text-slate-400 ml-2">{l.totalLoadsBooked || 0} loads</span>
+                            <span className="text-xs text-slate-400 ml-2">{l.totalLoadsBooked || 0} loads</span>
                           </div>
                         </div>
                         <div className={cn("h-1.5 rounded-full overflow-hidden", L ? "bg-slate-200" : "bg-slate-700")}>

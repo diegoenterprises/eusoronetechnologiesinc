@@ -102,7 +102,7 @@ export default function IndustryVerticals() {
       low: "bg-green-500/20 text-green-400 border-green-500/30",
       warning: "bg-amber-500/20 text-amber-400 border-amber-500/30",
     };
-    return <Badge className={cn("text-[10px] border", map[severity] || map.medium)}>{severity.toUpperCase()}</Badge>;
+    return <Badge className={cn("text-xs border", map[severity] || map.medium)}>{severity.toUpperCase()}</Badge>;
   };
 
   // ── Trend indicator ────────────────────────────────────────────────────────
@@ -266,7 +266,7 @@ export default function IndustryVerticals() {
                           <span className={cn("text-lg font-bold", L ? "text-slate-900" : "text-white")}>
                             {kpi.unit === "$" ? `$${kpi.value.toLocaleString()}` : `${kpi.value}${kpi.unit === "%" ? "%" : ` ${kpi.unit}`}`}
                           </span>
-                          <span className={cn("text-[10px]", subCls)}>
+                          <span className={cn("text-xs", subCls)}>
                             vs {kpi.unit === "$" ? `$${kpi.benchmark.toLocaleString()}` : `${kpi.benchmark}${kpi.unit === "%" ? "%" : ""}`} {kpi.benchmarkLabel}
                           </span>
                         </div>
@@ -289,25 +289,25 @@ export default function IndustryVerticals() {
                         <div key={i} className={cellCls}>
                           <div className="flex items-center justify-between mb-2">
                             <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>{p.product}</span>
-                            <Badge className="bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-[10px]">
+                            <Badge className="bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-xs">
                               {p.tempRange.min} to {p.tempRange.max} {p.tempRange.unit}
                             </Badge>
                           </div>
                           <div className="grid grid-cols-3 gap-2 mb-2">
                             <div>
-                              <p className={cn("text-[10px]", labelCls)}>Tolerance</p>
+                              <p className={cn("text-xs", labelCls)}>Tolerance</p>
                               <p className={cn("text-xs font-medium", L ? "text-slate-700" : "text-slate-300")}>+/- {p.tolerance} {p.tempRange.unit}</p>
                             </div>
                             <div>
-                              <p className={cn("text-[10px]", labelCls)}>Monitor</p>
+                              <p className={cn("text-xs", labelCls)}>Monitor</p>
                               <p className={cn("text-xs font-medium", L ? "text-slate-700" : "text-slate-300")}>{p.monitoringInterval}</p>
                             </div>
                             <div>
-                              <p className={cn("text-[10px]", labelCls)}>Regulation</p>
+                              <p className={cn("text-xs", labelCls)}>Regulation</p>
                               <p className={cn("text-xs font-medium", L ? "text-slate-700" : "text-slate-300")}>{p.regulation}</p>
                             </div>
                           </div>
-                          <p className={cn("text-[10px]", subCls)}>{p.notes}</p>
+                          <p className={cn("text-xs", subCls)}>{p.notes}</p>
                         </div>
                       ))}
                     </div>
@@ -332,7 +332,7 @@ export default function IndustryVerticals() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     <p className={cn("text-xs w-full mb-1", labelCls)}>Cargo Types:</p>
                     {(config?.cargoTypes || []).map((ct: string, i: number) => (
-                      <Badge key={i} variant="outline" className={cn("text-[10px]", L ? "text-slate-600" : "text-slate-400")}>
+                      <Badge key={i} variant="outline" className={cn("text-xs", L ? "text-slate-600" : "text-slate-400")}>
                         {ct.replace(/_/g, " ")}
                       </Badge>
                     ))}
@@ -362,7 +362,7 @@ export default function IndustryVerticals() {
                       </div>
                       <p className={cn("text-sm", L ? "text-slate-700" : "text-slate-300")}>{rule.description}</p>
                       {rule.autoCheck && (
-                        <Badge className="mt-1 text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Auto-Check Enabled</Badge>
+                        <Badge className="mt-1 text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Auto-Check Enabled</Badge>
                       )}
                     </div>
                   ))}
@@ -385,7 +385,7 @@ export default function IndustryVerticals() {
                     <div key={i} className={cellCls}>
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <Badge className={cn("text-[10px] border",
+                          <Badge className={cn("text-xs border",
                             rule.category?.includes("EPA") ? "bg-green-500/20 text-green-400 border-green-500/30" :
                             rule.category?.includes("OSHA") ? "bg-orange-500/20 text-orange-400 border-orange-500/30" :
                             rule.category?.includes("DOT") ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
@@ -427,7 +427,7 @@ export default function IndustryVerticals() {
                         )}
                         <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>{doc.name}</span>
                       </div>
-                      <Badge className={cn("text-[10px] mb-1 border",
+                      <Badge className={cn("text-xs mb-1 border",
                         doc.category === "safety" ? "bg-red-500/15 text-red-400 border-red-500/30" :
                         doc.category === "compliance" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" :
                         doc.category === "customs" ? "bg-purple-500/15 text-purple-400 border-purple-500/30" :
@@ -436,7 +436,7 @@ export default function IndustryVerticals() {
                       )}>
                         {doc.category}
                       </Badge>
-                      <p className={cn("text-[11px]", subCls)}>{doc.description}</p>
+                      <p className={cn("text-xs", subCls)}>{doc.description}</p>
                     </div>
                   ))}
                 </div>
@@ -459,7 +459,7 @@ export default function IndustryVerticals() {
                     <div className="flex items-center justify-between">
                       <h4 className={cn("text-sm font-bold", L ? "text-slate-900" : "text-white")}>{eq.type}</h4>
                       <div className="flex items-center gap-2">
-                        <Badge className={cn("text-[10px] border",
+                        <Badge className={cn("text-xs border",
                           eq.availability === "High" ? "bg-green-500/20 text-green-400 border-green-500/30" :
                           eq.availability === "Moderate" ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" :
                           eq.availability === "Low" ? "bg-orange-500/20 text-orange-400 border-orange-500/30" :
@@ -467,7 +467,7 @@ export default function IndustryVerticals() {
                         )}>
                           {eq.availability} Availability
                         </Badge>
-                        <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px]">
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs">
                           ${eq.avgDayRate.toLocaleString()}/day
                         </Badge>
                       </div>
@@ -485,7 +485,7 @@ export default function IndustryVerticals() {
                         <p className={labelCls}>Certifications</p>
                         <div className="flex flex-wrap gap-1 mt-0.5">
                           {eq.certifications.map((c: string, j: number) => (
-                            <Badge key={j} variant="outline" className="text-[9px]">{c}</Badge>
+                            <Badge key={j} variant="outline" className="text-xs">{c}</Badge>
                           ))}
                         </div>
                       </div>
@@ -536,13 +536,13 @@ export default function IndustryVerticals() {
                     </div>
                     <div className="flex flex-wrap gap-1 mt-2">
                       {["food", "pharma", "refrigerated"].includes(selectedVertical) && (
-                        <Badge className="text-[10px] bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">Temp Control</Badge>
+                        <Badge className="text-xs bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">Temp Control</Badge>
                       )}
                       {["chemical", "hazmat", "petroleum"].includes(selectedVertical) && (
-                        <Badge className="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30">Hazmat</Badge>
+                        <Badge className="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30">Hazmat</Badge>
                       )}
                       {["construction", "heavy_haul"].includes(selectedVertical) && (
-                        <Badge className="text-[10px] bg-orange-500/20 text-orange-400 border border-orange-500/30">Oversized</Badge>
+                        <Badge className="text-xs bg-orange-500/20 text-orange-400 border border-orange-500/30">Oversized</Badge>
                       )}
                     </div>
                   </div>
@@ -625,7 +625,7 @@ export default function IndustryVerticals() {
                     <div key={i} className={cellCls}>
                       <div className="flex items-center justify-between mb-1">
                         <span className={cn("text-xs font-semibold", L ? "text-slate-800" : "text-white")}>{f.factor.replace(/_/g, " ")}</span>
-                        <Badge className={cn("text-[10px]",
+                        <Badge className={cn("text-xs",
                           f.multiplier >= 1.3 ? "bg-red-500/20 text-red-400" :
                           f.multiplier >= 1.1 ? "bg-amber-500/20 text-amber-400" :
                           "bg-green-500/20 text-green-400"
@@ -633,7 +633,7 @@ export default function IndustryVerticals() {
                           x{f.multiplier}
                         </Badge>
                       </div>
-                      <p className={cn("text-[10px]", subCls)}>{f.description}</p>
+                      <p className={cn("text-xs", subCls)}>{f.description}</p>
                     </div>
                   ))}
                 </div>
@@ -659,7 +659,7 @@ export default function IndustryVerticals() {
                         <p className={cn("text-xs", subCls)}>{s.months}</p>
                       </div>
                       <div className="text-right">
-                        <Badge className={cn("text-[10px] border",
+                        <Badge className={cn("text-xs border",
                           s.demandMultiplier >= 1.3 ? "bg-red-500/20 text-red-400 border-red-500/30" :
                           s.demandMultiplier >= 1.1 ? "bg-amber-500/20 text-amber-400 border-amber-500/30" :
                           s.demandMultiplier < 1.0 ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
@@ -672,7 +672,7 @@ export default function IndustryVerticals() {
                     {/* Demand bar */}
                     <div className="mb-3">
                       <div className="flex items-center justify-between mb-1">
-                        <span className={cn("text-[10px]", labelCls)}>Demand Multiplier</span>
+                        <span className={cn("text-xs", labelCls)}>Demand Multiplier</span>
                         <span className={cn("text-xs font-bold", L ? "text-slate-800" : "text-white")}>{s.demandMultiplier}x</span>
                       </div>
                       <div className={cn("h-2 rounded-full overflow-hidden", L ? "bg-slate-200" : "bg-slate-700")}>
@@ -692,7 +692,7 @@ export default function IndustryVerticals() {
                       {s.drivers.map((d: string, j: number) => (
                         <div key={j} className="flex items-start gap-1.5">
                           <ChevronRight className="w-3 h-3 mt-0.5 text-purple-400 flex-shrink-0" />
-                          <span className={cn("text-[11px]", L ? "text-slate-600" : "text-slate-400")}>{d}</span>
+                          <span className={cn("text-xs", L ? "text-slate-600" : "text-slate-400")}>{d}</span>
                         </div>
                       ))}
                     </div>
@@ -723,7 +723,7 @@ export default function IndustryVerticals() {
                         )}
                         <h4 className={cn("text-sm font-bold", L ? "text-slate-900" : "text-white")}>{cert.name}</h4>
                       </div>
-                      <Badge className={cn("text-[10px] border",
+                      <Badge className={cn("text-xs border",
                         cert.required ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-slate-500/20 text-slate-400 border-slate-500/30"
                       )}>
                         {cert.required ? "REQUIRED" : "RECOMMENDED"}
@@ -795,7 +795,7 @@ export default function IndustryVerticals() {
                           style={{ width: `${Math.min(kpi.unit === "%" ? kpi.value : (kpi.value / (kpi.benchmark * 1.5)) * 100, 100)}%` }}
                         />
                       </div>
-                      <span className={cn("text-[10px] whitespace-nowrap", subCls)}>
+                      <span className={cn("text-xs whitespace-nowrap", subCls)}>
                         {kpi.benchmarkLabel}: {kpi.unit === "$" ? `$${kpi.benchmark.toLocaleString()}` : `${kpi.benchmark}${kpi.unit === "%" ? "%" : ""}`}
                       </span>
                     </div>

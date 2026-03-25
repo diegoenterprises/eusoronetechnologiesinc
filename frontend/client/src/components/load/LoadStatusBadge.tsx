@@ -117,7 +117,7 @@ export default function LoadStatusBadge({
   const iconPx = ICON_SIZES[size] || 14;
 
   const sizeClasses: Record<string, string> = {
-    xs: "text-[10px] px-1.5 py-0.5 gap-0.5",
+    xs: "text-xs px-1.5 py-0.5 gap-0.5",
     sm: "text-xs px-2 py-0.5 gap-1",
     md: "text-sm px-2.5 py-1 gap-1.5",
     lg: "text-base px-3 py-1.5 gap-2",

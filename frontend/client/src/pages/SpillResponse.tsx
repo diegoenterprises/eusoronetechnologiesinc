@@ -129,7 +129,7 @@ export default function SpillResponse() {
               <Phone className={cn("w-5 h-5", num.color)} />
             </div>
             <p className={cn("text-lg font-bold tabular-nums", num.color)}>{num.number}</p>
-            <p className={cn("text-[10px] font-medium leading-tight", isLight ? "text-slate-500" : "text-slate-400")}>
+            <p className={cn("text-xs font-medium leading-tight", isLight ? "text-slate-500" : "text-slate-400")}>
               {num.name}
             </p>
           </a>

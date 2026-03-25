@@ -24,7 +24,7 @@ export const contextualPricingRouter = router({
     }))
     .query(async ({ input }) => {
       const baseRate = input.baseRate || Math.round(2.50 * input.distance);
-      return getContextualPrice(input.originState, input.destState, baseRate, input.distance);
+      return await getContextualPrice(input.originState, input.destState, baseRate, input.distance);
     }),
 
   /**
@@ -37,7 +37,7 @@ export const contextualPricingRouter = router({
       distance: z.number().min(1),
     }))
     .query(async ({ input }) => {
-      return getLaneIntelligence(input.originState, input.destState, input.distance);
+      return await getLaneIntelligence(input.originState, input.destState, input.distance);
     }),
 
   /**
@@ -51,7 +51,7 @@ export const contextualPricingRouter = router({
       const allSignals: any[] = [];
       for (const dest of partners) {
         if (dest === input.state) continue;
-        const result = getContextualPrice(input.state, dest, 3000, 800);
+        const result = await getContextualPrice(input.state, dest, 3000, 800);
         for (const s of result.signals) {
           if (!allSignals.find(a => a.id === s.id)) allSignals.push(s);
         }
@@ -71,7 +71,7 @@ export const contextualPricingRouter = router({
         for (let j = i + 1; j < states.length; j++) {
           const dist = 500 + ((i * 7 + j * 3) % 15) * 100;
           const base = Math.round(2.20 * dist);
-          const result = getContextualPrice(states[i], states[j], base, dist);
+          const result = await getContextualPrice(states[i], states[j], base, dist);
           if (result.signals.length > 0) {
             lanes.push({
               lane: `${states[i]}→${states[j]}`,

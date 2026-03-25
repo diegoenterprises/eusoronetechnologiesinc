@@ -120,9 +120,9 @@ export default function TWICCard() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Anchor className="w-5 h-5 text-white/80" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-white/80">TSA TWIC</span>
+                        <span className="text-xs font-bold uppercase tracking-widest text-white/80">TSA TWIC</span>
                       </div>
-                      <Badge className={cn("text-[9px] border", status.cls)}>
+                      <Badge className={cn("text-xs border", status.cls)}>
                         {status.label}
                       </Badge>
                     </div>
@@ -133,10 +133,10 @@ export default function TWICCard() {
                       {cardNumber || "XXXX-XXXX-XXXX"}
                     </p>
                     <div className="flex items-center justify-between mt-2">
-                      <p className="text-[10px] text-white/60">
+                      <p className="text-xs text-white/60">
                         {expiryDate ? `EXP ${new Date(expiryDate).toLocaleDateString("en-US", { month: "2-digit", year: "2-digit" })}` : "NOT ENROLLED"}
                       </p>
-                      <p className="text-[10px] text-white/60">5-YEAR CREDENTIAL</p>
+                      <p className="text-xs text-white/60">5-YEAR CREDENTIAL</p>
                     </div>
                   </div>
                 </div>
@@ -164,11 +164,11 @@ export default function TWICCard() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className={sc}>
-                          <p className={cn("text-[10px] uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>Card Number</p>
+                          <p className={cn("text-xs uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>Card Number</p>
                           <p className={cn("text-sm font-bold font-mono mt-0.5", isLight ? "text-slate-800" : "text-white")}>{cardNumber || "On file"}</p>
                         </div>
                         <div className={sc}>
-                          <p className={cn("text-[10px] uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>Expires</p>
+                          <p className={cn("text-xs uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>Expires</p>
                           <p className={cn("text-sm font-bold mt-0.5", isLight ? "text-slate-800" : "text-white")}>
                             {expiryDate ? new Date(expiryDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "N/A"}
                           </p>
@@ -212,7 +212,7 @@ export default function TWICCard() {
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                     <div>
                       <p className={cn("text-sm font-bold", s.color)}>{s.value}</p>
-                      <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                      <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -234,7 +234,7 @@ export default function TWICCard() {
                 {ENROLLMENT_STEPS.map((step) => (
                   <div key={step.step} className="relative flex items-start gap-4 pb-5 last:pb-0">
                     <div className={cn(
-                      "absolute -left-6 w-[22px] h-[22px] rounded-full flex items-center justify-center border-2 z-10 text-[10px] font-bold",
+                      "absolute -left-6 w-[22px] h-[22px] rounded-full flex items-center justify-center border-2 z-10 text-xs font-bold",
                       isLight ? "bg-white border-slate-300 text-slate-400" : "bg-slate-800 border-slate-600 text-slate-500"
                     )}>
                       {step.step}
@@ -284,7 +284,7 @@ export default function TWICCard() {
                     </div>
                     <div>
                       <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{loc.name}</p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{loc.note}</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{loc.note}</p>
                     </div>
                   </div>
                 ))}

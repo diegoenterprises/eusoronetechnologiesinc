@@ -264,7 +264,7 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
                           </select>
                           <DatePicker value={entry.expiry} onChange={(v) => updateFile(idx, { expiry: v })} placeholder="Expiry date" />
                         </div>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-xs text-slate-500">
                           {(entry.file.size / 1024).toFixed(0)} KB
                           {entry.category !== "other" && !aiResult && (
                             <span className={cn("ml-2", cc.text)}>Auto-detected: {catMeta.label}</span>
@@ -282,25 +282,25 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
                         <div className="bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20 rounded-lg p-3 space-y-2">
                           <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-                            <span className="text-[11px] text-purple-300 font-medium uppercase tracking-wider">ESANG AI Classification</span>
-                            <span className="text-[10px] text-slate-500 ml-auto">via {aiResult.ocr?.engine === "paddleocr" ? "PaddleOCR" : "ESANG AI Vision"}</span>
+                            <span className="text-xs text-purple-300 font-medium uppercase tracking-wider">ESANG AI Classification</span>
+                            <span className="text-xs text-slate-500 ml-auto">via {aiResult.ocr?.engine === "paddleocr" ? "PaddleOCR" : "ESANG AI Vision"}</span>
                           </div>
                           <p className="text-white text-sm">{aiResult.classification?.summary}</p>
                           <div className="flex flex-wrap gap-1.5">
-                            <Badge className="bg-purple-500/15 text-purple-300 border-0 text-[10px]">
+                            <Badge className="bg-purple-500/15 text-purple-300 border-0 text-xs">
                               {aiResult.classification?.category}/{aiResult.classification?.subcategory}
                             </Badge>
-                            <Badge className="bg-cyan-500/15 text-cyan-300 border-0 text-[10px]">
+                            <Badge className="bg-cyan-500/15 text-cyan-300 border-0 text-xs">
                               {aiResult.classification?.confidence}% confidence
                             </Badge>
-                            <Badge className="bg-slate-500/15 text-slate-300 border-0 text-[10px]">
+                            <Badge className="bg-slate-500/15 text-slate-300 border-0 text-xs">
                               {aiResult.ocr?.lineCount} lines extracted
                             </Badge>
                           </div>
                           {aiResult.classification?.extractedFields && Object.keys(aiResult.classification.extractedFields).length > 0 && (
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
                               {Object.entries(aiResult.classification.extractedFields).slice(0, 6).map(([key, val]) => (
-                                <div key={key} className="flex justify-between text-[11px]">
+                                <div key={key} className="flex justify-between text-xs">
                                   <span className="text-slate-500">{key}</span>
                                   <span className="text-slate-300 font-medium truncate ml-2">{String(val)}</span>
                                 </div>
@@ -310,12 +310,12 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
                           {aiResult.classification?.suggestedTags?.length > 0 && (
                             <div className="flex gap-1 flex-wrap">
                               {aiResult.classification.suggestedTags.map((tag: string) => (
-                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700/60 text-slate-400">{tag}</span>
+                                <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-slate-700/60 text-slate-400">{tag}</span>
                               ))}
                             </div>
                           )}
                           {aiResult.savedId && (
-                            <p className="text-[10px] text-green-400">Saved to document center</p>
+                            <p className="text-xs text-green-400">Saved to document center</p>
                           )}
                         </div>
                       </div>
@@ -366,17 +366,17 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
 function statusBadge(status: string) {
   switch (status) {
     case "active":
-      return <Badge className="bg-green-500/15 text-green-400 border-0 text-[11px]">Active</Badge>;
+      return <Badge className="bg-green-500/15 text-green-400 border-0 text-xs">Active</Badge>;
     case "expiring_soon":
     case "expiring":
-      return <Badge className="bg-yellow-500/15 text-yellow-400 border-0 text-[11px]">Expiring</Badge>;
+      return <Badge className="bg-yellow-500/15 text-yellow-400 border-0 text-xs">Expiring</Badge>;
     case "expired":
-      return <Badge className="bg-red-500/15 text-red-400 border-0 text-[11px]">Expired</Badge>;
+      return <Badge className="bg-red-500/15 text-red-400 border-0 text-xs">Expired</Badge>;
     case "pending":
     case "pending_review":
-      return <Badge className="bg-blue-500/15 text-blue-400 border-0 text-[11px]">Pending</Badge>;
+      return <Badge className="bg-blue-500/15 text-blue-400 border-0 text-xs">Pending</Badge>;
     default:
-      return <Badge className="bg-slate-500/15 text-slate-400 border-0 text-[11px]">{status}</Badge>;
+      return <Badge className="bg-slate-500/15 text-slate-400 border-0 text-xs">{status}</Badge>;
   }
 }
 
@@ -599,7 +599,7 @@ export default function Documents() {
                 ) : (
                   <p className={cn("text-2xl font-bold", `text-${s.color}-400`)}>{s.value}</p>
                 )}
-                <p className="text-[11px] text-slate-500 uppercase tracking-wider">{s.label}</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wider">{s.label}</p>
               </div>
             </CardContent>
           </Card>
@@ -628,7 +628,7 @@ export default function Documents() {
               {cat.label}
               {count > 0 && (
                 <span className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                  "text-xs px-1.5 py-0.5 rounded-full font-medium",
                   isActive ? `${cc.bg} ${cc.text}` : "bg-slate-700 text-slate-400"
                 )}>
                   {count}
@@ -733,12 +733,12 @@ export default function Documents() {
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-sm font-medium truncate">{doc.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className={cn("text-[11px]", cc.text)}>{catMeta.label}</span>
+                      <span className={cn("text-xs", cc.text)}>{catMeta.label}</span>
                       {doc.uploadedAt && (
-                        <span className="text-[11px] text-slate-500">{doc.uploadedAt}</span>
+                        <span className="text-xs text-slate-500">{doc.uploadedAt}</span>
                       )}
                       {doc.size > 0 && (
-                        <span className="text-[11px] text-slate-600">{formatBytes(doc.size)}</span>
+                        <span className="text-xs text-slate-600">{formatBytes(doc.size)}</span>
                       )}
                     </div>
                   </div>
@@ -789,9 +789,9 @@ export default function Documents() {
                     {statusBadge(doc.status)}
                   </div>
                   <p className="text-white text-sm font-medium truncate">{doc.name}</p>
-                  <p className={cn("text-[11px] mt-1", cc.text)}>{catMeta.label}</p>
+                  <p className={cn("text-xs mt-1", cc.text)}>{catMeta.label}</p>
                   {doc.uploadedAt && (
-                    <p className="text-[11px] text-slate-500 mt-0.5">{doc.uploadedAt}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{doc.uploadedAt}</p>
                   )}
                   <div className="flex gap-1 mt-3 pt-3 border-t border-slate-700/40 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button

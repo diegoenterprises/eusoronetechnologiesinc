@@ -195,7 +195,7 @@ export default function SpectraMatchWidget({
               <Activity className="w-4 h-4 text-purple-400" />
             </div>
             SPECTRA-MATCH™
-            <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px] px-1.5 py-0">
+            <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs px-1.5 py-0">
               <EsangIcon className="w-2.5 h-2.5 mr-0.5" />
               AI
             </Badge>
@@ -229,7 +229,7 @@ export default function SpectraMatchWidget({
                   key={cat.id}
                   onClick={() => setCategory(cat.id)}
                   className={cn(
-                    "flex flex-col items-center gap-1 p-2 rounded-lg border text-[10px] font-medium transition-all",
+                    "flex flex-col items-center gap-1 p-2 rounded-lg border text-xs font-medium transition-all",
                     category === cat.id
                       ? `${cat.activeBg} ${cat.activeBorder} ${cat.activeText}`
                       : "bg-white/[0.03] border-slate-700/50 text-slate-500 hover:border-slate-600 hover:text-slate-400"
@@ -245,7 +245,7 @@ export default function SpectraMatchWidget({
           {/* ---- CRUDE OIL FIELDS ---- */}
           {category === "crude" && (
             <div className="space-y-3 p-3 rounded-lg bg-white/[0.03] border border-slate-700/40">
-              <p className="text-[10px] text-amber-400/80 font-medium">Run Ticket / Lab Analysis Values</p>
+              <p className="text-xs text-amber-400/80 font-medium">Run Ticket / Lab Analysis Values</p>
               {/* API Gravity + BS&W */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -257,7 +257,7 @@ export default function SpectraMatchWidget({
                     <span className="text-xs font-bold text-cyan-400">{apiGravity.toFixed(1)}</span>
                   </div>
                   <Slider value={[apiGravity]} onValueChange={(v: any) => setApiGravity(v[0])} min={10} max={70} step={0.1} className="py-1" />
-                  <div className="flex justify-between text-[9px] text-slate-600"><span>10 Heavy</span><span>40 Light</span><span>70 Ultra</span></div>
+                  <div className="flex justify-between text-xs text-slate-600"><span>10 Heavy</span><span>40 Light</span><span>70 Ultra</span></div>
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -268,7 +268,7 @@ export default function SpectraMatchWidget({
                     <span className="text-xs font-bold text-cyan-400">{bsw.toFixed(2)}%</span>
                   </div>
                   <Slider value={[bsw]} onValueChange={(v: any) => setBsw(v[0])} min={0} max={3} step={0.01} className="py-1" />
-                  <div className="flex justify-between text-[9px] text-slate-600"><span>0% Clean</span><span>1% Typical</span><span>3% High</span></div>
+                  <div className="flex justify-between text-xs text-slate-600"><span>0% Clean</span><span>1% Typical</span><span>3% High</span></div>
                 </div>
               </div>
               {/* Sulfur Type + Source Basin */}
@@ -316,7 +316,7 @@ export default function SpectraMatchWidget({
           {/* ---- REFINED FUEL FIELDS ---- */}
           {category === "refined" && (
             <div className="space-y-3 p-3 rounded-lg bg-white/[0.03] border border-slate-700/40">
-              <p className="text-[10px] text-rose-400/80 font-medium">Fuel Grade / BOL Details</p>
+              <p className="text-xs text-rose-400/80 font-medium">Fuel Grade / BOL Details</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-slate-400 text-xs flex items-center gap-1">
@@ -353,7 +353,7 @@ export default function SpectraMatchWidget({
                     <span className="text-xs font-bold text-cyan-400">{flashPoint}°F</span>
                   </div>
                   <Slider value={[flashPoint]} onValueChange={(v: any) => setFlashPoint(v[0])} min={-50} max={300} step={1} className="py-1" />
-                  <div className="flex justify-between text-[9px] text-slate-600"><span>-50°F Gas</span><span>100°F Diesel</span><span>300°F HFO</span></div>
+                  <div className="flex justify-between text-xs text-slate-600"><span>-50°F Gas</span><span>100°F Diesel</span><span>300°F HFO</span></div>
                 </div>
               </div>
               {/* API for refined products too */}
@@ -373,7 +373,7 @@ export default function SpectraMatchWidget({
           {/* ---- LPG / GAS FIELDS ---- */}
           {category === "lpg" && (
             <div className="space-y-3 p-3 rounded-lg bg-white/[0.03] border border-slate-700/40">
-              <p className="text-[10px] text-cyan-400/80 font-medium">Gas Product Specifications</p>
+              <p className="text-xs text-cyan-400/80 font-medium">Gas Product Specifications</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-slate-400 text-xs flex items-center gap-1">
@@ -405,7 +405,7 @@ export default function SpectraMatchWidget({
                     <span className="text-xs font-bold text-cyan-400">{vaporPressure} psi</span>
                   </div>
                   <Slider value={[vaporPressure]} onValueChange={(v: any) => setVaporPressure(v[0])} min={20} max={350} step={1} className="py-1" />
-                  <div className="flex justify-between text-[9px] text-slate-600"><span>20 Butane</span><span>190 Propane</span><span>350 CNG</span></div>
+                  <div className="flex justify-between text-xs text-slate-600"><span>20 Butane</span><span>190 Propane</span><span>350 CNG</span></div>
                 </div>
               </div>
             </div>
@@ -414,7 +414,7 @@ export default function SpectraMatchWidget({
           {/* ---- CHEMICAL FIELDS ---- */}
           {category === "chemical" && (
             <div className="space-y-3 p-3 rounded-lg bg-white/[0.03] border border-slate-700/40">
-              <p className="text-[10px] text-emerald-400/80 font-medium">Chemical Product Details</p>
+              <p className="text-xs text-emerald-400/80 font-medium">Chemical Product Details</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -481,7 +481,7 @@ export default function SpectraMatchWidget({
                   )}>
                     {result.primaryMatch.confidence}%
                   </div>
-                  <div className="text-[10px] text-slate-500">Confidence</div>
+                  <div className="text-xs text-slate-500">Confidence</div>
                 </div>
               </div>
 
@@ -491,7 +491,7 @@ export default function SpectraMatchWidget({
               {/* Characteristics */}
               <div className="flex flex-wrap gap-1">
                 {result.primaryMatch.characteristics.slice(0, 3).map((c: string, i: number) => (
-                  <Badge key={i} variant="outline" className="border-slate-600 text-slate-400 text-[10px] px-1.5 py-0">
+                  <Badge key={i} variant="outline" className="border-slate-600 text-slate-400 text-xs px-1.5 py-0">
                     {c}
                   </Badge>
                 ))}
@@ -501,7 +501,7 @@ export default function SpectraMatchWidget({
               {result.alternativeMatches.length > 0 && (
                 <div className="flex gap-2 overflow-x-auto">
                   {result.alternativeMatches.slice(0, 3).map((alt: any) => (
-                    <div key={alt.id} className="flex-shrink-0 px-2 py-1 rounded bg-slate-800 text-[10px]">
+                    <div key={alt.id} className="flex-shrink-0 px-2 py-1 rounded bg-slate-800 text-xs">
                       <span className="text-slate-300">{alt.name.split(" ")[0]}</span>
                       <span className="text-cyan-400 ml-1">{alt.confidence}%</span>
                     </div>
@@ -514,16 +514,16 @@ export default function SpectraMatchWidget({
                 <div className="space-y-2 pt-2 border-t border-slate-700/50">
                   <div className="flex items-center gap-1.5">
                     <EsangIcon className="w-3 h-3 text-purple-400" />
-                    <span className="text-[10px] text-purple-400 font-medium">ESANG AI Analysis</span>
+                    <span className="text-xs text-purple-400 font-medium">ESANG AI Analysis</span>
                     {result.esangVerified && (
-                      <Badge className="bg-green-500/20 text-green-400 border-0 text-[9px] px-1 py-0 ml-auto">Verified</Badge>
+                      <Badge className="bg-green-500/20 text-green-400 border-0 text-xs px-1 py-0 ml-auto">Verified</Badge>
                     )}
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">{result.esangAI.reasoning}</p>
                   {result.esangAI.safetyNotes.length > 0 && (
                     <div className="space-y-1">
                       {result.esangAI.safetyNotes.slice(0, 2).map((note: string, i: number) => (
-                        <div key={i} className="flex items-start gap-1.5 text-[10px] text-yellow-400/80">
+                        <div key={i} className="flex items-start gap-1.5 text-xs text-yellow-400/80">
                           <Flame className="w-3 h-3 mt-0.5 flex-shrink-0" />
                           <span>{note}</span>
                         </div>
@@ -531,10 +531,10 @@ export default function SpectraMatchWidget({
                     </div>
                   )}
                   {result.esangAI.marketContext && (
-                    <p className="text-[10px] text-cyan-400/70">{result.esangAI.marketContext}</p>
+                    <p className="text-xs text-cyan-400/70">{result.esangAI.marketContext}</p>
                   )}
                   {result.esangAI.learningInsight && (
-                    <p className="text-[10px] text-slate-500 italic">{result.esangAI.learningInsight}</p>
+                    <p className="text-xs text-slate-500 italic">{result.esangAI.learningInsight}</p>
                   )}
                 </div>
               )}

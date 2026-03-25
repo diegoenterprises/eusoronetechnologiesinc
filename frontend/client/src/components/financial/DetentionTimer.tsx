@@ -104,7 +104,7 @@ export default function DetentionTimer({
           </span>
         </div>
         <span
-          className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+          className={`text-xs font-medium px-2 py-0.5 rounded-full ${
             isStopped
               ? "bg-gray-700 text-gray-400"
               : isBilling
@@ -121,7 +121,7 @@ export default function DetentionTimer({
         <AnimatePresence mode="wait">
           {!isBilling && !isStopped ? (
             <motion.div key="free" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <p className="text-[10px] text-gray-500 mb-0.5">Free time remaining</p>
+              <p className="text-xs text-gray-500 mb-0.5">Free time remaining</p>
               <p className="text-2xl font-mono font-bold text-emerald-400 tabular-nums tracking-tight">
                 {formatDuration(freeTimeRemainingSeconds)}
               </p>
@@ -140,7 +140,7 @@ export default function DetentionTimer({
                 </motion.span>
               </div>
               {!isStopped && (
-                <p className="text-[10px] text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 mt-0.5">
                   {type === "LAYOVER"
                     ? `${formatCurrency(LAYOVER_FLAT_RATE)}/day flat rate`
                     : `${formatCurrency(hourlyRate)}/hr · ${formatDuration(billableSeconds)} billable`}
@@ -166,9 +166,9 @@ export default function DetentionTimer({
             />
           </div>
           <div className="flex justify-between mt-1">
-            <span className="text-[9px] text-gray-600">{formatDuration(elapsedSeconds)} elapsed</span>
+            <span className="text-xs text-gray-600">{formatDuration(elapsedSeconds)} elapsed</span>
             {freeTimeMinutes > 0 && (
-              <span className="text-[9px] text-gray-600">{freeTimeMinutes}min free</span>
+              <span className="text-xs text-gray-600">{freeTimeMinutes}min free</span>
             )}
           </div>
         </div>
@@ -182,7 +182,7 @@ export default function DetentionTimer({
           transition={{ duration: 2, repeat: Infinity }}
         >
           <AlertTriangle size={12} className="text-red-400" />
-          <span className="text-[10px] text-red-300 font-medium">
+          <span className="text-xs text-red-300 font-medium">
             Charges accruing at {formatCurrency(hourlyRate)}/hr
           </span>
         </motion.div>

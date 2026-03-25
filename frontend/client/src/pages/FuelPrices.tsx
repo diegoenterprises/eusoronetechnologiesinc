@@ -65,7 +65,7 @@ export default function FuelPrices() {
               <span className="flex items-center gap-1.5 text-xs text-slate-400"><MapPin className="w-3 h-3" />Defaulting to Houston, TX — enable location for accurate prices</span>
             )}
           </div>
-          <p className="text-slate-500 text-[10px] mt-0.5">Prices powered by U.S. EIA — updated weekly</p>
+          <p className="text-slate-500 text-xs mt-0.5">Prices powered by U.S. EIA — updated weekly</p>
         </div>
         <div className="flex items-center gap-3">
           <Select value={fuelType} onValueChange={setFuelType}>

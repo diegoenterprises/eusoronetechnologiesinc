@@ -167,7 +167,7 @@ export default function DriverAvailability() {
                       <p className={cn("text-sm font-bold", currentStatus === status.id ? status.color : isLight ? "text-slate-700" : "text-slate-200")}>
                         {status.label}
                       </p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{status.description}</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{status.description}</p>
                     </div>
                   </button>
                 ))}
@@ -215,7 +215,7 @@ export default function DriverAvailability() {
                       <Badge key={idx} className={cn("px-3 py-1.5 text-sm rounded-lg border gap-1.5", isLight ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-blue-500/15 text-blue-400 border-blue-500/30")}>
                         <Navigation className="w-3 h-3" />
                         {lane.origin} → {lane.destination}
-                        {lane.avgRate ? <span className="text-[10px] opacity-70">(${lane.avgRate})</span> : null}
+                        {lane.avgRate ? <span className="text-xs opacity-70">(${lane.avgRate})</span> : null}
                         <button onClick={() => handleRemoveLane(idx)} className="ml-1 hover:text-red-400"><X className="w-3 h-3" /></button>
                       </Badge>
                     ))}
@@ -298,14 +298,14 @@ export default function DriverAvailability() {
                             <Navigation className={cn("w-4 h-4", alreadySaved ? "text-green-500" : "text-[#1473FF]")} />
                             <div>
                               <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{lane.origin} → {lane.destination}</p>
-                              <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                              <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
                                 {lane.frequency} loads • ${lane.avgRate} avg • {lane.avgDistance} mi
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             {lane.rpm > 0 && (
-                              <Badge className={cn("text-[10px] border", isLight ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30")}>
+                              <Badge className={cn("text-xs border", isLight ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30")}>
                                 ${lane.rpm}/mi
                               </Badge>
                             )}

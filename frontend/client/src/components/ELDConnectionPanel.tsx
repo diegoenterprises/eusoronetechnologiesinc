@@ -84,7 +84,7 @@ export default function ELDConnectionPanel({ compact = false, onConnected }: ELD
   const subcard = cn("rounded-xl border p-4", isLight ? "bg-slate-50/80 border-slate-100" : "bg-white/[0.02] border-white/[0.04]");
   const heading = cn("font-semibold", isLight ? "text-slate-900" : "text-white");
   const muted = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
-  const label = cn("text-[11px] font-medium tracking-wide uppercase", isLight ? "text-slate-400" : "text-slate-500");
+  const label = cn("text-xs font-medium tracking-wide uppercase", isLight ? "text-slate-400" : "text-slate-500");
 
   // ── COMPACT MODE: Just show connection status badge ──
   if (compact) {
@@ -97,19 +97,19 @@ export default function ELDConnectionPanel({ compact = false, onConnected }: ELD
           <div className={cn("text-sm font-semibold", heading)}>
             {isConnected ? `ELD: ${connection?.providers?.[0]?.name || "Connected"}` : "ELD Not Connected"}
           </div>
-          <div className={cn("text-[11px]", muted)}>
+          <div className={cn("text-xs", muted)}>
             {isConnected ? "Live GPS & HOS syncing" : "Connect your ELD for live tracking"}
           </div>
         </div>
         {isConnected ? (
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] font-bold text-emerald-500">LIVE</span>
+            <span className="text-xs font-bold text-emerald-500">LIVE</span>
           </div>
         ) : (
           <button
             onClick={() => window.location.href = "/eld"}
-            className="text-[11px] font-semibold text-[#1473FF] hover:underline flex items-center gap-1"
+            className="text-xs font-semibold text-[#1473FF] hover:underline flex items-center gap-1"
           >
             Connect <ChevronRight className="w-3 h-3" />
           </button>
@@ -148,7 +148,7 @@ export default function ELDConnectionPanel({ compact = false, onConnected }: ELD
               <div key={f.label} className={subcard}>
                 <f.icon className="w-4 h-4 text-emerald-500 mb-2" />
                 <div className={cn("text-xs font-semibold", heading)}>{f.label}</div>
-                <div className={cn("text-[10px]", muted)}>{f.desc}</div>
+                <div className={cn("text-xs", muted)}>{f.desc}</div>
               </div>
             ))}
           </div>
@@ -166,7 +166,7 @@ export default function ELDConnectionPanel({ compact = false, onConnected }: ELD
               {isConnected ? "Change or add another ELD provider" : "Select your ELD provider to enable live fleet tracking, HOS compliance, and diagnostics"}
             </p>
           </div>
-          <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-bold", isLight ? "border-slate-200 text-slate-500" : "border-white/[0.08] text-white/40")}>
+          <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold", isLight ? "border-slate-200 text-slate-500" : "border-white/[0.08] text-white/40")}>
             <Shield className="w-3 h-3" /> Read-Only Access
           </div>
         </div>
@@ -215,18 +215,18 @@ export default function ELDConnectionPanel({ compact = false, onConnected }: ELD
                         background: p.satisfaction >= 80 ? "#22C55E" : p.satisfaction >= 70 ? "#3B82F6" : p.satisfaction >= 65 ? "#F97316" : "#EF4444",
                       }} />
                     </div>
-                    <span className={cn("text-[10px] font-bold tabular-nums", isLight ? "text-slate-500" : "text-white/50")}>
+                    <span className={cn("text-xs font-bold tabular-nums", isLight ? "text-slate-500" : "text-white/50")}>
                       {p.satisfaction}%
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {p.features.slice(0, 3).map(f => (
-                      <span key={f} className={cn("text-[9px] px-1.5 py-0.5 rounded-md font-medium",
+                      <span key={f} className={cn("text-xs px-1.5 py-0.5 rounded-md font-medium",
                         isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.04] text-white/30"
                       )}>{f}</span>
                     ))}
                     {p.features.length > 3 && (
-                      <span className={cn("text-[9px] px-1.5 py-0.5 rounded-md font-medium",
+                      <span className={cn("text-xs px-1.5 py-0.5 rounded-md font-medium",
                         isLight ? "bg-slate-100 text-slate-400" : "bg-white/[0.04] text-white/25"
                       )}>+{p.features.length - 3}</span>
                     )}
@@ -283,7 +283,7 @@ export default function ELDConnectionPanel({ compact = false, onConnected }: ELD
             <Shield className="w-4 h-4 text-[#1473FF] mt-0.5 flex-shrink-0" />
             <div>
               <div className={cn("text-xs font-semibold", isLight ? "text-blue-900" : "text-[#1473FF]")}>Read-Only Symbiotic Connection</div>
-              <div className={cn("text-[10px] mt-0.5", isLight ? "text-blue-700/70" : "text-[#1473FF]/50")}>
+              <div className={cn("text-xs mt-0.5", isLight ? "text-blue-700/70" : "text-[#1473FF]/50")}>
                 EusoTrip only reads GPS locations, HOS status, and vehicle diagnostics. We never modify your ELD data or write to your device. Your API key is encrypted at rest.
               </div>
             </div>
@@ -336,7 +336,7 @@ export default function ELDConnectionPanel({ compact = false, onConnected }: ELD
                   <f.icon className="w-4 h-4" style={{ color: f.color }} />
                 </div>
                 <div className={cn("text-xs font-semibold mb-0.5", heading)}>{f.label}</div>
-                <div className={cn("text-[10px] leading-tight", muted)}>{f.desc}</div>
+                <div className={cn("text-xs leading-tight", muted)}>{f.desc}</div>
               </div>
             ))}
           </div>

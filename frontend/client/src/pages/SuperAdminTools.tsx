@@ -62,7 +62,7 @@ export default function SuperAdminTools() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-full bg-slate-700/30">{s.icon}</div>
-                    <div><p className={cn("text-xl font-bold", s.color)}>{s.value}</p><p className="text-[10px] text-slate-400 uppercase">{s.label}</p></div>
+                    <div><p className={cn("text-xl font-bold", s.color)}>{s.value}</p><p className="text-xs text-slate-400 uppercase">{s.label}</p></div>
                   </div>
                 </CardContent>
               </Card>
@@ -85,7 +85,7 @@ export default function SuperAdminTools() {
                 ].map(item => (
                   <div key={item.label} className="p-4 rounded-xl bg-slate-900/30 border border-slate-700/20 hover:border-[#1473FF]/30 transition-colors cursor-pointer">
                     <div className="flex items-center gap-2 mb-2">{item.icon}<span className="text-white font-medium text-sm">{item.label}</span></div>
-                    <p className="text-[10px] text-slate-400">{item.desc}</p>
+                    <p className="text-xs text-slate-400">{item.desc}</p>
                   </div>
                 ))}
               </div>
@@ -105,7 +105,7 @@ export default function SuperAdminTools() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {Object.entries(health).map(([key, val]) => (
                   <div key={key} className="p-3 rounded-xl bg-slate-900/30 border border-slate-700/20 text-center">
-                    <p className="text-[10px] text-slate-400 uppercase">{key.replace(/([A-Z])/g, " $1")}</p>
+                    <p className="text-xs text-slate-400 uppercase">{key.replace(/([A-Z])/g, " $1")}</p>
                     <p className="text-lg font-bold text-white">{String(val)}</p>
                   </div>
                 ))}

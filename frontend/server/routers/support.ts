@@ -96,14 +96,8 @@ export const supportRouter = router({
    */
   getKBCategories: protectedProcedure
     .query(async () => {
-      return [
-        { id: "onboarding", name: "Getting Started", count: 3 },
-        { id: "loads", name: "Loads & Shipping", count: 4 },
-        { id: "compliance", name: "Compliance & Safety", count: 5 },
-        { id: "billing", name: "Billing & Payments", count: 3 },
-        { id: "technology", name: "Platform Technology", count: 2 },
-        { id: "contracts", name: "Agreements & Contracts", count: 2 },
-      ];
+      // No KB table exists — return empty until a knowledge_base_categories table is created
+      return [] as { id: string; name: string; count: number }[];
     }),
 
   /**
@@ -112,42 +106,27 @@ export const supportRouter = router({
   getKBArticles: protectedProcedure
     .input(z.object({ categoryId: z.string().nullable().optional(), search: z.string().optional() }))
     .query(async ({ input }) => {
-      const articles = [
-        { id: "kb_001", title: "Getting Started with EusoTrip", category: "onboarding", summary: "Learn the basics of creating loads and finding catalysts", views: 2450 },
-        { id: "kb_002", title: "HazMat Compliance Guide", category: "compliance", summary: "DOT/FMCSA requirements for hazardous materials transport", views: 1890 },
-        { id: "kb_003", title: "Understanding Platform Fees", category: "billing", summary: "How the dynamic commission engine calculates fees (5-15%)", views: 3200 },
-        { id: "kb_004", title: "Agreements & Smart Contracts", category: "contracts", summary: "Creating, signing, and managing catalyst agreements", views: 1450 },
-        { id: "kb_005", title: "Emergency Response (ERG 2024)", category: "compliance", summary: "Using ESANG AI for real-time emergency guidance", views: 2100 },
-        { id: "kb_006", title: "Spectra-Match Product ID", category: "technology", summary: "How crude oil identification works with spectral analysis", views: 980 },
-        { id: "kb_007", title: "How to Accept a Load", category: "loads", summary: "View, review, and accept available loads", views: 4200 },
-        { id: "kb_008", title: "DVIR Submission Guide", category: "compliance", summary: "Completing daily vehicle inspection reports", views: 1780 },
-        { id: "kb_009", title: "Hours of Service (HOS)", category: "compliance", summary: "Understanding HOS regulations and tracking driving time", views: 3600 },
-        { id: "kb_010", title: "Payment & Settlements", category: "billing", summary: "Payment schedules, settlements, and earnings", views: 5100 },
-      ];
-      let filtered = articles;
-      if (input.categoryId) filtered = filtered.filter(a => a.category === input.categoryId);
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(a => a.title.toLowerCase().includes(q) || a.summary.toLowerCase().includes(q));
+      // No KB articles table exists — return empty until a knowledge_base_articles table is created
+      const articles: { id: string; title: string; category: string; summary: string; views: number }[] = [];
 
-        // Augment with semantic knowledge base search
-        if (filtered.length < 3) {
-          try {
-            const { searchKnowledge } = await import("../services/embeddings/aiTurbocharge");
-            const hits = await searchKnowledge(input.search, 5);
-            for (const hit of hits.filter(h => h.score > 0.3)) {
-              filtered.push({
-                id: `ai_${hit.entityId}`,
-                title: hit.text.slice(0, 60) + "...",
-                category: (hit.metadata?.category as string) || "ai-knowledge",
-                summary: hit.text.slice(0, 200),
-                views: 0,
-              });
-            }
-          } catch { /* embedding service unavailable */ }
-        }
+      // Augment with semantic knowledge base search if a search term is provided
+      if (input.search) {
+        try {
+          const { searchKnowledge } = await import("../services/embeddings/aiTurbocharge");
+          const hits = await searchKnowledge(input.search, 5);
+          for (const hit of hits.filter(h => h.score > 0.3)) {
+            articles.push({
+              id: `ai_${hit.entityId}`,
+              title: hit.text.slice(0, 60) + "...",
+              category: (hit.metadata?.category as string) || "ai-knowledge",
+              summary: hit.text.slice(0, 200),
+              views: 0,
+            });
+          }
+        } catch { /* embedding service unavailable */ }
       }
-      return filtered;
+
+      return articles;
     }),
 
   /**
@@ -156,11 +135,8 @@ export const supportRouter = router({
   getKBArticle: protectedProcedure
     .input(z.object({ articleId: z.string() }))
     .query(async ({ input }) => {
-      return {
-        id: input.articleId,
-        title: "Knowledge Base Article", content: "Article content is being built out.", category: "general", author: "EusoTrip Support",
-        updatedAt: new Date().toISOString(), views: 0, helpful: 0,
-      };
+      // No KB articles table exists — return null until implemented
+      return null;
     }),
 
   getKBBookmarks: protectedProcedure.query(async () => []),
@@ -486,37 +462,23 @@ export const supportRouter = router({
       search: z.string().optional(),
       limit: z.number().default(20),
     }))
-    .query(async ({ input }) => {
-      const articles = [
-        { id: "faq_001", title: "How do I accept a load?", category: "loads", summary: "Learn how to view and accept available loads in the app.", views: 4250 },
-        { id: "faq_002", title: "How do I submit a DVIR?", category: "compliance", summary: "Step-by-step guide for completing your daily vehicle inspection report.", views: 1980 },
-        { id: "faq_003", title: "Understanding your HOS status", category: "compliance", summary: "Learn about Hours of Service regulations and how to track your driving time.", views: 3450 },
-        { id: "faq_004", title: "Payment and settlements", category: "billing", summary: "Information about payment schedules, settlements, and viewing your earnings.", views: 5100 },
-        { id: "faq_005", title: "Reporting an incident", category: "safety", summary: "How to report accidents, spills, or other incidents through the app.", views: 1650 },
-        { id: "faq_006", title: "Using ESANG AI for help", category: "technology", summary: "Ask ESANG AI compliance questions, ERG lookups, platform help, and troubleshooting.", views: 2800 },
-        { id: "faq_007", title: "Managing your rate sheet", category: "billing", summary: "Upload, digitize, and manage rate sheets with Schedule A pricing.", views: 1200 },
-        { id: "faq_008", title: "Hazmat endorsement requirements", category: "compliance", summary: "CDL endorsements, training, and certifications for hazmat transport.", views: 2300 },
-      ];
-      let filtered = articles;
-      if (input.category) filtered = filtered.filter(a => a.category === input.category);
-      if (input.search) { const q = input.search.toLowerCase(); filtered = filtered.filter(a => a.title.toLowerCase().includes(q) || a.summary.toLowerCase().includes(q)); }
-      return filtered.slice(0, input.limit);
+    .query(async () => {
+      // No FAQ articles table exists — return empty until implemented
+      return [] as { id: string; title: string; category: string; summary: string; views: number }[];
     }),
 
   getFAQArticleById: publicProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return {
-        id: input.id, title: "How do I accept a load?", category: "loads",
-        content: `# How to Accept a Load\n\n## Step 1: View Available Loads\nNavigate to the Load Board from your dashboard.\n\n## Step 2: Review Load Details\nTap on any load to view origin/destination, pickup/delivery times, rate, distance, and product info.\n\n## Step 3: Accept the Load\nTap "Accept Load" and confirm.\n\n## Step 4: Confirmation\nThe load appears in "My Loads" with pickup instructions.\n\n## Need Help?\nContact support or chat with ESANG AI.`,
-        relatedArticles: ["faq_002", "faq_003"], helpful: { yes: 245, no: 12 }, lastUpdated: "2026-02-01",
-      };
+    .query(async () => {
+      // No FAQ articles table exists — return null until implemented
+      return null;
     }),
 
   submitArticleFeedback: protectedProcedure
     .input(z.object({ articleId: z.string(), helpful: z.boolean(), feedback: z.string().optional() }))
     .mutation(async ({ input }) => ({ success: true, articleId: input.articleId, submittedAt: new Date().toISOString() })),
 
+  // Company contact config — operational constants, not stub data
   getContactInfo: publicProcedure.query(async () => ({
     phone: "1-800-EUSOTRIP", email: "support@eusotrip.com", hours: "24/7",
     emergencyLine: "1-800-424-9300", chat: { available: true, avgWaitTime: 2 },

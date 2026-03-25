@@ -100,7 +100,7 @@ function AdminSupportView() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = { open: "bg-yellow-500/15 text-yellow-500 border-yellow-500/30", in_progress: "bg-blue-500/15 text-blue-500 border-blue-500/30", resolved: "bg-green-500/15 text-green-500 border-green-500/30", closed: "bg-slate-500/15 text-slate-400 border-slate-500/30" };
-    return <Badge className={cn("border text-[10px] font-bold", map[status] || map.closed)}>{status?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Unknown"}</Badge>;
+    return <Badge className={cn("border text-xs font-bold", map[status] || map.closed)}>{status?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Unknown"}</Badge>;
   };
 
   const priorityDot = (p: string) => {
@@ -117,7 +117,7 @@ function AdminSupportView() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{t('support.management', 'Support Management')}</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
               <Headphones className="w-3 h-3 text-blue-500" />
-              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Admin</span>
+              <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">Admin</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", mt)}>{t('support.adminSubtitle', 'Manage incoming tickets, platform health & knowledge base')}</p>
@@ -137,7 +137,7 @@ function AdminSupportView() {
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20 flex-shrink-0">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-[11px] font-bold text-green-500">AI Active</span>
+            <span className="text-xs font-bold text-green-500">AI Active</span>
           </div>
         </div>
       </div>
@@ -153,7 +153,7 @@ function AdminSupportView() {
           <div key={s.label} className={cn("rounded-2xl p-4 bg-gradient-to-br border", L ? `${s.bg} border-slate-200/60` : `${s.bg} border-slate-700/30`)}>
             <div className="flex items-center justify-between mb-2"><span className={s.color}>{s.icon}</span></div>
             <p className={cn("text-2xl font-bold tracking-tight", s.color)}>{s.value}</p>
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-1">{s.label}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-1">{s.label}</p>
           </div>
         ))}
       </div>
@@ -206,7 +206,7 @@ function AdminSupportView() {
                       <div className="p-2 rounded-lg bg-green-500/10"><CheckCircle className="w-5 h-5 text-green-500" /></div>
                       <div className="text-left">
                         <p className={cn("font-semibold text-xs", vl)}>All clear</p>
-                        <p className="text-[11px] text-slate-400">No tickets need your attention right now</p>
+                        <p className="text-xs text-slate-400">No tickets need your attention right now</p>
                       </div>
                     </div>
                   </div>
@@ -223,7 +223,7 @@ function AdminSupportView() {
                             {statusBadge(ticket.status)}
                           </div>
                           <p className={cn("text-xs line-clamp-1 mb-1.5", mt)}>{ticket.message || ""}</p>
-                          <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                          <div className="flex items-center gap-3 text-xs text-slate-400">
                             {ticket.userName && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{ticket.userName}</span>}
                             {ticket.createdAt && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(ticket.createdAt).toLocaleDateString()}</span>}
                           </div>
@@ -252,7 +252,7 @@ function AdminSupportView() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <p className={cn("font-bold text-sm", vl)}>{article.title}</p>
-                        <Badge className="bg-slate-500/10 text-slate-400 border-slate-500/20 border text-[9px]">{article.category}</Badge>
+                        <Badge className="bg-slate-500/10 text-slate-400 border-slate-500/20 border text-xs">{article.category}</Badge>
                       </div>
                       <p className="text-xs text-slate-400">{article.desc}</p>
                     </div>
@@ -279,7 +279,7 @@ function AdminSupportView() {
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <p className={cn("font-bold text-sm", vl)}>{ch.title}</p>
-                    <span className={cn("text-[10px] font-bold", ch.sc)}>{ch.status}</span>
+                    <span className={cn("text-xs font-bold", ch.sc)}>{ch.status}</span>
                   </div>
                   <p className="text-xs text-slate-400">{ch.desc}</p>
                 </div>
@@ -335,7 +335,7 @@ function UserSupportView() {
       in_progress: "bg-blue-500/15 text-blue-500 border-blue-500/30",
       closed: "bg-slate-500/15 text-slate-400 border-slate-500/30",
     };
-    return <Badge className={cn("border text-[10px] font-bold", map[status] || map.closed)}>{status?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) || "Unknown"}</Badge>;
+    return <Badge className={cn("border text-xs font-bold", map[status] || map.closed)}>{status?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) || "Unknown"}</Badge>;
   };
 
   const priorityBadge = (p: string) => {
@@ -345,7 +345,7 @@ function UserSupportView() {
       medium: "bg-blue-500/15 text-blue-400 border-blue-500/30",
       low: "bg-slate-500/15 text-slate-400 border-slate-500/30",
     };
-    return <Badge className={cn("border text-[10px]", map[p] || map.medium)}>{p}</Badge>;
+    return <Badge className={cn("border text-xs", map[p] || map.medium)}>{p}</Badge>;
   };
 
   const userRole = (user?.role || "SHIPPER").toUpperCase();
@@ -526,7 +526,7 @@ function UserSupportView() {
           <div key={s.label} className={cl}>
             <div className="flex items-center gap-2 mb-1">
               <div className={cn("p-1.5 rounded-lg", s.bg)}><span className={s.color}>{s.icon}</span></div>
-              <span className="text-[10px] uppercase text-slate-400 font-bold">{s.label}</span>
+              <span className="text-xs uppercase text-slate-400 font-bold">{s.label}</span>
             </div>
             <p className={cn("text-xl font-bold", vl)}>{s.value}</p>
           </div>
@@ -581,7 +581,7 @@ function UserSupportView() {
                           {ticket.priority && priorityBadge(ticket.priority)}
                         </div>
                         <p className={cn("text-xs line-clamp-1 mb-1", mt)}>{ticket.message}</p>
-                        <p className="text-[10px] text-slate-400">{ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : ""}</p>
+                        <p className="text-xs text-slate-400">{ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : ""}</p>
                       </div>
                       <ChevronRight className={cn("w-4 h-4 flex-shrink-0 mt-1", isLight ? "text-slate-300" : "text-slate-600")} />
                     </div>
@@ -661,7 +661,7 @@ function UserSupportView() {
           {/* Category filter */}
           <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
             {kbCategories.map(cat => (
-              <button key={cat} onClick={() => { setKbCategory(cat); setExpandedArticle(null); }} className={cn("px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all border",
+              <button key={cat} onClick={() => { setKbCategory(cat); setExpandedArticle(null); }} className={cn("px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
                 kbCategory === cat
                   ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-sm"
                   : isLight ? "bg-white border-slate-200 text-slate-500 hover:border-blue-300" : "bg-slate-800/60 border-slate-700/50 text-slate-400 hover:border-slate-600"
@@ -673,7 +673,7 @@ function UserSupportView() {
           <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl text-xs", isLight ? "bg-blue-50 border border-blue-100" : "bg-blue-500/5 border border-blue-500/10")}>
             <UserCheck className="w-3.5 h-3.5 text-blue-500" />
             <span className="text-slate-400">Showing articles for:</span>
-            <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 border text-[10px] font-bold">{userRole.replace(/_/g, " ")}</Badge>
+            <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 border text-xs font-bold">{userRole.replace(/_/g, " ")}</Badge>
             <span className="text-slate-400">({filteredArticles.length} articles)</span>
           </div>
 
@@ -698,7 +698,7 @@ function UserSupportView() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <p className={cn("font-bold text-sm", vl)}>{article.title}</p>
-                          <Badge className="bg-slate-500/10 text-slate-400 border-slate-500/20 border text-[9px]">{article.category}</Badge>
+                          <Badge className="bg-slate-500/10 text-slate-400 border-slate-500/20 border text-xs">{article.category}</Badge>
                         </div>
                         <p className="text-xs text-slate-400">{article.desc}</p>
                         {isExpanded && (
@@ -728,11 +728,11 @@ function UserSupportView() {
                   <div className={cn("p-3 rounded-xl", "bg-blue-500/15")}><MessageSquare className="w-6 h-6 text-blue-500" /></div>
                   <div>
                     <p className={cn("font-bold text-sm", vl)}>Submit a Support Ticket</p>
-                    <p className="text-[11px] text-slate-400">Fastest way to reach our team</p>
+                    <p className="text-xs text-slate-400">Fastest way to reach our team</p>
                   </div>
                 </div>
                 <button onClick={() => setActiveTab("new")} className="font-bold text-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent hover:opacity-80 transition-opacity cursor-pointer">Create Ticket →</button>
-                <p className="text-[11px] text-slate-400 mt-1">Tracked, prioritized, with email/SMS updates on every reply</p>
+                <p className="text-xs text-slate-400 mt-1">Tracked, prioritized, with email/SMS updates on every reply</p>
               </CardContent>
             </Card>
 
@@ -743,11 +743,11 @@ function UserSupportView() {
                   <div className={cn("p-3 rounded-xl", "bg-emerald-500/15")}><Mail className="w-6 h-6 text-emerald-500" /></div>
                   <div>
                     <p className={cn("font-bold text-sm", vl)}>Email Support</p>
-                    <p className="text-[11px] text-slate-400">Response within 24 hours</p>
+                    <p className="text-xs text-slate-400">Response within 24 hours</p>
                   </div>
                 </div>
                 <a href="mailto:support@eusotrip.com" className="font-bold text-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent hover:opacity-80 transition-opacity">support@eusotrip.com</a>
-                <p className="text-[11px] text-slate-400 mt-1">Include your account ID for faster service</p>
+                <p className="text-xs text-slate-400 mt-1">Include your account ID for faster service</p>
               </CardContent>
             </Card>
 
@@ -758,11 +758,11 @@ function UserSupportView() {
                   <div className={cn("p-3 rounded-xl", "bg-purple-500/15")}><Bot className="w-6 h-6 text-purple-500" /></div>
                   <div>
                     <p className={cn("font-bold text-sm", vl)}>ESANG AI Assistant</p>
-                    <p className="text-[11px] text-slate-400">Instant answers, always available</p>
+                    <p className="text-xs text-slate-400">Instant answers, always available</p>
                   </div>
                 </div>
                 <button onClick={() => toast.info("ESANG AI is available via the chat icon in the bottom-right corner")} className="font-bold text-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent hover:opacity-80 transition-opacity cursor-pointer">Chat now →</button>
-                <p className="text-[11px] text-slate-400 mt-1">Compliance, ERG, loads, billing & more</p>
+                <p className="text-xs text-slate-400 mt-1">Compliance, ERG, loads, billing & more</p>
               </CardContent>
             </Card>
 
@@ -773,11 +773,11 @@ function UserSupportView() {
                   <div className={cn("p-3 rounded-xl", "bg-orange-500/15")}><Siren className="w-6 h-6 text-orange-500" /></div>
                   <div>
                     <p className={cn("font-bold text-sm", vl)}>Emergency / Safety</p>
-                    <p className="text-[11px] text-slate-400">CHEMTREC — Hazmat emergency response</p>
+                    <p className="text-xs text-slate-400">CHEMTREC — Hazmat emergency response</p>
                   </div>
                 </div>
                 <a href="tel:+18004249300" className="font-bold text-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent hover:opacity-80 transition-opacity">1-800-424-9300</a>
-                <p className="text-[11px] text-slate-400 mt-1">For hazmat spills and transport emergencies (24/7)</p>
+                <p className="text-xs text-slate-400 mt-1">For hazmat spills and transport emergencies (24/7)</p>
               </CardContent>
             </Card>
           </div>
@@ -789,24 +789,24 @@ function UserSupportView() {
                 <div className={cn("p-2.5 rounded-xl", "bg-blue-500/10")}><Clock className="w-5 h-5 text-blue-500" /></div>
                 <div>
                   <p className={cn("font-bold text-sm", vl)}>Support Hours & Response Times</p>
-                  <p className="text-[11px] text-slate-400">We're here when you need us</p>
+                  <p className="text-xs text-slate-400">We're here when you need us</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className={cn("p-3 rounded-xl", isLight ? "bg-slate-50" : "bg-slate-800/30")}>
-                  <p className="text-[10px] uppercase font-bold text-blue-500 mb-1">Support Tickets</p>
+                  <p className="text-xs uppercase font-bold text-blue-500 mb-1">Support Tickets</p>
                   <p className={cn("font-bold text-sm", vl)}>Within 4 hours</p>
-                  <p className="text-[11px] text-slate-400">Urgent tickets triaged immediately</p>
+                  <p className="text-xs text-slate-400">Urgent tickets triaged immediately</p>
                 </div>
                 <div className={cn("p-3 rounded-xl", isLight ? "bg-slate-50" : "bg-slate-800/30")}>
-                  <p className="text-[10px] uppercase font-bold text-purple-500 mb-1">Email</p>
+                  <p className="text-xs uppercase font-bold text-purple-500 mb-1">Email</p>
                   <p className={cn("font-bold text-sm", vl)}>Within 24 hours</p>
-                  <p className="text-[11px] text-slate-400">Business hours Mon–Fri</p>
+                  <p className="text-xs text-slate-400">Business hours Mon–Fri</p>
                 </div>
                 <div className={cn("p-3 rounded-xl", isLight ? "bg-slate-50" : "bg-slate-800/30")}>
-                  <p className="text-[10px] uppercase font-bold text-green-500 mb-1">ESANG AI</p>
+                  <p className="text-xs uppercase font-bold text-green-500 mb-1">ESANG AI</p>
                   <p className={cn("font-bold text-sm", vl)}>Instant 24/7</p>
-                  <p className="text-[11px] text-slate-400">AI-powered answers in seconds</p>
+                  <p className="text-xs text-slate-400">AI-powered answers in seconds</p>
                 </div>
               </div>
             </CardContent>

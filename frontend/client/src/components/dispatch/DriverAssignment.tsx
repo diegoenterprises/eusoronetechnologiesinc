@@ -260,12 +260,12 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
                           {formatMinutes(driver.hosRemaining.driving)}
                         </span>
                         {driver.hazmatEndorsement && (
-                          <Badge variant="outline" className="text-orange-400 border-orange-400/30 text-[10px]">
+                          <Badge variant="outline" className="text-orange-400 border-orange-400/30 text-xs">
                             Hazmat
                           </Badge>
                         )}
                         {driver.twicCard && (
-                          <Badge variant="outline" className="text-blue-400 border-blue-400/30 text-[10px]">
+                          <Badge variant="outline" className="text-blue-400 border-blue-400/30 text-xs">
                             TWIC
                           </Badge>
                         )}

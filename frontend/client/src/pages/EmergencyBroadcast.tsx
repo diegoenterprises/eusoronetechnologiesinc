@@ -221,9 +221,9 @@ export default function EmergencyBroadcast() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{b.title}</p>
-                      <Badge className={cn("text-[9px] border", sev.bg, sev.color, "border-current/20")}>{sev.label}</Badge>
+                      <Badge className={cn("text-xs border", sev.bg, sev.color, "border-current/20")}>{sev.label}</Badge>
                     </div>
-                    <p className={cn("text-[10px] mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>
+                    <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>
                       {b.target} · {new Date(b.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                     </p>
                   </div>
@@ -232,7 +232,7 @@ export default function EmergencyBroadcast() {
                   <p className={cn("text-sm font-bold", ackPct === 100 ? "text-green-500" : isLight ? "text-slate-700" : "text-white")}>
                     {ackPct}%
                   </p>
-                  <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                  <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
                     {b.acknowledged}/{b.total} ack
                   </p>
                 </div>

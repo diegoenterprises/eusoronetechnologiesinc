@@ -809,7 +809,7 @@ function SupplyChainClassification({ isEditing }: { isEditing: boolean }) {
               role === r.v ? "border-emerald-500 bg-emerald-500/10" : "border-slate-700 bg-slate-700/30 hover:border-slate-600"
             } ${!isEditing ? "opacity-70 cursor-default" : ""}`}>
             <p className="text-white text-sm font-semibold">{r.label}</p>
-            <p className="text-slate-500 text-[10px] mt-0.5">{r.desc}</p>
+            <p className="text-slate-500 text-xs mt-0.5">{r.desc}</p>
           </button>
         ))}
       </div>
@@ -825,7 +825,7 @@ function SupplyChainClassification({ isEditing }: { isEditing: boolean }) {
                   mType === m.v ? "border-purple-500 bg-purple-500/10" : "border-slate-700 bg-slate-700/30 hover:border-slate-600"
                 } ${!isEditing ? "opacity-70 cursor-default" : ""}`}>
                 <p className="text-white text-sm font-semibold">{m.label}</p>
-                <p className="text-slate-500 text-[10px] mt-0.5">{m.desc}</p>
+                <p className="text-slate-500 text-xs mt-0.5">{m.desc}</p>
               </button>
             ))}
           </div>

@@ -9,7 +9,7 @@ import { z } from "zod";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { vehicles, geofences, users, loads, fuelTransactions, inspections, drivers } from "../../drizzle/schema";
+import { vehicles, geofences, users, loads, fuelTransactions, inspections, drivers, gpsTracking, documents } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte, type SQL } from "drizzle-orm";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { cacheThrough as lsCacheThrough } from "../services/cache/redisCache";
@@ -206,6 +206,29 @@ export const fleetRouter = router({
 
         const utilization = total?.count ? Math.round((inUse?.count || 0) / total.count * 100) : 0;
 
+        // Compute average MPG from fuel transactions: total miles driven / total gallons
+        let avgMpg = 0;
+        try {
+          const [fuelAgg] = await db
+            .select({
+              totalGallons: sql<number>`COALESCE(SUM(CAST(${fuelTransactions.gallons} AS DECIMAL)), 0)`,
+            })
+            .from(fuelTransactions)
+            .where(eq(fuelTransactions.companyId, companyId));
+
+          // Sum mileage across all company vehicles as proxy for total miles
+          const [mileageAgg] = await db
+            .select({
+              totalMiles: sql<number>`COALESCE(SUM(${vehicles.mileage}), 0)`,
+            })
+            .from(vehicles)
+            .where(eq(vehicles.companyId, companyId));
+
+          const totalGallons = fuelAgg?.totalGallons || 0;
+          const totalMiles = mileageAgg?.totalMiles || 0;
+          avgMpg = totalGallons > 0 ? Math.round((totalMiles / totalGallons) * 10) / 10 : 0;
+        } catch { /* fuel data unavailable */ }
+
         return {
           totalVehicles: total?.count || 0,
           total: total?.count || 0,
@@ -221,7 +244,7 @@ export const fleetRouter = router({
           atConsignee: 0,
           offDuty: 0,
           issues: 0,
-          avgMpg: 6.8,
+          avgMpg,
         };
       } catch (error) {
         logger.error('[Fleet] getFleetStats error:', error);
@@ -251,15 +274,46 @@ export const fleetRouter = router({
 
         const utilization = total?.count ? Math.round((inUse?.count || 0) / total.count * 100) : 0;
 
+        // Compute average age from vehicle year
+        const currentYear = new Date().getFullYear();
+        const [ageAgg] = await db
+          .select({ avgYear: sql<number>`AVG(${vehicles.year})` })
+          .from(vehicles)
+          .where(and(eq(vehicles.companyId, companyId), sql`${vehicles.year} IS NOT NULL AND ${vehicles.year} > 0`));
+        const avgAge = ageAgg?.avgYear ? Math.round((currentYear - ageAgg.avgYear) * 10) / 10 : 0;
+
+        // Maintenance due this week
+        const now = new Date();
+        const endOfWeek = new Date(now);
+        endOfWeek.setDate(endOfWeek.getDate() + 7);
+        const [maintDue] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(vehicles)
+          .where(and(
+            eq(vehicles.companyId, companyId),
+            gte(vehicles.nextMaintenanceDate, now),
+            lte(vehicles.nextMaintenanceDate, endOfWeek)
+          ));
+
+        // Inspections due this week
+        const [inspDue] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(vehicles)
+          .where(and(
+            eq(vehicles.companyId, companyId),
+            gte(vehicles.nextInspectionDate, now),
+            lte(vehicles.nextInspectionDate, endOfWeek)
+          ));
+
         return {
           totalVehicles: total?.count || 0,
           active: (available?.count || 0) + (inUse?.count || 0),
           inMaintenance: maintenance?.count || 0,
           outOfService: outOfService?.count || 0,
           utilization,
-          avgAge: 0,
-          maintenanceDueThisWeek: 0,
-          inspectionsDueThisWeek: 0,
+          avgAge,
+          maintenanceDueThisWeek: maintDue?.count || 0,
+          inspectionsDueThisWeek: inspDue?.count || 0,
         };
       } catch (error) {
         logger.error('[Fleet] getSummary error:', error);
@@ -299,29 +353,118 @@ export const fleetRouter = router({
           .from(vehicles)
           .where(eq(vehicles.companyId, companyId));
 
-        let result = vehicleList.map(v => ({
-          id: String(v.id),
-          unitNumber: v.licensePlate || `VEH-${v.id}`,
-          type: v.vehicleType,
-          make: v.make || '',
-          model: v.model || '',
-          year: v.year || 0,
-          vin: v.vin,
-          licensePlate: v.licensePlate || '',
-          status: v.status === 'available' ? 'active' : v.status,
-          currentDriver: null as { id: string; name: string } | null,
-          currentLocation: { city: 'Unknown', state: '' },
-          odometer: 0,
-          fuelLevel: 0,
-          lastInspection: v.nextInspectionDate?.toISOString().split('T')[0] || null,
-          nextMaintenanceDue: v.nextMaintenanceDate?.toISOString().split('T')[0] || null,
-          nextServiceIn: 'Unknown',
-          loadsCompleted: 0,
-          capacity: parseFloat(v.capacity?.toString() || '0'),
-          insurance: { provider: '', policyNumber: '', expirationDate: '' },
-          registration: { state: '', expirationDate: '' },
-          specifications: { engine: '', horsepower: 0, transmission: '', fuelCapacity: 0, sleeper: false },
-        }));
+        // Build driver map for assigned vehicles
+        const driverIds = vehicleList.filter(v => v.currentDriverId).map(v => v.currentDriverId!);
+        const listDriverMap = new Map<number, string>();
+        if (driverIds.length > 0) {
+          const drvList = await db.select({ id: users.id, name: users.name }).from(users)
+            .where(sql`${users.id} IN (${sql.raw(driverIds.join(','))})`);
+          drvList.forEach(d => listDriverMap.set(d.id, d.name || 'Unknown'));
+        }
+
+        // Get latest GPS position per vehicle
+        const vehicleIds = vehicleList.map(v => v.id);
+        const gpsMap = new Map<number, { lat: number; lng: number }>();
+        if (vehicleIds.length > 0) {
+          try {
+            const gpsRows = await db
+              .select({
+                vehicleId: gpsTracking.vehicleId,
+                latitude: gpsTracking.latitude,
+                longitude: gpsTracking.longitude,
+              })
+              .from(gpsTracking)
+              .where(sql`${gpsTracking.vehicleId} IN (${sql.raw(vehicleIds.join(','))})`)
+              .orderBy(desc(gpsTracking.timestamp))
+              .limit(vehicleIds.length);
+            // Keep only the first (most recent) per vehicle
+            for (const g of gpsRows) {
+              if (!gpsMap.has(g.vehicleId)) {
+                gpsMap.set(g.vehicleId, { lat: parseFloat(String(g.latitude)), lng: parseFloat(String(g.longitude)) });
+              }
+            }
+          } catch { /* gps data unavailable */ }
+        }
+
+        // Get loads completed per vehicle
+        const loadsMap = new Map<number, number>();
+        if (vehicleIds.length > 0) {
+          try {
+            const loadCounts = await db
+              .select({ vehicleId: loads.vehicleId, count: sql<number>`count(*)` })
+              .from(loads)
+              .where(and(sql`${loads.vehicleId} IN (${sql.raw(vehicleIds.join(','))})`, eq(loads.status, 'delivered')))
+              .groupBy(loads.vehicleId);
+            loadCounts.forEach(lc => { if (lc.vehicleId) loadsMap.set(lc.vehicleId, lc.count); });
+          } catch { /* loads data unavailable */ }
+        }
+
+        // Get insurance/registration docs per company
+        const insuranceDocs = new Map<number, { provider: string; policyNumber: string; expirationDate: string }>();
+        const registrationDocs = new Map<number, { state: string; expirationDate: string }>();
+        try {
+          const docs = await db
+            .select()
+            .from(documents)
+            .where(and(
+              eq(documents.companyId, companyId),
+              sql`${documents.type} IN ('insurance', 'registration', 'vehicle_insurance', 'vehicle_registration')`
+            ));
+          for (const doc of docs) {
+            if (doc.type.includes('insurance')) {
+              insuranceDocs.set(doc.companyId || 0, {
+                provider: doc.name || '',
+                policyNumber: '',
+                expirationDate: doc.expiryDate?.toISOString().split('T')[0] || '',
+              });
+            }
+            if (doc.type.includes('registration')) {
+              registrationDocs.set(doc.companyId || 0, {
+                state: '',
+                expirationDate: doc.expiryDate?.toISOString().split('T')[0] || '',
+              });
+            }
+          }
+        } catch { /* docs unavailable */ }
+
+        let result = vehicleList.map(v => {
+          const gps = gpsMap.get(v.id);
+          const loc = v.currentLocation ?? (gps ? { lat: gps.lat, lng: gps.lng } : null);
+          const insDoc = insuranceDocs.get(companyId);
+          const regDoc = registrationDocs.get(companyId);
+
+          return {
+            id: String(v.id),
+            unitNumber: v.licensePlate || `VEH-${v.id}`,
+            type: v.vehicleType,
+            make: v.make || '',
+            model: v.model || '',
+            year: v.year || 0,
+            vin: v.vin,
+            licensePlate: v.licensePlate || '',
+            status: v.status === 'available' ? 'active' : v.status,
+            currentDriver: v.currentDriverId ? { id: String(v.currentDriverId), name: listDriverMap.get(v.currentDriverId) || 'Unknown' } : null,
+            currentLocation: loc ? { city: `${loc.lat.toFixed(2)}, ${loc.lng.toFixed(2)}`, state: '' } : { city: 'Unknown', state: '' },
+            odometer: v.mileage || 0,
+            fuelLevel: 0,
+            lastInspection: v.nextInspectionDate?.toISOString().split('T')[0] || null,
+            nextMaintenanceDue: v.nextMaintenanceDate?.toISOString().split('T')[0] || null,
+            nextServiceIn: v.nextMaintenanceDate
+              ? `${Math.max(0, Math.ceil((v.nextMaintenanceDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days`
+              : 'Unknown',
+            loadsCompleted: loadsMap.get(v.id) || 0,
+            capacity: parseFloat(v.capacity?.toString() || '0'),
+            insurance: insDoc || { provider: '', policyNumber: '', expirationDate: '' },
+            registration: regDoc || { state: '', expirationDate: '' },
+            specifications: {
+              engine: v.make ? `${v.make} Engine` : '',
+              horsepower: 0,
+              transmission: '',
+              fuelCapacity: 0,
+              sleeper: false,
+            },
+          };
+        });
 
         // Apply filters
         if (input.type) {
@@ -375,6 +518,58 @@ export const fleetRouter = router({
 
         const location = (vehicle.currentLocation ?? { lat: 0, lng: 0 });
 
+        // Get latest GPS position for this vehicle
+        let gpsLoc: { lat: number; lng: number } | null = null;
+        try {
+          const [latestGps] = await db
+            .select({ latitude: gpsTracking.latitude, longitude: gpsTracking.longitude })
+            .from(gpsTracking)
+            .where(eq(gpsTracking.vehicleId, vehicleId))
+            .orderBy(desc(gpsTracking.timestamp))
+            .limit(1);
+          if (latestGps) {
+            gpsLoc = { lat: parseFloat(String(latestGps.latitude)), lng: parseFloat(String(latestGps.longitude)) };
+          }
+        } catch { /* gps unavailable */ }
+
+        const finalLoc = location.lat || location.lng ? location : (gpsLoc ?? { lat: 0, lng: 0 });
+
+        // Get assigned driver
+        let currentDriver: { id: string; name: string } | null = null;
+        if (vehicle.currentDriverId) {
+          try {
+            const [drv] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, vehicle.currentDriverId)).limit(1);
+            if (drv) currentDriver = { id: String(drv.id), name: drv.name || 'Unknown' };
+          } catch { /* driver lookup failed */ }
+        }
+
+        // Get loads completed for this vehicle
+        let loadsCompleted = 0;
+        try {
+          const [lc] = await db.select({ count: sql<number>`count(*)` }).from(loads)
+            .where(and(eq(loads.vehicleId, vehicleId), eq(loads.status, 'delivered')));
+          loadsCompleted = lc?.count || 0;
+        } catch { /* loads unavailable */ }
+
+        // Get insurance/registration docs
+        let insurance = { provider: '', policyNumber: '', expirationDate: '' };
+        let registration = { state: '', expirationDate: '' };
+        try {
+          const docs = await db.select().from(documents)
+            .where(and(
+              eq(documents.companyId, vehicle.companyId),
+              sql`${documents.type} IN ('insurance', 'registration', 'vehicle_insurance', 'vehicle_registration')`
+            )).limit(10);
+          for (const doc of docs) {
+            if (doc.type.includes('insurance')) {
+              insurance = { provider: doc.name || '', policyNumber: '', expirationDate: doc.expiryDate?.toISOString().split('T')[0] || '' };
+            }
+            if (doc.type.includes('registration')) {
+              registration = { state: '', expirationDate: doc.expiryDate?.toISOString().split('T')[0] || '' };
+            }
+          }
+        } catch { /* docs unavailable */ }
+
         return {
           id: String(vehicle.id),
           unitNumber: vehicle.licensePlate || `VEH-${vehicle.id}`,
@@ -385,26 +580,34 @@ export const fleetRouter = router({
           vin: vehicle.vin,
           licensePlate: vehicle.licensePlate || '',
           status: vehicle.status === 'available' ? 'active' : vehicle.status,
-          currentDriver: null as { id: string; name: string } | null,
-          assignedDriver: null as { id: string; name: string } | null,
-          currentLocation: { 
-            lat: location.lat || 0, 
-            lng: location.lng || 0, 
-            city: 'Unknown', 
-            state: '' 
+          currentDriver,
+          assignedDriver: currentDriver,
+          currentLocation: {
+            lat: finalLoc.lat || 0,
+            lng: finalLoc.lng || 0,
+            city: finalLoc.lat ? `${finalLoc.lat.toFixed(2)}, ${finalLoc.lng.toFixed(2)}` : 'Unknown',
+            state: ''
           },
-          odometer: 0,
-          mileage: 0,
+          odometer: vehicle.mileage || 0,
+          mileage: vehicle.mileage || 0,
           fuelLevel: 0,
           engineHours: 0,
           lastInspection: vehicle.nextInspectionDate?.toISOString().split('T')[0] || null,
           nextMaintenanceDue: vehicle.nextMaintenanceDate?.toISOString().split('T')[0] || null,
-          nextServiceIn: 'Unknown',
-          loadsCompleted: 0,
+          nextServiceIn: vehicle.nextMaintenanceDate
+            ? `${Math.max(0, Math.ceil((vehicle.nextMaintenanceDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days`
+            : 'Unknown',
+          loadsCompleted,
           capacity: parseFloat(vehicle.capacity?.toString() || '0'),
-          insurance: { provider: '', policyNumber: '', expirationDate: '' },
-          registration: { state: '', expirationDate: '' },
-          specifications: { engine: '', horsepower: 0, transmission: '', fuelCapacity: 0, sleeper: false },
+          insurance,
+          registration,
+          specifications: {
+            engine: vehicle.make ? `${vehicle.make} Engine` : '',
+            horsepower: 0,
+            transmission: '',
+            fuelCapacity: 0,
+            sleeper: false,
+          },
         };
       } catch (error) {
         logger.error('[Fleet] getById error:', error);

@@ -186,7 +186,7 @@ export default function AccessorialManagement() {
           <TabsTrigger value="queue" className="relative">
             <Zap className="w-4 h-4 mr-1" />Approval Queue
             {(pendingQueue.data?.total || 0) > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center animate-pulse">
                 {pendingQueue.data?.total || 0}
               </span>
             )}
@@ -331,7 +331,7 @@ export default function AccessorialManagement() {
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className={cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white")}>{typeConfig.label}</span>
-                                <Badge className={cn("border-0 text-[10px]", statusConfig.bg, statusConfig.text)}>
+                                <Badge className={cn("border-0 text-xs", statusConfig.bg, statusConfig.text)}>
                                   {statusConfig.icon}
                                   <span className="ml-1">{statusConfig.label}</span>
                                 </Badge>
@@ -343,7 +343,7 @@ export default function AccessorialManagement() {
                           </div>
                           <div className="text-right">
                             <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${claim.totalAmount?.toFixed(2)}</p>
-                            <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                            <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
                               Fee: ${claim.platformFee?.toFixed(2)}
                             </p>
                           </div>
@@ -409,7 +409,7 @@ export default function AccessorialManagement() {
                             <span className={isLight ? "text-slate-500" : "text-slate-400"}>Status</span>
                             {(() => {
                               const sc = STATUS_CONFIG[claimDetailQuery.data.status] || STATUS_CONFIG.draft;
-                              return <Badge className={cn("border-0 text-[10px]", sc.bg, sc.text)}>{sc.icon}<span className="ml-1">{sc.label}</span></Badge>;
+                              return <Badge className={cn("border-0 text-xs", sc.bg, sc.text)}>{sc.icon}<span className="ml-1">{sc.label}</span></Badge>;
                             })()}
                           </div>
                           {claimDetailQuery.data.notes && (
@@ -778,7 +778,7 @@ export default function AccessorialManagement() {
                         {/* Amount */}
                         <div className="text-right flex-shrink-0 mr-4">
                           <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${claim.totalAmount?.toFixed(2)}</p>
-                          <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>Fee: ${claim.platformFee?.toFixed(2)}</p>
+                          <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>Fee: ${claim.platformFee?.toFixed(2)}</p>
                         </div>
 
                         {/* Quick-action buttons */}
@@ -853,49 +853,49 @@ export default function AccessorialManagement() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {schedule.flatRate !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">Flat: ${schedule.flatRate}</Badge>
+                            <Badge variant="outline" className="text-xs">Flat: ${schedule.flatRate}</Badge>
                           )}
                           {schedule.ratePerHour !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">${schedule.ratePerHour}/hr</Badge>
+                            <Badge variant="outline" className="text-xs">${schedule.ratePerHour}/hr</Badge>
                           )}
                           {schedule.dailyRate !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">${schedule.dailyRate}/day</Badge>
+                            <Badge variant="outline" className="text-xs">${schedule.dailyRate}/day</Badge>
                           )}
                           {schedule.freeTimeMinutes !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">Free: {schedule.freeTimeMinutes}min</Badge>
+                            <Badge variant="outline" className="text-xs">Free: {schedule.freeTimeMinutes}min</Badge>
                           )}
                           {schedule.freeTimeHours !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">Free: {schedule.freeTimeHours}hr</Badge>
+                            <Badge variant="outline" className="text-xs">Free: {schedule.freeTimeHours}hr</Badge>
                           )}
                           {schedule.maxHours !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">Max: {schedule.maxHours}hr</Badge>
+                            <Badge variant="outline" className="text-xs">Max: {schedule.maxHours}hr</Badge>
                           )}
                           {schedule.maxDays !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">Max: {schedule.maxDays}d</Badge>
+                            <Badge variant="outline" className="text-xs">Max: {schedule.maxDays}d</Badge>
                           )}
                           {schedule.requiresReceipt && (
-                            <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-500/30">Receipt Required</Badge>
+                            <Badge variant="outline" className="text-xs text-amber-400 border-amber-500/30">Receipt Required</Badge>
                           )}
                           {schedule.requiresPhoto && (
-                            <Badge variant="outline" className="text-[10px] text-blue-400 border-blue-500/30">Photo Required</Badge>
+                            <Badge variant="outline" className="text-xs text-blue-400 border-blue-500/30">Photo Required</Badge>
                           )}
                           {schedule.requiresScaleTicket && (
-                            <Badge variant="outline" className="text-[10px] text-cyan-400 border-cyan-500/30">Scale Ticket</Badge>
+                            <Badge variant="outline" className="text-xs text-cyan-400 border-cyan-500/30">Scale Ticket</Badge>
                           )}
                           {schedule.perStopRate !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">${schedule.perStopRate}/stop</Badge>
+                            <Badge variant="outline" className="text-xs">${schedule.perStopRate}/stop</Badge>
                           )}
                           {schedule.perPalletRate !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">${schedule.perPalletRate}/pallet</Badge>
+                            <Badge variant="outline" className="text-xs">${schedule.perPalletRate}/pallet</Badge>
                           )}
                           {schedule.perTarpRate !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">${schedule.perTarpRate}/tarp</Badge>
+                            <Badge variant="outline" className="text-xs">${schedule.perTarpRate}/tarp</Badge>
                           )}
                           {schedule.minFee !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">Min: ${schedule.minFee}</Badge>
+                            <Badge variant="outline" className="text-xs">Min: ${schedule.minFee}</Badge>
                           )}
                           {schedule.maxFee !== undefined && (
-                            <Badge variant="outline" className="text-[10px]">Max: ${schedule.maxFee}</Badge>
+                            <Badge variant="outline" className="text-xs">Max: ${schedule.maxFee}</Badge>
                           )}
                         </div>
                       </div>

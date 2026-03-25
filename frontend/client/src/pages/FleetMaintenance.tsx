@@ -128,7 +128,7 @@ function statusBadge(status: string) {
     at_risk: { label: "At Risk", cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
   };
   const config = map[status] || { label: status, cls: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30" };
-  return <Badge variant="outline" className={cn("text-[10px] font-semibold px-2 py-0.5 border", config.cls)}>{config.label}</Badge>;
+  return <Badge variant="outline" className={cn("text-xs font-semibold px-2 py-0.5 border", config.cls)}>{config.label}</Badge>;
 }
 
 function priorityBadge(priority: string) {
@@ -139,7 +139,7 @@ function priorityBadge(priority: string) {
     low: { label: "Low", cls: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" },
   };
   const config = map[priority] || { label: priority, cls: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30" };
-  return <Badge variant="outline" className={cn("text-[10px] font-semibold px-2 py-0.5 border", config.cls)}>{config.label}</Badge>;
+  return <Badge variant="outline" className={cn("text-xs font-semibold px-2 py-0.5 border", config.cls)}>{config.label}</Badge>;
 }
 
 function fmtDate(iso: string | null | undefined) {
@@ -232,7 +232,7 @@ function DashboardTab() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-zinc-300 truncate">{act.description}</p>
-                  <p className="text-[10px] text-zinc-500">{fmtDate(act.timestamp)}</p>
+                  <p className="text-xs text-zinc-500">{fmtDate(act.timestamp)}</p>
                 </div>
               </div>
             ))}
@@ -399,13 +399,13 @@ function WorkOrdersTab() {
                     <TableCell className="text-xs text-zinc-500">{fmtDate(wo.createdAt)}</TableCell>
                     <TableCell>
                       {wo.status === "open" && (
-                        <Button variant="ghost" size="sm" className="text-[10px] text-orange-400 hover:text-orange-300 h-6 px-2"
+                        <Button variant="ghost" size="sm" className="text-xs text-orange-400 hover:text-orange-300 h-6 px-2"
                           onClick={() => updateMut.mutate({ workOrderId: wo.id, status: "in_progress" })}>
                           Start
                         </Button>
                       )}
                       {wo.status === "in_progress" && (
-                        <Button variant="ghost" size="sm" className="text-[10px] text-emerald-400 hover:text-emerald-300 h-6 px-2"
+                        <Button variant="ghost" size="sm" className="text-xs text-emerald-400 hover:text-emerald-300 h-6 px-2"
                           onClick={() => updateMut.mutate({ workOrderId: wo.id, status: "completed" })}>
                           Complete
                         </Button>
@@ -574,14 +574,14 @@ function PartsTab() {
                     <TableCell className="text-xs text-right font-mono text-zinc-300">{fmtCurrency(part.totalValue)}</TableCell>
                     <TableCell>
                       {part.isLowStock ? (
-                        <Badge variant="outline" className="text-[10px] bg-red-500/15 text-red-400 border-red-500/30">Low Stock</Badge>
+                        <Badge variant="outline" className="text-xs bg-red-500/15 text-red-400 border-red-500/30">Low Stock</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/30">In Stock</Badge>
+                        <Badge variant="outline" className="text-xs bg-emerald-500/15 text-emerald-400 border-emerald-500/30">In Stock</Badge>
                       )}
                     </TableCell>
                     <TableCell>
                       {part.isLowStock && (
-                        <Button variant="ghost" size="sm" className="text-[10px] text-orange-400 hover:text-orange-300 h-6 px-2 gap-1"
+                        <Button variant="ghost" size="sm" className="text-xs text-orange-400 hover:text-orange-300 h-6 px-2 gap-1"
                           disabled={orderMut.isPending}
                           onClick={() => orderMut.mutate({ partNumber: part.partNumber, quantity: part.reorderQty })}>
                           <ShoppingCart className="h-3 w-3" /> Reorder
@@ -723,7 +723,7 @@ function LifecycleTab() {
                   <TableCell className="text-xs text-right font-mono text-zinc-400">{fmtNumber(v.currentMiles)}</TableCell>
                   <TableCell className="text-xs text-right font-mono text-zinc-300">${v.costPerMile}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={cn("text-[10px] px-2 py-0.5 border",
+                    <Badge variant="outline" className={cn("text-xs px-2 py-0.5 border",
                       v.lifecyclePhase === "new" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
                       v.lifecyclePhase === "prime" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" :
                       v.lifecyclePhase === "mature" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
@@ -787,7 +787,7 @@ function InspectionPrepTab() {
               <Card key={cat.category} className={cn("border", cat.fail > 0 ? "border-red-800/50 bg-red-950/20" : "border-zinc-800 bg-zinc-900/60")}>
                 <CardContent className="py-3 px-4">
                   <p className="text-xs font-semibold text-zinc-300 mb-1">{cat.category}</p>
-                  <div className="flex items-center gap-2 text-[10px]">
+                  <div className="flex items-center gap-2 text-xs">
                     <span className="text-emerald-400">{cat.pass} pass</span>
                     {cat.fail > 0 && <span className="text-red-400">{cat.fail} fail</span>}
                     {cat.needsAttention > 0 && <span className="text-amber-400">{cat.needsAttention} attn</span>}
@@ -823,7 +823,7 @@ function InspectionPrepTab() {
                       <TableCell className="text-xs text-zinc-400">{item.category}</TableCell>
                       <TableCell className="text-xs text-zinc-300">{item.item}</TableCell>
                       <TableCell>
-                        {item.critical && <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-400 border-red-500/20">Critical</Badge>}
+                        {item.critical && <Badge variant="outline" className="text-xs bg-red-500/10 text-red-400 border-red-500/20">Critical</Badge>}
                       </TableCell>
                       <TableCell>{statusBadge(item.status)}</TableCell>
                       <TableCell className="text-xs text-zinc-500">{fmtDate(item.lastCheckedDate)}</TableCell>
@@ -875,7 +875,7 @@ function CostAnalysisTab() {
           <CardContent className="space-y-2">
             {data.monthlyTrend.map((m: any) => (
               <div key={m.month} className="flex items-center gap-3">
-                <span className="text-[10px] text-zinc-500 w-14">{m.label}</span>
+                <span className="text-xs text-zinc-500 w-14">{m.label}</span>
                 <div className="flex-1 h-3 bg-zinc-800 rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-orange-600 to-amber-500 rounded-full transition-all"
                     style={{ width: `${(m.total / Math.max(...data.monthlyTrend.map((x: any) => x.total))) * 100}%` }} />
@@ -902,7 +902,7 @@ function CostAnalysisTab() {
                     style={{ width: `${cat.percentage}%` }} />
                 </div>
                 <span className="text-xs font-mono text-zinc-300 w-16 text-right">{fmtCurrency(cat.amount)}</span>
-                <span className="text-[10px] text-zinc-500 w-8 text-right">{cat.percentage}%</span>
+                <span className="text-xs text-zinc-500 w-8 text-right">{cat.percentage}%</span>
               </div>
             ))}
           </CardContent>
@@ -977,7 +977,7 @@ function RecallsAlertsTab() {
           <CardTitle className="text-sm text-zinc-300 flex items-center gap-2">
             <Bell className="h-4 w-4 text-red-400" /> Manufacturer Recalls
             {(recalls?.summary?.criticalUnresolved ?? 0) > 0 && (
-              <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">
+              <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
                 {recalls?.summary?.criticalUnresolved} Critical
               </Badge>
             )}
@@ -1002,9 +1002,9 @@ function RecallsAlertsTab() {
                   <p className="text-xs text-zinc-500">Deadline: {fmtDate(recall.deadline)}</p>
                   <div className="flex items-center gap-1.5">
                     <Progress value={recall.completionPct} className="h-1.5 w-20 bg-zinc-800"  />
-                    <span className="text-[10px] text-zinc-400">{recall.completionPct}%</span>
+                    <span className="text-xs text-zinc-400">{recall.completionPct}%</span>
                   </div>
-                  <p className="text-[10px] text-zinc-500">
+                  <p className="text-xs text-zinc-500">
                     {recall.unresolvedCount} of {recall.affectedVehiclesInFleet.length} unresolved
                   </p>
                 </div>
@@ -1035,9 +1035,9 @@ function RecallsAlertsTab() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-zinc-300 truncate">{alert.recommendation}</p>
-                  <p className="text-[10px] text-zinc-500">{alert.vehicleUnit} | {alert.confidenceScore}% confidence</p>
+                  <p className="text-xs text-zinc-500">{alert.vehicleUnit} | {alert.confidenceScore}% confidence</p>
                 </div>
-                <span className="text-[10px] text-zinc-400 shrink-0">
+                <span className="text-xs text-zinc-400 shrink-0">
                   {alert.daysUntilFailure === 0 ? "NOW" : `${alert.daysUntilFailure}d`}
                 </span>
               </div>
@@ -1051,7 +1051,7 @@ function RecallsAlertsTab() {
             <CardTitle className="text-sm text-zinc-300 flex items-center gap-2">
               <Calendar className="h-4 w-4 text-orange-400" /> Compliance Deadlines (60d)
               {(compliance?.summary?.overdue ?? 0) > 0 && (
-                <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">
+                <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
                   {compliance?.summary?.overdue} Overdue
                 </Badge>
               )}
@@ -1063,9 +1063,9 @@ function RecallsAlertsTab() {
                 {statusBadge(evt.status)}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-zinc-300 truncate">{evt.label}</p>
-                  <p className="text-[10px] text-zinc-500">{evt.vehicleUnit} | Due: {fmtDate(evt.dueDate)}</p>
+                  <p className="text-xs text-zinc-500">{evt.vehicleUnit} | Due: {fmtDate(evt.dueDate)}</p>
                 </div>
-                <span className={cn("text-[10px] shrink-0",
+                <span className={cn("text-xs shrink-0",
                   evt.status === "overdue" ? "text-red-400" : evt.status === "due_soon" ? "text-amber-400" : "text-zinc-400")}>
                   {evt.status === "overdue" ? "OVERDUE" : `${evt.daysUntilDue}d`}
                 </span>
@@ -1200,10 +1200,10 @@ function UtilizationTab() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-zinc-200 font-medium">{v.name}</span>
-                      {v.isPreferred && <Badge variant="outline" className="text-[9px] bg-amber-500/10 text-amber-400 border-amber-500/20 px-1.5 py-0">Preferred</Badge>}
+                      {v.isPreferred && <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-400 border-amber-500/20 px-1.5 py-0">Preferred</Badge>}
                     </div>
-                    <p className="text-[10px] text-zinc-500">{v.specialty}</p>
-                    <div className="flex items-center gap-3 mt-1 text-[10px] text-zinc-400">
+                    <p className="text-xs text-zinc-500">{v.specialty}</p>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-zinc-400">
                       <span className="flex items-center gap-0.5"><Star className="h-2.5 w-2.5 text-amber-400" /> {v.rating}</span>
                       <span>{v.jobsCompleted} jobs</span>
                       <span>Avg {v.avgTurnaroundHours}h</span>

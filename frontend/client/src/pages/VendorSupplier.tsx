@@ -94,7 +94,7 @@ function StatCard({ icon, label, value, sub, color = "teal", loading = false }: 
               <p className="text-2xl font-bold text-teal-400">{value}</p>
             )}
             <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>{label}</p>
-            {sub && <p className="text-[10px] text-slate-500 mt-0.5">{sub}</p>}
+            {sub && <p className="text-xs text-slate-500 mt-0.5">{sub}</p>}
           </div>
         </div>
       </CardContent>
@@ -303,7 +303,7 @@ export default function VendorSupplier() {
                     <div>
                       <p className={`text-sm ${isLight ? "text-slate-700" : "text-slate-200"}`}>{alert.vendorName}</p>
                       <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>{alert.issue}</p>
-                      <p className="text-[10px] text-slate-500">Due: {alert.dueDate}</p>
+                      <p className="text-xs text-slate-500">Due: {alert.dueDate}</p>
                     </div>
                   </div>
                 )) : (
@@ -407,7 +407,7 @@ export default function VendorSupplier() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className={`font-semibold ${isLight ? "text-slate-700" : "text-slate-200"}`}>{vendor.name}</p>
-                          {vendor.isPreferred && <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-[10px]">Preferred</Badge>}
+                          {vendor.isPreferred && <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-xs">Preferred</Badge>}
                         </div>
                         <p className={`text-sm ${isLight ? "text-slate-500" : "text-slate-400"} capitalize`}>{vendor.category} - {vendor.city}, {vendor.state}</p>
                         <div className="flex items-center gap-3 mt-1">
@@ -418,7 +418,7 @@ export default function VendorSupplier() {
                           <span className="text-xs text-slate-500">|</span>
                           <span className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>{vendor.activePos} active POs</span>
                           {vendor.tags?.length > 0 && vendor.tags.map((tag: string) => (
-                            <Badge key={tag} variant="outline" className={`text-[10px] ${isLight ? "border-slate-300 text-slate-500" : "border-slate-600 text-slate-400"}`}>{tag}</Badge>
+                            <Badge key={tag} variant="outline" className={`text-xs ${isLight ? "border-slate-300 text-slate-500" : "border-slate-600 text-slate-400"}`}>{tag}</Badge>
                           ))}
                         </div>
                       </div>
@@ -427,7 +427,7 @@ export default function VendorSupplier() {
                       <div>
                         <StatusBadge status={vendor.status} />
                         <p className="text-sm text-teal-400 font-medium mt-1">${vendor.totalSpend.toLocaleString()}</p>
-                        <p className="text-[10px] text-slate-500">Compliance: {vendor.complianceScore}%</p>
+                        <p className="text-xs text-slate-500">Compliance: {vendor.complianceScore}%</p>
                       </div>
                       <ChevronRight className="w-5 h-5 text-slate-500" />
                     </div>
@@ -741,7 +741,7 @@ export default function VendorSupplier() {
                       <div className="flex-1">
                         <div className={`h-6 ${isLight ? "bg-slate-200" : "bg-slate-700"} rounded-full overflow-hidden`}>
                           <div className="h-full bg-teal-500 rounded-full flex items-center justify-end pr-2" style={{ width: `${Math.max(cat.percentage, 5)}%` }}>
-                            <span className="text-[10px] text-white font-medium">{cat.percentage}%</span>
+                            <span className="text-xs text-white font-medium">{cat.percentage}%</span>
                           </div>
                         </div>
                       </div>
@@ -1039,9 +1039,9 @@ export default function VendorSupplier() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {req.required && <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">Required</Badge>}
+                    {req.required && <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">Required</Badge>}
                     {req.uploaded ? (
-                      <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-[10px]">Uploaded</Badge>
+                      <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30 text-xs">Uploaded</Badge>
                     ) : (
                       <Button size="sm" variant="outline" className="border-teal-500/50 text-teal-400 text-xs h-7">Upload</Button>
                     )}

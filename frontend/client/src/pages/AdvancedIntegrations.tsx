@@ -185,7 +185,7 @@ function OverviewPanel({ isLight = false }: { isLight?: boolean }) {
                   </div>
                   <div>
                     <p className={cn("text-xl font-bold", s.color)}>{s.value}</p>
-                    <p className="text-[10px] text-slate-400 uppercase">{s.label}</p>
+                    <p className="text-xs text-slate-400 uppercase">{s.label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -286,7 +286,7 @@ function EdiPanel({ isLight = false }: { isLight?: boolean }) {
             <Card key={s.label} className={`${isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50"} rounded-xl`}>
               <CardContent className="p-3 text-center">
                 <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
-                <p className="text-[10px] text-slate-400 uppercase">{s.label}</p>
+                <p className="text-xs text-slate-400 uppercase">{s.label}</p>
               </CardContent>
             </Card>
           ))}
@@ -373,21 +373,21 @@ function EdiPanel({ isLight = false }: { isLight?: boolean }) {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-[10px] text-slate-400 uppercase">Reference</p>
+                  <p className="text-xs text-slate-400 uppercase">Reference</p>
                   <p className="text-white text-sm font-mono">{selectedTxn.referenceNumber}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 uppercase">Trading Partner</p>
+                  <p className="text-xs text-slate-400 uppercase">Trading Partner</p>
                   <p className="text-white text-sm">{selectedTxn.tradingPartner}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 uppercase">Parsed Data</p>
+                  <p className="text-xs text-slate-400 uppercase">Parsed Data</p>
                   <pre className="text-xs text-slate-300 bg-slate-900/50 p-2 rounded-lg overflow-x-auto max-h-40 font-mono">
                     {JSON.stringify(selectedTxn.parsedData, null, 2)}
                   </pre>
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 uppercase">Raw EDI</p>
+                  <p className="text-xs text-slate-400 uppercase">Raw EDI</p>
                   <pre className="text-xs text-slate-300 bg-slate-900/50 p-2 rounded-lg overflow-x-auto max-h-32 font-mono whitespace-pre-wrap">
                     {selectedTxn.rawData}
                   </pre>
@@ -417,7 +417,7 @@ function EdiPanel({ isLight = false }: { isLight?: boolean }) {
                     <p className="text-xs text-slate-400 font-mono">{p.scac} | {p.communicationMethod}</p>
                     <div className="flex gap-1 mt-1">
                       {p.supportedTransactions.map((t: string) => (
-                        <Badge key={t} className="bg-slate-700/50 text-slate-300 border-0 text-[10px] px-1.5 py-0">
+                        <Badge key={t} className="bg-slate-700/50 text-slate-300 border-0 text-xs px-1.5 py-0">
                           {t}
                         </Badge>
                       ))}
@@ -464,7 +464,7 @@ function FuelCardPanel({ isLight = false }: { isLight?: boolean }) {
                     </div>
                     <div>
                       <p className={cn("text-xl font-bold", s.color)}>{s.value}</p>
-                      <p className="text-[10px] text-slate-400 uppercase">{s.label}</p>
+                      <p className="text-xs text-slate-400 uppercase">{s.label}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -500,7 +500,7 @@ function FuelCardPanel({ isLight = false }: { isLight?: boolean }) {
                 )}
                 <div className="flex flex-wrap gap-1 mb-2">
                   {p.features.map((f: string) => (
-                    <Badge key={f} className="bg-slate-700/50 text-slate-300 border-0 text-[10px] px-1.5 py-0">
+                    <Badge key={f} className="bg-slate-700/50 text-slate-300 border-0 text-xs px-1.5 py-0">
                       {f}
                     </Badge>
                   ))}
@@ -639,7 +639,7 @@ function EldTelematicsPanel({ isLight = false }: { isLight?: boolean }) {
             <Card key={s.label} className={`${isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50"} rounded-xl`}>
               <CardContent className="p-3 text-center">
                 <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
-                <p className="text-[10px] text-slate-400 uppercase">{s.label}</p>
+                <p className="text-xs text-slate-400 uppercase">{s.label}</p>
               </CardContent>
             </Card>
           ))}
@@ -667,7 +667,7 @@ function EldTelematicsPanel({ isLight = false }: { isLight?: boolean }) {
                 )}
                 <div className="flex flex-wrap gap-1 mb-2">
                   {p.features.slice(0, 3).map((f: string) => (
-                    <Badge key={f} className="bg-slate-700/50 text-slate-300 border-0 text-[10px] px-1.5 py-0">
+                    <Badge key={f} className="bg-slate-700/50 text-slate-300 border-0 text-xs px-1.5 py-0">
                       {f}
                     </Badge>
                   ))}
@@ -803,11 +803,11 @@ function AccountingSyncPanel({ isLight = false }: { isLight?: boolean }) {
                   </div>
                   {sys.mappings && (
                     <div className="text-xs space-y-1">
-                      <p className="text-slate-400 uppercase text-[10px]">Account Mappings</p>
+                      <p className="text-slate-400 uppercase text-xs">Account Mappings</p>
                       {Object.entries(sys.mappings).map(([key, val]) => (
                         <div key={key} className="flex justify-between">
                           <span className="text-slate-400">{key.replace(/([A-Z])/g, " $1").trim()}</span>
-                          <span className="text-slate-300 font-mono text-[11px]">{val as string}</span>
+                          <span className="text-slate-300 font-mono text-xs">{val as string}</span>
                         </div>
                       ))}
                     </div>
@@ -951,7 +951,7 @@ function WebhookApiPanel({ isLight = false }: { isLight?: boolean }) {
                 </div>
                 <div className="flex flex-wrap gap-1 mb-2">
                   {wh.events.map((e: string) => (
-                    <Badge key={e} className="bg-indigo-500/10 text-indigo-400 border-0 text-[10px] px-1.5 py-0">
+                    <Badge key={e} className="bg-indigo-500/10 text-indigo-400 border-0 text-xs px-1.5 py-0">
                       {e}
                     </Badge>
                   ))}
@@ -982,10 +982,10 @@ function WebhookApiPanel({ isLight = false }: { isLight?: boolean }) {
 
             {availableEvents.length > 0 && (
               <div className="mt-4">
-                <p className="text-[10px] text-slate-400 uppercase mb-2">Available Events ({availableEvents.length})</p>
+                <p className="text-xs text-slate-400 uppercase mb-2">Available Events ({availableEvents.length})</p>
                 <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                   {availableEvents.map((e: string) => (
-                    <Badge key={e} className="bg-slate-700/50 text-slate-300 border-0 text-[10px] px-1.5 py-0">
+                    <Badge key={e} className="bg-slate-700/50 text-slate-300 border-0 text-xs px-1.5 py-0">
                       {e}
                     </Badge>
                   ))}
@@ -1020,7 +1020,7 @@ function WebhookApiPanel({ isLight = false }: { isLight?: boolean }) {
                 <p className="text-xs text-slate-400 font-mono mb-2">{key.key}</p>
                 <div className="flex flex-wrap gap-1 mb-2">
                   {key.permissions.map((p: string) => (
-                    <Badge key={p} className="bg-blue-500/10 text-blue-400 border-0 text-[10px] px-1.5 py-0">
+                    <Badge key={p} className="bg-blue-500/10 text-blue-400 border-0 text-xs px-1.5 py-0">
                       {p}
                     </Badge>
                   ))}
@@ -1143,14 +1143,14 @@ function LogsPanel({ isLight = false }: { isLight?: boolean }) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
                         <div className="flex items-center gap-2">
-                          <Badge className="bg-slate-700/50 text-slate-300 border-0 text-[10px] px-1.5 py-0">
+                          <Badge className="bg-slate-700/50 text-slate-300 border-0 text-xs px-1.5 py-0">
                             {log.integrationId}
                           </Badge>
-                          <Badge className={cn("border-0 text-[10px] px-1.5 py-0", style.bg, style.color)}>
+                          <Badge className={cn("border-0 text-xs px-1.5 py-0", style.bg, style.color)}>
                             {log.level}
                           </Badge>
                         </div>
-                        <span className="text-[10px] text-slate-500">{formatTimeAgo(log.timestamp)}</span>
+                        <span className="text-xs text-slate-500">{formatTimeAgo(log.timestamp)}</span>
                       </div>
                       <p className="text-sm text-white">{log.message}</p>
                     </div>

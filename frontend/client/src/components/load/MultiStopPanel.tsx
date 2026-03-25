@@ -174,7 +174,7 @@ export default function MultiStopPanel({ loadId, canEdit = false, compact = fals
           <MapPin className="w-5 h-5 text-[#1473FF]" />
           Route Stops
           {stops.length > 0 && (
-            <Badge className="ml-2 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-[10px]">
+            <Badge className="ml-2 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-xs">
               {stops.length} stop{stops.length !== 1 ? "s" : ""}
             </Badge>
           )}
@@ -216,7 +216,7 @@ export default function MultiStopPanel({ loadId, canEdit = false, compact = fals
                     <div className="flex items-center ml-6 -my-1">
                       <div className={cn("w-0.5 h-4", isCompleted || isSkipped || (stops[idx - 1]?.status === "completed") ? "bg-emerald-500/50" : isLight ? "bg-slate-200" : "bg-slate-700")} />
                       {stop.distanceFromPrev && (
-                        <span className="ml-3 text-[10px] text-slate-400">{Number(stop.distanceFromPrev).toFixed(1)} mi</span>
+                        <span className="ml-3 text-xs text-slate-400">{Number(stop.distanceFromPrev).toFixed(1)} mi</span>
                       )}
                     </div>
                   )}
@@ -250,7 +250,7 @@ export default function MultiStopPanel({ loadId, canEdit = false, compact = fals
                         <div className="flex items-center gap-2">
                           <span className={config.color}>{config.icon}</span>
                           <span className={cn("text-xs font-semibold uppercase tracking-wider", config.color)}>{config.label}</span>
-                          <Badge className={cn("text-[9px] border-0 font-medium", statusCfg.bgColor, statusCfg.color)}>
+                          <Badge className={cn("text-xs border-0 font-medium", statusCfg.bgColor, statusCfg.color)}>
                             {statusCfg.label}
                           </Badge>
                         </div>
@@ -258,19 +258,19 @@ export default function MultiStopPanel({ loadId, canEdit = false, compact = fals
                           {stop.facilityName || `${stop.city || ""}${stop.state ? `, ${stop.state}` : ""}`}
                         </p>
                         {stop.address && (
-                          <p className="text-[11px] text-slate-400 truncate">{stop.address}</p>
+                          <p className="text-xs text-slate-400 truncate">{stop.address}</p>
                         )}
                       </div>
 
                       {/* Time info */}
                       <div className="text-right flex-shrink-0">
                         {stop.appointmentStart && (
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-xs text-slate-400">
                             {new Date(stop.appointmentStart).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                           </p>
                         )}
                         {stop.dwellMinutes != null && stop.dwellMinutes > 0 && (
-                          <p className={cn("text-[10px] font-medium", stop.dwellMinutes > 120 ? "text-red-400" : "text-slate-400")}>
+                          <p className={cn("text-xs font-medium", stop.dwellMinutes > 120 ? "text-red-400" : "text-slate-400")}>
                             {stop.dwellMinutes}min dwell
                           </p>
                         )}
@@ -286,37 +286,37 @@ export default function MultiStopPanel({ loadId, canEdit = false, compact = fals
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                           {stop.city && (
                             <div className={cellCls}>
-                              <p className="text-[10px] text-slate-400 uppercase">City</p>
+                              <p className="text-xs text-slate-400 uppercase">City</p>
                               <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{stop.city}{stop.state ? `, ${stop.state}` : ""}</p>
                             </div>
                           )}
                           {stop.zipCode && (
                             <div className={cellCls}>
-                              <p className="text-[10px] text-slate-400 uppercase">Zip</p>
+                              <p className="text-xs text-slate-400 uppercase">Zip</p>
                               <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{stop.zipCode}</p>
                             </div>
                           )}
                           {stop.contactName && (
                             <div className={cellCls}>
-                              <p className="text-[10px] text-slate-400 uppercase">Contact</p>
+                              <p className="text-xs text-slate-400 uppercase">Contact</p>
                               <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{stop.contactName}</p>
                             </div>
                           )}
                           {stop.contactPhone && (
                             <div className={cellCls}>
-                              <p className="text-[10px] text-slate-400 uppercase">Phone</p>
+                              <p className="text-xs text-slate-400 uppercase">Phone</p>
                               <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{stop.contactPhone}</p>
                             </div>
                           )}
                           {stop.referenceNumber && (
                             <div className={cellCls}>
-                              <p className="text-[10px] text-slate-400 uppercase">Ref #</p>
+                              <p className="text-xs text-slate-400 uppercase">Ref #</p>
                               <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{stop.referenceNumber}</p>
                             </div>
                           )}
                           {(stop.estimatedWeight || stop.actualWeight) && (
                             <div className={cellCls}>
-                              <p className="text-[10px] text-slate-400 uppercase">Weight</p>
+                              <p className="text-xs text-slate-400 uppercase">Weight</p>
                               <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>
                                 {stop.actualWeight ? `${Number(stop.actualWeight).toLocaleString()} lbs (actual)` : `${Number(stop.estimatedWeight).toLocaleString()} lbs (est)`}
                               </p>
@@ -324,7 +324,7 @@ export default function MultiStopPanel({ loadId, canEdit = false, compact = fals
                           )}
                           {stop.arrivedAt && (
                             <div className={cellCls}>
-                              <p className="text-[10px] text-slate-400 uppercase">Arrived</p>
+                              <p className="text-xs text-slate-400 uppercase">Arrived</p>
                               <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>
                                 {new Date(stop.arrivedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                               </p>
@@ -332,7 +332,7 @@ export default function MultiStopPanel({ loadId, canEdit = false, compact = fals
                           )}
                           {stop.departedAt && (
                             <div className={cellCls}>
-                              <p className="text-[10px] text-slate-400 uppercase">Departed</p>
+                              <p className="text-xs text-slate-400 uppercase">Departed</p>
                               <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>
                                 {new Date(stop.departedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                               </p>
@@ -342,7 +342,7 @@ export default function MultiStopPanel({ loadId, canEdit = false, compact = fals
 
                         {stop.notes && (
                           <div className={cellCls}>
-                            <p className="text-[10px] text-slate-400 uppercase">Notes</p>
+                            <p className="text-xs text-slate-400 uppercase">Notes</p>
                             <p className={cn("text-xs", isLight ? "text-slate-700" : "text-slate-300")}>{stop.notes}</p>
                           </div>
                         )}
@@ -351,37 +351,37 @@ export default function MultiStopPanel({ loadId, canEdit = false, compact = fals
                         {canEdit && (
                           <div className="flex items-center gap-2 flex-wrap">
                             {stop.status === "pending" && (
-                              <Button size="sm" className="h-7 text-[11px] bg-blue-600 hover:bg-blue-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "en_route")}>
+                              <Button size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "en_route")}>
                                 <Truck className="w-3 h-3 mr-1" />En Route
                               </Button>
                             )}
                             {stop.status === "en_route" && (
-                              <Button size="sm" className="h-7 text-[11px] bg-amber-600 hover:bg-amber-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "arrived")}>
+                              <Button size="sm" className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "arrived")}>
                                 <MapPin className="w-3 h-3 mr-1" />Arrived
                               </Button>
                             )}
                             {stop.status === "arrived" && stop.stopType === "pickup" && (
-                              <Button size="sm" className="h-7 text-[11px] bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "loading")}>
+                              <Button size="sm" className="h-7 text-xs bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "loading")}>
                                 <Package className="w-3 h-3 mr-1" />Start Loading
                               </Button>
                             )}
                             {stop.status === "arrived" && stop.stopType === "delivery" && (
-                              <Button size="sm" className="h-7 text-[11px] bg-purple-600 hover:bg-purple-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "unloading")}>
+                              <Button size="sm" className="h-7 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "unloading")}>
                                 <Package className="w-3 h-3 mr-1" />Start Unloading
                               </Button>
                             )}
                             {stop.status === "arrived" && !["pickup", "delivery"].includes(stop.stopType) && (
-                              <Button size="sm" className="h-7 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "completed")}>
+                              <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "completed")}>
                                 <CheckCircle className="w-3 h-3 mr-1" />Complete
                               </Button>
                             )}
                             {(stop.status === "loading" || stop.status === "unloading") && (
-                              <Button size="sm" className="h-7 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "completed")}>
+                              <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg" onClick={() => handleStatusUpdate(stop.id, "completed")}>
                                 <CheckCircle className="w-3 h-3 mr-1" />Complete
                               </Button>
                             )}
                             {!["completed", "skipped"].includes(stop.status) && (
-                              <Button size="sm" variant="outline" className={cn("h-7 text-[11px] rounded-lg", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => handleStatusUpdate(stop.id, "skipped")}>
+                              <Button size="sm" variant="outline" className={cn("h-7 text-xs rounded-lg", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => handleStatusUpdate(stop.id, "skipped")}>
                                 Skip
                               </Button>
                             )}

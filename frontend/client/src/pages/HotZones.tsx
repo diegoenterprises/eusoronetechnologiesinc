@@ -247,7 +247,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                   : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-white/[0.06] text-white/60 hover:bg-white/[0.1]"
                 }`}>
                 <Layers className="w-3.5 h-3.5" /> Layers
-                <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${showLayers ? "bg-white/20" : isLight ? "bg-slate-200" : "bg-white/10"}`}>
+                <span className={`px-1.5 py-0.5 rounded-md text-xs ${showLayers ? "bg-white/20" : isLight ? "bg-slate-200" : "bg-white/10"}`}>
                   {activeLayers.length}
                 </span>
               </button>
@@ -311,7 +311,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                   );
                 });
               })()}
-              <div className={`ml-auto text-[10px] ${isLight ? "text-slate-400" : "text-white/20"}`}>
+              <div className={`ml-auto text-xs ${isLight ? "text-slate-400" : "text-white/20"}`}>
                 {data?.feedSource}
               </div>
             </div>
@@ -328,16 +328,16 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
               <div className="w-5 h-5 rounded-md bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center">
                 <Shield className="w-3 h-3 text-white" />
               </div>
-              <span className={`text-[11px] font-medium ${isLight ? "text-slate-600" : "text-white/50"}`}>FMCSA Intelligence</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${isLight ? "bg-rose-100 text-rose-600" : "bg-rose-500/15 text-rose-400"}`}>
+              <span className={`text-xs font-medium ${isLight ? "text-slate-600" : "text-white/50"}`}>FMCSA Intelligence</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${isLight ? "bg-rose-100 text-rose-600" : "bg-rose-500/15 text-rose-400"}`}>
                 {data.fmcsaTotalRecords ? `${(data.fmcsaTotalRecords / 1000000).toFixed(1)}M records` : "Live"}
               </span>
             </div>
             {fmcsaIntel.carriersByState?.length > 0 && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <Truck className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
-                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Carriers</span>
-                <span className={`text-[11px] font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
+                <span className={`text-xs ${isLight ? "text-slate-500" : "text-white/40"}`}>Carriers</span>
+                <span className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
                   {fmcsaIntel.carriersByState.reduce((s: number, r: any) => s + r.carriers, 0).toLocaleString()}
                 </span>
               </div>
@@ -345,8 +345,8 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
             {fmcsaIntel.crashHotspots?.length > 0 && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <AlertTriangle className={`w-3 h-3 ${isLight ? "text-red-400" : "text-red-400/60"}`} />
-                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Crashes (90d)</span>
-                <span className={`text-[11px] font-semibold tabular-nums text-red-400`}>
+                <span className={`text-xs ${isLight ? "text-slate-500" : "text-white/40"}`}>Crashes (90d)</span>
+                <span className={`text-xs font-semibold tabular-nums text-red-400`}>
                   {fmcsaIntel.crashHotspots.reduce((s: number, r: any) => s + r.crashes, 0).toLocaleString()}
                 </span>
               </div>
@@ -354,8 +354,8 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
             {fmcsaIntel.inspectionActivity?.length > 0 && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <Eye className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
-                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Inspections (30d)</span>
-                <span className={`text-[11px] font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
+                <span className={`text-xs ${isLight ? "text-slate-500" : "text-white/40"}`}>Inspections (30d)</span>
+                <span className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
                   {fmcsaIntel.inspectionActivity.reduce((s: number, r: any) => s + r.inspections, 0).toLocaleString()}
                 </span>
               </div>
@@ -363,13 +363,13 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
             {fmcsaIntel.fleetSizeDistribution?.length > 0 && (
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <BarChart3 className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
-                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Power Units</span>
-                <span className={`text-[11px] font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
+                <span className={`text-xs ${isLight ? "text-slate-500" : "text-white/40"}`}>Power Units</span>
+                <span className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
                   {fmcsaIntel.fleetSizeDistribution.reduce((s: number, r: any) => s + r.totalUnits, 0).toLocaleString()}
                 </span>
               </div>
             )}
-            <span className={`ml-auto text-[9px] flex-shrink-0 ${isLight ? "text-slate-400" : "text-white/20"}`}>
+            <span className={`ml-auto text-xs flex-shrink-0 ${isLight ? "text-slate-400" : "text-white/20"}`}>
               FMCSA Census + SMS + Crashes + Inspections
             </span>
           </div>
@@ -384,33 +384,33 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
               <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center">
                 <Zap className="w-3 h-3 text-white" />
               </div>
-              <span className={`text-[11px] font-medium ${isLight ? "text-slate-600" : "text-white/50"}`}>
+              <span className={`text-xs font-medium ${isLight ? "text-slate-600" : "text-white/50"}`}>
                 Terminal Network
               </span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${isLight ? "bg-blue-100 text-blue-600" : "bg-[#1473FF]/15 text-[#1473FF]"}`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${isLight ? "bg-blue-100 text-blue-600" : "bg-[#1473FF]/15 text-[#1473FF]"}`}>
                 {termIntel.connectedTerminals} connected
               </span>
             </div>
             {termIntel.carrierSafety?.total > 0 && (
               <div className="flex items-center gap-1.5">
                 <Shield className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
-                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Carriers vetted</span>
-                <span className={`text-[11px] font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{termIntel.carrierSafety.total.toLocaleString()}</span>
+                <span className={`text-xs ${isLight ? "text-slate-500" : "text-white/40"}`}>Carriers vetted</span>
+                <span className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{termIntel.carrierSafety.total.toLocaleString()}</span>
                 {termIntel.carrierSafety.highRisk > 0 && (
-                  <span className="text-[10px] text-red-400 font-medium">({termIntel.carrierSafety.highRisk} high-risk)</span>
+                  <span className="text-xs text-red-400 font-medium">({termIntel.carrierSafety.highRisk} high-risk)</span>
                 )}
               </div>
             )}
             {termIntel.terminalsByState?.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <BarChart3 className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
-                <span className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>Facilities mapped</span>
-                <span className={`text-[11px] font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
+                <span className={`text-xs ${isLight ? "text-slate-500" : "text-white/40"}`}>Facilities mapped</span>
+                <span className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>
                   {termIntel.terminalsByState.reduce((sum: number, s: any) => sum + s.count, 0).toLocaleString()}
                 </span>
               </div>
             )}
-            <span className={`ml-auto text-[9px] ${isLight ? "text-slate-400" : "text-white/20"}`}>
+            <span className={`ml-auto text-xs ${isLight ? "text-slate-400" : "text-white/20"}`}>
               Enriched by terminal integrations
             </span>
           </div>
@@ -509,7 +509,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-semibold tracking-wide uppercase ring-1 ${dc?.bg} ${dc?.text} ${dc?.ring}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold tracking-wide uppercase ring-1 ${dc?.bg} ${dc?.text} ${dc?.ring}`}>
                             {zone.demandLevel}
                           </span>
                           {zone.weatherRiskLevel !== "LOW" && (
@@ -539,7 +539,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                     <div className={`grid grid-cols-3 gap-3 py-3 border-t ${isLight ? "border-slate-100" : "border-white/[0.06]"}`}>
                       {(zone.roleMetrics || []).map((m: any, mi: number) => (
                         <div key={mi}>
-                          <div className={`text-[10px] uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>{m.label}</div>
+                          <div className={`text-xs uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>{m.label}</div>
                           <div className={`text-sm font-semibold tabular-nums ${
                             m.color === "red" ? "text-red-400" : m.color === "amber" ? "text-amber-400" : m.color === "green" ? "text-emerald-400" : isLight ? "text-slate-800" : "text-white/90"
                           }`}>{m.value}</div>
@@ -550,12 +550,12 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                     {/* Equipment pills */}
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {(zone.topEquipment || []).map((eq: string) => (
-                        <span key={eq} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/40"}`}>
+                        <span key={eq} className={`px-2 py-0.5 rounded-md text-xs font-medium ${isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/40"}`}>
                           {eq.replace("_", " ")}
                         </span>
                       ))}
                       {zone.fuelPrice != null && (
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-amber-50 text-amber-600" : "bg-amber-500/10 text-amber-400"}`}>
+                        <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${isLight ? "bg-amber-50 text-amber-600" : "bg-amber-500/10 text-amber-400"}`}>
                           Diesel ${Number(zone.fuelPrice || 0).toFixed(2)}
                         </span>
                       )}
@@ -572,7 +572,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                           <div className={`mt-3 pt-3 border-t space-y-3 ${isLight ? "border-slate-100" : "border-white/[0.06]"}`}>
                             {/* Reasons */}
                             <div>
-                              <div className={`text-[10px] uppercase tracking-wider mb-1.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>Why it's hot</div>
+                              <div className={`text-xs uppercase tracking-wider mb-1.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>Why it's hot</div>
                               <div className="space-y-1">
                                 {(zone.reasons || []).map((r: string, i: number) => (
                                   <div key={i} className={`flex items-center gap-2 text-xs ${isLight ? "text-slate-600" : "text-white/60"}`}>
@@ -585,7 +585,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                             {/* Weather alerts */}
                             {(zone.weatherAlerts || []).length > 0 && (
                               <div>
-                                <div className={`text-[10px] uppercase tracking-wider mb-1.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>Weather Alerts</div>
+                                <div className={`text-xs uppercase tracking-wider mb-1.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>Weather Alerts</div>
                                 {(zone.weatherAlerts || []).map((a: { severity: string; event: string }, i: number) => (
                                   <div key={i} className={`flex items-center gap-2 text-xs ${a.severity === "Extreme" ? "text-red-400" : "text-amber-400"}`}>
                                     <CloudRain className="w-3 h-3 flex-shrink-0" />
@@ -597,9 +597,9 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                             {/* Hazmat + Compliance */}
                             {(zone.hazmatClasses?.length || 0) > 0 && (
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className={`text-[10px] uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>Hazmat:</span>
+                                <span className={`text-xs uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>Hazmat:</span>
                                 {zone.hazmatClasses?.map((c: string) => (
-                                  <span key={c} className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${isLight ? "bg-red-50 text-red-500" : "bg-red-500/10 text-red-400"}`}>
+                                  <span key={c} className={`px-1.5 py-0.5 rounded text-xs font-mono ${isLight ? "bg-red-50 text-red-500" : "bg-red-500/10 text-red-400"}`}>
                                     Class {c}
                                   </span>
                                 ))}
@@ -614,37 +614,37 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                             {/* Enriched intelligence from 25 data sources */}
                             <div className="flex flex-wrap gap-2">
                               {zone.safetyScore != null && (
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${zone.safetyScore > 70 ? isLight ? "bg-cyan-50 text-cyan-600" : "bg-cyan-500/10 text-cyan-400" : zone.safetyScore > 40 ? isLight ? "bg-amber-50 text-amber-600" : "bg-amber-500/10 text-amber-400" : isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400"}`}>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${zone.safetyScore > 70 ? isLight ? "bg-cyan-50 text-cyan-600" : "bg-cyan-500/10 text-cyan-400" : zone.safetyScore > 40 ? isLight ? "bg-amber-50 text-amber-600" : "bg-amber-500/10 text-amber-400" : isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400"}`}>
                                   <Shield className="w-3 h-3" /> Safety {Math.round(zone.safetyScore)}
                                 </span>
                               )}
                               {(zone.recentHazmatIncidents || 0) > 0 && (
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-purple-50 text-purple-600" : "bg-purple-500/10 text-purple-400"}`}>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${isLight ? "bg-purple-50 text-purple-600" : "bg-purple-500/10 text-purple-400"}`}>
                                   <AlertTriangle className="w-3 h-3" /> {zone.recentHazmatIncidents} Hazmat Incident{zone.recentHazmatIncidents !== 1 ? "s" : ""}
                                 </span>
                               )}
                               {(zone.activeWildfires || 0) > 0 && (
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-orange-50 text-orange-600" : "bg-orange-500/10 text-orange-400"}`}>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${isLight ? "bg-orange-50 text-orange-600" : "bg-orange-500/10 text-orange-400"}`}>
                                   <Flame className="w-3 h-3" /> {zone.activeWildfires} Wildfire{zone.activeWildfires !== 1 ? "s" : ""}
                                 </span>
                               )}
                               {zone.femaDisasterActive && (
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400"}`}>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400"}`}>
                                   <AlertTriangle className="w-3 h-3" /> FEMA Disaster
                                 </span>
                               )}
                               {zone.seismicRiskLevel && zone.seismicRiskLevel !== "Low" && (
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${zone.seismicRiskLevel === "High" ? isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400" : isLight ? "bg-amber-50 text-amber-600" : "bg-amber-500/10 text-amber-400"}`}>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${zone.seismicRiskLevel === "High" ? isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400" : isLight ? "bg-amber-50 text-amber-600" : "bg-amber-500/10 text-amber-400"}`}>
                                   Seismic: {zone.seismicRiskLevel}
                                 </span>
                               )}
                               {(zone.epaFacilitiesCount || 0) > 0 && (
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-emerald-50 text-emerald-600" : "bg-emerald-500/10 text-emerald-400"}`}>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${isLight ? "bg-emerald-50 text-emerald-600" : "bg-emerald-500/10 text-emerald-400"}`}>
                                   {zone.epaFacilitiesCount} EPA Facilities
                                 </span>
                               )}
                               {(zone.carriersWithViolations || 0) > 0 && (
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400"}`}>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${isLight ? "bg-red-50 text-red-600" : "bg-red-500/10 text-red-400"}`}>
                                   {zone.carriersWithViolations} Carrier Violation{zone.carriersWithViolations !== 1 ? "s" : ""}
                                 </span>
                               )}
@@ -652,47 +652,47 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                             {/* FMCSA 9.8M Record Enrichment */}
                             {zone.fmcsa && (zone.fmcsa.carriers > 0 || zone.fmcsa.crashes90d > 0) && (
                               <div className={`mt-2 pt-2 border-t ${isLight ? "border-slate-100" : "border-white/[0.04]"}`}>
-                                <div className={`text-[10px] uppercase tracking-wider mb-1.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>FMCSA Intelligence</div>
+                                <div className={`text-xs uppercase tracking-wider mb-1.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>FMCSA Intelligence</div>
                                 <div className="grid grid-cols-3 gap-2">
                                   {zone.fmcsa.carriers > 0 && (
                                     <div>
-                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>Carriers</div>
+                                      <div className={`text-xs ${isLight ? "text-slate-400" : "text-white/25"}`}>Carriers</div>
                                       <div className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{zone.fmcsa.carriers.toLocaleString()}</div>
                                     </div>
                                   )}
                                   {zone.fmcsa.powerUnits > 0 && (
                                     <div>
-                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>Power Units</div>
+                                      <div className={`text-xs ${isLight ? "text-slate-400" : "text-white/25"}`}>Power Units</div>
                                       <div className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{zone.fmcsa.powerUnits.toLocaleString()}</div>
                                     </div>
                                   )}
                                   {zone.fmcsa.drivers > 0 && (
                                     <div>
-                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>Drivers</div>
+                                      <div className={`text-xs ${isLight ? "text-slate-400" : "text-white/25"}`}>Drivers</div>
                                       <div className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{zone.fmcsa.drivers.toLocaleString()}</div>
                                     </div>
                                   )}
                                   {zone.fmcsa.crashes90d > 0 && (
                                     <div>
-                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>Crashes (90d)</div>
+                                      <div className={`text-xs ${isLight ? "text-slate-400" : "text-white/25"}`}>Crashes (90d)</div>
                                       <div className="text-xs font-semibold tabular-nums text-red-400">{zone.fmcsa.crashes90d.toLocaleString()}</div>
                                     </div>
                                   )}
                                   {zone.fmcsa.inspections30d > 0 && (
                                     <div>
-                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>Inspections (30d)</div>
+                                      <div className={`text-xs ${isLight ? "text-slate-400" : "text-white/25"}`}>Inspections (30d)</div>
                                       <div className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-700" : "text-white/80"}`}>{zone.fmcsa.inspections30d.toLocaleString()}</div>
                                     </div>
                                   )}
                                   {zone.fmcsa.oosRate > 0 && (
                                     <div>
-                                      <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/25"}`}>OOS Rate</div>
+                                      <div className={`text-xs ${isLight ? "text-slate-400" : "text-white/25"}`}>OOS Rate</div>
                                       <div className={`text-xs font-semibold tabular-nums ${zone.fmcsa.oosRate > 25 ? "text-red-400" : zone.fmcsa.oosRate > 15 ? "text-amber-400" : isLight ? "text-slate-700" : "text-white/80"}`}>{zone.fmcsa.oosRate}%</div>
                                     </div>
                                   )}
                                 </div>
                                 {zone.fmcsa.hazmatCarriers > 0 && (
-                                  <div className={`mt-1.5 text-[10px] ${isLight ? "text-slate-500" : "text-white/35"}`}>
+                                  <div className={`mt-1.5 text-xs ${isLight ? "text-slate-500" : "text-white/35"}`}>
                                     {zone.fmcsa.hazmatCarriers.toLocaleString()} hazmat-authorized carriers · Avg fleet size: {zone.fmcsa.avgFleetSize}
                                   </div>
                                 )}
@@ -747,7 +747,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                                       });
                                       navigate(qs ? `${route}?${qs}` : route);
                                     }}
-                                    className="px-3 py-1.5 rounded-xl text-[11px] font-medium bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-sm shadow-[#1473FF]/20 hover:shadow-md hover:shadow-[#1473FF]/30 transition-all">
+                                    className="px-3 py-1.5 rounded-xl text-xs font-medium bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-sm shadow-[#1473FF]/20 hover:shadow-md hover:shadow-[#1473FF]/30 transition-all">
                                     {action.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
                                   </button>
                                 ))}
@@ -803,7 +803,7 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                   {(cz.topEquipment || []).length > 0 && (
                     <span className="ml-2">
                       {(cz.topEquipment || []).slice(0, 3).map((eq: string) => (
-                        <span key={eq} className={`inline-block px-1.5 py-0 rounded text-[9px] mr-1 ${isLight ? "bg-blue-100/80 text-blue-500" : "bg-blue-500/10 text-blue-400/50"}`}>
+                        <span key={eq} className={`inline-block px-1.5 py-0 rounded text-xs mr-1 ${isLight ? "bg-blue-100/80 text-blue-500" : "bg-blue-500/10 text-blue-400/50"}`}>
                           {eq.replace(/_/g, " ")}
                         </span>
                       ))}

@@ -110,7 +110,7 @@ export default function HazmatRegistration() {
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                     <div>
                       <p className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}</p>
-                      <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                      <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -155,10 +155,10 @@ export default function HazmatRegistration() {
                         )}>
                           {req.label}
                         </p>
-                        {req.required && <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-[8px]">Required</Badge>}
+                        {req.required && <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-xs">Required</Badge>}
                       </div>
                       <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>{req.description}</p>
-                      <p className={cn("text-[10px] mt-1 font-mono", isLight ? "text-blue-500" : "text-blue-400")}>Fee: {req.fee}</p>
+                      <p className={cn("text-xs mt-1 font-mono", isLight ? "text-blue-500" : "text-blue-400")}>Fee: {req.fee}</p>
                     </div>
                   </button>
                 );
@@ -182,7 +182,7 @@ export default function HazmatRegistration() {
                 )}>
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rotate-45 rounded-lg border-2 border-red-500 bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                      <span className="-rotate-45 text-[10px] font-black text-red-500">{pc.cls.split("/")[0].trim()}</span>
+                      <span className="-rotate-45 text-xs font-black text-red-500">{pc.cls.split("/")[0].trim()}</span>
                     </div>
                     <div>
                       <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{pc.name}</p>
@@ -190,7 +190,7 @@ export default function HazmatRegistration() {
                     </div>
                   </div>
                   <Badge className={cn(
-                    "text-[10px] border",
+                    "text-xs border",
                     pc.permit === "Required" ? "bg-red-500/15 text-red-400 border-red-500/30" : "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
                   )}>
                     {pc.permit}

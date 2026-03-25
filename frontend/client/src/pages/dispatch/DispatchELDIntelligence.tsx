@@ -91,7 +91,7 @@ export default function DispatchELDIntelligence() {
         </div>
         <div className="flex items-center gap-2">
           {/* ELD Connection Status */}
-          <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold",
+          <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold",
             isConnected
               ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
               : "bg-red-500/10 border-red-500/20 text-red-400"
@@ -119,7 +119,7 @@ export default function DispatchELDIntelligence() {
               <s.icon className={cn("w-4 h-4", s.color)} />
             </div>
             <div>
-              <div className="text-[10px] text-slate-500 uppercase">{s.label}</div>
+              <div className="text-xs text-slate-500 uppercase">{s.label}</div>
               <div className={cn("text-lg font-bold", s.color)}>{s.value}</div>
             </div>
           </div>
@@ -130,7 +130,7 @@ export default function DispatchELDIntelligence() {
       <div className="flex items-center gap-4 px-4 py-2 border-b border-white/[0.06] bg-slate-900/20">
         <div className="flex items-center gap-2">
           <Shield className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="text-[10px] text-slate-500 uppercase">Fleet Compliance</span>
+          <span className="text-xs text-slate-500 uppercase">Fleet Compliance</span>
           <span className={cn("text-sm font-bold", (stats?.complianceRate || 0) >= 95 ? "text-emerald-400" : (stats?.complianceRate || 0) >= 80 ? "text-amber-400" : "text-red-400")}>
             {stats?.complianceRate || 0}%
           </span>
@@ -162,7 +162,7 @@ export default function DispatchELDIntelligence() {
               <button
                 key={f.value}
                 onClick={() => setStatusFilter(f.value)}
-                className={cn("text-[10px] px-2 py-1 rounded transition-colors",
+                className={cn("text-xs px-2 py-1 rounded transition-colors",
                   statusFilter === f.value ? "bg-cyan-500/20 text-cyan-400 font-semibold" : "text-slate-500 hover:text-slate-300"
                 )}
               >
@@ -188,7 +188,7 @@ export default function DispatchELDIntelligence() {
                 </p>
                 <div className="flex flex-wrap gap-2 mt-4 justify-center">
                   {ELD_PROVIDERS.slice(0, 6).map(p => (
-                    <Badge key={p} className="bg-white/[0.04] text-slate-500 border-white/[0.06] text-[10px]">{p}</Badge>
+                    <Badge key={p} className="bg-white/[0.04] text-slate-500 border-white/[0.06] text-xs">{p}</Badge>
                   ))}
                 </div>
               </>
@@ -237,16 +237,16 @@ export default function DispatchELDIntelligence() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-white truncate">{driver.name || `Driver ${driver.driverId}`}</span>
-                        <Badge className={cn("border-0 text-[9px] font-bold gap-0.5", sc.bg, sc.color)}>
+                        <Badge className={cn("border-0 text-xs font-bold gap-0.5", sc.bg, sc.color)}>
                           <StatusIcon className="w-2.5 h-2.5" />{sc.label}
                         </Badge>
                         {driver.hasViolation && (
-                          <Badge className="bg-red-500/20 text-red-400 border-0 text-[9px] font-bold gap-0.5">
+                          <Badge className="bg-red-500/20 text-red-400 border-0 text-xs font-bold gap-0.5">
                             <AlertTriangle className="w-2.5 h-2.5" />Violation
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-[10px] text-slate-500 mt-0.5">
+                      <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
                         {driver.vehicle && <span>{driver.vehicle}</span>}
                         {driver.provider && <span className="text-slate-600">via {driver.provider}</span>}
                         {driver.lastUpdate && <span>Updated {new Date(driver.lastUpdate).toLocaleTimeString()}</span>}
@@ -256,23 +256,23 @@ export default function DispatchELDIntelligence() {
                     {/* HOS Mini Bars */}
                     <div className="flex items-center gap-4 shrink-0">
                       <div className="w-20">
-                        <div className="flex items-center justify-between text-[9px] mb-0.5">
+                        <div className="flex items-center justify-between text-xs mb-0.5">
                           <span className="text-slate-500">Drive</span>
                           <span className={cn("font-bold tabular-nums", driveRemaining <= 1 ? "text-red-400" : "text-green-400")}>{driveRemaining.toFixed(1)}h</span>
                         </div>
                         {getHOSBar(driveUsed, 11, "green")}
                       </div>
                       <div className="w-20">
-                        <div className="flex items-center justify-between text-[9px] mb-0.5">
+                        <div className="flex items-center justify-between text-xs mb-0.5">
                           <span className="text-slate-500">Shift</span>
                           <span className={cn("font-bold tabular-nums", shiftRemaining <= 1 ? "text-red-400" : "text-blue-400")}>{shiftRemaining.toFixed(1)}h</span>
                         </div>
                         {getHOSBar(shiftUsed, 14, "blue")}
                       </div>
                       <div className="w-20">
-                        <div className="flex items-center justify-between text-[9px] mb-0.5">
+                        <div className="flex items-center justify-between text-xs mb-0.5">
                           <span className="text-slate-500">Cycle</span>
-                          <span className="text-purple-400 font-bold tabular-nums text-[9px]">{(70 - cycleUsed).toFixed(1)}h</span>
+                          <span className="text-purple-400 font-bold tabular-nums text-xs">{(70 - cycleUsed).toFixed(1)}h</span>
                         </div>
                         {getHOSBar(cycleUsed, 70, "purple")}
                       </div>
@@ -292,12 +292,12 @@ export default function DispatchELDIntelligence() {
                           { label: "Break", used: driver.breakTimeUsed ? Math.round(driver.breakTimeUsed / 60) : 0, max: 8, remaining: 8, color: "amber", unit: "h until req" },
                         ].map(h => (
                           <div key={h.label} className="rounded-lg bg-white/[0.02] border border-white/[0.04] p-3">
-                            <div className="text-[10px] text-slate-500 mb-1">{h.label}</div>
+                            <div className="text-xs text-slate-500 mb-1">{h.label}</div>
                             <div className="flex items-baseline gap-1 mb-2">
                               <span className={cn("text-lg font-bold tabular-nums",
                                 h.color === "green" ? "text-green-400" : h.color === "blue" ? "text-blue-400" : h.color === "purple" ? "text-purple-400" : "text-amber-400"
                               )}>{h.used.toFixed(1)}</span>
-                              <span className="text-[10px] text-slate-500">/ {h.max}{h.unit === "h" ? "h" : ""}</span>
+                              <span className="text-xs text-slate-500">/ {h.max}{h.unit === "h" ? "h" : ""}</span>
                             </div>
                             <div className="h-2 bg-white/[0.04] rounded-full overflow-hidden">
                               <div
@@ -308,7 +308,7 @@ export default function DispatchELDIntelligence() {
                                 style={{ width: `${Math.min(100, (h.used / h.max) * 100)}%` }}
                               />
                             </div>
-                            <div className="text-[9px] text-slate-500 mt-1">
+                            <div className="text-xs text-slate-500 mt-1">
                               {h.remaining.toFixed(1)}h remaining
                             </div>
                           </div>
@@ -321,7 +321,7 @@ export default function DispatchELDIntelligence() {
                           <div className="flex items-center gap-2 text-xs font-semibold text-red-400 mb-1">
                             <AlertTriangle className="w-3.5 h-3.5" />HOS Violation Detected
                           </div>
-                          <p className="text-[10px] text-red-400/70">
+                          <p className="text-xs text-red-400/70">
                             Driver has exceeded HOS limits. Contact immediately to ensure compliance.
                           </p>
                         </div>
@@ -329,13 +329,13 @@ export default function DispatchELDIntelligence() {
 
                       {/* Actions */}
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="h-7 px-2.5 text-[10px] text-cyan-400 hover:text-cyan-300">
+                        <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs text-cyan-400 hover:text-cyan-300">
                           <Phone className="w-3 h-3 mr-1" />Call Driver
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-7 px-2.5 text-[10px] text-violet-400 hover:text-violet-300">
+                        <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs text-violet-400 hover:text-violet-300">
                           <MessageSquare className="w-3 h-3 mr-1" />Message
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-7 px-2.5 text-[10px] text-slate-400 hover:text-slate-300">
+                        <Button variant="ghost" size="sm" className="h-7 px-2.5 text-xs text-slate-400 hover:text-slate-300">
                           <Eye className="w-3 h-3 mr-1" />View Full Log
                         </Button>
                       </div>

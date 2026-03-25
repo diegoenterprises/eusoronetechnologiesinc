@@ -146,16 +146,16 @@ export default function RegulatoryUpdates() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{update.title}</p>
-                          <Badge className={cn("text-[9px] border", agency.bg, agency.color, "border-current/20")}>{agency.label}</Badge>
-                          <Badge className={cn("text-[9px] border", impact.cls)}>{impact.label}</Badge>
-                          {isUpcoming && <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 text-[9px]">Upcoming</Badge>}
+                          <Badge className={cn("text-xs border", agency.bg, agency.color, "border-current/20")}>{agency.label}</Badge>
+                          <Badge className={cn("text-xs border", impact.cls)}>{impact.label}</Badge>
+                          {isUpcoming && <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 text-xs">Upcoming</Badge>}
                         </div>
                         <p className={cn("text-xs line-clamp-2", isLight ? "text-slate-500" : "text-slate-400")}>{update.summary}</p>
                         <div className="flex items-center gap-3 mt-2">
-                          <span className={cn("text-[10px] flex items-center gap-1", isLight ? "text-slate-400" : "text-slate-500")}>
+                          <span className={cn("text-xs flex items-center gap-1", isLight ? "text-slate-400" : "text-slate-500")}>
                             <Calendar className="w-3 h-3" /> Effective: {new Date(update.effectiveDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                           </span>
-                          <span className={cn("text-[10px] font-mono", isLight ? "text-blue-500" : "text-blue-400")}>{update.cfr}</span>
+                          <span className={cn("text-xs font-mono", isLight ? "text-blue-500" : "text-blue-400")}>{update.cfr}</span>
                         </div>
                       </div>
                     </div>
@@ -175,7 +175,7 @@ export default function RegulatoryUpdates() {
                           { l: "Effective", v: new Date(update.effectiveDate).toLocaleDateString() },
                         ].map((d) => (
                           <div key={d.l} className={cn("p-2 rounded-lg", isLight ? "bg-slate-50" : "bg-slate-700/30")}>
-                            <p className={cn("text-[9px] uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>{d.l}</p>
+                            <p className={cn("text-xs uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>{d.l}</p>
                             <p className={cn("text-xs font-medium mt-0.5", isLight ? "text-slate-700" : "text-slate-200")}>{d.v}</p>
                           </div>
                         ))}

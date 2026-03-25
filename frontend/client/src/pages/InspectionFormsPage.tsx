@@ -62,7 +62,7 @@ export default function InspectionFormsPage() {
               <CardContent className="p-3 text-center">
                 <div className="flex justify-center mb-1">{s.icon}</div>
                 <p className={cn("text-lg font-bold", s.color)}>{s.value}</p>
-                <p className="text-[9px] text-slate-400 uppercase">{s.label}</p>
+                <p className="text-xs text-slate-400 uppercase">{s.label}</p>
               </CardContent>
             </Card>
           ))}
@@ -88,7 +88,7 @@ export default function InspectionFormsPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#1473FF]" />Inspection Records
-            <Badge variant="outline" className="text-[10px] border-slate-600 ml-auto">{listQuery.data?.total || 0}</Badge>
+            <Badge variant="outline" className="text-xs border-slate-600 ml-auto">{listQuery.data?.total || 0}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -103,8 +103,8 @@ export default function InspectionFormsPage() {
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-white font-medium text-sm">Inspection #{insp.id}</span>
-                      <Badge variant="outline" className="text-[9px] border-slate-600">{TYPE_LABELS[insp.type] || insp.type}</Badge>
-                      <Badge className={cn("text-[9px]", STATUS_COLORS[insp.status] || "bg-slate-500/20 text-slate-400")}>{insp.status}</Badge>
+                      <Badge variant="outline" className="text-xs border-slate-600">{TYPE_LABELS[insp.type] || insp.type}</Badge>
+                      <Badge className={cn("text-xs", STATUS_COLORS[insp.status] || "bg-slate-500/20 text-slate-400")}>{insp.status}</Badge>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-slate-500">
                       <span>Vehicle #{insp.vehicleId}</span>
@@ -113,9 +113,9 @@ export default function InspectionFormsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {insp.defectsFound > 0 && <Badge className="bg-yellow-500/20 text-yellow-400 text-[9px]"><AlertTriangle className="w-3 h-3 mr-0.5" />{insp.defectsFound}</Badge>}
-                    {insp.oosViolation && <Badge className="bg-red-500/20 text-red-400 text-[9px]">OOS</Badge>}
-                    <span className="text-[10px] text-slate-500">{insp.createdAt ? new Date(insp.createdAt).toLocaleDateString() : ""}</span>
+                    {insp.defectsFound > 0 && <Badge className="bg-yellow-500/20 text-yellow-400 text-xs"><AlertTriangle className="w-3 h-3 mr-0.5" />{insp.defectsFound}</Badge>}
+                    {insp.oosViolation && <Badge className="bg-red-500/20 text-red-400 text-xs">OOS</Badge>}
+                    <span className="text-xs text-slate-500">{insp.createdAt ? new Date(insp.createdAt).toLocaleDateString() : ""}</span>
                   </div>
                 </div>
               ))}

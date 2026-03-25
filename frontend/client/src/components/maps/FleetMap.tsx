@@ -130,17 +130,17 @@ export default function FleetMap() {
                       `}
                     >
                       <div className={`h-4 w-4 rounded-full ${STATUS_COLORS[v.status] || "bg-gray-400"} shadow-sm`} />
-                      <span className="text-[9px] mt-0.5 font-medium truncate max-w-full px-1">
+                      <span className="text-xs mt-0.5 font-medium truncate max-w-full px-1">
                         {v.unitNumber}
                       </span>
                       {v.speed > 0 && (
-                        <span className="text-[8px] text-muted-foreground">{Math.round(v.speed)} mph</span>
+                        <span className="text-xs text-muted-foreground">{Math.round(v.speed)} mph</span>
                       )}
                     </button>
                   ))}
                 </div>
               )}
-              <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground">
+              <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
                 {fleetMap.lastUpdated ? `Updated: ${new Date(fleetMap.lastUpdated).toLocaleTimeString()}` : ""}
               </div>
             </div>
@@ -189,7 +189,7 @@ export default function FleetMap() {
                     <div className={`h-2.5 w-2.5 rounded-full ${STATUS_COLORS[v.status]}`} />
                     <span className="font-medium">{v.unitNumber}</span>
                   </div>
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-xs">
                     {STATUS_LABELS[v.status] || v.status}
                   </Badge>
                 </div>

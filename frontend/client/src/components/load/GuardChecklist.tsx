@@ -63,7 +63,7 @@ export default function GuardChecklist({ blockedTransitions, className = "" }: G
       <div className="flex items-center gap-2 mb-3">
         <Shield className="w-4 h-4 text-amber-500" />
         <p className="text-xs font-semibold text-amber-400">Compliance Requirements</p>
-        <span className="text-[10px] text-amber-500/60 ml-auto">{allReasons.length} item{allReasons.length !== 1 ? "s" : ""}</span>
+        <span className="text-xs text-amber-500/60 ml-auto">{allReasons.length} item{allReasons.length !== 1 ? "s" : ""}</span>
       </div>
       <div className="space-y-2">
         {allReasons.map((item, i) => (
@@ -73,7 +73,7 @@ export default function GuardChecklist({ blockedTransitions, className = "" }: G
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs text-slate-300 leading-relaxed">{item.reason}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Required for: {item.targetState}</p>
+              <p className="text-xs text-slate-500 mt-0.5">Required for: {item.targetState}</p>
             </div>
             <XCircle className="w-3.5 h-3.5 text-red-400/60 flex-shrink-0 mt-0.5" />
           </div>

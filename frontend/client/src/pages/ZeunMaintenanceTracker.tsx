@@ -86,7 +86,7 @@ export default function ZeunMaintenanceTracker() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Maintenance Tracker</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
               <Zap className="w-3 h-3 text-purple-500" />
-              <span className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">Predictive</span>
+              <span className="text-xs font-bold text-purple-500 uppercase tracking-wider">Predictive</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>Predictive maintenance & service management</p>
@@ -121,7 +121,7 @@ export default function ZeunMaintenanceTracker() {
                 {summaryQuery.isLoading ? <Skeleton className="h-7 w-12 mx-auto" /> : (
                   <p className={cn("text-xl font-bold", L ? "text-slate-800" : "text-white")}>{s.value}</p>
                 )}
-                <p className={cn("text-[10px] font-medium uppercase tracking-wider mt-0.5", L ? "text-slate-400" : "text-slate-500")}>{s.label}</p>
+                <p className={cn("text-xs font-medium uppercase tracking-wider mt-0.5", L ? "text-slate-400" : "text-slate-500")}>{s.label}</p>
               </CardContent>
             </Card>
           );
@@ -146,7 +146,7 @@ export default function ZeunMaintenanceTracker() {
                       <p className={cn("text-xs", L ? "text-slate-500" : "text-slate-400")}>{alert.message}</p>
                     </div>
                   </div>
-                  <Badge className={cn("border-0 text-[10px] font-bold", getPriorityBadge(alert.priority))}>{alert.priority}</Badge>
+                  <Badge className={cn("border-0 text-xs font-bold", getPriorityBadge(alert.priority))}>{alert.priority}</Badge>
                 </div>
               ))}
             </div>
@@ -184,7 +184,7 @@ export default function ZeunMaintenanceTracker() {
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center">
                           <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{summary?.healthScore || 0}%</p>
-                          <p className={cn("text-[10px] uppercase tracking-wider", L ? "text-slate-400" : "text-slate-500")}>Health</p>
+                          <p className={cn("text-xs uppercase tracking-wider", L ? "text-slate-400" : "text-slate-500")}>Health</p>
                         </div>
                       </div>
                     </div>
@@ -229,7 +229,7 @@ export default function ZeunMaintenanceTracker() {
                         </div>
                         <div className="text-right">
                           <p className={cn("text-xs font-medium", L ? "text-slate-600" : "text-slate-300")}>{item.scheduledDate}</p>
-                          <Badge className={cn("border-0 text-[10px] font-bold mt-0.5", getStatusBadge(item.status))}>{item.status}</Badge>
+                          <Badge className={cn("border-0 text-xs font-bold mt-0.5", getStatusBadge(item.status))}>{item.status}</Badge>
                         </div>
                       </div>
                     ))}
@@ -292,9 +292,9 @@ export default function ZeunMaintenanceTracker() {
                       <div className="flex items-center gap-3">
                         <div className="text-right">
                           <p className={cn("text-xs font-medium", L ? "text-slate-600" : "text-slate-300")}>{item.scheduledDate}</p>
-                          <p className={cn("text-[10px]", L ? "text-slate-400" : "text-slate-500")}>${item.estimatedCost?.toLocaleString()}</p>
+                          <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>${item.estimatedCost?.toLocaleString()}</p>
                         </div>
-                        <Badge className={cn("border-0 text-[10px] font-bold", getStatusBadge(item.status))}>{item.status}</Badge>
+                        <Badge className={cn("border-0 text-xs font-bold", getStatusBadge(item.status))}>{item.status}</Badge>
                         {item.status !== "completed" && (
                           <Button size="sm" className="rounded-xl bg-green-500 hover:bg-green-600 text-white h-8 w-8 p-0" onClick={() => completeMutation.mutate({ id: item.id })} disabled={completeMutation.isPending}>
                             {completeMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
@@ -334,7 +334,7 @@ export default function ZeunMaintenanceTracker() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <p className="text-sm font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${item.actualCost?.toLocaleString()}</p>
-                          <p className={cn("text-[10px]", L ? "text-slate-400" : "text-slate-500")}>{item.completedDate}</p>
+                          <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{item.completedDate}</p>
                         </div>
                         <Button variant="ghost" size="sm" className="rounded-xl"><Eye className="w-4 h-4" /></Button>
                       </div>
@@ -358,7 +358,7 @@ export default function ZeunMaintenanceTracker() {
                 ZEUN analyzes vehicle telemetry, usage patterns, and historical data to predict maintenance needs before failures occur.
               </p>
               <div className="flex items-center justify-center gap-1.5 mt-4">
-                <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[10px] border-0">
+                <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs border-0">
                   <Zap className="w-3 h-3 mr-1" />ESANG AI Powered
                 </Badge>
               </div>

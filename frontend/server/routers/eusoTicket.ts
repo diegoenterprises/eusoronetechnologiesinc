@@ -13,12 +13,12 @@
  */
 
 import { z } from "zod";
-import { eq, sql, desc, and } from "drizzle-orm";
+import { eq, sql, desc, and, inArray, isNull, isNotNull } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { router, isolatedApprovedProcedure as protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { loads, documents, users, vehicles, runTickets } from "../../drizzle/schema";
+import { loads, documents, users, vehicles, runTickets, terminals } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
 
 // Run Ticket schema
@@ -248,23 +248,38 @@ export const eusoTicketRouter = router({
       if (!db) return { tickets: [], total: 0 };
 
       try {
-        const loadsList = await db.select().from(loads)
+        const loadsList = await db
+          .select({
+            id: loads.id,
+            status: loads.status,
+            weight: loads.weight,
+            commodityName: loads.commodityName,
+            spectraMatchResult: loads.spectraMatchResult,
+            createdAt: loads.createdAt,
+            driverId: loads.driverId,
+            originTerminalId: loads.originTerminalId,
+            driverName: users.name,
+            terminalName: terminals.name,
+          })
+          .from(loads)
+          .leftJoin(users, eq(loads.driverId, users.id))
+          .leftJoin(terminals, eq(loads.originTerminalId, terminals.id))
           .orderBy(desc(loads.createdAt))
           .limit(input.limit);
 
         return {
-          tickets: loadsList.map(load => {
-            const smResult = unsafeCast(load).spectraMatchResult;
+          tickets: loadsList.map(row => {
+            const smResult = unsafeCast(row).spectraMatchResult;
             return {
-              ticketNumber: `RT-${load.id}`,
-              status: load.status || "pending",
-              productName: unsafeCast(load).commodityName || smResult?.productName || "Unknown",
-              netVolume: parseFloat(String(load.weight)) || 0,
+              ticketNumber: `RT-${row.id}`,
+              status: row.status || "pending",
+              productName: row.commodityName || smResult?.productName || "Unknown",
+              netVolume: parseFloat(String(row.weight)) || 0,
               apiGravity: smResult?.apiGravity || 0,
-              driverName: "Driver",
+              driverName: row.driverName || "Unassigned",
               vehiclePlate: "",
-              terminalName: "Terminal",
-              createdAt: load.createdAt?.toISOString() || new Date().toISOString(),
+              terminalName: row.terminalName || "No Terminal",
+              createdAt: row.createdAt?.toISOString() || new Date().toISOString(),
               spectraMatchVerified: !!smResult,
               spectraMatchConfidence: smResult?.confidence || 0,
             };
@@ -302,38 +317,125 @@ export const eusoTicketRouter = router({
   getBOL: protectedProcedure
     .input(z.object({ bolNumber: z.string() }))
     .query(async ({ input }) => {
-      return {
-        bolNumber: input.bolNumber,
-        runTicketId: "",
-        status: "",
-        shipperName: "",
-        shipperAddress: "",
-        consigneeName: "",
-        consigneeAddress: "",
-        catalystName: "",
-        catalystMC: "",
-        catalystDOT: "",
-        driverName: "",
-        driverCDL: "",
-        vehiclePlate: "",
-        trailerPlate: "",
-        productDescription: "",
-        quantity: 0,
-        quantityUnit: "",
-        isHazmat: false,
-        hazmatClass: "",
-        unNumber: "",
-        packingGroup: "",
-        ergNumber: "",
-        freightTerms: "",
-        freightCharges: 0,
-        specialInstructions: "",
-        emergencyContact: "",
-        shipperSignature: "",
-        catalystSignature: "",
-        createdAt: new Date().toISOString(),
-        deliveredAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      try {
+        // Find the BOL document by name matching the bolNumber
+        const [bolDoc] = await db
+          .select()
+          .from(documents)
+          .where(and(
+            eq(documents.type, "bol"),
+            eq(documents.name, input.bolNumber),
+          ))
+          .limit(1);
+
+        if (!bolDoc || !bolDoc.loadId) {
+          return {
+            bolNumber: input.bolNumber,
+            runTicketId: "", status: "not_found",
+            shipperName: "", shipperAddress: "",
+            consigneeName: "", consigneeAddress: "",
+            catalystName: "", catalystMC: "", catalystDOT: "",
+            driverName: "", driverCDL: "",
+            vehiclePlate: "", trailerPlate: "",
+            productDescription: "", quantity: 0, quantityUnit: "",
+            isHazmat: false, hazmatClass: "", unNumber: "",
+            packingGroup: "", ergNumber: "",
+            freightTerms: "", freightCharges: 0,
+            specialInstructions: "", emergencyContact: "",
+            shipperSignature: "", catalystSignature: "",
+            createdAt: bolDoc?.createdAt?.toISOString() || new Date().toISOString(),
+            deliveredAt: "",
+          };
+        }
+
+        // Get associated load with driver, shipper, catalyst info
+        const [loadRow] = await db
+          .select({
+            load: loads,
+            driverName: users.name,
+          })
+          .from(loads)
+          .leftJoin(users, eq(loads.driverId, users.id))
+          .where(eq(loads.id, bolDoc.loadId))
+          .limit(1);
+
+        if (!loadRow) {
+          return {
+            bolNumber: input.bolNumber,
+            runTicketId: "", status: bolDoc.status || "active",
+            shipperName: "", shipperAddress: "",
+            consigneeName: "", consigneeAddress: "",
+            catalystName: "", catalystMC: "", catalystDOT: "",
+            driverName: "", driverCDL: "",
+            vehiclePlate: "", trailerPlate: "",
+            productDescription: "", quantity: 0, quantityUnit: "",
+            isHazmat: false, hazmatClass: "", unNumber: "",
+            packingGroup: "", ergNumber: "",
+            freightTerms: "", freightCharges: 0,
+            specialInstructions: "", emergencyContact: "",
+            shipperSignature: "", catalystSignature: "",
+            createdAt: bolDoc.createdAt?.toISOString() || new Date().toISOString(),
+            deliveredAt: "",
+          };
+        }
+
+        const load = loadRow.load;
+        const pickup = unsafeCast(load).pickupLocation;
+        const delivery = unsafeCast(load).deliveryLocation;
+
+        // Fetch shipper name
+        let shipperName = "";
+        if (load.shipperId) {
+          const [shipper] = await db.select({ name: users.name }).from(users).where(eq(users.id, load.shipperId)).limit(1);
+          shipperName = shipper?.name || "";
+        }
+
+        // Fetch catalyst name
+        let catalystName = "";
+        if (load.catalystId) {
+          const [catalyst] = await db.select({ name: users.name }).from(users).where(eq(users.id, load.catalystId)).limit(1);
+          catalystName = catalyst?.name || "";
+        }
+
+        return {
+          bolNumber: input.bolNumber,
+          runTicketId: `RT-${load.id}`,
+          status: bolDoc.status || "active",
+          shipperName,
+          shipperAddress: pickup ? `${pickup.address}, ${pickup.city}, ${pickup.state} ${pickup.zipCode}` : "",
+          consigneeName: "",
+          consigneeAddress: delivery ? `${delivery.address}, ${delivery.city}, ${delivery.state} ${delivery.zipCode}` : "",
+          catalystName,
+          catalystMC: "",
+          catalystDOT: "",
+          driverName: loadRow.driverName || "",
+          driverCDL: "",
+          vehiclePlate: "",
+          trailerPlate: "",
+          productDescription: load.commodityName || unsafeCast(load).spectraMatchResult?.productName || "",
+          quantity: parseFloat(String(load.weight)) || 0,
+          quantityUnit: load.weightUnit || "lbs",
+          isHazmat: load.cargoType === "hazmat",
+          hazmatClass: load.hazmatClass || "",
+          unNumber: load.unNumber || "",
+          packingGroup: load.packingGroup || "",
+          ergNumber: load.emergencyResponseNumber || "",
+          freightTerms: "",
+          freightCharges: parseFloat(String(load.rate)) || 0,
+          specialInstructions: load.specialInstructions || "",
+          emergencyContact: load.emergencyPhone || "",
+          shipperSignature: "",
+          catalystSignature: "",
+          createdAt: bolDoc.createdAt?.toISOString() || new Date().toISOString(),
+          deliveredAt: load.actualDeliveryDate?.toISOString() || "",
+        };
+      } catch (error) {
+        logger.error('[EusoTicket] getBOL error:', error);
+        throw error;
+      }
     }),
 
   // List BOLs
@@ -347,10 +449,82 @@ export const eusoTicketRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ input }) => {
-      return {
-        bols: [],
-        total: 0,
-      };
+      const db = await getDb();
+      if (!db) return { bols: [], total: 0 };
+
+      try {
+        const conditions = [
+          eq(documents.type, "bol"),
+          isNull(documents.deletedAt),
+        ];
+
+        if (input.status) {
+          const statusMap: Record<string, string> = {
+            draft: "pending", issued: "active", in_transit: "active",
+            delivered: "active", cancelled: "expired",
+          };
+          conditions.push(eq(documents.status, statusMap[input.status] || "active"));
+        }
+
+        const bolDocs = await db
+          .select({
+            id: documents.id,
+            name: documents.name,
+            status: documents.status,
+            loadId: documents.loadId,
+            fileUrl: documents.fileUrl,
+            createdAt: documents.createdAt,
+          })
+          .from(documents)
+          .where(and(...conditions))
+          .orderBy(desc(documents.createdAt))
+          .limit(input.limit);
+
+        // Fetch associated load info for each BOL
+        const loadIds = bolDocs.map(d => d.loadId).filter((id): id is number => id !== null);
+        let loadMap = new Map<number, { loadNumber: string; status: string; shipperName: string; driverName: string }>();
+
+        if (loadIds.length > 0) {
+          const loadRows = await db
+            .select({
+              id: loads.id,
+              loadNumber: loads.loadNumber,
+              status: loads.status,
+              shipperId: loads.shipperId,
+              driverName: users.name,
+            })
+            .from(loads)
+            .leftJoin(users, eq(loads.driverId, users.id))
+            .where(inArray(loads.id, loadIds));
+
+          for (const row of loadRows) {
+            loadMap.set(row.id, {
+              loadNumber: row.loadNumber,
+              status: row.status || "pending",
+              shipperName: "",
+              driverName: row.driverName || "Unassigned",
+            });
+          }
+        }
+
+        return {
+          bols: bolDocs.map(doc => {
+            const loadInfo = doc.loadId ? loadMap.get(doc.loadId) : null;
+            return {
+              bolNumber: doc.name,
+              loadNumber: loadInfo?.loadNumber || "",
+              status: doc.status || "active",
+              driverName: loadInfo?.driverName || "",
+              fileUrl: doc.fileUrl,
+              createdAt: doc.createdAt?.toISOString() || new Date().toISOString(),
+            };
+          }),
+          total: bolDocs.length,
+        };
+      } catch (error) {
+        logger.error('[EusoTicket] listBOLs error:', error);
+        return { bols: [], total: 0 };
+      }
     }),
 
   // Update run ticket status
@@ -392,15 +566,98 @@ export const eusoTicketRouter = router({
   getTerminalStats: protectedProcedure
     .input(z.object({ terminalId: z.string() }))
     .query(async ({ input }) => {
-      return {
-        terminalId: input.terminalId,
-        todayTickets: 0, todayVolume: 0,
-        weekTickets: 0, weekVolume: 0,
-        monthTickets: 0, monthVolume: 0,
-        avgLoadTime: 0, avgApiGravity: 0,
-        topCrudeTypes: [],
-        pendingTickets: 0, pendingBOLs: 0,
-      };
+      const db = await getDb();
+      if (!db) {
+        return {
+          terminalId: input.terminalId,
+          todayTickets: 0, todayVolume: 0,
+          weekTickets: 0, weekVolume: 0,
+          monthTickets: 0, monthVolume: 0,
+          avgLoadTime: 0, avgApiGravity: 0,
+          topCrudeTypes: [] as { name: string; count: number }[],
+          pendingTickets: 0, pendingBOLs: 0,
+        };
+      }
+
+      try {
+        const terminalIdNum = parseInt(input.terminalId) || 0;
+
+        // Today's stats
+        const [todayStats] = await db.select({
+          count: sql<number>`COUNT(*)`,
+          volume: sql<number>`COALESCE(SUM(CAST(${loads.weight} AS DECIMAL(10,2))), 0)`,
+        }).from(loads)
+          .where(and(
+            eq(loads.originTerminalId, terminalIdNum),
+            sql`DATE(${loads.createdAt}) = CURDATE()`,
+          ));
+
+        // This week's stats
+        const [weekStats] = await db.select({
+          count: sql<number>`COUNT(*)`,
+          volume: sql<number>`COALESCE(SUM(CAST(${loads.weight} AS DECIMAL(10,2))), 0)`,
+        }).from(loads)
+          .where(and(
+            eq(loads.originTerminalId, terminalIdNum),
+            sql`YEARWEEK(${loads.createdAt}, 1) = YEARWEEK(CURDATE(), 1)`,
+          ));
+
+        // This month's stats
+        const [monthStats] = await db.select({
+          count: sql<number>`COUNT(*)`,
+          volume: sql<number>`COALESCE(SUM(CAST(${loads.weight} AS DECIMAL(10,2))), 0)`,
+        }).from(loads)
+          .where(and(
+            eq(loads.originTerminalId, terminalIdNum),
+            sql`YEAR(${loads.createdAt}) = YEAR(CURDATE()) AND MONTH(${loads.createdAt}) = MONTH(CURDATE())`,
+          ));
+
+        // Pending tickets (loads at this terminal not yet completed)
+        const [pendingCounts] = await db.select({
+          pendingTickets: sql<number>`SUM(CASE WHEN ${loads.status} IN ('loading','at_pickup','pickup_checkin','en_route_pickup') THEN 1 ELSE 0 END)`,
+          pendingBOLs: sql<number>`SUM(CASE WHEN ${loads.status} = 'pod_pending' THEN 1 ELSE 0 END)`,
+        }).from(loads)
+          .where(eq(loads.originTerminalId, terminalIdNum));
+
+        // Top crude/commodity types
+        const crudeTypes = await db.select({
+          name: loads.commodityName,
+          count: sql<number>`COUNT(*)`,
+        }).from(loads)
+          .where(and(
+            eq(loads.originTerminalId, terminalIdNum),
+            isNotNull(loads.commodityName),
+          ))
+          .groupBy(loads.commodityName)
+          .orderBy(sql`COUNT(*) DESC`)
+          .limit(5);
+
+        return {
+          terminalId: input.terminalId,
+          todayTickets: Number(todayStats?.count) || 0,
+          todayVolume: Number(todayStats?.volume) || 0,
+          weekTickets: Number(weekStats?.count) || 0,
+          weekVolume: Number(weekStats?.volume) || 0,
+          monthTickets: Number(monthStats?.count) || 0,
+          monthVolume: Number(monthStats?.volume) || 0,
+          avgLoadTime: 0,
+          avgApiGravity: 0,
+          topCrudeTypes: crudeTypes.map(c => ({ name: c.name || "Unknown", count: Number(c.count) })),
+          pendingTickets: Number(pendingCounts?.pendingTickets) || 0,
+          pendingBOLs: Number(pendingCounts?.pendingBOLs) || 0,
+        };
+      } catch (error) {
+        logger.error('[EusoTicket] getTerminalStats error:', error);
+        return {
+          terminalId: input.terminalId,
+          todayTickets: 0, todayVolume: 0,
+          weekTickets: 0, weekVolume: 0,
+          monthTickets: 0, monthVolume: 0,
+          avgLoadTime: 0, avgApiGravity: 0,
+          topCrudeTypes: [] as { name: string; count: number }[],
+          pendingTickets: 0, pendingBOLs: 0,
+        };
+      }
     }),
 
   // Generate PDF for run ticket
@@ -431,20 +688,137 @@ export const eusoTicketRouter = router({
   validateForBOL: protectedProcedure
     .input(z.object({ ticketNumber: z.string() }))
     .query(async ({ input }) => {
-      return {
-        ticketNumber: input.ticketNumber,
-        isValid: true,
-        checks: [
-          { name: "Driver Signature", status: "passed" },
-          { name: "Operator Signature", status: "passed" },
-          { name: "Volume Verification", status: "passed" },
-          { name: "Seal Numbers", status: "passed" },
-          { name: "SpectraMatch Verification", status: "passed" },
-          { name: "HazMat Classification", status: "passed" },
-          { name: "Temperature Check", status: "passed" },
-        ],
-        warnings: [],
-        errors: [],
-      };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const checks: { name: string; status: "passed" | "failed" | "warning" }[] = [];
+      const warnings: string[] = [];
+      const errors: string[] = [];
+
+      try {
+        // Parse ticket number to find the load
+        const ticketId = parseInt(input.ticketNumber.replace(/\D/g, '')) || 0;
+
+        // Check if run ticket exists
+        const [ticket] = await db.select().from(runTickets).where(eq(runTickets.id, ticketId)).limit(1);
+        if (!ticket) {
+          // Try by ticket number
+          const [ticketByNum] = await db.select().from(runTickets).where(eq(runTickets.ticketNumber, input.ticketNumber)).limit(1);
+          if (!ticketByNum) {
+            return {
+              ticketNumber: input.ticketNumber,
+              isValid: false,
+              checks: [{ name: "Run Ticket Exists", status: "failed" as const }],
+              warnings: [],
+              errors: ["Run ticket not found"],
+            };
+          }
+        }
+
+        const activeTicket = ticket;
+        const loadId = activeTicket?.loadId;
+
+        // Load the associated load if exists
+        let load: typeof loads.$inferSelect | null = null;
+        if (loadId) {
+          const [foundLoad] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
+          load = foundLoad || null;
+        }
+
+        // Check 1: Driver assigned
+        if (activeTicket?.driverId) {
+          const [driver] = await db.select({ name: users.name }).from(users).where(eq(users.id, activeTicket.driverId)).limit(1);
+          if (driver?.name) {
+            checks.push({ name: "Driver Signature", status: "passed" });
+          } else {
+            checks.push({ name: "Driver Signature", status: "failed" });
+            errors.push("Driver record not found");
+          }
+        } else {
+          checks.push({ name: "Driver Signature", status: "failed" });
+          errors.push("No driver assigned to run ticket");
+        }
+
+        // Check 2: Operator Signature — check if there's a signed document for this load
+        if (loadId) {
+          const [signedDoc] = await db.select({ id: documents.id })
+            .from(documents)
+            .where(and(eq(documents.loadId, loadId), eq(documents.type, "signature")))
+            .limit(1);
+          checks.push({ name: "Operator Signature", status: signedDoc ? "passed" : "warning" });
+          if (!signedDoc) warnings.push("No operator signature document found");
+        } else {
+          checks.push({ name: "Operator Signature", status: "warning" });
+          warnings.push("No load linked — cannot verify operator signature");
+        }
+
+        // Check 3: Volume Verification
+        if (load && parseFloat(String(load.weight)) > 0) {
+          checks.push({ name: "Volume Verification", status: "passed" });
+        } else {
+          checks.push({ name: "Volume Verification", status: "failed" });
+          errors.push("No volume/weight recorded on load");
+        }
+
+        // Check 4: Seal Numbers — check load documents JSON
+        const loadDocs = load ? unsafeCast(load).documents : null;
+        if (loadDocs && Array.isArray(loadDocs) && loadDocs.length > 0) {
+          checks.push({ name: "Seal Numbers", status: "passed" });
+        } else {
+          checks.push({ name: "Seal Numbers", status: "warning" });
+          warnings.push("No seal number documentation found");
+        }
+
+        // Check 5: SpectraMatch Verification
+        const smResult = load ? unsafeCast(load).spectraMatchResult : null;
+        if (smResult && smResult.confidence >= 0.8) {
+          checks.push({ name: "SpectraMatch Verification", status: "passed" });
+        } else if (smResult) {
+          checks.push({ name: "SpectraMatch Verification", status: "warning" });
+          warnings.push(`SpectraMatch confidence low: ${(smResult.confidence * 100).toFixed(0)}%`);
+        } else {
+          checks.push({ name: "SpectraMatch Verification", status: "warning" });
+          warnings.push("No SpectraMatch result available");
+        }
+
+        // Check 6: HazMat Classification
+        if (load?.cargoType === "hazmat") {
+          if (load.hazmatClass && load.unNumber) {
+            checks.push({ name: "HazMat Classification", status: "passed" });
+          } else {
+            checks.push({ name: "HazMat Classification", status: "failed" });
+            errors.push("HazMat load missing classification or UN number");
+          }
+        } else {
+          checks.push({ name: "HazMat Classification", status: "passed" });
+        }
+
+        // Check 7: Temperature Check (for reefer loads)
+        if (load?.cargoType === "refrigerated") {
+          checks.push({ name: "Temperature Check", status: "warning" });
+          warnings.push("Temperature data requires manual verification for reefer load");
+        } else {
+          checks.push({ name: "Temperature Check", status: "passed" });
+        }
+
+        const isValid = checks.every(c => c.status !== "failed");
+
+        return {
+          ticketNumber: input.ticketNumber,
+          isValid,
+          checks,
+          warnings,
+          errors,
+        };
+      } catch (error) {
+        logger.error('[EusoTicket] validateForBOL error:', error);
+        return {
+          ticketNumber: input.ticketNumber,
+          isValid: false,
+          checks: [{ name: "Validation", status: "failed" as const }],
+          warnings: [],
+          errors: ["Validation failed due to internal error"],
+        };
+      }
     }),
 });

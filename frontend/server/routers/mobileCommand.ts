@@ -11,8 +11,9 @@ export const mobileCommandRouter = router({
   /**
    * Get full mobile command center data
    */
-  getData: protectedProcedure.query(async () => {
-    return getMobileCommandData();
+  getData: protectedProcedure.query(async ({ ctx }) => {
+    const userId = Number(ctx.user?.id) || 0;
+    return getMobileCommandData(userId);
   }),
 
   /**

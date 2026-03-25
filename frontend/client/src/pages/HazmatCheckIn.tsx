@@ -161,7 +161,7 @@ export default function HazmatCheckIn() {
                   {isChecked && <CheckCircle className="w-4 h-4 text-white" />}
                 </div>
                 <p className={cn("text-sm", isChecked ? "text-green-600" : isLight ? "text-slate-700" : "text-slate-200")}>{item.label}</p>
-                {item.required && !isChecked && <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-[8px] ml-auto">Required</Badge>}
+                {item.required && !isChecked && <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-xs ml-auto">Required</Badge>}
               </button>
             );
           })}

@@ -150,7 +150,7 @@ export default function LoadProgressTimeline({
                   </span>
                 </div>
                 {ts && (
-                  <p className="text-[10px] text-slate-500 dark:text-gray-500 mt-0.5 pl-6">
+                  <p className="text-xs text-slate-500 dark:text-gray-500 mt-0.5 pl-6">
                     {new Date(ts).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     {actors[state] ? ` · ${actors[state]}` : ""}
                   </p>
@@ -195,7 +195,7 @@ export default function LoadProgressTimeline({
               </motion.div>
               {!compact && (
                 <span
-                  className="text-[9px] mt-1 font-medium text-center max-w-[56px] leading-tight"
+                  className="text-xs mt-1 font-medium text-center max-w-[56px] leading-tight"
                   style={GRADIENT_TEXT}
                 >
                   {meta.displayName}

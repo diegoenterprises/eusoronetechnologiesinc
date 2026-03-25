@@ -68,7 +68,7 @@ export default function NLLoadCreatorPage() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Describe your load in plain English — AI builds the form</p>
         </div>
-        <Badge variant="outline" className="text-[9px] border-violet-500/30 text-violet-400">
+        <Badge variant="outline" className="text-xs border-violet-500/30 text-violet-400">
           <Sparkles className="w-3 h-3 mr-1" />AI-Powered
         </Badge>
       </div>
@@ -102,7 +102,7 @@ export default function NLLoadCreatorPage() {
           </div>
 
           {/* Quick tips */}
-          <div className="flex items-center gap-4 mt-2 text-[9px] text-slate-500">
+          <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
             <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> "from X to Y"</span>
             <span className="flex items-center gap-1"><Truck className="w-3 h-3" /> equipment type</span>
             <span className="flex items-center gap-1"><Weight className="w-3 h-3" /> weight in lbs</span>
@@ -135,7 +135,7 @@ export default function NLLoadCreatorPage() {
                     <XCircle className="w-5 h-5 text-red-400" />
                   )}
                   <span className={cn("text-sm font-semibold", conf.color)}>{conf.label}</span>
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-xs text-slate-500">
                     {load.parsedFields.length} fields extracted
                   </span>
                 </div>
@@ -164,7 +164,7 @@ export default function NLLoadCreatorPage() {
               <CardContent className="pb-3">
                 <div className="flex items-center gap-3">
                   <div className="flex-1 p-2 rounded-lg bg-slate-900/30 border border-slate-700/30">
-                    <p className="text-[8px] text-slate-500 uppercase">Origin</p>
+                    <p className="text-xs text-slate-500 uppercase">Origin</p>
                     <p className={cn("text-sm font-semibold", load.originCity ? "text-white" : "text-slate-600")}>
                       {load.originCity || "Not specified"}
                       {load.originState && <span className="text-slate-400 ml-1">{load.originState}</span>}
@@ -172,7 +172,7 @@ export default function NLLoadCreatorPage() {
                   </div>
                   <ArrowRight className="w-4 h-4 text-slate-500 flex-shrink-0" />
                   <div className="flex-1 p-2 rounded-lg bg-slate-900/30 border border-slate-700/30">
-                    <p className="text-[8px] text-slate-500 uppercase">Destination</p>
+                    <p className="text-xs text-slate-500 uppercase">Destination</p>
                     <p className={cn("text-sm font-semibold", load.destinationCity ? "text-white" : "text-slate-600")}>
                       {load.destinationCity || "Not specified"}
                       {load.destinationState && <span className="text-slate-400 ml-1">{load.destinationState}</span>}
@@ -192,22 +192,22 @@ export default function NLLoadCreatorPage() {
               <CardContent className="pb-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="p-2 rounded-lg bg-slate-900/30">
-                    <p className="text-[8px] text-slate-500">Equipment</p>
-                    <p className={cn("text-[11px] font-semibold capitalize", load.equipmentType ? "text-white" : "text-slate-600")}>
+                    <p className="text-xs text-slate-500">Equipment</p>
+                    <p className={cn("text-xs font-semibold capitalize", load.equipmentType ? "text-white" : "text-slate-600")}>
                       {load.equipmentType?.replace(/_/g, " ") || "Not specified"}
                     </p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/30">
-                    <p className="text-[8px] text-slate-500">Cargo Type</p>
-                    <p className={cn("text-[11px] font-semibold capitalize", load.cargoType ? "text-white" : "text-slate-600")}>
+                    <p className="text-xs text-slate-500">Cargo Type</p>
+                    <p className={cn("text-xs font-semibold capitalize", load.cargoType ? "text-white" : "text-slate-600")}>
                       {load.cargoType?.replace(/_/g, " ") || "Not specified"}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-2">
-                  {load.hazmat && <Badge variant="outline" className="text-[8px] border-red-500/30 text-red-400"><AlertTriangle className="w-3 h-3 mr-0.5" />Hazmat</Badge>}
-                  {load.temperatureControlled && <Badge variant="outline" className="text-[8px] border-blue-500/30 text-blue-400"><Thermometer className="w-3 h-3 mr-0.5" />Temp Controlled</Badge>}
-                  {load.oversized && <Badge variant="outline" className="text-[8px] border-orange-500/30 text-orange-400"><Package className="w-3 h-3 mr-0.5" />Oversized</Badge>}
+                  {load.hazmat && <Badge variant="outline" className="text-xs border-red-500/30 text-red-400"><AlertTriangle className="w-3 h-3 mr-0.5" />Hazmat</Badge>}
+                  {load.temperatureControlled && <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400"><Thermometer className="w-3 h-3 mr-0.5" />Temp Controlled</Badge>}
+                  {load.oversized && <Badge variant="outline" className="text-xs border-orange-500/30 text-orange-400"><Package className="w-3 h-3 mr-0.5" />Oversized</Badge>}
                 </div>
               </CardContent>
             </Card>
@@ -222,13 +222,13 @@ export default function NLLoadCreatorPage() {
               <CardContent className="pb-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="p-2 rounded-lg bg-slate-900/30">
-                    <p className="text-[8px] text-slate-500">Weight</p>
+                    <p className="text-xs text-slate-500">Weight</p>
                     <p className={cn("text-sm font-bold font-mono", load.weight ? "text-white" : "text-slate-600")}>
                       {load.weight ? `${load.weight.toLocaleString()} ${load.weightUnit}` : "—"}
                     </p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/30">
-                    <p className="text-[8px] text-slate-500">Pallets</p>
+                    <p className="text-xs text-slate-500">Pallets</p>
                     <p className={cn("text-sm font-bold font-mono", load.palletCount ? "text-white" : "text-slate-600")}>
                       {load.palletCount || "—"}
                     </p>
@@ -247,27 +247,27 @@ export default function NLLoadCreatorPage() {
               <CardContent className="pb-3">
                 <div className="grid grid-cols-3 gap-2">
                   <div className="p-2 rounded-lg bg-slate-900/30">
-                    <p className="text-[8px] text-slate-500">Pickup</p>
-                    <p className={cn("text-[10px] font-semibold", load.pickupDate ? "text-white" : "text-slate-600")}>
+                    <p className="text-xs text-slate-500">Pickup</p>
+                    <p className={cn("text-xs font-semibold", load.pickupDate ? "text-white" : "text-slate-600")}>
                       {load.pickupDate || "—"}
                     </p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/30">
-                    <p className="text-[8px] text-slate-500">Delivery</p>
-                    <p className={cn("text-[10px] font-semibold", load.deliveryDate ? "text-white" : "text-slate-600")}>
+                    <p className="text-xs text-slate-500">Delivery</p>
+                    <p className={cn("text-xs font-semibold", load.deliveryDate ? "text-white" : "text-slate-600")}>
                       {load.deliveryDate || "—"}
                     </p>
                   </div>
                   <div className="p-2 rounded-lg bg-slate-900/30">
-                    <p className="text-[8px] text-slate-500">Rate</p>
+                    <p className="text-xs text-slate-500">Rate</p>
                     <p className={cn("text-sm font-bold font-mono", load.rate ? "text-emerald-400" : "text-slate-600")}>
                       {load.rate ? `$${load.rate.toLocaleString()}` : "—"}
-                      {load.rateType === "per_mile" && <span className="text-[8px] text-slate-400">/mi</span>}
+                      {load.rateType === "per_mile" && <span className="text-xs text-slate-400">/mi</span>}
                     </p>
                   </div>
                 </div>
                 {load.urgency !== "standard" && (
-                  <Badge variant="outline" className={cn("text-[8px] mt-2", load.urgency === "asap" ? "border-red-500/30 text-red-400" : "border-amber-500/30 text-amber-400")}>
+                  <Badge variant="outline" className={cn("text-xs mt-2", load.urgency === "asap" ? "border-red-500/30 text-red-400" : "border-amber-500/30 text-amber-400")}>
                     <Clock className="w-3 h-3 mr-0.5" />{load.urgency.toUpperCase()}
                   </Badge>
                 )}
@@ -287,9 +287,9 @@ export default function NLLoadCreatorPage() {
                 <div className="flex flex-wrap gap-1.5">
                   {parsed.extractedEntities.map((e: any, i: number) => (
                     <div key={i} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-violet-500/10 border border-violet-500/20">
-                      <span className="text-[9px] text-violet-300 font-mono">{e.type}</span>
-                      <span className="text-[10px] text-white font-semibold">{e.text}</span>
-                      <span className="text-[8px] text-slate-500">{Math.round(e.confidence * 100)}%</span>
+                      <span className="text-xs text-violet-300 font-mono">{e.type}</span>
+                      <span className="text-xs text-white font-semibold">{e.text}</span>
+                      <span className="text-xs text-slate-500">{Math.round(e.confidence * 100)}%</span>
                     </div>
                   ))}
                 </div>
@@ -307,7 +307,7 @@ export default function NLLoadCreatorPage() {
                 </div>
                 <div className="space-y-1">
                   {load.suggestions.map((s: string, i: number) => (
-                    <p key={i} className="text-[10px] text-slate-400">• {s}</p>
+                    <p key={i} className="text-xs text-slate-400">• {s}</p>
                   ))}
                 </div>
               </CardContent>
@@ -332,12 +332,12 @@ export default function NLLoadCreatorPage() {
           <div className="flex items-center gap-2">
             <Lightbulb className="w-4 h-4 text-amber-400" />
             <span className="text-sm font-semibold text-white">Example Prompts</span>
-            <span className="text-[9px] text-slate-500">Click any to try</span>
+            <span className="text-xs text-slate-500">Click any to try</span>
           </div>
           {examples.map((cat: any) => (
             <Card key={cat.category} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardContent className="p-3">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase mb-2">{cat.category}</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase mb-2">{cat.category}</p>
                 <div className="space-y-1.5">
                   {cat.examples.map((ex: string, i: number) => (
                     <button
@@ -345,7 +345,7 @@ export default function NLLoadCreatorPage() {
                       onClick={() => handleExample(ex)}
                       className="w-full text-left px-3 py-2 rounded-lg bg-slate-900/30 border border-slate-700/30 hover:border-violet-500/30 hover:bg-violet-500/5 transition-all group"
                     >
-                      <p className="text-[11px] text-slate-300 group-hover:text-white transition-colors">
+                      <p className="text-xs text-slate-300 group-hover:text-white transition-colors">
                         "{ex}"
                       </p>
                     </button>

@@ -115,7 +115,7 @@ export default function DispatchAssignedLoads() {
           >
             <s.icon className={cn("w-5 h-5", s.color)} />
             <div>
-              <div className="text-[10px] text-slate-500 uppercase">{s.label}</div>
+              <div className="text-xs text-slate-500 uppercase">{s.label}</div>
               <div className={cn("text-lg font-bold", s.color)}>{s.value}</div>
             </div>
           </button>
@@ -125,20 +125,20 @@ export default function DispatchAssignedLoads() {
       {/* Sort bar */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.06] bg-slate-900/20">
         <Filter className="w-3 h-3 text-slate-500" />
-        <span className="text-[10px] text-slate-500 uppercase">Sort:</span>
+        <span className="text-xs text-slate-500 uppercase">Sort:</span>
         {(["newest", "pickup", "status"] as const).map(s => (
           <button
             key={s}
             onClick={() => setSortBy(s)}
             className={cn(
-              "text-[10px] px-2 py-1 rounded",
+              "text-xs px-2 py-1 rounded",
               sortBy === s ? "bg-violet-500/20 text-violet-400 font-semibold" : "text-slate-500 hover:text-slate-300"
             )}
           >
             {s === "newest" ? "Newest" : s === "pickup" ? "Pickup Date" : "Status"}
           </button>
         ))}
-        <span className="ml-auto text-[10px] text-slate-500">{sorted.length} load{sorted.length !== 1 ? "s" : ""}</span>
+        <span className="ml-auto text-xs text-slate-500">{sorted.length} load{sorted.length !== 1 ? "s" : ""}</span>
       </div>
 
       {/* Loads List */}
@@ -170,12 +170,12 @@ export default function DispatchAssignedLoads() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-xs font-bold text-white">{load.loadNumber || `#${load.id}`}</span>
-                      <Badge className={cn("border-0 text-[9px] font-bold", st.bg, st.text)}>{st.label}</Badge>
+                      <Badge className={cn("border-0 text-xs font-bold", st.bg, st.text)}>{st.label}</Badge>
                       {load.cargoType && (
-                        <Badge className="bg-amber-500/10 text-amber-400 border-0 text-[9px]">{load.cargoType}</Badge>
+                        <Badge className="bg-amber-500/10 text-amber-400 border-0 text-xs">{load.cargoType}</Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-3 text-xs text-slate-400">
                       <span className="flex items-center gap-1 truncate max-w-[200px]">
                         <MapPin className="w-3 h-3 text-green-400 shrink-0" />
                         {load.pickupLocation || "—"}
@@ -191,7 +191,7 @@ export default function DispatchAssignedLoads() {
                   {/* Dates */}
                   <div className="text-right shrink-0">
                     {load.pickupDate && (
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                      <div className="flex items-center gap-1 text-xs text-slate-400">
                         <Calendar className="w-3 h-3" />
                         {new Date(load.pickupDate).toLocaleDateString()}
                       </div>

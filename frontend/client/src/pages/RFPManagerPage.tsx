@@ -72,10 +72,10 @@ export default function RFPManagerPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1 w-fit">
-        <Button size="sm" variant={tab === "rfps" ? "default" : "ghost"} className={cn("rounded-md text-[11px]", tab === "rfps" ? "bg-indigo-600" : "text-slate-400")} onClick={() => setTab("rfps")}>
+        <Button size="sm" variant={tab === "rfps" ? "default" : "ghost"} className={cn("rounded-md text-xs", tab === "rfps" ? "bg-indigo-600" : "text-slate-400")} onClick={() => setTab("rfps")}>
           <FileText className="w-3.5 h-3.5 mr-1" />RFPs & Bids
         </Button>
-        <Button size="sm" variant={tab === "scoring" ? "default" : "ghost"} className={cn("rounded-md text-[11px]", tab === "scoring" ? "bg-purple-600" : "text-slate-400")} onClick={() => { setTab("scoring"); if (!selectedRfp && rfps.length > 0) setSelectedRfp(rfps[0].id); }}>
+        <Button size="sm" variant={tab === "scoring" ? "default" : "ghost"} className={cn("rounded-md text-xs", tab === "scoring" ? "bg-purple-600" : "text-slate-400")} onClick={() => { setTab("scoring"); if (!selectedRfp && rfps.length > 0) setSelectedRfp(rfps[0].id); }}>
           <BarChart3 className="w-3.5 h-3.5 mr-1" />Scoring & Awards
         </Button>
       </div>
@@ -94,11 +94,11 @@ export default function RFPManagerPage() {
                 <Card key={rfp.id} onClick={() => setSelectedRfp(rfp.id)} className={cn("cursor-pointer rounded-xl transition-all", selectedRfp === rfp.id ? "border-indigo-500/40 ring-1 ring-indigo-500/20 bg-indigo-500/5" : "bg-slate-800/50 border-slate-700/50 hover:border-indigo-500/20")}>
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between mb-1">
-                      <span className="text-[10px] font-mono text-slate-500">{rfp.id}</span>
-                      <Badge variant="outline" className={cn("text-[7px]", sc.color, sc.bg)}>{sc.label}</Badge>
+                      <span className="text-xs font-mono text-slate-500">{rfp.id}</span>
+                      <Badge variant="outline" className={cn("text-xs", sc.color, sc.bg)}>{sc.label}</Badge>
                     </div>
                     <p className="text-xs font-semibold text-white mb-1 line-clamp-2">{rfp.title}</p>
-                    <div className="flex items-center gap-3 text-[9px] text-slate-500">
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
                       <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" />{rfp.lanes.length} lanes</span>
                       <span className="flex items-center gap-0.5"><Users className="w-3 h-3" />{rfp.distributedTo} carriers</span>
                       <span className="flex items-center gap-0.5"><FileText className="w-3 h-3" />{rfp.responsesReceived} bids</span>
@@ -119,19 +119,19 @@ export default function RFPManagerPage() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className="text-sm font-bold text-white">{activeRfp.title}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">{activeRfp.description}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{activeRfp.description}</p>
                       </div>
                       {activeRfp.status === "draft" && (
-                        <Button size="sm" className="bg-indigo-600 text-[10px]" onClick={() => publishMutation.mutate({ rfpId: activeRfp.id })}>
+                        <Button size="sm" className="bg-indigo-600 text-xs" onClick={() => publishMutation.mutate({ rfpId: activeRfp.id })}>
                           <Send className="w-3 h-3 mr-1" />Publish
                         </Button>
                       )}
                     </div>
                     <div className="grid grid-cols-4 gap-2 text-center">
-                      <div className="p-2 rounded-lg bg-slate-900/30"><p className="text-[8px] text-slate-500">Deadline</p><p className="text-[10px] text-white font-mono">{new Date(activeRfp.responseDeadline).toLocaleDateString()}</p></div>
-                      <div className="p-2 rounded-lg bg-slate-900/30"><p className="text-[8px] text-slate-500">Contract</p><p className="text-[10px] text-white font-mono">{activeRfp.contractStartDate}</p></div>
-                      <div className="p-2 rounded-lg bg-slate-900/30"><p className="text-[8px] text-slate-500">Min Safety</p><p className="text-[10px] text-emerald-400 font-mono">{activeRfp.carrierRequirements.minSafetyScore}%</p></div>
-                      <div className="p-2 rounded-lg bg-slate-900/30"><p className="text-[8px] text-slate-500">Min On-Time</p><p className="text-[10px] text-blue-400 font-mono">{activeRfp.carrierRequirements.minOnTimeRate}%</p></div>
+                      <div className="p-2 rounded-lg bg-slate-900/30"><p className="text-xs text-slate-500">Deadline</p><p className="text-xs text-white font-mono">{new Date(activeRfp.responseDeadline).toLocaleDateString()}</p></div>
+                      <div className="p-2 rounded-lg bg-slate-900/30"><p className="text-xs text-slate-500">Contract</p><p className="text-xs text-white font-mono">{activeRfp.contractStartDate}</p></div>
+                      <div className="p-2 rounded-lg bg-slate-900/30"><p className="text-xs text-slate-500">Min Safety</p><p className="text-xs text-emerald-400 font-mono">{activeRfp.carrierRequirements.minSafetyScore}%</p></div>
+                      <div className="p-2 rounded-lg bg-slate-900/30"><p className="text-xs text-slate-500">Min On-Time</p><p className="text-xs text-blue-400 font-mono">{activeRfp.carrierRequirements.minOnTimeRate}%</p></div>
                     </div>
                   </CardContent>
                 </Card>
@@ -143,16 +143,16 @@ export default function RFPManagerPage() {
                     <div className="space-y-1.5">
                       {activeRfp.lanes.map((lane: any) => (
                         <div key={lane.id} className="flex items-center gap-3 p-2 rounded-lg bg-slate-900/20">
-                          <span className="text-[9px] font-mono text-slate-500 w-14">{lane.id}</span>
+                          <span className="text-xs font-mono text-slate-500 w-14">{lane.id}</span>
                           <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                            <span className="text-[10px] text-white truncate">{lane.origin.city}, {lane.origin.state}</span>
+                            <span className="text-xs text-white truncate">{lane.origin.city}, {lane.origin.state}</span>
                             <ArrowRight className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                            <span className="text-[10px] text-white truncate">{lane.destination.city}, {lane.destination.state}</span>
+                            <span className="text-xs text-white truncate">{lane.destination.city}, {lane.destination.state}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-[8px]">
+                          <div className="flex items-center gap-2 text-xs">
                             <span className="text-slate-400">{lane.estimatedDistance} mi</span>
-                            <Badge variant="outline" className="text-[7px] text-cyan-400">{lane.equipmentRequired}</Badge>
-                            {lane.hazmat && <Badge variant="outline" className="text-[7px] text-red-400">Hazmat</Badge>}
+                            <Badge variant="outline" className="text-xs text-cyan-400">{lane.equipmentRequired}</Badge>
+                            {lane.hazmat && <Badge variant="outline" className="text-xs text-red-400">Hazmat</Badge>}
                             <span className="text-emerald-400 font-mono">${lane.targetRate?.toLocaleString()}</span>
                             <span className="text-slate-500">{lane.frequencyPerWeek}/wk</span>
                           </div>
@@ -173,10 +173,10 @@ export default function RFPManagerPage() {
                             <div className="flex items-center justify-between mb-1.5">
                               <div className="flex items-center gap-2">
                                 <Truck className="w-3.5 h-3.5 text-slate-400" />
-                                <span className="text-[11px] font-semibold text-white">{bid.carrierName}</span>
-                                <Badge variant="outline" className={cn("text-[7px]", TIER_COLORS[bid.carrierTier])}>{bid.carrierTier}</Badge>
+                                <span className="text-xs font-semibold text-white">{bid.carrierName}</span>
+                                <Badge variant="outline" className={cn("text-xs", TIER_COLORS[bid.carrierTier])}>{bid.carrierTier}</Badge>
                               </div>
-                              <div className="flex items-center gap-2 text-[8px] text-slate-500">
+                              <div className="flex items-center gap-2 text-xs text-slate-500">
                                 <span><Shield className="w-3 h-3 inline" /> {bid.safetyScore}%</span>
                                 <span><Clock className="w-3 h-3 inline" /> {bid.onTimeRate}%</span>
                                 <span><Truck className="w-3 h-3 inline" /> {bid.fleetSize} trucks</span>
@@ -185,9 +185,9 @@ export default function RFPManagerPage() {
                             <div className="grid grid-cols-3 gap-1.5">
                               {bid.laneBids.map((lb: any) => (
                                 <div key={lb.laneId} className="p-1.5 rounded bg-slate-800/40 text-center">
-                                  <p className="text-[7px] text-slate-500">{lb.laneId}</p>
-                                  <p className="text-[10px] font-bold font-mono text-emerald-400">${Math.round(lb.bidRate).toLocaleString()}</p>
-                                  <p className="text-[7px] text-slate-500">{lb.transitDays}d • {lb.capacityPerWeek}/wk</p>
+                                  <p className="text-xs text-slate-500">{lb.laneId}</p>
+                                  <p className="text-xs font-bold font-mono text-emerald-400">${Math.round(lb.bidRate).toLocaleString()}</p>
+                                  <p className="text-xs text-slate-500">{lb.transitDays}d • {lb.capacityPerWeek}/wk</p>
                                 </div>
                               ))}
                             </div>
@@ -203,7 +203,7 @@ export default function RFPManagerPage() {
                 <CardContent className="p-12 text-center">
                   <FileText className="w-8 h-8 text-indigo-400 mx-auto mb-2" />
                   <p className="text-sm text-white font-semibold">Select an RFP</p>
-                  <p className="text-[10px] text-slate-500 mt-1">Click an RFP from the left to view details and bids</p>
+                  <p className="text-xs text-slate-500 mt-1">Click an RFP from the left to view details and bids</p>
                 </CardContent>
               </Card>
             )}
@@ -218,7 +218,7 @@ export default function RFPManagerPage() {
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-400">Scoring for:</span>
             {rfps.map((rfp: any) => (
-              <Button key={rfp.id} size="sm" variant={selectedRfp === rfp.id ? "default" : "outline"} className={cn("text-[10px]", selectedRfp === rfp.id ? "bg-purple-600" : "border-slate-600 text-slate-400")} onClick={() => setSelectedRfp(rfp.id)}>
+              <Button key={rfp.id} size="sm" variant={selectedRfp === rfp.id ? "default" : "outline"} className={cn("text-xs", selectedRfp === rfp.id ? "bg-purple-600" : "border-slate-600 text-slate-400")} onClick={() => setSelectedRfp(rfp.id)}>
                 {rfp.id}
               </Button>
             ))}
@@ -240,21 +240,21 @@ export default function RFPManagerPage() {
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-semibold text-white">{sc.carrierName}</span>
-                              <Badge variant="outline" className={cn("text-[7px]", TIER_COLORS[sc.carrierTier])}>{sc.carrierTier}</Badge>
+                              <Badge variant="outline" className={cn("text-xs", TIER_COLORS[sc.carrierTier])}>{sc.carrierTier}</Badge>
                             </div>
                             <div className="flex items-center gap-1 mt-0.5">
                               <span className={rec.color}>{rec.icon}</span>
-                              <span className={cn("text-[9px] font-semibold", rec.color)}>{rec.label}</span>
+                              <span className={cn("text-xs font-semibold", rec.color)}>{rec.label}</span>
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-center">
                             <p className="text-2xl font-bold font-mono text-white">{sc.overallScore}</p>
-                            <p className="text-[8px] text-slate-500">Overall</p>
+                            <p className="text-xs text-slate-500">Overall</p>
                           </div>
                           {sc.recommendation === "award" && (
-                            <Button size="sm" className="bg-emerald-600 text-[10px]" onClick={() => awardMutation.mutate({ rfpId: selectedRfp!, laneId: "ALL", carrierId: sc.carrierId })}>
+                            <Button size="sm" className="bg-emerald-600 text-xs" onClick={() => awardMutation.mutate({ rfpId: selectedRfp!, laneId: "ALL", carrierId: sc.carrierId })}>
                               <Trophy className="w-3 h-3 mr-1" />Award
                             </Button>
                           )}
@@ -274,8 +274,8 @@ export default function RFPManagerPage() {
                             <div className="w-full h-1.5 rounded-full bg-slate-700/50 overflow-hidden mb-0.5">
                               <div className={cn("h-full rounded-full", dim.color)} style={{ width: `${dim.score}%` }} />
                             </div>
-                            <p className="text-[8px] text-slate-500">{dim.label}</p>
-                            <p className="text-[10px] font-bold font-mono text-white">{dim.score}</p>
+                            <p className="text-xs text-slate-500">{dim.label}</p>
+                            <p className="text-xs font-bold font-mono text-white">{dim.score}</p>
                           </div>
                         ))}
                       </div>
@@ -291,7 +291,7 @@ export default function RFPManagerPage() {
               <CardContent className="p-8 text-center">
                 <BarChart3 className="w-8 h-8 text-purple-400 mx-auto mb-2" />
                 <p className="text-sm text-white font-semibold">No Bids to Score</p>
-                <p className="text-[10px] text-slate-500">No carrier responses received for this RFP yet</p>
+                <p className="text-xs text-slate-500">No carrier responses received for this RFP yet</p>
               </CardContent>
             </Card>
           )}

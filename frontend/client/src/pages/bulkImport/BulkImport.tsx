@@ -156,7 +156,7 @@ export default function BulkImport() {
               step === s ? "bg-violet-500/20 text-violet-400 font-semibold" :
               (["upload", "validate", "import", "results"].indexOf(step) > i) ? "text-emerald-400" : "text-slate-500"
             )}>
-              <span className="w-4 h-4 rounded-full border text-[10px] flex items-center justify-center">
+              <span className="w-4 h-4 rounded-full border text-xs flex items-center justify-center">
                 {(["upload", "validate", "import", "results"].indexOf(step) > i) ? "\u2713" : i + 1}
               </span>
               {s === "upload" ? "Upload" : s === "validate" ? "Validate" : s === "import" ? "Import" : "Results"}
@@ -221,16 +221,16 @@ export default function BulkImport() {
                       <FileSpreadsheet className="w-4 h-4 text-slate-500" />
                       <div>
                         <div className="text-xs font-medium text-white">{j.fileName}</div>
-                        <div className="text-[10px] text-slate-500">{new Date(j.createdAt).toLocaleString()}</div>
+                        <div className="text-xs text-slate-500">{new Date(j.createdAt).toLocaleString()}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-[10px] text-slate-400">{j.totalRows} rows</span>
-                      <Badge className={cn("text-[10px] border-0",
+                      <span className="text-xs text-slate-400">{j.totalRows} rows</span>
+                      <Badge className={cn("text-xs border-0",
                         j.status === "completed" ? "bg-emerald-500/20 text-emerald-400" :
                         j.status === "failed" ? "bg-red-500/20 text-red-400" : "bg-slate-500/20 text-slate-400"
                       )}>{j.status}</Badge>
-                      {j.successCount > 0 && <span className="text-[10px] text-emerald-400">{j.successCount} created</span>}
+                      {j.successCount > 0 && <span className="text-xs text-emerald-400">{j.successCount} created</span>}
                     </div>
                   </Card>
                 ))}
@@ -248,10 +248,10 @@ export default function BulkImport() {
                 <Sparkles className="w-4 h-4 text-violet-400 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <span className="text-xs font-semibold text-violet-300">ESANG AI Column Mapping</span>
-                  <span className="text-[10px] text-violet-400/70 ml-2">{aiInfo.confidence}% confidence</span>
-                  {aiInfo.notes && <span className="text-[10px] text-slate-400 ml-2">— {aiInfo.notes}</span>}
+                  <span className="text-xs text-violet-400/70 ml-2">{aiInfo.confidence}% confidence</span>
+                  {aiInfo.notes && <span className="text-xs text-slate-400 ml-2">— {aiInfo.notes}</span>}
                 </div>
-                <Badge className="bg-violet-500/20 text-violet-400 border-0 text-[10px]">AI-Enhanced</Badge>
+                <Badge className="bg-violet-500/20 text-violet-400 border-0 text-xs">AI-Enhanced</Badge>
               </div>
             )}
 
@@ -290,7 +290,7 @@ export default function BulkImport() {
             <div className="overflow-x-auto rounded-lg border border-white/[0.06]">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-[10px] text-slate-500 uppercase border-b border-white/[0.06] bg-white/[0.02]">
+                  <tr className="text-xs text-slate-500 uppercase border-b border-white/[0.06] bg-white/[0.02]">
                     <th className="px-3 py-2 text-left w-12">#</th>
                     <th className="px-3 py-2 text-left">Status</th>
                     <th className="px-3 py-2 text-left">Pickup</th>
@@ -322,9 +322,9 @@ export default function BulkImport() {
                         <td className="px-3 py-2 text-slate-300">{raw.cargoType || "—"}</td>
                         <td className="px-3 py-2">
                           {r.errors && Array.isArray(r.errors) && r.errors.length > 0 ? (
-                            <span className="text-red-400 text-[10px]">{r.errors.join("; ")}</span>
+                            <span className="text-red-400 text-xs">{r.errors.join("; ")}</span>
                           ) : r.loadId ? (
-                            <span className="text-emerald-400 text-[10px]">Load #{r.loadId}</span>
+                            <span className="text-emerald-400 text-xs">Load #{r.loadId}</span>
                           ) : null}
                         </td>
                       </tr>
@@ -344,11 +344,11 @@ export default function BulkImport() {
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div className="rounded bg-emerald-500/5 border border-emerald-500/10 py-3">
                   <div className="text-2xl font-bold text-emerald-400">{validCount}</div>
-                  <div className="text-[10px] text-slate-500 uppercase">Loads to Create</div>
+                  <div className="text-xs text-slate-500 uppercase">Loads to Create</div>
                 </div>
                 <div className="rounded bg-red-500/5 border border-red-500/10 py-3">
                   <div className="text-2xl font-bold text-red-400">{invalidCount}</div>
-                  <div className="text-[10px] text-slate-500 uppercase">Will Be Skipped</div>
+                  <div className="text-xs text-slate-500 uppercase">Will Be Skipped</div>
                 </div>
               </div>
               <div className="text-xs text-slate-400">
@@ -378,15 +378,15 @@ export default function BulkImport() {
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded bg-white/[0.02] border border-white/[0.04] py-2">
                   <div className="text-xl font-bold text-white">{status?.totalRows || 0}</div>
-                  <div className="text-[10px] text-slate-500">Total Rows</div>
+                  <div className="text-xs text-slate-500">Total Rows</div>
                 </div>
                 <div className="rounded bg-emerald-500/5 border border-emerald-500/10 py-2">
                   <div className="text-xl font-bold text-emerald-400">{status?.successCount || 0}</div>
-                  <div className="text-[10px] text-slate-500">Created</div>
+                  <div className="text-xs text-slate-500">Created</div>
                 </div>
                 <div className="rounded bg-red-500/5 border border-red-500/10 py-2">
                   <div className="text-xl font-bold text-red-400">{status?.failCount || 0}</div>
-                  <div className="text-[10px] text-slate-500">Failed</div>
+                  <div className="text-xs text-slate-500">Failed</div>
                 </div>
               </div>
               <div className="flex gap-2 justify-center pt-2">

@@ -1077,18 +1077,18 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                               <p className="text-slate-900 dark:text-white font-bold text-sm truncate">{product.nickname}</p>
                               <p className="text-slate-500 text-xs mt-0.5 truncate">{product.productName}</p>
                               <div className="flex items-center gap-2 mt-2">
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-600/50 text-slate-600 dark:text-slate-300">
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-600/50 text-slate-600 dark:text-slate-300">
                                   {TRAILER_TYPES.find(t => t.id === product.trailerType)?.name || product.trailerType}
                                 </span>
                                 {product.hazmatClass && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-medium">
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 font-medium">
                                     Class {product.hazmatClass}
                                   </span>
                                 )}
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0">
-                              <p className="text-[10px] text-slate-500">{product.usageCount || 0}x used</p>
+                              <p className="text-xs text-slate-500">{product.usageCount || 0}x used</p>
                               <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 mt-1 ml-auto transition-colors" />
                             </div>
                           </div>
@@ -1118,7 +1118,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     {selectedVertical ? "Recommended Trailers" : "All Trailer Types"}
                   </p>
                   {selectedVertical && (
-                    <button onClick={() => setSelectedVertical("")} className="text-[10px] text-slate-500 hover:text-slate-300 underline transition-colors">Show all trailers</button>
+                    <button onClick={() => setSelectedVertical("")} className="text-xs text-slate-500 hover:text-slate-300 underline transition-colors">Show all trailers</button>
                   )}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1132,8 +1132,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                       )}>
                       <div className={cn("mb-2", formData.trailerType === t.id ? "text-cyan-400" : "text-slate-400")}>{TRAILER_ICON[t.icon]}</div>
                       <p className="text-slate-900 dark:text-white text-sm font-bold">{t.name}</p>
-                      <p className="text-slate-500 text-[10px] mt-1 leading-tight">{t.desc}</p>
-                      {t.hazmat && <Badge variant="outline" className="text-[8px] mt-2 border-orange-500/30 text-orange-400">HAZMAT</Badge>}
+                      <p className="text-slate-500 text-xs mt-1 leading-tight">{t.desc}</p>
+                      {t.hazmat && <Badge variant="outline" className="text-xs mt-2 border-orange-500/30 text-orange-400">HAZMAT</Badge>}
                     </button>
                   ))}
                 </div>
@@ -1144,7 +1144,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <CheckCircle className="w-5 h-5 text-cyan-400 flex-shrink-0" />
                   <div>
                     <p className="text-cyan-400 text-sm font-bold">{selectedTrailer.name}</p>
-                    <p className="text-slate-400 text-[10px]">{isHazmat ? "Next: Product Classification with ERG 2020 search" : "Next: Product / Commodity Description"}</p>
+                    <p className="text-slate-400 text-xs">{isHazmat ? "Next: Product Classification with ERG 2020 search" : "Next: Product / Commodity Description"}</p>
                   </div>
                 </div>
               )}
@@ -1183,18 +1183,18 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   </div>
                   {showSuggestions && ergSearch.data?.results?.length > 0 && (
                     <div className="absolute z-50 left-0 right-16 mt-1 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                      <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50">ERG 2020 -- {ergSearch.data.count} results from 1,980 materials</div>
+                      <div className="px-3 py-1.5 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50">ERG 2020 -- {ergSearch.data.count} results from 1,980 materials</div>
                       {ergSearch.data.results.map((m: any, i: number) => (
                         <button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-[#334155] flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
                           <div className="flex-1 min-w-0">
                             <p className="text-slate-900 dark:text-white text-sm font-medium truncate">{m.name}</p>
-                            {m.alternateNames?.length > 0 && <p className="text-slate-500 text-[10px] truncate">Also: {m.alternateNames.slice(0, 2).join(", ")}</p>}
+                            {m.alternateNames?.length > 0 && <p className="text-slate-500 text-xs truncate">Also: {m.alternateNames.slice(0, 2).join(", ")}</p>}
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
-                            <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
-                            <Badge variant="outline" className="text-[10px] border-slate-500/30 text-slate-400">Guide {m.guide}</Badge>
-                            {m.isTIH && <Badge variant="outline" className="text-[10px] border-red-500/30 text-red-400">TIH</Badge>}
+                            <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
+                            <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
+                            <Badge variant="outline" className="text-xs border-slate-500/30 text-slate-400">Guide {m.guide}</Badge>
+                            {m.isTIH && <Badge variant="outline" className="text-xs border-red-500/30 text-red-400">TIH</Badge>}
                           </div>
                         </button>
                       ))}
@@ -1213,19 +1213,19 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                         <CheckCircle className="w-4 h-4 text-emerald-400" />
                         <span className="text-sm font-semibold text-emerald-400">ERG Verified Classification</span>
                       </div>
-                      <button onClick={() => updateField("spectraVerified", false)} className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors underline">Change</button>
+                      <button onClick={() => updateField("spectraVerified", false)} className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline">Change</button>
                     </div>
                     <div className="grid grid-cols-3 gap-3">
                       <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/20">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">Hazmat Class</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-wider">Hazmat Class</p>
                         <p className="text-purple-400 text-sm font-bold mt-0.5">{formData.hazmatClass}{formData.placardName ? ` — ${formData.placardName}` : ""}</p>
                       </div>
                       <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/20">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">UN Number</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-wider">UN Number</p>
                         <p className="text-cyan-400 text-sm font-bold mt-0.5">{formData.unNumber}</p>
                       </div>
                       <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/20">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">ERG Guide</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-wider">ERG Guide</p>
                         <p className="text-white text-sm font-bold mt-0.5">Guide {formData.ergGuide}</p>
                       </div>
                     </div>
@@ -1260,13 +1260,13 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                       </div>
                       {showUNSuggestions && ergUNSearch.data?.results?.length > 0 && (
                         <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
-                          <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50">ERG 2020 -- UN Number Matches</div>
+                          <div className="px-3 py-1.5 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50">ERG 2020 -- UN Number Matches</div>
                           {ergUNSearch.data.results.map((m: any, i: number) => (
                             <button key={`un-${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-[#334155] flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/20 last:border-0 transition-colors" onClick={() => selectMaterial(m)}>
                               <div className="flex-1 min-w-0"><p className="text-slate-900 dark:text-white text-sm font-medium truncate">{m.name}</p></div>
                               <div className="flex items-center gap-2 flex-shrink-0">
-                                <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
-                                <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
+                                <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
+                                <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
                               </div>
                             </button>
                           ))}
@@ -1339,7 +1339,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                       <div className="flex items-center gap-2">
                         <EsangIcon className="w-4 h-4 text-cyan-400" />
                         <span className="text-sm font-semibold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">SPECTRA-MATCH Verification</span>
-                        <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">Optional</Badge>
+                        <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">Optional</Badge>
                       </div>
                       <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform duration-200", showSpectraMatch && "rotate-180")} />
                     </button>
@@ -1391,7 +1391,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                           </div>
                         </div>
                         <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-700/20 border border-slate-200 dark:border-slate-700/30">
-                          <div className="flex items-center gap-2"><Info className="w-3.5 h-3.5 text-slate-500" /><span className="text-slate-500 text-[10px]">These parameters feed into SPECTRA-MATCH multi-parameter identification to cross-verify the declared product against physical properties.</span></div>
+                          <div className="flex items-center gap-2"><Info className="w-3.5 h-3.5 text-slate-500" /><span className="text-slate-500 text-xs">These parameters feed into SPECTRA-MATCH multi-parameter identification to cross-verify the declared product against physical properties.</span></div>
                         </div>
                       </div>
                     )}
@@ -1429,7 +1429,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                           className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg pl-10" />
                         {showProductDropdown && (
                           <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-[#0c0e18] border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl max-h-72 overflow-y-auto">
-                            <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50 sticky top-0 bg-white dark:bg-[#0c0e18]">
+                            <div className="px-3 py-1.5 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50 sticky top-0 bg-white dark:bg-[#0c0e18]">
                               {selectedTrailer?.name} -- {productList.length} products {productDropdownSearch ? `matching "${productDropdownSearch}"` : ""}
                             </div>
                             {productListQuery.isLoading ? (
@@ -1453,11 +1453,11 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                                 }}>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-slate-900 dark:text-white text-sm font-medium truncate">{p.name}</p>
-                                  {p.notes && <p className="text-slate-500 text-[10px] truncate">{p.notes}</p>}
+                                  {p.notes && <p className="text-slate-500 text-xs truncate">{p.notes}</p>}
                                 </div>
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  <Badge variant="outline" className="text-[10px] border-slate-500/30 text-slate-400">{p.category}</Badge>
-                                  {p.freightClass && <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">FC {p.freightClass}</Badge>}
+                                  <Badge variant="outline" className="text-xs border-slate-500/30 text-slate-400">{p.category}</Badge>
+                                  {p.freightClass && <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">FC {p.freightClass}</Badge>}
                                 </div>
                               </button>
                             ))}
@@ -1476,7 +1476,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                           <CheckCircle className="w-4 h-4 text-cyan-400 flex-shrink-0" />
                           <div>
                             <p className="text-cyan-400 text-sm font-medium">{formData.productName}</p>
-                            <p className="text-slate-500 text-[10px]">{formData.productCategory || ""}{formData.freightClass ? ` -- Freight Class ${formData.freightClass}` : ""}</p>
+                            <p className="text-slate-500 text-xs">{formData.productCategory || ""}{formData.freightClass ? ` -- Freight Class ${formData.freightClass}` : ""}</p>
                           </div>
                         </div>
                         <Button variant="ghost" size="sm" className="text-slate-500 hover:text-white h-6 px-2" onClick={() => { updateField("productName", ""); updateField("productId", ""); updateField("productCategory", ""); updateField("freightClass", ""); }}>
@@ -1750,7 +1750,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
               <div className="flex items-center gap-2 mb-2">
                 <EsangIcon className="w-5 h-5 text-cyan-400" />
                 <p className="text-slate-900 dark:text-white font-bold text-lg">SPECTRA-MATCH Parameters</p>
-                <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400 ml-auto">Product Verification</Badge>
+                <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400 ml-auto">Product Verification</Badge>
               </div>
               <p className="text-slate-400 text-sm">Enter physical properties so SPECTRA-MATCH can verify product identity. All fields are optional but improve verification accuracy.</p>
               <div className="grid grid-cols-2 gap-4">
@@ -1802,7 +1802,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <CheckCircle className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent flex-shrink-0" />
                   <div>
                     <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-sm font-bold">ERG Match: {formData.productName}</p>
-                    <p className="text-slate-400 text-[10px]">{formData.unNumber} -- Class {formData.hazmatClass} -- Guide {formData.ergGuide}</p>
+                    <p className="text-slate-400 text-xs">{formData.unNumber} -- Class {formData.hazmatClass} -- Guide {formData.ergGuide}</p>
                   </div>
                 </div>
               )}
@@ -1863,7 +1863,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <Calculator className="w-4 h-4 text-cyan-400 flex-shrink-0" />
                   <div>
                     <p className="text-cyan-400 text-xs font-medium">Weight auto-calculated</p>
-                    <p className="text-slate-400 text-[10px]">{Number(formData.quantity).toLocaleString()} {currentUnit} x {formData.weightSource} = {Number(formData.weight).toLocaleString()} lbs</p>
+                    <p className="text-slate-400 text-xs">{Number(formData.quantity).toLocaleString()} {currentUnit} x {formData.weightSource} = {Number(formData.weight).toLocaleString()} lbs</p>
                   </div>
                 </div>
               )}
@@ -1872,7 +1872,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
                   <div>
                     <p className="text-red-400 text-xs font-medium">Exceeds federal weight limit</p>
-                    <p className="text-slate-400 text-[10px]">Max legal GVWR: 80,000 lbs (cargo typically 44,000-48,000 lbs after tractor + trailer weight). Consider splitting across multiple trucks.</p>
+                    <p className="text-slate-400 text-xs">Max legal GVWR: 80,000 lbs (cargo typically 44,000-48,000 lbs after tractor + trailer weight). Consider splitting across multiple trucks.</p>
                   </div>
                 </div>
               )}
@@ -1889,7 +1889,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <Scale className="w-4 h-4 text-amber-400 flex-shrink-0" />
                   <div>
                     <p className="text-amber-400 text-xs font-medium">Heavy load — verify axle weights</p>
-                    <p className="text-slate-400 text-[10px]">{Number(formData.weight).toLocaleString()} lbs cargo + ~{isLiquidOrGas ? "32,000" : "35,000"} lbs tractor/trailer = ~{(Number(formData.weight) + (isLiquidOrGas ? 32000 : 35000)).toLocaleString()} lbs GVWR. Check state-specific bridge and axle limits.</p>
+                    <p className="text-slate-400 text-xs">{Number(formData.weight).toLocaleString()} lbs cargo + ~{isLiquidOrGas ? "32,000" : "35,000"} lbs tractor/trailer = ~{(Number(formData.weight) + (isLiquidOrGas ? 32000 : 35000)).toLocaleString()} lbs GVWR. Check state-specific bridge and axle limits.</p>
                   </div>
                 </div>
               )}
@@ -1924,7 +1924,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                       </button>
                     ))}
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-1">{(formData.compartments || 1) > 1 ? `Multi-compartment: ${formData.compartments} separate cargo sections` : "Single compartment tanker"}</p>
+                  <p className="text-xs text-slate-500 mt-1">{(formData.compartments || 1) > 1 ? `Multi-compartment: ${formData.compartments} separate cargo sections` : "Single compartment tanker"}</p>
                 </div>
               )}
 
@@ -1932,7 +1932,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
               {isTanker && (formData.compartments || 1) > 1 && (
                 <div className="space-y-3" ref={compSuggestRef}>
                   <label className="text-sm text-slate-400 block">Compartment Products & Volumes</label>
-                  <p className="text-[10px] text-slate-500">Assign a product and volume to each compartment. Type to search the ERG 2020 database — same auto-populate as the hazmat product field.</p>
+                  <p className="text-xs text-slate-500">Assign a product and volume to each compartment. Type to search the ERG 2020 database — same auto-populate as the hazmat product field.</p>
                   <div className="grid gap-2">
                     {Array.from({ length: formData.compartments || 1 }).map((_, i) => {
                       const cp = formData.compartmentProducts?.[i] || { product: "", volume: "" };
@@ -1962,7 +1962,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                             {/* ERG Suggestions Dropdown for this compartment */}
                             {showCompSuggestions && activeCompIdx === i && ergCompSearch.data?.results?.length > 0 && (
                               <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600/50 rounded-lg shadow-xl max-h-52 overflow-y-auto">
-                                <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50">ERG 2020 — Compartment {i + 1}</div>
+                                <div className="px-3 py-1.5 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700/50">ERG 2020 — Compartment {i + 1}</div>
                                 {ergCompSearch.data.results.map((m: any, mi: number) => (
                                   <button key={`comp-${i}-${m.unNumber}-${mi}`} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/20 last:border-0 transition-colors"
                                     onClick={() => {
@@ -1976,8 +1976,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                                       <p className="text-slate-900 dark:text-white text-xs font-medium truncate">{m.name}</p>
                                     </div>
                                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                                      <Badge variant="outline" className="text-[9px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
-                                      <Badge variant="outline" className="text-[9px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
+                                      <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
+                                      <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
                                     </div>
                                   </button>
                                 ))}
@@ -2113,30 +2113,30 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     <div className="flex items-center gap-2">
                       <Calculator className="w-4 h-4 text-[#1473FF]" />
                       <span className="text-white font-bold text-sm">Fleet Calculator</span>
-                      <Badge variant="outline" className="text-[10px] border-[#BE01FF]/30 text-[#BE01FF]">{fleet.totalLoads} load{fleet.totalLoads !== 1 ? "s" : ""}</Badge>
+                      <Badge variant="outline" className="text-xs border-[#BE01FF]/30 text-[#BE01FF]">{fleet.totalLoads} load{fleet.totalLoads !== 1 ? "s" : ""}</Badge>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <button onClick={() => { setUsePerTruckCapacity(false); }} className={cn("px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors", !usePerTruckCapacity ? "bg-[#1473FF] text-white" : "bg-slate-700/50 text-slate-400")}>Uniform</button>
-                      <button onClick={() => { setUsePerTruckCapacity(true); if (truckRoster.length === 0) addTruckToRoster(); }} className={cn("px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors", usePerTruckCapacity ? "bg-[#BE01FF] text-white" : "bg-slate-700/50 text-slate-400")}>Per Truck</button>
+                      <button onClick={() => { setUsePerTruckCapacity(false); }} className={cn("px-2.5 py-1 rounded-md text-xs font-semibold transition-colors", !usePerTruckCapacity ? "bg-[#1473FF] text-white" : "bg-slate-700/50 text-slate-400")}>Uniform</button>
+                      <button onClick={() => { setUsePerTruckCapacity(true); if (truckRoster.length === 0) addTruckToRoster(); }} className={cn("px-2.5 py-1 rounded-md text-xs font-semibold transition-colors", usePerTruckCapacity ? "bg-[#BE01FF] text-white" : "bg-slate-700/50 text-slate-400")}>Per Truck</button>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3 text-center mb-3">
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total Loads</p><p className="text-white text-lg font-bold">{fleet.totalLoads}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Trucks Needed</p><p className="text-[#1473FF] text-lg font-bold">{fleet.trucksNeeded}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Max Per Truck</p><p className="text-[#BE01FF] text-lg font-bold">{fleet.defaultMax.toLocaleString()} {fleet.unit?.toLowerCase().slice(0, 3)}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Total Loads</p><p className="text-white text-lg font-bold">{fleet.totalLoads}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Trucks Needed</p><p className="text-[#1473FF] text-lg font-bold">{fleet.trucksNeeded}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Max Per Truck</p><p className="text-[#BE01FF] text-lg font-bold">{fleet.defaultMax.toLocaleString()} {fleet.unit?.toLowerCase().slice(0, 3)}</p></div>
                   </div>
 
                   {/* Per-Truck Roster */}
                   {usePerTruckCapacity && (
                     <div className="space-y-2 mt-3 pt-3 border-t border-slate-700/30">
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wider">Variable Capacity Roster</p>
+                      <p className="text-xs text-slate-400 uppercase tracking-wider">Variable Capacity Roster</p>
                       {truckRoster.map((t, i) => (
                         <div key={t.id} className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/40">
-                          <span className="text-[10px] font-mono text-slate-500 w-5 text-center">{i + 1}</span>
+                          <span className="text-xs font-mono text-slate-500 w-5 text-center">{i + 1}</span>
                           <Input value={t.name} onChange={e => updateTruckInRoster(t.id, "name", e.target.value)} className="h-7 text-xs bg-slate-700/50 border-slate-600/50 rounded w-24" />
-                          <div className="flex items-center gap-1"><span className="text-[9px] text-slate-500">Max</span><Input type="number" value={t.capacity} onChange={e => updateTruckInRoster(t.id, "capacity", parseInt(e.target.value) || 0)} className="h-7 text-xs bg-slate-700/50 border-slate-600/50 rounded w-16" /></div>
-                          <div className="flex items-center gap-1"><span className="text-[9px] text-slate-500">Fill</span><Input type="number" value={t.fill} onChange={e => updateTruckInRoster(t.id, "fill", parseInt(e.target.value) || 0)} className="h-7 text-xs bg-slate-700/50 border-slate-600/50 rounded w-16" /></div>
-                          <Badge variant="outline" className={cn("text-[9px] border-0", t.fill > 0 && t.capacity > 0 ? "bg-green-500/15 text-green-400" : "bg-slate-500/15 text-slate-400")}>{t.capacity > 0 ? Math.round((t.fill / t.capacity) * 100) : 0}%</Badge>
+                          <div className="flex items-center gap-1"><span className="text-xs text-slate-500">Max</span><Input type="number" value={t.capacity} onChange={e => updateTruckInRoster(t.id, "capacity", parseInt(e.target.value) || 0)} className="h-7 text-xs bg-slate-700/50 border-slate-600/50 rounded w-16" /></div>
+                          <div className="flex items-center gap-1"><span className="text-xs text-slate-500">Fill</span><Input type="number" value={t.fill} onChange={e => updateTruckInRoster(t.id, "fill", parseInt(e.target.value) || 0)} className="h-7 text-xs bg-slate-700/50 border-slate-600/50 rounded w-16" /></div>
+                          <Badge variant="outline" className={cn("text-xs border-0", t.fill > 0 && t.capacity > 0 ? "bg-green-500/15 text-green-400" : "bg-slate-500/15 text-slate-400")}>{t.capacity > 0 ? Math.round((t.fill / t.capacity) * 100) : 0}%</Badge>
                           <button onClick={() => removeTruckFromRoster(t.id)} className="text-red-400/60 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       ))}
@@ -2155,13 +2155,13 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   {/* Per-truck load distribution */}
                   {fleet.hasRoster && fleet.truckBreakdown.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-slate-700/30 space-y-1">
-                      <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Load Distribution</p>
+                      <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Load Distribution</p>
                       {fleet.truckBreakdown.map((tb, i) => (
                         <div key={i} className="flex items-center justify-between px-2 py-1 rounded bg-slate-800/30 text-xs">
                           <span className="text-white font-medium">{tb.name}</span>
                           <div className="flex items-center gap-3">
                             <span className="text-slate-400">{tb.fill}/{tb.capacity}</span>
-                            <Badge variant="outline" className="text-[9px] border-[#1473FF]/30 text-[#1473FF]">{tb.loads} loads</Badge>
+                            <Badge variant="outline" className="text-xs border-[#1473FF]/30 text-[#1473FF]">{tb.loads} loads</Badge>
                             <span className="text-slate-300 font-mono">{tb.volume.toLocaleString()} {fleet.unit?.toLowerCase().slice(0, 3)}</span>
                           </div>
                         </div>
@@ -2182,7 +2182,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <div className="flex items-center gap-2 mb-3">
                     <Building2 className="w-4 h-4 text-[#1473FF]" />
                     <span className="text-slate-900 dark:text-white font-semibold text-sm">Select Origin Terminal</span>
-                    <Badge variant="outline" className="text-[10px] border-[#1473FF]/30 text-[#1473FF]">Supply Chain</Badge>
+                    <Badge variant="outline" className="text-xs border-[#1473FF]/30 text-[#1473FF]">Supply Chain</Badge>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {myTerminals.map((t: any) => (
@@ -2200,7 +2200,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                           <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-white text-xs font-semibold truncate">{t.terminalName || "Terminal"} {t.terminalCode ? `(${t.terminalCode})` : ""}</p>
-                            <p className="text-slate-500 text-[10px]">{t.city}, {t.state} · {t.terminalType || "Terminal"} · {t.rackAccessLevel} access</p>
+                            <p className="text-slate-500 text-xs">{t.city}, {t.state} · {t.terminalType || "Terminal"} · {t.rackAccessLevel} access</p>
                           </div>
                         </div>
                       </button>
@@ -2208,7 +2208,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   </div>
                   {formData.originTerminalId && (
                     <button onClick={() => setFormData((prev: any) => ({ ...prev, originTerminalId: undefined }))}
-                      className="mt-2 text-[10px] text-slate-500 hover:text-slate-300 transition-colors">
+                      className="mt-2 text-xs text-slate-500 hover:text-slate-300 transition-colors">
                       Clear terminal selection
                     </button>
                   )}
@@ -2237,7 +2237,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 }}
                   placeholder={mapsLoaded ? "Address or coordinates (lat, lng)..." : "Address or coordinates (e.g. 30.283, -97.776)"} className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                 {formData.originLat && formData.originLng && (
-                  <p className="text-[10px] text-slate-500 mt-1"><MapPin className="w-3 h-3 inline mr-0.5 text-blue-400" />{Number(formData.originLat).toFixed(6)}, {Number(formData.originLng).toFixed(6)}</p>
+                  <p className="text-xs text-slate-500 mt-1"><MapPin className="w-3 h-3 inline mr-0.5 text-blue-400" />{Number(formData.originLat).toFixed(6)}, {Number(formData.originLng).toFixed(6)}</p>
                 )}
               </div>
               <div>
@@ -2261,7 +2261,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 }}
                   placeholder={mapsLoaded ? "Address or coordinates (lat, lng)..." : "Address or coordinates (e.g. 30.283, -97.776)"} className="bg-slate-50 dark:bg-slate-700/50 border-slate-300 dark:border-slate-600/50 rounded-lg" />
                 {formData.destLat && formData.destLng && (
-                  <p className="text-[10px] text-slate-500 mt-1"><MapPin className="w-3 h-3 inline mr-0.5 text-red-400" />{Number(formData.destLat).toFixed(6)}, {Number(formData.destLng).toFixed(6)}</p>
+                  <p className="text-xs text-slate-500 mt-1"><MapPin className="w-3 h-3 inline mr-0.5 text-red-400" />{Number(formData.destLat).toFixed(6)}, {Number(formData.destLng).toFixed(6)}</p>
                 )}
               </div>
               {/* Route Map Preview */}
@@ -2293,7 +2293,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 <div><label className="text-sm text-slate-400 dark:text-slate-400 mb-1 block">Pickup Date</label><DatePicker value={formData.pickupDate || ""} onChange={(val) => updateField("pickupDate", val)} placeholder="Select pickup date" /></div>
                 <div><label className="text-sm text-slate-400 dark:text-slate-400 mb-1 block">Delivery Date</label><DatePicker value={formData.deliveryDate || ""} onChange={(val) => updateField("deliveryDate", val)} placeholder="Select delivery date" /></div>
               </div>
-              {!mapsLoaded && <div className="p-2 rounded-lg bg-slate-700/20 border border-slate-700/30"><p className="text-slate-500 text-[10px] flex items-center gap-1"><Info className="w-3 h-3" />Google Maps autocomplete &amp; route preview available when VITE_GOOGLE_MAPS_KEY is configured.</p></div>}
+              {!mapsLoaded && <div className="p-2 rounded-lg bg-slate-700/20 border border-slate-700/30"><p className="text-slate-500 text-xs flex items-center gap-1"><Info className="w-3 h-3" />Google Maps autocomplete &amp; route preview available when VITE_GOOGLE_MAPS_KEY is configured.</p></div>}
               {/* STATE_RULES compliance warnings */}
               {(() => {
                 const extractState = (addr: string) => { const m = addr?.match(/\b([A-Z]{2})\b/); return m ? m[1] : null; };
@@ -2367,7 +2367,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                         const currentValue = selectedCodes[idx] || "";
                         return (
                           <div key={idx} className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">{idx + 1}</div>
+                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{idx + 1}</div>
                             <Select value={currentValue} onValueChange={(val: string) => {
                               const arr = [...selectedCodes];
                               while (arr.length <= idx) arr.push("");
@@ -2398,7 +2398,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                               { code: "X", name: "Hazmat+Tank" }, { code: "P", name: "Passenger" }, { code: "S", name: "School Bus" },
                             ].find(x => x.code === code);
                             return e ? (
-                              <Badge key={code} variant="outline" className="text-[10px] border-[#1473FF]/30 text-[#1473FF] px-2 py-0.5">
+                              <Badge key={code} variant="outline" className="text-xs border-[#1473FF]/30 text-[#1473FF] px-2 py-0.5">
                                 {e.code} — {e.name}
                               </Badge>
                             ) : null;
@@ -2409,7 +2409,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   );
                 })()}
                 {endorsementCount === 0 && (
-                  <p className="text-[10px] text-slate-500">No endorsements required — select a count above to add CDL endorsement requirements.</p>
+                  <p className="text-xs text-slate-500">No endorsements required — select a count above to add CDL endorsement requirements.</p>
                 )}
               </div>
 
@@ -2426,7 +2426,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     <button key={opt.v} onClick={() => updateField("assignmentType", opt.v)}
                       className={cn("p-3 rounded-xl border text-left transition-all", formData.assignmentType === opt.v ? "border-[#1473FF] bg-[#1473FF]/10" : "border-slate-700 bg-slate-800/30 hover:border-slate-600")}>
                       <p className="text-white text-xs font-semibold">{opt.label}</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{opt.desc}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -2438,7 +2438,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <div className="flex items-center gap-2 mb-3">
                     <Truck className="w-4 h-4 text-orange-400" />
                     <span className="text-slate-900 dark:text-white font-semibold text-sm">Select Carrier / Catalyst</span>
-                    {!formData.assignedCatalystId && <Badge variant="outline" className="text-[10px] border-orange-500/30 text-orange-400">Required</Badge>}
+                    {!formData.assignedCatalystId && <Badge variant="outline" className="text-xs border-orange-500/30 text-orange-400">Required</Badge>}
                   </div>
                   {catalystPartners.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -2454,7 +2454,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                           </div>
                           <div className="min-w-0">
                             <p className="text-white text-xs font-semibold truncate">{p.companyName || "Unknown"}</p>
-                            <p className="text-[10px] text-slate-500">{[p.companyDot && `DOT ${p.companyDot}`, p.companyCity && `${p.companyCity}, ${p.companyState}`].filter(Boolean).join(" • ") || "Carrier"}</p>
+                            <p className="text-xs text-slate-500">{[p.companyDot && `DOT ${p.companyDot}`, p.companyCity && `${p.companyCity}, ${p.companyState}`].filter(Boolean).join(" • ") || "Carrier"}</p>
                           </div>
                           {formData.assignedCatalystId === p.partnerCompanyId && <CheckCircle className="w-4 h-4 text-orange-400 ml-auto shrink-0" />}
                         </button>
@@ -2475,7 +2475,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <div className="flex items-center gap-2 mb-3">
                     <Building2 className="w-4 h-4 text-cyan-400" />
                     <span className="text-slate-900 dark:text-white font-semibold text-sm">Select Broker</span>
-                    {!formData.assignedBrokerId && <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">Required</Badge>}
+                    {!formData.assignedBrokerId && <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">Required</Badge>}
                   </div>
                   {brokerPartners.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -2491,7 +2491,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                           </div>
                           <div className="min-w-0">
                             <p className="text-white text-xs font-semibold truncate">{p.companyName || "Unknown"}</p>
-                            <p className="text-[10px] text-slate-500">{[p.companyMc && `MC ${p.companyMc}`, p.companyCity && `${p.companyCity}, ${p.companyState}`].filter(Boolean).join(" • ") || "Broker"}</p>
+                            <p className="text-xs text-slate-500">{[p.companyMc && `MC ${p.companyMc}`, p.companyCity && `${p.companyCity}, ${p.companyState}`].filter(Boolean).join(" • ") || "Broker"}</p>
                           </div>
                           {formData.assignedBrokerId === p.partnerCompanyId && <CheckCircle className="w-4 h-4 text-cyan-400 ml-auto shrink-0" />}
                         </button>
@@ -2512,7 +2512,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <div className="flex items-center gap-2 mb-3">
                     <Users className="w-4 h-4 text-emerald-400" />
                     <span className="text-slate-900 dark:text-white font-semibold text-sm">Assign Driver</span>
-                    <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400">Optional — assign later</Badge>
+                    <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-400">Optional — assign later</Badge>
                   </div>
                   {myDrivers.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -2528,7 +2528,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                           </div>
                           <div className="min-w-0">
                             <p className="text-white text-xs font-semibold truncate">{d.name || "Driver"}</p>
-                            <p className="text-[10px] text-slate-500">{d.email || d.phone || "Active"}</p>
+                            <p className="text-xs text-slate-500">{d.email || d.phone || "Active"}</p>
                           </div>
                           {formData.assignedDriverId === d.id && <CheckCircle className="w-4 h-4 text-emerald-400 ml-auto shrink-0" />}
                         </button>
@@ -2539,7 +2539,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   ) : (
                     <div className="text-center py-4">
                       <p className="text-slate-400 text-xs">No active drivers found in your fleet.</p>
-                      <p className="text-slate-500 text-[10px] mt-1">You can assign a driver after the load is created.</p>
+                      <p className="text-slate-500 text-xs mt-1">You can assign a driver after the load is created.</p>
                     </div>
                   )}
                 </div>
@@ -2551,9 +2551,9 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <div className="flex items-center gap-2 mb-2">
                     <Link2 className="w-4 h-4 text-[#1473FF]" />
                     <span className="text-slate-900 dark:text-white font-semibold text-sm">Link to Agreement</span>
-                    <Badge variant="outline" className="text-[10px] border-[#1473FF]/30 text-[#1473FF]">Contract Integration</Badge>
+                    <Badge variant="outline" className="text-xs border-[#1473FF]/30 text-[#1473FF]">Contract Integration</Badge>
                   </div>
-                  <p className="text-slate-400 text-[10px] mb-2">Link this load to an existing agreement to auto-populate rate and payment terms.</p>
+                  <p className="text-slate-400 text-xs mb-2">Link this load to an existing agreement to auto-populate rate and payment terms.</p>
                   <Select value={linkedAgreementId} onValueChange={(v) => {
                     setLinkedAgreementId(v);
                     const ag = agreementsList.find((a: any) => String(a.id) === v);
@@ -2578,7 +2578,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                         <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-xs font-medium">Linked: #{ag.agreementNumber || ag.id}</p>
-                          <p className="text-slate-400 text-[10px]">Rate: ${ag.baseRate ? parseFloat(ag.baseRate).toLocaleString() : "N/A"} / {ag.rateType?.replace(/_/g, " ") || "per load"}</p>
+                          <p className="text-slate-400 text-xs">Rate: ${ag.baseRate ? parseFloat(ag.baseRate).toLocaleString() : "N/A"} / {ag.rateType?.replace(/_/g, " ") || "per load"}</p>
                         </div>
                       </div>
                     );
@@ -2674,29 +2674,29 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <div className="flex items-center gap-2 mb-3">
                     <Zap className="w-4 h-4 text-purple-400" />
                     <span className="text-xs font-bold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent uppercase tracking-wider">ML Rate Prediction</span>
-                    <span className="ml-auto text-[10px] text-slate-500">{mlRatePrediction.data.confidence}% confidence{mlRatePrediction.data.basedOnSamples > 0 ? ` / ${mlRatePrediction.data.basedOnSamples} samples` : ""}</span>
+                    <span className="ml-auto text-xs text-slate-500">{mlRatePrediction.data.confidence}% confidence{mlRatePrediction.data.basedOnSamples > 0 ? ` / ${mlRatePrediction.data.basedOnSamples} samples` : ""}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-3 mb-3">
                     <div className="text-center">
-                      <p className="text-[10px] text-slate-500 uppercase">Spot Rate</p>
+                      <p className="text-xs text-slate-500 uppercase">Spot Rate</p>
                       <p className="text-white text-lg font-bold">${mlRatePrediction.data.predictedSpotRate.toLocaleString()}</p>
-                      <p className="text-[10px] text-slate-500">${(mlRatePrediction.data.predictedSpotRate / formData.distance).toFixed(2)}/mi</p>
+                      <p className="text-xs text-slate-500">${(mlRatePrediction.data.predictedSpotRate / formData.distance).toFixed(2)}/mi</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[10px] text-slate-500 uppercase">Contract Rate</p>
+                      <p className="text-xs text-slate-500 uppercase">Contract Rate</p>
                       <p className="text-slate-300 text-lg font-bold">${mlRatePrediction.data.predictedContractRate.toLocaleString()}</p>
-                      <p className="text-[10px] text-slate-500">${(mlRatePrediction.data.predictedContractRate / formData.distance).toFixed(2)}/mi</p>
+                      <p className="text-xs text-slate-500">${(mlRatePrediction.data.predictedContractRate / formData.distance).toFixed(2)}/mi</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[10px] text-slate-500 uppercase">Market</p>
+                      <p className="text-xs text-slate-500 uppercase">Market</p>
                       <p className={`text-lg font-bold ${mlRatePrediction.data.marketCondition === "SELLER" ? "text-red-400" : mlRatePrediction.data.marketCondition === "BUYER" ? "text-green-400" : "text-yellow-400"}`}>{mlRatePrediction.data.marketCondition === "BUYER" ? "Buyer's" : mlRatePrediction.data.marketCondition === "SELLER" ? "Seller's" : "Balanced"}</p>
-                      <p className="text-[10px] text-slate-500">${mlRatePrediction.data.priceRange.low.toLocaleString()} - ${mlRatePrediction.data.priceRange.high.toLocaleString()}</p>
+                      <p className="text-xs text-slate-500">${mlRatePrediction.data.priceRange.low.toLocaleString()} - ${mlRatePrediction.data.priceRange.high.toLocaleString()}</p>
                     </div>
                   </div>
                   {mlRatePrediction.data.factors.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {mlRatePrediction.data.factors.map((f: any, i: number) => (
-                        <span key={i} className={`text-[10px] px-2 py-0.5 rounded-full border ${f.direction === "up" ? "border-red-500/30 text-red-400 bg-red-500/10" : f.direction === "down" ? "border-green-500/30 text-green-400 bg-green-500/10" : "border-slate-500/30 text-slate-400 bg-slate-500/10"}`}>
+                        <span key={i} className={`text-xs px-2 py-0.5 rounded-full border ${f.direction === "up" ? "border-red-500/30 text-red-400 bg-red-500/10" : f.direction === "down" ? "border-green-500/30 text-green-400 bg-green-500/10" : "border-slate-500/30 text-slate-400 bg-slate-500/10"}`}>
                           {f.name}: {f.direction === "up" ? "+" : f.direction === "down" ? "" : ""}{f.impact}%
                         </span>
                       ))}
@@ -2712,7 +2712,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                       Use Contract Rate
                     </button>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-2 italic">{mlRatePrediction.data.recommendation}</p>
+                  <p className="text-xs text-slate-500 mt-2 italic">{mlRatePrediction.data.recommendation}</p>
                 </div>
               )}
 
@@ -2722,7 +2722,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <div className="flex items-center gap-2 mb-3">
                     <Scale className="w-4 h-4 text-amber-400" />
                     <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">Schedule A Rate Sheet</span>
-                    <span className="ml-auto text-[10px] text-slate-500">{formData.distance} mi one-way</span>
+                    <span className="ml-auto text-xs text-slate-500">{formData.distance} mi one-way</span>
                   </div>
                   {(() => {
                     const sa = scheduleAQuery.data || scheduleANonBarrelQuery.data;
@@ -2732,24 +2732,24 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                       <>
                         <div className="grid grid-cols-4 gap-3 mb-3">
                           <div className="text-center">
-                            <p className="text-[10px] text-slate-500 uppercase">Rate/BBL</p>
+                            <p className="text-xs text-slate-500 uppercase">Rate/BBL</p>
                             <p className="text-white text-lg font-bold">${sa.ratePerBarrel?.toFixed(2)}</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-[10px] text-slate-500 uppercase">Base Amount</p>
+                            <p className="text-xs text-slate-500 uppercase">Base Amount</p>
                             <p className="text-amber-300 text-lg font-bold">${sa.baseAmount?.toFixed(2)}</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-[10px] text-slate-500 uppercase">FSC</p>
+                            <p className="text-xs text-slate-500 uppercase">FSC</p>
                             <p className="text-white text-lg font-bold">{sa.fsc > 0 ? `$${sa.fsc.toFixed(2)}` : "$0"}</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-[10px] text-slate-500 uppercase">Total</p>
+                            <p className="text-xs text-slate-500 uppercase">Total</p>
                             <p className="text-emerald-400 text-lg font-bold">${sa.totalAmount?.toFixed(2)}</p>
                           </div>
                         </div>
                         {sa.breakdown?.length > 0 && (
-                          <div className="text-[10px] text-slate-400 mb-3 space-y-0.5">
+                          <div className="text-xs text-slate-400 mb-3 space-y-0.5">
                             {sa.breakdown.map((b: string, i: number) => <p key={i}>{b}</p>)}
                           </div>
                         )}
@@ -2761,7 +2761,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                           className="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90 transition-opacity">
                           Use Schedule A Rate: ${sa.totalAmount?.toFixed(2)}
                         </button>
-                        <p className="text-[10px] text-slate-500 mt-2 italic">Based on Permian Crude Transport Schedule A rate tiers. {isBarrelLoad ? `${bbls} BBL` : "Est. 180 BBL"} at {formData.distance} miles.</p>
+                        <p className="text-xs text-slate-500 mt-2 italic">Based on Permian Crude Transport Schedule A rate tiers. {isBarrelLoad ? `${bbls} BBL` : "Est. 180 BBL"} at {formData.distance} miles.</p>
                       </>
                     );
                   })()}
@@ -2818,7 +2818,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                       <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${a.severity === "CRITICAL" ? "text-red-400" : a.severity === "WARNING" ? "text-amber-400" : "text-blue-400"}`} />
                       <div>
                         <p className={`text-xs font-semibold ${a.severity === "CRITICAL" ? "text-red-300" : a.severity === "WARNING" ? "text-amber-300" : "text-blue-300"}`}>{a.message}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">{a.suggestedAction}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{a.suggestedAction}</p>
                       </div>
                     </div>
                   ))}
@@ -2834,10 +2834,10 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     <p className="text-white text-sm font-semibold">{mlETA.data.estimatedDays} days ({mlETA.data.estimatedHours}h)</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-slate-500">Range</p>
+                    <p className="text-xs text-slate-500">Range</p>
                     <p className="text-xs text-slate-400">{Math.round(mlETA.data.range.bestCase)}h - {Math.round(mlETA.data.range.worstCase)}h</p>
                   </div>
-                  <div className={`px-2 py-1 rounded text-[10px] font-bold ${mlETA.data.riskLevel === "HIGH" ? "bg-red-500/20 text-red-400" : mlETA.data.riskLevel === "MODERATE" ? "bg-amber-500/20 text-amber-400" : "bg-green-500/20 text-green-400"}`}>
+                  <div className={`px-2 py-1 rounded text-xs font-bold ${mlETA.data.riskLevel === "HIGH" ? "bg-red-500/20 text-red-400" : mlETA.data.riskLevel === "MODERATE" ? "bg-amber-500/20 text-amber-400" : "bg-green-500/20 text-green-400"}`}>
                     {mlETA.data.riskLevel}
                   </div>
                 </div>
@@ -2888,8 +2888,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     <div className="flex items-center gap-2 mb-4">
                       <EsangIcon className="w-4 h-4 text-purple-500 dark:text-purple-400" />
                       <span className="text-sm font-bold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent">ESANG AI Rate Intelligence</span>
-                      {hzRate > 0 && <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-[8px] px-1.5 py-0 ml-auto">HOT ZONES</Badge>}
-                      {hz?.ml && <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0 text-[8px] px-1.5 py-0">ML ENGINE</Badge>}
+                      {hzRate > 0 && <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-xs px-1.5 py-0 ml-auto">HOT ZONES</Badge>}
+                      {hz?.ml && <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0 text-xs px-1.5 py-0">ML ENGINE</Badge>}
                     </div>
 
                     <div className="flex flex-col items-center">
@@ -2927,17 +2927,17 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     {intel && (intel.originZone || intel.destZone || intel.originSurge > 1.05) && (
                       <div className="flex flex-wrap gap-1.5 mt-3 justify-center">
                         {intel.originZone && (
-                          <span className={cn("text-[10px] px-2 py-0.5 rounded-full bg-slate-800/50 border border-slate-700/30", demandColor(intel.originDemand))}>
+                          <span className={cn("text-xs px-2 py-0.5 rounded-full bg-slate-800/50 border border-slate-700/30", demandColor(intel.originDemand))}>
                             {intel.originZone}: {intel.originDemand.replace("_", " ")}
                           </span>
                         )}
                         {intel.destZone && (
-                          <span className={cn("text-[10px] px-2 py-0.5 rounded-full bg-slate-800/50 border border-slate-700/30", demandColor(intel.destDemand))}>
+                          <span className={cn("text-xs px-2 py-0.5 rounded-full bg-slate-800/50 border border-slate-700/30", demandColor(intel.destDemand))}>
                             {intel.destZone}: {intel.destDemand.replace("_", " ")}
                           </span>
                         )}
                         {(intel.originSurge > 1.05 || intel.destSurge > 1.05) && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">
                             Surge +{Math.round(((intel.originSurge + intel.destSurge) / 2 - 1) * 100)}%
                           </span>
                         )}
@@ -2945,15 +2945,15 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     )}
 
                     <div className="flex justify-between mt-4 px-2">
-                      <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
+                      <button className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
                         ratio < 0.80 ? "border-red-300 dark:border-red-500/50 bg-red-50 dark:bg-red-500/15 text-red-500 dark:text-red-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
                         Too Low
                       </button>
-                      <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
+                      <button className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
                         ratio >= 0.90 && ratio <= 1.15 ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-purple-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
                         Good Offer
                       </button>
-                      <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
+                      <button className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
                         ratio > 1.25 ? "border-red-300 dark:border-red-500/50 bg-red-50 dark:bg-red-500/15 text-red-500 dark:text-red-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
                         Too High
                       </button>
@@ -2962,26 +2962,26 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     <div className="mt-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/30">
                       <div className="flex items-center gap-2 mb-2">
                         <EsangIcon className="w-3 h-3 text-purple-500 dark:text-purple-400" />
-                        <span className="text-[11px] font-bold text-purple-600 dark:text-purple-300">ESANG Recommendation</span>
-                        {hz?.pricing?.fuelPricePerGal && <span className="text-[9px] text-slate-500 ml-auto">Diesel: ${hz.pricing.fuelPricePerGal}/gal</span>}
+                        <span className="text-xs font-bold text-purple-600 dark:text-purple-300">ESANG Recommendation</span>
+                        {hz?.pricing?.fuelPricePerGal && <span className="text-xs text-slate-500 ml-auto">Diesel: ${hz.pricing.fuelPricePerGal}/gal</span>}
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-center">
-                        <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market Low</p><p className="text-slate-700 dark:text-slate-300 text-xs font-bold">${marketLow}/mi</p></div>
-                        <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market Avg</p><p className="text-emerald-600 dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xs font-bold">${Math.round(marketRPM * 100) / 100}/mi</p></div>
-                        <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market High</p><p className="text-slate-700 dark:text-slate-300 text-xs font-bold">${marketHigh}/mi</p></div>
+                        <div><p className="text-xs text-slate-400 dark:text-slate-500">Market Low</p><p className="text-slate-700 dark:text-slate-300 text-xs font-bold">${marketLow}/mi</p></div>
+                        <div><p className="text-xs text-slate-400 dark:text-slate-500">Market Avg</p><p className="text-emerald-600 dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xs font-bold">${Math.round(marketRPM * 100) / 100}/mi</p></div>
+                        <div><p className="text-xs text-slate-400 dark:text-slate-500">Market High</p><p className="text-slate-700 dark:text-slate-300 text-xs font-bold">${marketHigh}/mi</p></div>
                       </div>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center">Suggested total: <span className="text-purple-600 dark:text-purple-300 font-bold">${marketTotal.toLocaleString()}</span> for {formData.distance} mi</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-2 text-center">Suggested total: <span className="text-purple-600 dark:text-purple-300 font-bold">${marketTotal.toLocaleString()}</span> for {formData.distance} mi</p>
                       {intel?.laneAvgRate && (
-                        <p className="text-[10px] text-cyan-400 mt-1 text-center">Lane history: ${intel.laneAvgRate}/mi {intel.laneOnTimePercent ? `(${intel.laneOnTimePercent}% on-time)` : ""}</p>
+                        <p className="text-xs text-cyan-400 mt-1 text-center">Lane history: ${intel.laneAvgRate}/mi {intel.laneOnTimePercent ? `(${intel.laneOnTimePercent}% on-time)` : ""}</p>
                       )}
                       {hz?.ml && (
                         <div className="mt-2 pt-2 border-t border-dashed border-slate-200 dark:border-slate-700/30">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-purple-400 font-semibold">ML Spot: ${hz.ml.spotRate?.toLocaleString()}</span>
-                            <span className="text-[10px] text-slate-400">{hz.ml.confidence}% conf</span>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${hz.ml.marketCondition === "SELLER" ? "bg-red-500/15 text-red-400" : hz.ml.marketCondition === "BUYER" ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"}`}>{hz.ml.marketCondition === "BUYER" ? "Buyer's" : hz.ml.marketCondition === "SELLER" ? "Seller's" : "Balanced"}</span>
+                            <span className="text-xs text-purple-400 font-semibold">ML Spot: ${hz.ml.spotRate?.toLocaleString()}</span>
+                            <span className="text-xs text-slate-400">{hz.ml.confidence}% conf</span>
+                            <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${hz.ml.marketCondition === "SELLER" ? "bg-red-500/15 text-red-400" : hz.ml.marketCondition === "BUYER" ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"}`}>{hz.ml.marketCondition === "BUYER" ? "Buyer's" : hz.ml.marketCondition === "SELLER" ? "Seller's" : "Balanced"}</span>
                           </div>
-                          {hz.ml.eta && <p className="text-[10px] text-slate-400 mt-0.5 text-center">ML Transit: {hz.ml.eta.days}d ({hz.ml.eta.hours}h) / {hz.ml.eta.riskLevel} risk</p>}
+                          {hz.ml.eta && <p className="text-xs text-slate-400 mt-0.5 text-center">ML Transit: {hz.ml.eta.days}d ({hz.ml.eta.hours}h) / {hz.ml.eta.riskLevel} risk</p>}
                         </div>
                       )}
                     </div>
@@ -2990,7 +2990,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     {intel?.weatherAlerts?.length > 0 && (
                       <div className="mt-3 p-2 rounded-lg bg-amber-500/5 border border-amber-500/15">
                         {intel.weatherAlerts.map((a: string, i: number) => (
-                          <p key={i} className="text-[10px] text-amber-400 leading-tight">{a}</p>
+                          <p key={i} className="text-xs text-amber-400 leading-tight">{a}</p>
                         ))}
                       </div>
                     )}
@@ -3004,13 +3004,13 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <div className="flex items-center gap-2 mb-3">
                     <Scale className="w-4 h-4 text-[#BE01FF]" />
                     <span className="text-white font-bold text-sm">Multi-Load Job Cost</span>
-                    <Badge variant="outline" className="text-[10px] border-[#BE01FF]/30 text-[#BE01FF]">{fleet.totalLoads} loads</Badge>
+                    <Badge variant="outline" className="text-xs border-[#BE01FF]/30 text-[#BE01FF]">{fleet.totalLoads} loads</Badge>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Rate / Load</p><p className="text-white text-sm font-bold">${Number(formData.rate).toLocaleString()}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Catalyst Payout</p><p className="text-white text-sm font-bold">${fleet.totalJobCost.toLocaleString()}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Platform Fee (8%)</p><p className="text-[#BE01FF] text-sm font-bold">${fleet.platformFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-sm font-bold">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Rate / Load</p><p className="text-white text-sm font-bold">${Number(formData.rate).toLocaleString()}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Catalyst Payout</p><p className="text-white text-sm font-bold">${fleet.totalJobCost.toLocaleString()}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Platform Fee (8%)</p><p className="text-[#BE01FF] text-sm font-bold">${fleet.platformFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-xs text-slate-500">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-sm font-bold">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
                   </div>
                 </div>
               )}
@@ -3061,18 +3061,18 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <div className="flex items-center gap-2 mb-3">
                     <CheckCircle className="w-5 h-5 text-emerald-400" />
                     <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-sm">SPECTRA-MATCH Verified</span>
-                    <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400 ml-auto">ERG 2020</Badge>
+                    <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400 ml-auto">ERG 2020</Badge>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Product</p><p className="text-white text-sm font-semibold truncate mt-0.5">{formData.productName}</p></div>
-                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-[10px] text-slate-500 uppercase tracking-wider">UN Number</p><p className="text-cyan-400 text-sm font-bold mt-0.5">{formData.unNumber}</p></div>
-                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Hazmat Class</p><p className="text-purple-400 text-sm font-semibold mt-0.5">{formData.hazmatClass} - {formData.placardName}</p></div>
-                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-[10px] text-slate-500 uppercase tracking-wider">ERG Guide</p><p className="text-white text-sm font-semibold mt-0.5">Guide {formData.ergGuide}</p></div>
+                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-xs text-slate-500 uppercase tracking-wider">Product</p><p className="text-white text-sm font-semibold truncate mt-0.5">{formData.productName}</p></div>
+                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-xs text-slate-500 uppercase tracking-wider">UN Number</p><p className="text-cyan-400 text-sm font-bold mt-0.5">{formData.unNumber}</p></div>
+                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-xs text-slate-500 uppercase tracking-wider">Hazmat Class</p><p className="text-purple-400 text-sm font-semibold mt-0.5">{formData.hazmatClass} - {formData.placardName}</p></div>
+                    <div className="p-2.5 rounded-xl bg-slate-900/50 border border-slate-700/30"><p className="text-xs text-slate-500 uppercase tracking-wider">ERG Guide</p><p className="text-white text-sm font-semibold mt-0.5">Guide {formData.ergGuide}</p></div>
                   </div>
                   {(formData.isTIH || formData.isWR) && (
                     <div className="flex gap-2 mt-3">
-                      {formData.isTIH && <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/15 border border-red-500/25"><AlertTriangle className="w-3 h-3 text-red-400" /><span className="text-red-400 text-[10px] font-bold">TOXIC INHALATION HAZARD</span></div>}
-                      {formData.isWR && <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-500/15 border border-blue-500/25"><AlertTriangle className="w-3 h-3 text-blue-400" /><span className="text-blue-400 text-[10px] font-bold">WATER-REACTIVE</span></div>}
+                      {formData.isTIH && <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/15 border border-red-500/25"><AlertTriangle className="w-3 h-3 text-red-400" /><span className="text-red-400 text-xs font-bold">TOXIC INHALATION HAZARD</span></div>}
+                      {formData.isWR && <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-500/15 border border-blue-500/25"><AlertTriangle className="w-3 h-3 text-blue-400" /><span className="text-blue-400 text-xs font-bold">WATER-REACTIVE</span></div>}
                     </div>
                   )}
                 </div>
@@ -3086,14 +3086,14 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 </div>
                 <div className="p-5">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4">
-                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Trailer</p><p className="text-white text-sm font-semibold">{selectedTrailer?.name}</p></div>
-                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Product</p><p className="text-white text-sm font-semibold">{formData.productName}</p></div>
-                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Volume</p><p className="text-white text-sm font-semibold">{formData.quantity} {formData.quantityUnit || (isLiquidOrGas ? "Gallons" : "Pallets")}</p></div>
-                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Weight</p><p className="text-white text-sm font-semibold">{formData.weight} {formData.weightUnit || "lbs"}</p></div>
-                    {isTanker && <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Compartments</p><p className="text-white text-sm font-semibold">{formData.compartments || 1}</p></div>}
-                    {formData.hazmatClass && !formData.spectraVerified && <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Hazmat Class</p><p className="text-orange-400 text-sm font-semibold">{HAZMAT_CLASSES.find(c => c.id === formData.hazmatClass)?.name || formData.hazmatClass}</p></div>}
-                    {formData.unNumber && !formData.spectraVerified && <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">UN Number</p><p className="text-cyan-400 text-sm font-semibold">{formData.unNumber}</p></div>}
-                    {formData.ergGuide && !formData.spectraVerified && <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">ERG Guide</p><p className="text-white text-sm font-semibold">Guide {formData.ergGuide}</p></div>}
+                    <div><p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Trailer</p><p className="text-white text-sm font-semibold">{selectedTrailer?.name}</p></div>
+                    <div><p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Product</p><p className="text-white text-sm font-semibold">{formData.productName}</p></div>
+                    <div><p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Volume</p><p className="text-white text-sm font-semibold">{formData.quantity} {formData.quantityUnit || (isLiquidOrGas ? "Gallons" : "Pallets")}</p></div>
+                    <div><p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Weight</p><p className="text-white text-sm font-semibold">{formData.weight} {formData.weightUnit || "lbs"}</p></div>
+                    {isTanker && <div><p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Compartments</p><p className="text-white text-sm font-semibold">{formData.compartments || 1}</p></div>}
+                    {formData.hazmatClass && !formData.spectraVerified && <div><p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Hazmat Class</p><p className="text-orange-400 text-sm font-semibold">{HAZMAT_CLASSES.find(c => c.id === formData.hazmatClass)?.name || formData.hazmatClass}</p></div>}
+                    {formData.unNumber && !formData.spectraVerified && <div><p className="text-xs text-slate-500 uppercase tracking-wider mb-1">UN Number</p><p className="text-cyan-400 text-sm font-semibold">{formData.unNumber}</p></div>}
+                    {formData.ergGuide && !formData.spectraVerified && <div><p className="text-xs text-slate-500 uppercase tracking-wider mb-1">ERG Guide</p><p className="text-white text-sm font-semibold">Guide {formData.ergGuide}</p></div>}
                   </div>
                 </div>
               </div>
@@ -3103,23 +3103,23 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 <div className="px-5 py-3 bg-slate-800/80 border-b border-slate-700/40 flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-emerald-400" />
                   <span className="text-sm font-semibold text-white">Route</span>
-                  {formData.distance && <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400 ml-auto">{formData.distance} miles</Badge>}
+                  {formData.distance && <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400 ml-auto">{formData.distance} miles</Badge>}
                 </div>
                 <div className="p-5">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /><p className="text-[10px] text-slate-500 uppercase tracking-wider">Origin</p></div>
+                      <div className="flex items-center gap-2 mb-1"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /><p className="text-xs text-slate-500 uppercase tracking-wider">Origin</p></div>
                       <p className="text-white text-sm font-semibold pl-[18px]">{formData.origin}</p>
                     </div>
                     <ArrowRight className="w-5 h-5 text-slate-600 flex-shrink-0" />
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1"><div className="w-2.5 h-2.5 rounded-full bg-red-500" /><p className="text-[10px] text-slate-500 uppercase tracking-wider">Destination</p></div>
+                      <div className="flex items-center gap-2 mb-1"><div className="w-2.5 h-2.5 rounded-full bg-red-500" /><p className="text-xs text-slate-500 uppercase tracking-wider">Destination</p></div>
                       <p className="text-white text-sm font-semibold pl-[18px]">{formData.destination}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Pickup</p><p className="text-white text-sm font-semibold">{formData.pickupDate || "Flexible"}</p></div>
-                    <div><p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Delivery</p><p className="text-white text-sm font-semibold">{formData.deliveryDate || "Flexible"}</p></div>
+                    <div><p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Pickup</p><p className="text-white text-sm font-semibold">{formData.pickupDate || "Flexible"}</p></div>
+                    <div><p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Delivery</p><p className="text-white text-sm font-semibold">{formData.deliveryDate || "Flexible"}</p></div>
                   </div>
                   {/* Route Map Preview */}
                   {formData.originLat && formData.destLat && (
@@ -3170,18 +3170,18 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                 <div className="p-5">
                   <div className="flex items-center gap-6">
                     <div>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Total Rate</p>
+                      <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total Rate</p>
                       <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${Number(formData.rate || 0).toLocaleString()}</p>
                     </div>
                     {formData.distance && formData.rate && (
                       <div>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Rate / Mile</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Rate / Mile</p>
                         <p className="text-2xl font-bold text-white">${(Number(formData.rate) / formData.distance).toFixed(2)}<span className="text-sm text-slate-400 font-normal">/mi</span></p>
                       </div>
                     )}
                     {formData.distance && (
                       <div>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Distance</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Distance</p>
                         <p className="text-2xl font-bold text-white">{formData.distance}<span className="text-sm text-slate-400 font-normal"> mi</span></p>
                       </div>
                     )}
@@ -3195,14 +3195,14 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <div className="px-5 py-3 bg-slate-800/60 border-b border-[#1473FF]/20 flex items-center gap-2">
                     <Calculator className="w-4 h-4 text-[#1473FF]" />
                     <span className="text-sm font-semibold text-white">Fleet Summary</span>
-                    <Badge variant="outline" className="text-[10px] border-[#BE01FF]/30 text-[#BE01FF] ml-auto">{fleet.totalLoads} loads</Badge>
+                    <Badge variant="outline" className="text-xs border-[#BE01FF]/30 text-[#BE01FF] ml-auto">{fleet.totalLoads} loads</Badge>
                   </div>
                   <div className="p-5">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Total Loads</p><p className="text-[#1473FF] text-xl font-bold mt-1">{fleet.totalLoads}</p></div>
-                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Trucks</p><p className="text-[#BE01FF] text-xl font-bold mt-1">{fleet.trucksNeeded}</p></div>
-                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Catalyst Payout</p><p className="text-white text-xl font-bold mt-1">${fleet.totalJobCost.toLocaleString()}</p></div>
-                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xl font-bold mt-1">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">Total Loads</p><p className="text-[#1473FF] text-xl font-bold mt-1">{fleet.totalLoads}</p></div>
+                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">Trucks</p><p className="text-[#BE01FF] text-xl font-bold mt-1">{fleet.trucksNeeded}</p></div>
+                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">Catalyst Payout</p><p className="text-white text-xl font-bold mt-1">${fleet.totalJobCost.toLocaleString()}</p></div>
+                      <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xl font-bold mt-1">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
                     </div>
                     {fleet.hasRoster && fleet.truckBreakdown.length > 0 && (
                       <div className="mt-4 pt-3 border-t border-slate-700/30 space-y-1.5">
@@ -3211,7 +3211,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                             <span className="text-white font-medium">{tb.name}</span>
                             <div className="flex items-center gap-3">
                               <span className="text-slate-400">{tb.fill}/{tb.capacity}</span>
-                              <Badge variant="outline" className="text-[9px] border-[#1473FF]/30 text-[#1473FF]">{tb.loads} loads</Badge>
+                              <Badge variant="outline" className="text-xs border-[#1473FF]/30 text-[#1473FF]">{tb.loads} loads</Badge>
                             </div>
                           </div>
                         ))}
@@ -3238,7 +3238,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                   <div className="px-5 py-3 bg-slate-800/60 border-b border-blue-500/15 flex items-center gap-2">
                     <Droplets className="w-4 h-4 text-blue-400" />
                     <span className="text-sm font-semibold text-white">Compartment Breakdown</span>
-                    <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400 ml-auto">{formData.compartments} comp.</Badge>
+                    <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400 ml-auto">{formData.compartments} comp.</Badge>
                   </div>
                   <div className="p-5 space-y-2">
                     {(formData.compartmentProducts as any[]).map((cp: any, i: number) => (
@@ -3246,11 +3246,11 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                         <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{i + 1}</div>
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-sm font-medium truncate">{cp.product || "Not specified"}</p>
-                          {cp.unNumber && <p className="text-slate-400 text-[10px]">{cp.unNumber} — Class {cp.hazardClass} — Guide {cp.guide}</p>}
+                          {cp.unNumber && <p className="text-slate-400 text-xs">{cp.unNumber} — Class {cp.hazardClass} — Guide {cp.guide}</p>}
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-cyan-400 text-sm font-bold">{cp.volume || "—"}</p>
-                          <p className="text-slate-500 text-[10px]">{currentUnit === "Gallons" ? "gal" : currentUnit === "Barrels" ? "bbl" : currentUnit.toLowerCase().slice(0, 3)}</p>
+                          <p className="text-slate-500 text-xs">{currentUnit === "Gallons" ? "gal" : currentUnit === "Barrels" ? "bbl" : currentUnit.toLowerCase().slice(0, 3)}</p>
                         </div>
                       </div>
                     ))}
@@ -3275,14 +3275,14 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     <span className="text-sm font-semibold text-white">SPECTRA-MATCH Parameters</span>
                   </div>
                   <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {formData.apiGravity && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">API Gravity</p><p className="text-white text-sm font-semibold mt-0.5">{formData.apiGravity}</p></div>}
-                    {formData.bsw && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">BS&W</p><p className="text-white text-sm font-semibold mt-0.5">{formData.bsw}%</p></div>}
-                    {formData.sulfurContent && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Sulfur</p><p className="text-white text-sm font-semibold mt-0.5">{formData.sulfurContent}%</p></div>}
-                    {formData.flashPoint && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Flash Point</p><p className="text-white text-sm font-semibold mt-0.5">{formData.flashPoint}F</p></div>}
-                    {formData.viscosity && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Viscosity</p><p className="text-white text-sm font-semibold mt-0.5">{formData.viscosity} cSt</p></div>}
-                    {formData.pourPoint && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Pour Point</p><p className="text-white text-sm font-semibold mt-0.5">{formData.pourPoint}F</p></div>}
-                    {formData.reidVaporPressure && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">RVP</p><p className="text-white text-sm font-semibold mt-0.5">{formData.reidVaporPressure} psi</p></div>}
-                    {formData.appearance && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-[10px] text-slate-500 uppercase tracking-wider">Appearance</p><p className="text-white text-sm font-semibold mt-0.5">{formData.appearance}</p></div>}
+                    {formData.apiGravity && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">API Gravity</p><p className="text-white text-sm font-semibold mt-0.5">{formData.apiGravity}</p></div>}
+                    {formData.bsw && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">BS&W</p><p className="text-white text-sm font-semibold mt-0.5">{formData.bsw}%</p></div>}
+                    {formData.sulfurContent && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">Sulfur</p><p className="text-white text-sm font-semibold mt-0.5">{formData.sulfurContent}%</p></div>}
+                    {formData.flashPoint && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">Flash Point</p><p className="text-white text-sm font-semibold mt-0.5">{formData.flashPoint}F</p></div>}
+                    {formData.viscosity && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">Viscosity</p><p className="text-white text-sm font-semibold mt-0.5">{formData.viscosity} cSt</p></div>}
+                    {formData.pourPoint && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">Pour Point</p><p className="text-white text-sm font-semibold mt-0.5">{formData.pourPoint}F</p></div>}
+                    {formData.reidVaporPressure && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">RVP</p><p className="text-white text-sm font-semibold mt-0.5">{formData.reidVaporPressure} psi</p></div>}
+                    {formData.appearance && <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/20"><p className="text-xs text-slate-500 uppercase tracking-wider">Appearance</p><p className="text-white text-sm font-semibold mt-0.5">{formData.appearance}</p></div>}
                   </div>
                 </div>
               )}

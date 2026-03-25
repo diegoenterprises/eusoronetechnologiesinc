@@ -125,13 +125,13 @@ function ComplianceRow({ item }: { item: ComplianceItem }) {
         <Icon className={`w-4 h-4 shrink-0 ${badge.color}`} />
         <div className="min-w-0">
           <p className="text-xs text-gray-200 font-medium truncate">{item.label}</p>
-          <p className="text-[10px] text-gray-500">{item.desc}</p>
+          <p className="text-xs text-gray-500">{item.desc}</p>
         </div>
       </div>
       <div className="shrink-0 ml-3 text-right">
-        <span className={`text-[10px] font-semibold ${badge.color}`}>{item.detail}</span>
+        <span className={`text-xs font-semibold ${badge.color}`}>{item.detail}</span>
         {item.source === "fmcsa" && (
-          <p className="text-[8px] text-gray-600 mt-0.5">FMCSA Record</p>
+          <p className="text-xs text-gray-600 mt-0.5">FMCSA Record</p>
         )}
       </div>
     </div>
@@ -361,7 +361,7 @@ function CarrierComplianceIntel({ dotNumber, snapshot }: { dotNumber: string; sn
           <Shield className="w-5 h-5 text-blue-400" />
           <h3 className="text-sm font-bold text-gray-100">Carrier Compliance File</h3>
         </div>
-        <div className="flex gap-2 text-[10px]">
+        <div className="flex gap-2 text-xs">
           {verifiedCount > 0 && (
             <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-medium">{verifiedCount} verified</span>
           )}
@@ -376,7 +376,7 @@ function CarrierComplianceIntel({ dotNumber, snapshot }: { dotNumber: string; sn
           )}
         </div>
       </div>
-      <p className="text-[10px] text-gray-500 mb-4">
+      <p className="text-xs text-gray-500 mb-4">
         {isCarrierSelf
           ? "Upload required documents below to improve your compliance score and unlock more loads."
           : "Real-time compliance intelligence for this carrier. FMCSA items update automatically. Platform documents update when the carrier submits them."
@@ -387,7 +387,7 @@ function CarrierComplianceIntel({ dotNumber, snapshot }: { dotNumber: string; sn
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
           <Database className="w-3.5 h-3.5 text-blue-400" />
-          <p className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">FMCSA Record — Auto-Verified</p>
+          <p className="text-xs text-blue-400 font-semibold uppercase tracking-wider">FMCSA Record — Auto-Verified</p>
         </div>
         <div className="space-y-1.5">
           {fmcsaItems.map((item, i) => (
@@ -400,9 +400,9 @@ function CarrierComplianceIntel({ dotNumber, snapshot }: { dotNumber: string; sn
       <div className="mb-4 pt-3 border-t border-white/5">
         <div className="flex items-center gap-2 mb-2">
           <FileText className="w-3.5 h-3.5 text-purple-400" />
-          <p className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">Platform Compliance Documents</p>
+          <p className="text-xs text-purple-400 font-semibold uppercase tracking-wider">Platform Compliance Documents</p>
         </div>
-        <p className="text-[9px] text-gray-600 mb-2">
+        <p className="text-xs text-gray-600 mb-2">
           {isCarrierSelf
             ? "Upload these documents to complete your compliance file and access more loads."
             : "Documents the carrier must submit to the platform. Status updates automatically upon carrier upload."
@@ -420,10 +420,10 @@ function CarrierComplianceIntel({ dotNumber, snapshot }: { dotNumber: string; sn
                     <Icon className={`w-4 h-4 shrink-0 ${badge.color}`} />
                     <div className="min-w-0">
                       <p className="text-xs text-gray-200 font-medium truncate">{item.label}</p>
-                      <p className="text-[10px] text-gray-500">{item.desc}</p>
+                      <p className="text-xs text-gray-500">{item.desc}</p>
                     </div>
                   </div>
-                  <label className="shrink-0 ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 text-[10px] font-medium cursor-pointer hover:bg-purple-500/30 transition-colors">
+                  <label className="shrink-0 ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded bg-purple-500/20 text-purple-300 text-xs font-medium cursor-pointer hover:bg-purple-500/30 transition-colors">
                     Upload
                     <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileSelect("OTHER", e)} />
                   </label>
@@ -441,14 +441,14 @@ function CarrierComplianceIntel({ dotNumber, snapshot }: { dotNumber: string; sn
         <div className="pt-3 border-t border-white/5">
           <div className="flex items-center gap-2 mb-2">
             <Fuel className="w-3.5 h-3.5 text-amber-400" />
-            <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">HazMat Endorsements Required</p>
+            <p className="text-xs text-amber-400 font-semibold uppercase tracking-wider">HazMat Endorsements Required</p>
             {hazmatDocs?.allVerified && (
-              <span className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-medium">
+              <span className="ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-medium">
                 <CheckCircle className="w-2.5 h-2.5" /> All Verified
               </span>
             )}
           </div>
-          <p className="text-[9px] text-gray-600 mb-2">
+          <p className="text-xs text-gray-600 mb-2">
             {isCarrierSelf
               ? "Upload hazmat endorsement documents for AI-powered verification to access hazmat loads."
               : "Federal hazmat compliance documents. Required before this carrier can transport hazardous materials on the platform."
@@ -467,10 +467,10 @@ function CarrierComplianceIntel({ dotNumber, snapshot }: { dotNumber: string; sn
                       <Icon className={`w-4 h-4 shrink-0 ${badge.color}`} />
                       <div className="min-w-0">
                         <p className="text-xs text-gray-200 font-medium truncate">{item.label}</p>
-                        <p className="text-[10px] text-gray-500">{item.desc}</p>
+                        <p className="text-xs text-gray-500">{item.desc}</p>
                       </div>
                     </div>
-                    <label className="shrink-0 ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 text-[10px] font-medium cursor-pointer hover:bg-amber-500/30 transition-colors">
+                    <label className="shrink-0 ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-500/30 transition-colors">
                       Upload
                       <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => handleFileSelect(docTypes[i], e)} />
                     </label>
@@ -586,7 +586,7 @@ function VerificationChecklist({ dotNumber }: { dotNumber: string }) {
             <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
           )}
           <span className="text-gray-300 truncate">{label}</span>
-          <span className="text-gray-600 text-[9px]">({weight})</span>
+          <span className="text-gray-600 text-xs">({weight})</span>
         </div>
         <span className={`font-medium shrink-0 ml-2 ${pending ? "text-gray-500" : passed ? "text-emerald-400" : "text-red-400"}`}>
           {detail}
@@ -623,7 +623,7 @@ function VerificationChecklist({ dotNumber }: { dotNumber: string }) {
         </div>
       )}
       {breakdown && (
-        <div className="flex justify-between text-[9px] text-gray-500 mb-3">
+        <div className="flex justify-between text-xs text-gray-500 mb-3">
           <span>Core: <span className="text-blue-400">{breakdown.coreCompliance}</span>/60</span>
           <span>Safety: <span className="text-emerald-400">{breakdown.safetyPerformance}</span>/25</span>
           <span>Trust: <span className="text-purple-400">{breakdown.trustSignals}</span>/15</span>
@@ -632,7 +632,7 @@ function VerificationChecklist({ dotNumber }: { dotNumber: string }) {
 
       {/* Core Compliance section */}
       <div className="mb-2">
-        <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-1.5">Core Compliance</p>
+        <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1.5">Core Compliance</p>
         <div className="space-y-1.5">
           {coreChecks.map((item, i) => {
             const val = item.key ? checks?.[item.key] : undefined;
@@ -645,7 +645,7 @@ function VerificationChecklist({ dotNumber }: { dotNumber: string }) {
 
       {/* Safety Performance section */}
       <div className="mb-2 pt-2 border-t border-white/5">
-        <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-1.5">Safety Performance</p>
+        <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1.5">Safety Performance</p>
         <div className="space-y-1.5">
           {safetyChecks.map((item, i) => {
             const val = item.key ? checks?.[item.key] : undefined;
@@ -659,7 +659,7 @@ function VerificationChecklist({ dotNumber }: { dotNumber: string }) {
       {/* Platform Trust section */}
       {ptrust?.isOnPlatform && (
         <div className="mb-2 pt-2 border-t border-white/5">
-          <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-1.5">Platform Trust</p>
+          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1.5">Platform Trust</p>
           <div className="flex gap-3 text-xs">
             <div>
               <span className="text-gray-500">Loads: </span>
@@ -708,7 +708,7 @@ function VerificationChecklist({ dotNumber }: { dotNumber: string }) {
           </div>
           <div className="flex flex-wrap gap-1 mt-1.5">
             {snap.smsBasicBreaches.map((b: string, i: number) => (
-              <span key={i} className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 text-[9px] font-medium">
+              <span key={i} className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 text-xs font-medium">
                 {b}
               </span>
             ))}
@@ -717,7 +717,7 @@ function VerificationChecklist({ dotNumber }: { dotNumber: string }) {
       )}
 
       {data.reason && (
-        <p className="text-[10px] text-gray-500 mt-2">{data.reason}</p>
+        <p className="text-xs text-gray-500 mt-2">{data.reason}</p>
       )}
     </div>
   );
@@ -841,9 +841,9 @@ export default function FMCSACarrierIntelligence() {
               <div className="mb-3 rounded-lg border border-blue-500/20 bg-blue-500/5 p-2.5 flex items-center gap-2 flex-wrap">
                 <Shield className="w-4 h-4 text-blue-400 shrink-0" />
                 <span className="text-xs font-semibold text-blue-400">{r === "SHIPPER" ? "Shipper" : "Broker"} Vetting</span>
-                <span className="text-[10px] text-gray-400">•</span>
-                <span className="text-[10px] text-gray-400">Search carriers to verify safety, authority & insurance before booking</span>
-                <button onClick={() => setShowInvite(true)} className="ml-auto text-[10px] px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors flex items-center gap-1">
+                <span className="text-xs text-gray-400">•</span>
+                <span className="text-xs text-gray-400">Search carriers to verify safety, authority & insurance before booking</span>
+                <button onClick={() => setShowInvite(true)} className="ml-auto text-xs px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors flex items-center gap-1">
                   <UserPlus className="w-3 h-3" />Invite Carrier
                 </button>
               </div>
@@ -852,16 +852,16 @@ export default function FMCSACarrierIntelligence() {
               <div className="mb-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2.5 flex items-center gap-2 flex-wrap">
                 <Award className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span className="text-xs font-semibold text-emerald-400">{r === "DRIVER" ? "Driver" : "Carrier"} Profile</span>
-                <span className="text-[10px] text-gray-400">•</span>
-                <span className="text-[10px] text-gray-400">View your safety scores, compare with peers, upload compliance docs</span>
+                <span className="text-xs text-gray-400">•</span>
+                <span className="text-xs text-gray-400">View your safety scores, compare with peers, upload compliance docs</span>
               </div>
             );
             if (["COMPLIANCE_OFFICER", "SAFETY_MANAGER"].includes(r)) return (
               <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5 flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
                 <span className="text-xs font-semibold text-amber-400">Compliance Monitoring</span>
-                <span className="text-[10px] text-gray-400">•</span>
-                <span className="text-[10px] text-gray-400">Monitor carrier safety scores, authority changes & insurance lapses</span>
+                <span className="text-xs text-gray-400">•</span>
+                <span className="text-xs text-gray-400">Monitor carrier safety scores, authority changes & insurance lapses</span>
               </div>
             );
             return null;
@@ -896,7 +896,7 @@ export default function FMCSACarrierIntelligence() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm truncate">{c.legalName}</span>
                       {c.oosOrder && (
-                        <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[10px] font-bold">OOS</span>
+                        <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-xs font-bold">OOS</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
@@ -907,14 +907,14 @@ export default function FMCSACarrierIntelligence() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
                       c.authorityStatus === "ACTIVE" ? "bg-emerald-500/20 text-emerald-400" :
                       "bg-red-500/20 text-red-400"
                     }`}>
                       {c.authorityStatus}
                     </span>
                     {c.safetyAlerts.length > 0 && (
-                      <span className="text-[10px] text-yellow-400">{c.safetyAlerts.length} alert{c.safetyAlerts.length > 1 ? "s" : ""}</span>
+                      <span className="text-xs text-yellow-400">{c.safetyAlerts.length} alert{c.safetyAlerts.length > 1 ? "s" : ""}</span>
                     )}
                   </div>
                 </button>
@@ -1172,7 +1172,7 @@ export default function FMCSACarrierIntelligence() {
                         <div className="text-xs text-gray-500 mb-1.5">Cargo Types</div>
                         <div className="flex flex-wrap gap-1">
                           {snapshot.data.cargoCarried.map((cargo: string, i: number) => (
-                            <span key={i} className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 text-[10px] font-medium border border-blue-500/20">
+                            <span key={i} className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 text-xs font-medium border border-blue-500/20">
                               {cargo}
                             </span>
                           ))}
@@ -1250,7 +1250,7 @@ export default function FMCSACarrierIntelligence() {
                           <div className={`text-sm font-medium ${a.active ? "text-emerald-400" : "text-gray-500"}`}>
                             {a.active ? "Active" : a.revoked ? "Revoked" : "Not Granted"}
                           </div>
-                          {a.granted && <div className="text-[10px] text-gray-500 mt-0.5">Granted: {a.granted}</div>}
+                          {a.granted && <div className="text-xs text-gray-500 mt-0.5">Granted: {a.granted}</div>}
                         </div>
                       ))}
                     </div>

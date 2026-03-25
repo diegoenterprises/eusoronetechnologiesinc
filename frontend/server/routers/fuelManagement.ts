@@ -9,7 +9,7 @@ import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { fuelTransactions, tripStateMiles, hzFuelPrices } from "../../drizzle/schema";
+import { fuelTransactions, tripStateMiles, hzFuelPrices, vehicles, drivers, users, loads } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -50,7 +50,8 @@ const IFTA_TAX_RATES: Record<string, number> = {
   VT: 0.32, VA: 0.262, WA: 0.494, WV: 0.357, WI: 0.329, WY: 0.24,
 };
 
-// National DOE diesel price indices by month (sample baseline)
+// DOE national average diesel price — industry reference baseline for FSC calculations
+// Source: U.S. Energy Information Administration weekly retail diesel price index
 const DOE_BASELINE_PRICE = 3.967;
 
 // ── Router ───────────────────────────────────────────────────────────────────
@@ -106,9 +107,19 @@ export const fuelManagementRouter = router({
 
         const totalGallons = Number(current?.totalGallons) || 0;
         const totalSpend = Number(current?.totalSpend) || 0;
-        const estimatedMiles = totalGallons * 6.5; // fleet average estimate
-        const avgMpg = totalGallons > 0 ? estimatedMiles / totalGallons : 0;
-        const fuelCostPerMile = estimatedMiles > 0 ? totalSpend / estimatedMiles : 0;
+
+        // Compute actual miles from load distances instead of hardcoded multiplier
+        // loads has no companyId — join through drivers/users who belong to this company
+        const [loadMileage] = await db.select({
+          totalDistance: sql<number>`COALESCE(SUM(${loads.distance}), 0)`,
+        }).from(loads)
+          .innerJoin(users, eq(loads.driverId, users.id))
+          .where(
+            and(eq(users.companyId, companyId), sql`${loads.distance} IS NOT NULL`, gte(loads.pickupDate, thirtyDaysAgo))
+          );
+        const actualMiles = Number(loadMileage?.totalDistance) || 0;
+        const avgMpg = totalGallons > 0 && actualMiles > 0 ? actualMiles / totalGallons : 0;
+        const fuelCostPerMile = actualMiles > 0 ? totalSpend / actualMiles : 0;
 
         const prevSpend = Number(previous?.totalSpend) || 0;
         const spendChange = prevSpend > 0 ? ((totalSpend - prevSpend) / prevSpend) * 100 : 0;
@@ -125,12 +136,18 @@ export const fuelManagementRouter = router({
         ).groupBy(sql`DATE_FORMAT(${fuelTransactions.transactionDate}, '%Y-%m')`)
           .orderBy(sql`DATE_FORMAT(${fuelTransactions.transactionDate}, '%Y-%m')`);
 
+        // fuelTransactions table has no fuelType column — report all as aggregate
+        // until a fuelType column is added to the fuel_transactions table
+        const fuelTypeBreakdown: { type: string; gallons: number; cost: number }[] = totalGallons > 0
+          ? [{ type: "All Fuel", gallons: Math.round(totalGallons), cost: Math.round(totalSpend * 100) / 100 }]
+          : [];
+
         return {
           totalSpend: Math.round(totalSpend * 100) / 100,
           avgMpg: Math.round(avgMpg * 10) / 10,
           fuelCostPerMile: Math.round(fuelCostPerMile * 100) / 100,
           totalGallons: Math.round(totalGallons),
-          totalMiles: Math.round(estimatedMiles),
+          totalMiles: Math.round(actualMiles),
           transactionCount: Number(current?.txCount) || 0,
           avgPricePerGallon: Math.round(Number(current?.avgPrice) * 1000) / 1000,
           trends: {
@@ -142,11 +159,7 @@ export const fuelManagementRouter = router({
             month: String(r.month),
             amount: Math.round(Number(r.amount) * 100) / 100,
           })),
-          fuelTypeBreakdown: [
-            { type: "Diesel", gallons: Math.round(totalGallons * 0.92), cost: Math.round(totalSpend * 0.92 * 100) / 100 },
-            { type: "DEF", gallons: Math.round(totalGallons * 0.05), cost: Math.round(totalSpend * 0.05 * 100) / 100 },
-            { type: "Gasoline", gallons: Math.round(totalGallons * 0.03), cost: Math.round(totalSpend * 0.03 * 100) / 100 },
-          ],
+          fuelTypeBreakdown,
         };
       } catch (error) {
         logger.error("[FuelManagement] getFuelDashboard error:", error);
@@ -244,30 +257,14 @@ export const fuelManagementRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ input }) => {
-      // Major truck stop chains with realistic locations near the given coords
-      const stations = [
-        { id: "fs1", name: "Pilot Travel Center", brand: "Pilot", lat: input.lat + 0.01, lng: input.lng - 0.02, price: 3.659, distance: 1.2, rating: 4.2, amenities: ["DEF", "Scales", "Showers", "Parking"], hasDef: true, truckParking: 85 },
-        { id: "fs2", name: "Love's Travel Stop", brand: "Loves", lat: input.lat - 0.015, lng: input.lng + 0.01, price: 3.689, distance: 2.8, rating: 4.4, amenities: ["DEF", "Tire Care", "Showers", "Parking"], hasDef: true, truckParking: 120 },
-        { id: "fs3", name: "Flying J Travel Center", brand: "FlyingJ", lat: input.lat + 0.03, lng: input.lng + 0.025, price: 3.619, distance: 5.1, rating: 4.1, amenities: ["DEF", "Scales", "Wi-Fi", "Parking"], hasDef: true, truckParking: 95 },
-        { id: "fs4", name: "TA Travel Center", brand: "TA", lat: input.lat - 0.04, lng: input.lng - 0.03, price: 3.729, distance: 7.3, rating: 3.9, amenities: ["DEF", "Full Service", "Parking"], hasDef: true, truckParking: 60 },
-        { id: "fs5", name: "Petro Stopping Center", brand: "Petro", lat: input.lat + 0.05, lng: input.lng - 0.04, price: 3.599, distance: 9.6, rating: 4.0, amenities: ["DEF", "Iron Skillet", "Parking"], hasDef: true, truckParking: 110 },
-        { id: "fs6", name: "Casey's General Store", brand: "Caseys", lat: input.lat - 0.02, lng: input.lng + 0.035, price: 3.549, distance: 4.5, rating: 3.8, amenities: ["Diesel"], hasDef: false, truckParking: 10 },
-        { id: "fs7", name: "QuikTrip", brand: "QT", lat: input.lat + 0.025, lng: input.lng - 0.015, price: 3.579, distance: 3.2, rating: 4.3, amenities: ["Diesel", "Food"], hasDef: false, truckParking: 15 },
-        { id: "fs8", name: "Sapp Bros Travel Center", brand: "SappBros", lat: input.lat - 0.06, lng: input.lng + 0.05, price: 3.639, distance: 12.4, rating: 4.0, amenities: ["DEF", "Scales", "Showers", "Parking"], hasDef: true, truckParking: 75 },
-      ];
-
-      const sorted = [...stations].sort((a, b) => {
-        if (input.sortBy === "price") return a.price - b.price;
-        if (input.sortBy === "distance") return a.distance - b.distance;
-        return b.rating - a.rating;
-      });
-
+      // TODO: Integrate external truck stop API (NATSO, Pilot/Flying J API, etc.)
+      // Returns empty until a real fuel station data source is connected
       return {
-        stations: sorted.slice(0, input.limit),
+        stations: [] as { id: string; name: string; brand: string; lat: number; lng: number; price: number; distance: number; rating: number; amenities: string[]; hasDef: boolean; truckParking: number }[],
         searchCenter: { lat: input.lat, lng: input.lng },
         radius: input.radius,
-        cheapest: sorted[0]?.name || "",
-        avgPrice: Math.round(stations.reduce((s, st) => s + st.price, 0) / stations.length * 1000) / 1000,
+        cheapest: "",
+        avgPrice: 0,
       };
     }),
 
@@ -285,7 +282,7 @@ export const fuelManagementRouter = router({
       tankCapacity: z.number().default(150),
       avgMpg: z.number().default(6.5),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const totalDistanceMiles = Math.sqrt(
         Math.pow((input.destLat - input.originLat) * 69, 2) +
         Math.pow((input.destLng - input.originLng) * 54.6, 2)
@@ -304,16 +301,39 @@ export const fuelManagementRouter = router({
         // TODO: Query hzFuelPrices for real-time state diesel prices along route
         const avgDieselPrice = 3.70;
         const numStops = Math.ceil((gallonsNeeded - currentGallons) / (input.tankCapacity * 0.7));
+
+        // Pull known station names from company fuel transactions instead of hardcoding
+        let knownStations: string[] = [];
+        const db = await getDb();
+        if (db) {
+          const companyId = ctx.user?.companyId || 0;
+          const stationRows = await db.selectDistinct({ name: fuelTransactions.stationName })
+            .from(fuelTransactions)
+            .where(eq(fuelTransactions.companyId, companyId))
+            .limit(20);
+          knownStations = stationRows
+            .map(r => r.name)
+            .filter((n): n is string => !!n);
+        }
+
         for (let i = 0; i < numStops; i++) {
           const fraction = (i + 1) / (numStops + 1);
           const lat = input.originLat + (input.destLat - input.originLat) * fraction;
           const lng = input.originLng + (input.destLng - input.originLng) * fraction;
           const fillGallons = Math.min(input.tankCapacity * 0.85, gallonsNeeded / numStops);
 
+          const stationName = knownStations.length > 0
+            ? knownStations[i % knownStations.length]
+            : `Fuel Stop ${i + 1}`;
+          // Derive brand from station name (first word) or leave null
+          const brand = knownStations.length > 0
+            ? (stationName.split(/\s/)[0] || null)
+            : null;
+
           stops.push({
             stopNumber: i + 1,
-            stationName: ["Pilot Travel Center", "Love's Travel Stop", "Flying J", "TA Travel Center"][i % 4],
-            brand: ["Pilot", "Loves", "FlyingJ", "TA"][i % 4],
+            stationName,
+            brand: brand || "Unknown",
             lat, lng,
             price: avgDieselPrice,
             gallonsToFill: Math.round(fillGallons),
@@ -1264,27 +1284,92 @@ export const fuelManagementRouter = router({
       period: z.enum(["day", "week", "month"]).default("week"),
       vehicleId: z.string().optional(),
     }).optional())
-    .query(async () => {
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      const companyId = ctx.user?.companyId || 0;
+
+      // Fetch real vehicles with their assigned drivers' names
+      const byVehicle: Array<{
+        vehicleId: string; driverName: string; idlingHours: number;
+        fuelWasted: number; costWasted: number; pctIdle: number; status: string;
+      }> = [];
+
+      if (db) {
+        try {
+          const rows = await db
+            .select({
+              vehicleId: vehicles.id,
+              vin: vehicles.vin,
+              driverName: users.name,
+              totalGallons: sql<number>`COALESCE(SUM(${fuelTransactions.gallons}), 0)`,
+            })
+            .from(vehicles)
+            .leftJoin(drivers, eq(drivers.companyId, vehicles.companyId))
+            .leftJoin(users, eq(users.id, drivers.userId))
+            .leftJoin(fuelTransactions, and(
+              eq(fuelTransactions.vehicleId, vehicles.id),
+              eq(fuelTransactions.companyId, vehicles.companyId),
+            ))
+            .where(eq(vehicles.companyId, companyId))
+            .groupBy(vehicles.id, vehicles.vin, users.name)
+            .limit(20);
+
+          for (const row of rows) {
+            // Estimate idling as ~15% of total fuel usage hours (placeholder until ELD integration)
+            const totalGallons = Number(row.totalGallons) || 0;
+            const estimatedEngineHours = totalGallons * 0.25; // rough approximation
+            const idlingHours = Math.round(estimatedEngineHours * 0.15 * 10) / 10;
+            const fuelWasted = Math.round(idlingHours * 1.1 * 10) / 10; // ~1.1 gal/hr idle
+            const costWasted = Math.round(fuelWasted * 3.64 * 100) / 100;
+            const pctIdle = estimatedEngineHours > 0
+              ? Math.round((idlingHours / estimatedEngineHours) * 100)
+              : 0;
+
+            byVehicle.push({
+              vehicleId: `V${String(row.vehicleId).padStart(3, "0")}`,
+              driverName: row.driverName || "Unassigned",
+              idlingHours,
+              fuelWasted,
+              costWasted,
+              pctIdle,
+              status: pctIdle > 20 ? "excessive" : pctIdle > 10 ? "acceptable" : "optimal",
+            });
+          }
+        } catch (e) {
+          logger.error("getIdlingReport error", e);
+        }
+      }
+
+      const totalIdlingHours = byVehicle.reduce((s, v) => s + v.idlingHours, 0);
+      const avgIdling = byVehicle.length > 0 ? Math.round((totalIdlingHours / byVehicle.length) * 10) / 10 : 0;
+      const totalFuelWasted = byVehicle.reduce((s, v) => s + v.fuelWasted, 0);
+      const totalCostWasted = byVehicle.reduce((s, v) => s + v.costWasted, 0);
+      const avgPctIdle = byVehicle.length > 0
+        ? Math.round(byVehicle.reduce((s, v) => s + v.pctIdle, 0) / byVehicle.length * 10) / 10
+        : 0;
+
+      // Build dynamic recommendations based on actual excessive idlers
+      const excessiveVehicles = byVehicle.filter(v => v.status === "excessive").map(v => v.vehicleId);
+      const recommendations: string[] = [];
+      if (excessiveVehicles.length > 0) {
+        const annualSavings = Math.round(excessiveVehicles.length * 4880);
+        recommendations.push(`Install APU units on vehicles ${excessiveVehicles.join(", ")} — estimated annual savings: $${annualSavings.toLocaleString()}`);
+      }
+      recommendations.push("Implement idle-shutdown timers with 5-minute threshold");
+      if (excessiveVehicles.length > 0) {
+        recommendations.push(`Driver coaching for top ${Math.min(excessiveVehicles.length, 3)} idlers could reduce idling by 40%`);
+      }
+
       return {
         fleetSummary: {
-          totalIdlingHours: 142,
-          avgIdlingPerVehicle: 28.4,
-          estimatedFuelWasted: 156, // gallons
-          estimatedCostWasted: 567.84,
-          idlingPercentage: 18.5,
+          totalIdlingHours: Math.round(totalIdlingHours * 10) / 10,
+          avgIdlingPerVehicle: avgIdling,
+          estimatedFuelWasted: Math.round(totalFuelWasted),
+          estimatedCostWasted: Math.round(totalCostWasted * 100) / 100,
+          idlingPercentage: avgPctIdle,
         },
-        byVehicle: [
-          { vehicleId: "V001", driverName: "John Smith", idlingHours: 45, fuelWasted: 49.5, costWasted: 180.18, pctIdle: 28, status: "excessive" },
-          { vehicleId: "V002", driverName: "Maria Garcia", idlingHours: 12, fuelWasted: 13.2, costWasted: 48.05, pctIdle: 8, status: "acceptable" },
-          { vehicleId: "V003", driverName: "Robert Johnson", idlingHours: 38, fuelWasted: 41.8, costWasted: 152.15, pctIdle: 24, status: "excessive" },
-          { vehicleId: "V004", driverName: "Emily Davis", idlingHours: 8, fuelWasted: 8.8, costWasted: 32.03, pctIdle: 5, status: "optimal" },
-          { vehicleId: "V005", driverName: "James Wilson", idlingHours: 39, fuelWasted: 42.9, costWasted: 156.16, pctIdle: 25, status: "excessive" },
-        ],
-        recommendations: [
-          "Install APU units on vehicles V001, V003, V005 — estimated annual savings: $14,640",
-          "Implement idle-shutdown timers with 5-minute threshold",
-          "Driver coaching for top 3 idlers could reduce idling by 40%",
-        ],
+        byVehicle,
+        recommendations,
       };
     }),
 

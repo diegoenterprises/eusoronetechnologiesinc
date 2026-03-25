@@ -165,13 +165,13 @@ export default function PlacardVerification() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                        <p className={cn("text-[10px] uppercase tracking-wider mb-1", isLight ? "text-slate-400" : "text-slate-500")}>Placard Required</p>
+                        <p className={cn("text-xs uppercase tracking-wider mb-1", isLight ? "text-slate-400" : "text-slate-500")}>Placard Required</p>
                         <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>
                           {currentClass?.placard || "Unknown"}
                         </p>
                       </div>
                       <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                        <p className={cn("text-[10px] uppercase tracking-wider mb-1", isLight ? "text-slate-400" : "text-slate-500")}>Quantity</p>
+                        <p className={cn("text-xs uppercase tracking-wider mb-1", isLight ? "text-slate-400" : "text-slate-500")}>Quantity</p>
                         <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>
                           {currentShipment.weight ? `${Number(currentShipment.weight).toLocaleString()} lbs` : "See BOL"}
                         </p>
@@ -255,7 +255,7 @@ export default function PlacardVerification() {
                         </div>
                       </div>
                       <p className={cn(
-                        "text-[10px] font-medium mt-1 text-center whitespace-nowrap",
+                        "text-xs font-medium mt-1 text-center whitespace-nowrap",
                         isChecked ? "text-green-500" : isLight ? "text-slate-500" : "text-slate-400"
                       )}>
                         {pos.label}

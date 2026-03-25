@@ -176,7 +176,7 @@ function OCRScannerTab() {
               {result.classification?.suggestedTags?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {result.classification.suggestedTags.map((tag: string, i: number) => (
-                    <Badge key={i} className="bg-slate-700/50 text-slate-300 border-slate-600/50 text-[10px]">
+                    <Badge key={i} className="bg-slate-700/50 text-slate-300 border-slate-600/50 text-xs">
                       {tag}
                     </Badge>
                   ))}

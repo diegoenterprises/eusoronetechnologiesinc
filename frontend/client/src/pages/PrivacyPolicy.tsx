@@ -518,7 +518,7 @@ export default function PrivacyPolicy() {
                     {section.title}
                   </span>
                   {section.highlight && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border border-emerald-500/30 mr-2">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border border-emerald-500/30 mr-2">
                       KEY
                     </span>
                   )}

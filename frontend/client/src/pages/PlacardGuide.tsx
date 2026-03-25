@@ -122,7 +122,7 @@ export default function PlacardGuide() {
                     <p className={cn("text-xs font-mono mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>
                       {p.placard}
                     </p>
-                    <p className={cn("text-[10px] mt-1", isLight ? "text-slate-400" : "text-slate-500")}>
+                    <p className={cn("text-xs mt-1", isLight ? "text-slate-400" : "text-slate-500")}>
                       Threshold: {p.threshold}
                     </p>
                   </div>
@@ -133,12 +133,12 @@ export default function PlacardGuide() {
                 {isExpanded && (
                   <div className={cn("px-5 pb-5 pt-0 space-y-3", isLight ? "border-t border-slate-100" : "border-t border-slate-700/30")}>
                     <div className="pt-3">
-                      <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-1.5", isLight ? "text-slate-400" : "text-slate-500")}>
+                      <p className={cn("text-xs uppercase tracking-wider font-medium mb-1.5", isLight ? "text-slate-400" : "text-slate-500")}>
                         Common Materials
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {p.examples.map((ex) => (
-                          <Badge key={ex} className={cn("text-[10px] border", isLight ? "bg-slate-100 text-slate-600 border-slate-200" : "bg-slate-700/50 text-slate-300 border-slate-600/50")}>
+                          <Badge key={ex} className={cn("text-xs border", isLight ? "bg-slate-100 text-slate-600 border-slate-200" : "bg-slate-700/50 text-slate-300 border-slate-600/50")}>
                             {ex}
                           </Badge>
                         ))}

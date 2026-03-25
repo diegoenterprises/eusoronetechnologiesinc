@@ -18,7 +18,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   loads, payments, users, vehicles, companies, drivers,
-  inspections, incidents, settlements, bids,
+  inspections, incidents, settlements, bids, auditLogs,
 } from "../../drizzle/schema";
 
 // ---------------------------------------------------------------------------
@@ -110,27 +110,40 @@ export const reportingEngineRouter = router({
       const db = await getDb();
       const userId = ctx.user!.id || 0;
 
-      // Recent reports (simulated from load of recent activity)
-      const recentReports = [
-        { id: "rpt-1", name: "Weekly Revenue Summary", type: "financial", ranAt: new Date(Date.now() - 86400000).toISOString(), format: "pdf", status: "completed" },
-        { id: "rpt-2", name: "Driver Performance Ranking", type: "driver", ranAt: new Date(Date.now() - 172800000).toISOString(), format: "xlsx", status: "completed" },
-        { id: "rpt-3", name: "Fleet Utilization Report", type: "fleet", ranAt: new Date(Date.now() - 259200000).toISOString(), format: "csv", status: "completed" },
-        { id: "rpt-4", name: "Safety Compliance Audit", type: "safety", ranAt: new Date(Date.now() - 345600000).toISOString(), format: "pdf", status: "completed" },
-        { id: "rpt-5", name: "Lane Profitability Analysis", type: "lane", ranAt: new Date(Date.now() - 432000000).toISOString(), format: "xlsx", status: "completed" },
-      ];
+      // Recent reports — query from audit_logs where action='report_generated'
+      let recentReports: { id: string; name: string; type: string; ranAt: string; format: string; status: string }[] = [];
+      if (db) {
+        try {
+          const rows = await db.select({
+            id: auditLogs.id,
+            changes: auditLogs.changes,
+            createdAt: auditLogs.createdAt,
+          })
+            .from(auditLogs)
+            .where(eq(auditLogs.action, "report_generated"))
+            .orderBy(desc(auditLogs.createdAt))
+            .limit(10);
+          recentReports = rows.map((r) => {
+            const meta = (r.changes && typeof r.changes === "object" ? r.changes : {}) as Record<string, unknown>;
+            return {
+              id: `rpt-${r.id}`,
+              name: String(meta.reportName || "Report"),
+              type: String(meta.reportType || "general"),
+              ranAt: r.createdAt?.toISOString() || new Date().toISOString(),
+              format: String(meta.format || "pdf"),
+              status: "completed",
+            };
+          });
+        } catch (e) {
+          logger.error("[ReportingEngine] recentReports query error:", e);
+        }
+      }
 
-      const scheduledReports = [
-        { id: "sched-1", name: "Monthly P&L Statement", frequency: "monthly", nextRun: new Date(Date.now() + 604800000).toISOString(), recipients: 3, format: "pdf" },
-        { id: "sched-2", name: "Weekly KPI Digest", frequency: "weekly", nextRun: new Date(Date.now() + 172800000).toISOString(), recipients: 5, format: "xlsx" },
-        { id: "sched-3", name: "Daily Load Summary", frequency: "daily", nextRun: new Date(Date.now() + 43200000).toISOString(), recipients: 2, format: "csv" },
-      ];
+      // Scheduled reports — no scheduled_reports table exists yet; return empty
+      const scheduledReports: { id: string; name: string; frequency: string; nextRun: string; recipients: number; format: string }[] = [];
 
-      const favorites = [
-        { id: "fav-1", name: "Executive Summary", type: "executive", icon: "BarChart3" },
-        { id: "fav-2", name: "AR Aging Report", type: "financial", icon: "DollarSign" },
-        { id: "fav-3", name: "DOT Audit Package", type: "compliance", icon: "ShieldCheck" },
-        { id: "fav-4", name: "Customer Performance", type: "customer", icon: "Users" },
-      ];
+      // Favorite reports — no favorites table exists yet; return empty
+      const favorites: { id: string; name: string; type: string; icon: string }[] = [];
 
       // Real stats from DB
       let totalLoads = 0;
@@ -831,8 +844,8 @@ export const reportingEngineRouter = router({
             const incidentPenalty = Math.min(20, incidentTotal * 3 + majorIncidents * 5);
             safetyScore = Math.max(50, Math.min(100, passRate - defectPenalty - incidentPenalty));
           } else {
-            // No data: deterministic seed based on driver id
-            safetyScore = 85 + (d.id % 15); // TODO: fallback — no inspections/incidents for this driver
+            // No inspection/incident data for this driver
+            safetyScore = 0;
           }
 
           // Efficiency score: derived from on-time delivery percentage
@@ -840,8 +853,8 @@ export const reportingEngineRouter = router({
           if (onTimePct > 0) {
             efficiencyScore = Math.min(100, onTimePct * 1.05);
           } else {
-            // No loads: deterministic seed based on driver id
-            efficiencyScore = 75 + (d.id % 20); // TODO: fallback — no loads for this driver
+            // No loads for this driver
+            efficiencyScore = 0;
           }
           const reliabilityScore = loadCount > 0 ? Math.min(100, 70 + loadCount * 0.5) : 70;
           const overallScore = safetyScore * 0.4 + efficiencyScore * 0.3 + reliabilityScore * 0.3;
@@ -915,10 +928,10 @@ export const reportingEngineRouter = router({
             deadMiles = Math.round(dbDistance * 0.1);
             revenuePerMile = dbDistance > 0 ? Math.round((dbRevenue / dbDistance) * 100) / 100 : 0;
           } else {
-            // TODO: fallback — no loads assigned to this vehicle; use deterministic seed
-            revenueMiles = 8000 + (v.id % 4000);
-            deadMiles = 800 + (v.id % 1200);
-            revenuePerMile = Math.round((2.15 + (v.id % 85) / 100) * 100) / 100;
+            // No loads assigned to this vehicle
+            revenueMiles = 0;
+            deadMiles = 0;
+            revenuePerMile = 0;
           }
 
           const totalMiles = revenueMiles + deadMiles;
@@ -1013,10 +1026,10 @@ export const reportingEngineRouter = router({
 
         const lanes = laneData.map((l, idx) => {
           const laneRevenue = safeNum(l.totalRevenue);
-          // Use overall margin if we have real data, else deterministic fallback
+          // Use overall margin if we have real data
           const estimatedMargin = overallRev > 0 && totalPaid > 0
             ? overallMarginPct
-            : 14 + (idx % 6); // TODO: fallback — no payment data to compute margin
+            : 0; // No payment data to compute margin
           return {
             lane: `${l.originCity || "?"}, ${l.originState || "?"} → ${l.destCity || "?"}, ${l.destState || "?"}`,
             origin: `${l.originCity}, ${l.originState}`,
@@ -1079,7 +1092,7 @@ export const reportingEngineRouter = router({
           // Margin: (revenue - cost) / revenue * 100
           const estimatedMargin = custRevenue > 0 && custCost > 0
             ? Math.round(((custRevenue - custCost) / custRevenue) * 10000) / 100
-            : (custRevenue > 0 ? 15 + (idx % 6) : 0); // TODO: fallback — no payment data for this customer
+            : 0; // No payment data for this customer
           return {
             customerId: c.shipperId,
             loadCount: safeNum(c.loadCount),

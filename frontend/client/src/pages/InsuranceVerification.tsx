@@ -181,7 +181,7 @@ export default function InsuranceVerification() {
           <div key={s.label} className={cn("rounded-2xl p-4 bg-gradient-to-br border", L ? `${s.bg} border-slate-200/60` : `${s.bg} border-slate-700/30`)}>
             <div className="flex items-center justify-between mb-2"><span className={s.color}>{s.icon}</span></div>
             <p className={cn("text-2xl font-bold tracking-tight", s.color)}>{s.value}</p>
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-1">{s.label}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-1">{s.label}</p>
           </div>
         ))}
       </div>
@@ -189,7 +189,7 @@ export default function InsuranceVerification() {
       {/* Tabs */}
       <div className="flex gap-1.5 overflow-x-auto pb-1">
         {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[11px] font-medium whitespace-nowrap transition-all border",
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
             activeTab === tab.id
               ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-sm"
               : L ? "bg-white border-slate-200 text-slate-500 hover:border-blue-300" : "bg-slate-800/60 border-slate-700/50 text-slate-400 hover:border-slate-600"
@@ -197,7 +197,7 @@ export default function InsuranceVerification() {
             <tab.icon className="w-3.5 h-3.5" />
             {tab.label}
             {tab.count !== undefined && tab.count > 0 && (
-              <span className={cn("text-[10px] font-bold", activeTab === tab.id ? "text-white/80" : "text-slate-400")}>{tab.count}</span>
+              <span className={cn("text-xs font-bold", activeTab === tab.id ? "text-white/80" : "text-slate-400")}>{tab.count}</span>
             )}
           </button>
         ))}
@@ -229,7 +229,7 @@ export default function InsuranceVerification() {
                   <Upload className={cn("w-10 h-10 mx-auto mb-3", L ? "text-slate-300" : "text-slate-600")} />
                   <p className={cn("font-bold text-sm mb-1", vl)}>Drop your insurance document here</p>
                   <p className={cn("text-xs", mt)}>PDF, PNG, or JPEG — Declaration Pages, ACORD 25/24 certificates</p>
-                  <p className={cn("text-[10px] mt-2", mt)}>Maximum 10MB</p>
+                  <p className={cn("text-xs mt-2", mt)}>Maximum 10MB</p>
                 </div>
               )}
 
@@ -294,7 +294,7 @@ export default function InsuranceVerification() {
                   <div className={cn("rounded-xl p-3 mb-5 border", L ? "bg-yellow-50 border-yellow-200" : "bg-yellow-500/10 border-yellow-500/20")}>
                     <p className="text-xs font-bold text-yellow-500 mb-1.5 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" />Warnings</p>
                     {extraction.extractionWarnings.map((w: string, i: number) => (
-                      <p key={i} className="text-[11px] text-yellow-600 dark:text-yellow-400">• {w}</p>
+                      <p key={i} className="text-xs text-yellow-600 dark:text-yellow-400">• {w}</p>
                     ))}
                   </div>
                 )}
@@ -302,7 +302,7 @@ export default function InsuranceVerification() {
                 {/* Policy Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                   <div className={cn("rounded-xl p-4 border", L ? "bg-slate-50 border-slate-100" : "bg-slate-800/30 border-slate-700/30")}>
-                    <p className="text-[10px] uppercase font-bold text-blue-500 mb-2">Policy Details</p>
+                    <p className="text-xs uppercase font-bold text-blue-500 mb-2">Policy Details</p>
                     <div className="space-y-1.5">
                       {[
                         ["Policy #", extraction.policy.number],
@@ -321,7 +321,7 @@ export default function InsuranceVerification() {
                   </div>
 
                   <div className={cn("rounded-xl p-4 border", L ? "bg-slate-50 border-slate-100" : "bg-slate-800/30 border-slate-700/30")}>
-                    <p className="text-[10px] uppercase font-bold text-purple-500 mb-2">Endorsements</p>
+                    <p className="text-xs uppercase font-bold text-purple-500 mb-2">Endorsements</p>
                     <div className="flex flex-wrap gap-1.5">
                       {[
                         { key: "mcs90", label: "MCS-90", critical: true },
@@ -333,7 +333,7 @@ export default function InsuranceVerification() {
                       ].map(e => {
                         const active = extraction.endorsements[e.key];
                         return (
-                          <Badge key={e.key} className={cn("text-[10px] border",
+                          <Badge key={e.key} className={cn("text-xs border",
                             active
                               ? e.critical ? "bg-green-500/15 text-green-500 border-green-500/20" : "bg-blue-500/15 text-blue-500 border-blue-500/20"
                               : e.critical ? "bg-red-500/15 text-red-500 border-red-500/20" : "bg-slate-500/10 text-slate-400 border-slate-500/20"
@@ -350,14 +350,14 @@ export default function InsuranceVerification() {
                 {/* Coverages */}
                 {extraction.coverages?.length > 0 && (
                   <div className={cn("rounded-xl p-4 border mb-5", L ? "bg-slate-50 border-slate-100" : "bg-slate-800/30 border-slate-700/30")}>
-                    <p className="text-[10px] uppercase font-bold text-emerald-500 mb-2">Coverage Limits</p>
+                    <p className="text-xs uppercase font-bold text-emerald-500 mb-2">Coverage Limits</p>
                     <div className="space-y-3">
                       {extraction.coverages.map((cov: any, i: number) => (
                         <div key={i}>
                           <p className={cn("font-bold text-xs mb-1.5", vl)}>{cov.type.replace(/_/g, " ")}</p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
                             {Object.entries(cov.limits).filter(([, v]) => v != null).map(([k, v]) => (
-                              <div key={k} className="flex justify-between text-[11px]">
+                              <div key={k} className="flex justify-between text-xs">
                                 <span className="text-slate-400">{k.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase())}</span>
                                 <span className={cn("font-medium", vl)}>${Number(v).toLocaleString()}</span>
                               </div>
@@ -413,7 +413,7 @@ export default function InsuranceVerification() {
                   <div className="flex items-center gap-2 mb-3">
                     {fmcsaResult.compliant ? <ShieldCheck className="w-5 h-5 text-green-500" /> : <ShieldAlert className="w-5 h-5 text-red-500" />}
                     <p className={cn("font-bold text-sm", vl)}>{fmcsaResult.legalName}</p>
-                    <Badge className={cn("text-[10px]", fmcsaResult.compliant ? "bg-green-500/15 text-green-500" : "bg-red-500/15 text-red-500")}>
+                    <Badge className={cn("text-xs", fmcsaResult.compliant ? "bg-green-500/15 text-green-500" : "bg-red-500/15 text-red-500")}>
                       {fmcsaResult.compliant ? "Compliant" : "Issues Found"}
                     </Badge>
                   </div>
@@ -431,27 +431,27 @@ export default function InsuranceVerification() {
                     ))}
                   </div>
                   <div className="flex flex-wrap gap-1.5 mb-2">
-                    <Badge className={cn("text-[10px]", fmcsaResult.hasLiabilityFiling ? "bg-green-500/15 text-green-500" : "bg-red-500/15 text-red-500")}>
+                    <Badge className={cn("text-xs", fmcsaResult.hasLiabilityFiling ? "bg-green-500/15 text-green-500" : "bg-red-500/15 text-red-500")}>
                       {fmcsaResult.hasLiabilityFiling ? "Yes" : "No"} BIPD Liability
                     </Badge>
-                    <Badge className={cn("text-[10px]", fmcsaResult.hasCargoFiling ? "bg-green-500/15 text-green-500" : "bg-yellow-500/15 text-yellow-500")}>
+                    <Badge className={cn("text-xs", fmcsaResult.hasCargoFiling ? "bg-green-500/15 text-green-500" : "bg-yellow-500/15 text-yellow-500")}>
                       {fmcsaResult.hasCargoFiling ? "Yes" : "No"} Cargo
                     </Badge>
-                    <Badge className={cn("text-[10px]", fmcsaResult.hmFlag === "Y" ? "bg-purple-500/15 text-purple-500" : "bg-slate-500/10 text-slate-400")}>
+                    <Badge className={cn("text-xs", fmcsaResult.hmFlag === "Y" ? "bg-purple-500/15 text-purple-500" : "bg-slate-500/10 text-slate-400")}>
                       {fmcsaResult.hmFlag === "Y" ? "Hazmat Auth" : "No Hazmat"}
                     </Badge>
                   </div>
                   {fmcsaResult.discrepancies?.length > 0 && (
                     <div className="mt-2">
                       {fmcsaResult.discrepancies.map((d: string, i: number) => (
-                        <p key={i} className="text-[11px] text-red-500">• {d}</p>
+                        <p key={i} className="text-xs text-red-500">• {d}</p>
                       ))}
                     </div>
                   )}
                   {fmcsaResult.warnings?.length > 0 && (
                     <div className="mt-1">
                       {fmcsaResult.warnings.map((w: string, i: number) => (
-                        <p key={i} className="text-[11px] text-yellow-500">• {w}</p>
+                        <p key={i} className="text-xs text-yellow-500">• {w}</p>
                       ))}
                     </div>
                   )}
@@ -500,25 +500,25 @@ export default function InsuranceVerification() {
                         <div>
                           <div className="flex items-center gap-2 mb-0.5">
                             <p className={cn("font-bold text-sm", vl)}>{(p.policyType || "").replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}</p>
-                            <Badge className={cn("text-[9px]",
+                            <Badge className={cn("text-xs",
                               isExpired ? "bg-red-500/15 text-red-500" : isExpiring ? "bg-yellow-500/15 text-yellow-500" : "bg-green-500/15 text-green-500"
                             )}>
                               {isExpired ? "Expired" : isExpiring ? `${daysLeft}d left` : "Active"}
                             </Badge>
                             {p.verificationSource === "gemini_extraction" && (
-                              <Badge className="bg-purple-500/15 text-purple-500 text-[9px]"><Sparkles className="w-2.5 h-2.5 mr-0.5" />AI Scanned</Badge>
+                              <Badge className="bg-purple-500/15 text-purple-500 text-xs"><Sparkles className="w-2.5 h-2.5 mr-0.5" />AI Scanned</Badge>
                             )}
                           </div>
                           <p className={cn("text-xs", mt)}>{p.providerName || "Unknown"} — #{p.policyNumber}</p>
                           <div className="flex gap-4 mt-1.5">
-                            {p.perOccurrenceLimit && <p className="text-[11px] text-slate-400">Limit: <span className={cn("font-medium", vl)}>${parseFloat(p.perOccurrenceLimit).toLocaleString()}</span></p>}
-                            {p.combinedSingleLimit && <p className="text-[11px] text-slate-400">CSL: <span className={cn("font-medium", vl)}>${parseFloat(p.combinedSingleLimit).toLocaleString()}</span></p>}
-                            {exp && <p className="text-[11px] text-slate-400">Exp: <span className={cn("font-medium", isExpired ? "text-red-500" : isExpiring ? "text-yellow-500" : vl)}>{exp.toISOString().split("T")[0]}</span></p>}
+                            {p.perOccurrenceLimit && <p className="text-xs text-slate-400">Limit: <span className={cn("font-medium", vl)}>${parseFloat(p.perOccurrenceLimit).toLocaleString()}</span></p>}
+                            {p.combinedSingleLimit && <p className="text-xs text-slate-400">CSL: <span className={cn("font-medium", vl)}>${parseFloat(p.combinedSingleLimit).toLocaleString()}</span></p>}
+                            {exp && <p className="text-xs text-slate-400">Exp: <span className={cn("font-medium", isExpired ? "text-red-500" : isExpiring ? "text-yellow-500" : vl)}>{exp.toISOString().split("T")[0]}</span></p>}
                           </div>
                           {(p.endorsements as string[] || []).length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1.5">
                               {(p.endorsements as string[]).map((e: string) => (
-                                <Badge key={e} className="bg-slate-500/10 text-slate-400 text-[9px] border border-slate-500/20">{e}</Badge>
+                                <Badge key={e} className="bg-slate-500/10 text-slate-400 text-xs border border-slate-500/20">{e}</Badge>
                               ))}
                             </div>
                           )}
@@ -578,7 +578,7 @@ export default function InsuranceVerification() {
               ].map(item => (
                 <div key={item.label} className={cn("rounded-xl p-3 border", L ? "bg-slate-50 border-slate-100" : "bg-slate-800/30 border-slate-700/30")}>
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[10px] uppercase font-bold text-slate-400">{item.label}</p>
+                    <p className="text-xs uppercase font-bold text-slate-400">{item.label}</p>
                     {item.ok ? <CheckCircle className="w-3.5 h-3.5 text-green-500" /> : <XCircle className="w-3.5 h-3.5 text-red-500" />}
                   </div>
                   <p className={cn("font-bold text-sm", item.ok ? "text-green-500" : "text-red-500")}>{item.value}</p>
@@ -617,7 +617,7 @@ export default function InsuranceVerification() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
                         <p className={cn("font-bold text-sm", vl)}>{a.title}</p>
-                        <Badge className={cn("text-[9px]",
+                        <Badge className={cn("text-xs",
                           a.severity === "critical" ? "bg-red-500/15 text-red-500" :
                           a.severity === "warning" ? "bg-yellow-500/15 text-yellow-500" :
                           "bg-blue-500/15 text-blue-500"

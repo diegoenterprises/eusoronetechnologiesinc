@@ -356,12 +356,12 @@ function CompanyGrid({
 
             <div className="flex flex-wrap gap-1 mb-3">
               {company.services.slice(0, 3).map((service: any, idx: number) => (
-                <Badge key={idx} variant="outline" className="text-[10px] text-slate-400 border-slate-600">
+                <Badge key={idx} variant="outline" className="text-xs text-slate-400 border-slate-600">
                   {service}
                 </Badge>
               ))}
               {company.services.length > 3 && (
-                <Badge variant="outline" className="text-[10px] text-slate-500 border-slate-600">
+                <Badge variant="outline" className="text-xs text-slate-500 border-slate-600">
                   +{company.services.length - 3} more
                 </Badge>
               )}

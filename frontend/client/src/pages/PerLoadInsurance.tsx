@@ -327,7 +327,7 @@ export default function PerLoadInsurance() {
                 <p.icon className="w-5 h-5 text-[#1473FF]" />
               </div>
               <p className={cn("text-xs font-semibold", isLight ? "text-slate-700" : "text-slate-200")}>{p.label}</p>
-              <p className={cn("text-[10px] mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>{p.desc}</p>
+              <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>{p.desc}</p>
             </CardContent>
           </Card>
         ))}

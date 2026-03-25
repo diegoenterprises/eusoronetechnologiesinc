@@ -60,7 +60,7 @@ export default function ShippingPapers() {
 
   const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
   const sc = cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
-  const lbl = cn("text-[10px] uppercase tracking-wider font-medium", isLight ? "text-slate-400" : "text-slate-500");
+  const lbl = cn("text-xs uppercase tracking-wider font-medium", isLight ? "text-slate-400" : "text-slate-500");
   const val = cn("text-sm font-semibold mt-0.5", isLight ? "text-slate-800" : "text-white");
 
   const sections: { id: PaperSection; label: string }[] = [
@@ -229,7 +229,7 @@ export default function ShippingPapers() {
                     "p-4 rounded-xl border-2 border-dashed",
                     isLight ? "bg-red-50/50 border-red-200" : "bg-red-500/5 border-red-500/20"
                   )}>
-                    <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-2", isLight ? "text-red-400" : "text-red-400")}>
+                    <p className={cn("text-xs uppercase tracking-wider font-medium mb-2", isLight ? "text-red-400" : "text-red-400")}>
                       Proper Shipping Description (49 CFR 172.202)
                     </p>
                     <p className={cn("text-base font-bold font-mono leading-relaxed", isLight ? "text-slate-900" : "text-white")}>
@@ -335,16 +335,16 @@ export default function ShippingPapers() {
                   {jurisdiction === "cross_border" && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-1", isLight ? "text-slate-400" : "text-slate-500")}>US — CHEMTREC</p>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium mb-1", isLight ? "text-slate-400" : "text-slate-500")}>US — CHEMTREC</p>
                         <p className={cn("text-lg font-bold", isLight ? "text-blue-600" : "text-blue-400")}>1-800-424-9300</p>
                       </div>
                       <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-1", isLight ? "text-slate-400" : "text-slate-500")}>CA — CANUTEC</p>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium mb-1", isLight ? "text-slate-400" : "text-slate-500")}>CA — CANUTEC</p>
                         <p className={cn("text-lg font-bold", isLight ? "text-blue-600" : "text-blue-400")}>{canutecQuery.data?.primaryNumeric || "1-888-226-8837"}</p>
                         <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>Cell: *666</p>
                       </div>
                       <div className={cn("p-4 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                        <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-1", isLight ? "text-slate-400" : "text-slate-500")}>MX — SETIQ</p>
+                        <p className={cn("text-xs uppercase tracking-wider font-medium mb-1", isLight ? "text-slate-400" : "text-slate-500")}>MX — SETIQ</p>
                         <p className={cn("text-lg font-bold", isLight ? "text-blue-600" : "text-blue-400")}>01-800-00-214-00</p>
                       </div>
                     </div>

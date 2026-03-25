@@ -204,7 +204,7 @@ export default function RelayMode() {
                   <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                   <div>
                     <p className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}</p>
-                    <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                    <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -307,7 +307,7 @@ export default function RelayMode() {
                           {idx > 0 && (
                             <div className="flex flex-col items-center mx-1 shrink-0">
                               <ArrowRightLeft className={cn("w-5 h-5", leg.status === "handed_off" || leg.status === "completed" ? "text-green-400" : "text-yellow-400")} />
-                              <span className="text-[9px] text-slate-500 mt-0.5">{getHandoffLabel(leg.handoffType || "drop_and_hook")}</span>
+                              <span className="text-xs text-slate-500 mt-0.5">{getHandoffLabel(leg.handoffType || "drop_and_hook")}</span>
                             </div>
                           )}
                           <div className={cn("flex flex-col items-center px-3 py-2 rounded-xl border min-w-[120px] shrink-0 cursor-pointer transition-colors",
@@ -318,7 +318,7 @@ export default function RelayMode() {
                           )} onClick={() => setExpandedLeg(expandedLeg === leg.id ? null : leg.id)}>
                             <span className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-slate-200")}>Leg {leg.legNumber}</span>
                             {getStatusBadge(leg.status)}
-                            <span className="text-[10px] text-slate-500 mt-1">{leg.driverName || "Unassigned"}</span>
+                            <span className="text-xs text-slate-500 mt-1">{leg.driverName || "Unassigned"}</span>
                           </div>
                         </React.Fragment>
                       ))}
@@ -370,50 +370,50 @@ export default function RelayMode() {
                       <div className={cn("px-4 pb-4 pt-0 border-t", isLight ? "border-slate-100 bg-slate-50/50" : "border-slate-700/30 bg-slate-800/30")}>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-3">
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Origin</p>
+                            <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Origin</p>
                             <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>
                               {leg.originFacility || "—"}
                             </p>
                             <p className="text-xs text-slate-500">{[leg.originCity, leg.originState].filter(Boolean).join(", ") || "—"}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Destination</p>
+                            <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Destination</p>
                             <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>
                               {leg.destFacility || "—"}
                             </p>
                             <p className="text-xs text-slate-500">{[leg.destCity, leg.destState].filter(Boolean).join(", ") || "—"}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Handoff Type</p>
+                            <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Handoff Type</p>
                             <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{getHandoffLabel(leg.handoffType || "drop_and_hook")}</p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Seal</p>
+                            <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Seal</p>
                             <div className="flex items-center gap-1">
                               {leg.sealVerified ? <Lock className="w-3.5 h-3.5 text-green-400" /> : <Unlock className="w-3.5 h-3.5 text-slate-400" />}
                               <p className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{leg.sealNumber || "No seal"}</p>
                             </div>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Planned Start</p>
+                            <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Planned Start</p>
                             <p className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-200")}>
                               {leg.plannedStartAt ? new Date(leg.plannedStartAt).toLocaleString() : "—"}
                             </p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Planned End</p>
+                            <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Planned End</p>
                             <p className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-200")}>
                               {leg.plannedEndAt ? new Date(leg.plannedEndAt).toLocaleString() : "—"}
                             </p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Actual Start</p>
+                            <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Actual Start</p>
                             <p className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-200")}>
                               {leg.actualStartAt ? new Date(leg.actualStartAt).toLocaleString() : "—"}
                             </p>
                           </div>
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Actual End</p>
+                            <p className="text-xs uppercase tracking-wider text-slate-500 mb-1">Actual End</p>
                             <p className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-200")}>
                               {leg.actualEndAt ? new Date(leg.actualEndAt).toLocaleString() : "—"}
                             </p>
@@ -592,31 +592,31 @@ export default function RelayMode() {
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 mb-0.5 block">Origin Facility</label>
+                        <label className="text-xs uppercase text-slate-500 mb-0.5 block">Origin Facility</label>
                         <Input value={leg.originFacility} onChange={e => updateLeg(idx, "originFacility", e.target.value)} className="rounded-lg h-8 text-sm" placeholder="Terminal name" />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 mb-0.5 block">Origin City</label>
+                        <label className="text-xs uppercase text-slate-500 mb-0.5 block">Origin City</label>
                         <Input value={leg.originCity} onChange={e => updateLeg(idx, "originCity", e.target.value)} className="rounded-lg h-8 text-sm" placeholder="City" />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 mb-0.5 block">Origin State</label>
+                        <label className="text-xs uppercase text-slate-500 mb-0.5 block">Origin State</label>
                         <Input value={leg.originState} onChange={e => updateLeg(idx, "originState", e.target.value)} className="rounded-lg h-8 text-sm" placeholder="TX" />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 mb-0.5 block">Dest Facility</label>
+                        <label className="text-xs uppercase text-slate-500 mb-0.5 block">Dest Facility</label>
                         <Input value={leg.destFacility} onChange={e => updateLeg(idx, "destFacility", e.target.value)} className="rounded-lg h-8 text-sm" placeholder="Relay yard" />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 mb-0.5 block">Dest City</label>
+                        <label className="text-xs uppercase text-slate-500 mb-0.5 block">Dest City</label>
                         <Input value={leg.destCity} onChange={e => updateLeg(idx, "destCity", e.target.value)} className="rounded-lg h-8 text-sm" placeholder="City" />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 mb-0.5 block">Dest State</label>
+                        <label className="text-xs uppercase text-slate-500 mb-0.5 block">Dest State</label>
                         <Input value={leg.destState} onChange={e => updateLeg(idx, "destState", e.target.value)} className="rounded-lg h-8 text-sm" placeholder="OK" />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 mb-0.5 block">Handoff Type</label>
+                        <label className="text-xs uppercase text-slate-500 mb-0.5 block">Handoff Type</label>
                         <Select value={leg.handoffType} onValueChange={v => updateLeg(idx, "handoffType", v)}>
                           <SelectTrigger className="rounded-lg h-8 text-sm"><SelectValue /></SelectTrigger>
                           <SelectContent>
@@ -628,15 +628,15 @@ export default function RelayMode() {
                         </Select>
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 mb-0.5 block">Distance (mi)</label>
+                        <label className="text-xs uppercase text-slate-500 mb-0.5 block">Distance (mi)</label>
                         <Input type="number" value={leg.legDistance} onChange={e => updateLeg(idx, "legDistance", e.target.value)} className="rounded-lg h-8 text-sm" placeholder="150" />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 mb-0.5 block">Leg Rate ($)</label>
+                        <label className="text-xs uppercase text-slate-500 mb-0.5 block">Leg Rate ($)</label>
                         <Input type="number" value={leg.legRate} onChange={e => updateLeg(idx, "legRate", e.target.value)} className="rounded-lg h-8 text-sm" placeholder="500" />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase text-slate-500 mb-0.5 block">Seal #</label>
+                        <label className="text-xs uppercase text-slate-500 mb-0.5 block">Seal #</label>
                         <Input value={leg.sealNumber} onChange={e => updateLeg(idx, "sealNumber", e.target.value)} className="rounded-lg h-8 text-sm" placeholder="SEAL-001" />
                       </div>
                     </div>

@@ -73,7 +73,7 @@ export default function CarrierScorecardPage() {
                   <div className="flex items-center gap-3 mt-1 text-sm text-slate-400">
                     {sc.dotNumber && <span>DOT# {sc.dotNumber}</span>}
                     {sc.mcNumber && <span>MC# {sc.mcNumber}</span>}
-                    {sc.hazmatAuthorized && <Badge className="bg-orange-500/20 text-orange-400 text-[9px]"><Flame className="w-3 h-3 mr-1" />Hazmat Authorized</Badge>}
+                    {sc.hazmatAuthorized && <Badge className="bg-orange-500/20 text-orange-400 text-xs"><Flame className="w-3 h-3 mr-1" />Hazmat Authorized</Badge>}
                   </div>
                 </div>
                 <div className="text-center">
@@ -98,7 +98,7 @@ export default function CarrierScorecardPage() {
             ].map((m, i) => (
               <Card key={i} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">{m.icon}<span className="text-[10px] text-slate-400 uppercase">{m.label}</span></div>
+                  <div className="flex items-center gap-2 mb-2">{m.icon}<span className="text-xs text-slate-400 uppercase">{m.label}</span></div>
                   <p className={cn("text-2xl font-bold", m.color)}>{m.val}</p>
                   <p className="text-xs text-slate-500 mt-1">{m.sub}</p>
                 </CardContent>
@@ -132,11 +132,11 @@ export default function CarrierScorecardPage() {
                 <div className="grid grid-cols-6 gap-2">
                   {trends.map((t: any, i: number) => (
                     <div key={i} className="text-center p-2 rounded-xl bg-slate-900/30 border border-slate-700/20">
-                      <p className="text-[10px] text-slate-500">{t.period}</p>
+                      <p className="text-xs text-slate-500">{t.period}</p>
                       <p className="text-sm font-bold text-white">{t.totalLoads}</p>
-                      <p className="text-[10px] text-slate-400">loads</p>
+                      <p className="text-xs text-slate-400">loads</p>
                       <p className="text-sm font-bold text-cyan-400">{t.onTimeRate}%</p>
-                      <p className="text-[10px] text-slate-400">on-time</p>
+                      <p className="text-xs text-slate-400">on-time</p>
                     </div>
                   ))}
                 </div>
@@ -166,11 +166,11 @@ export default function CarrierScorecardPage() {
                     </span>
                     <div className="text-left">
                       <p className="text-white font-medium text-sm">{c.companyName}</p>
-                      <p className="text-[10px] text-slate-500">DOT# {c.dotNumber} · {c.totalLoads} loads</p>
+                      <p className="text-xs text-slate-500">DOT# {c.dotNumber} · {c.totalLoads} loads</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {c.hazmatAuthorized && <Badge className="bg-orange-500/20 text-orange-400 text-[9px]"><Flame className="w-3 h-3 mr-0.5" />HM</Badge>}
+                    {c.hazmatAuthorized && <Badge className="bg-orange-500/20 text-orange-400 text-xs"><Flame className="w-3 h-3 mr-0.5" />HM</Badge>}
                     <div className={cn("px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r text-white", GRADE_COLORS[c.grade])}>{c.grade} · {c.score}</div>
                   </div>
                 </button>

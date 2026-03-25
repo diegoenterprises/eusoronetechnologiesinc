@@ -469,7 +469,7 @@ export default function TermsOfService() {
                     {section.title}
                   </span>
                   {section.highlight && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 mr-2">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 mr-2">
                       IMPORTANT
                     </span>
                   )}

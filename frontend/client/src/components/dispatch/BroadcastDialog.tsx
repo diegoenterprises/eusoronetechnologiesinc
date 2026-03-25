@@ -181,7 +181,7 @@ export default function BroadcastDialog({ open, onClose }: BroadcastDialogProps)
                     />
                     <span className="text-white">{d.name || `Driver #${d.id}`}</span>
                     <Badge className={cn(
-                      "ml-auto border-0 text-[9px] px-1",
+                      "ml-auto border-0 text-xs px-1",
                       d.status === "available" ? "bg-green-500/20 text-green-400" : "bg-orange-500/20 text-orange-400"
                     )}>
                       {d.status}
@@ -199,7 +199,7 @@ export default function BroadcastDialog({ open, onClose }: BroadcastDialogProps)
               {TEMPLATES.map(t => (
                 <button
                   key={t.id}
-                  className="text-[10px] px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.06] text-slate-300 hover:bg-white/[0.08] transition-all"
+                  className="text-xs px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.06] text-slate-300 hover:bg-white/[0.08] transition-all"
                   onClick={() => setMessage(t.text)}
                 >
                   {t.label}
@@ -220,7 +220,7 @@ export default function BroadcastDialog({ open, onClose }: BroadcastDialogProps)
               className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-purple-500/50 resize-none"
             />
             <div className="flex items-center justify-between mt-1">
-              <span className="text-[10px] text-slate-500">{message.length}/500</span>
+              <span className="text-xs text-slate-500">{message.length}/500</span>
             </div>
           </div>
 

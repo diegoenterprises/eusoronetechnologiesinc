@@ -368,9 +368,9 @@ export default function DispatchCommandCenter() {
             {t('dispatchCommandCenter.title')}
           </h1>
           {isConnected ? (
-            <Badge className="bg-green-500/20 text-green-400 border-0 text-[10px] gap-1"><Wifi className="w-3 h-3" />Live</Badge>
+            <Badge className="bg-green-500/20 text-green-400 border-0 text-xs gap-1"><Wifi className="w-3 h-3" />Live</Badge>
           ) : (
-            <Badge className="bg-red-500/20 text-red-400 border-0 text-[10px] gap-1"><WifiOff className="w-3 h-3" />Offline</Badge>
+            <Badge className="bg-red-500/20 text-red-400 border-0 text-xs gap-1"><WifiOff className="w-3 h-3" />Offline</Badge>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -386,10 +386,10 @@ export default function DispatchCommandCenter() {
           </div>
           {/* View Toggle */}
           <div className="flex items-center border border-white/[0.08] rounded-md overflow-hidden">
-            <button onClick={() => setViewMode("kanban")} className={cn("px-2 py-1 text-[10px] font-medium transition-colors", viewMode === "kanban" ? "bg-cyan-500/20 text-cyan-400" : "text-slate-500 hover:text-slate-300")}>
+            <button onClick={() => setViewMode("kanban")} className={cn("px-2 py-1 text-xs font-medium transition-colors", viewMode === "kanban" ? "bg-cyan-500/20 text-cyan-400" : "text-slate-500 hover:text-slate-300")}>
               <Columns3 className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => setViewMode("list")} className={cn("px-2 py-1 text-[10px] font-medium transition-colors", viewMode === "list" ? "bg-cyan-500/20 text-cyan-400" : "text-slate-500 hover:text-slate-300")}>
+            <button onClick={() => setViewMode("list")} className={cn("px-2 py-1 text-xs font-medium transition-colors", viewMode === "list" ? "bg-cyan-500/20 text-cyan-400" : "text-slate-500 hover:text-slate-300")}>
               <List className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -405,7 +405,7 @@ export default function DispatchCommandCenter() {
             {smartAssignMutation.isPending ? "Analyzing..." : "Smart Assign"}
           </Button>
           {/* ELD Toggle */}
-          <button onClick={() => setShowELDBar(!showELDBar)} className={cn("px-2 py-1 rounded text-[10px] font-medium border border-white/[0.08] transition-colors", showELDBar ? "bg-purple-500/20 text-purple-400" : "text-slate-500 hover:text-slate-300")} title="Toggle ELD bar">
+          <button onClick={() => setShowELDBar(!showELDBar)} className={cn("px-2 py-1 rounded text-xs font-medium border border-white/[0.08] transition-colors", showELDBar ? "bg-purple-500/20 text-purple-400" : "text-slate-500 hover:text-slate-300")} title="Toggle ELD bar">
             <Activity className="w-3.5 h-3.5" />
           </button>
           <Button variant="outline" size="sm" className="h-7 px-2 text-xs bg-white/[0.02] border-white/[0.08] hover:bg-white/[0.06]" onClick={handleRefresh}>
@@ -443,7 +443,7 @@ export default function DispatchCommandCenter() {
             )}
           >
             {t.label}
-            <span className={cn("text-[10px] font-bold tabular-nums", statusTab === t.key ? t.color : "text-slate-600")}>
+            <span className={cn("text-xs font-bold tabular-nums", statusTab === t.key ? t.color : "text-slate-600")}>
               {t.count}
             </span>
             {t.key === "exceptions" && t.count > 0 && (
@@ -453,7 +453,7 @@ export default function DispatchCommandCenter() {
         ))}
 
         {/* Inline stats */}
-        <div className="ml-auto hidden lg:flex items-center gap-3 text-[10px]">
+        <div className="ml-auto hidden lg:flex items-center gap-3 text-xs">
           <span className="text-slate-500">Drivers: <span className="text-green-400 font-semibold">{stats?.availableDrivers || 0}</span>/<span className="text-slate-400">{stats?.totalDrivers || 0}</span></span>
         </div>
       </div>
@@ -489,12 +489,12 @@ export default function DispatchCommandCenter() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-white">{issue.loadNumber || `Issue #${issue.id}`}</span>
-                        <Badge className={cn("text-[9px] border-0", issue.type === "breakdown" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400")}>{issue.type || "exception"}</Badge>
+                        <Badge className={cn("text-xs border-0", issue.type === "breakdown" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400")}>{issue.type || "exception"}</Badge>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{issue.description || "No details"}</p>
-                      {issue.driver && <span className="text-[10px] text-slate-500 mt-1 flex items-center gap-1"><User className="w-3 h-3" />{issue.driver}</span>}
+                      <p className="text-xs text-slate-400 mt-0.5">{issue.description || "No details"}</p>
+                      {issue.driver && <span className="text-xs text-slate-500 mt-1 flex items-center gap-1"><User className="w-3 h-3" />{issue.driver}</span>}
                     </div>
-                    <span className="text-[10px] text-slate-600 shrink-0">{issue.reportedAt ? new Date(issue.reportedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+                    <span className="text-xs text-slate-600 shrink-0">{issue.reportedAt ? new Date(issue.reportedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</span>
                   </div>
                 ))
               )}
@@ -534,17 +534,17 @@ export default function DispatchCommandCenter() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-white">{load.loadNumber}</span>
-                            <Badge className={cn("text-[9px] border-0", ss.bg, ss.text)}>{ss.label}</Badge>
-                            {load.hazmatClass && <Badge className="bg-red-500/15 text-red-400 border-0 text-[9px]">HM-{load.hazmatClass}</Badge>}
+                            <Badge className={cn("text-xs border-0", ss.bg, ss.text)}>{ss.label}</Badge>
+                            {load.hazmatClass && <Badge className="bg-red-500/15 text-red-400 border-0 text-xs">HM-{load.hazmatClass}</Badge>}
                           </div>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-500">
+                          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500">
                             <MapPin className="w-3 h-3" />{load.origin} → {load.destination}
                             {load.driverName && <><span className="text-slate-600 mx-1">•</span><User className="w-3 h-3" />{load.driverName}</>}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
                           {(load.rate ?? 0) > 0 && <div className="text-xs font-semibold text-emerald-400">${Number(load.rate).toLocaleString()}</div>}
-                          {load.pickupDate && <div className="text-[10px] text-slate-500 flex items-center gap-1 justify-end"><Clock className="w-3 h-3" />{new Date(load.pickupDate).toLocaleDateString()}</div>}
+                          {load.pickupDate && <div className="text-xs text-slate-500 flex items-center gap-1 justify-end"><Clock className="w-3 h-3" />{new Date(load.pickupDate).toLocaleDateString()}</div>}
                         </div>
                         <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
                       </div>
@@ -582,11 +582,11 @@ export default function DispatchCommandCenter() {
           <div className="flex items-center gap-2 px-4 py-1.5 overflow-x-auto">
             <div className="flex items-center gap-1.5 shrink-0">
               <Activity className="w-3.5 h-3.5 text-purple-400" />
-              <span className="text-[10px] font-semibold text-slate-400 uppercase">ELD</span>
+              <span className="text-xs font-semibold text-slate-400 uppercase">ELD</span>
             </div>
             <div className="w-px h-4 bg-white/[0.06] shrink-0" />
             {eldDrivers.length === 0 ? (
-              <span className="text-[10px] text-slate-600">No ELD data — connect provider to see driver HOS</span>
+              <span className="text-xs text-slate-600">No ELD data — connect provider to see driver HOS</span>
             ) : (
               eldDrivers.slice(0, 20).map((d: any) => {
                 const hos = d.hosRemaining ?? d.hoursRemaining ?? null;
@@ -597,7 +597,7 @@ export default function DispatchCommandCenter() {
                   <div
                     key={d.id || d.driverId}
                     className={cn(
-                      "flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] shrink-0 transition-colors",
+                      "flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs shrink-0 transition-colors",
                       isCritical ? "bg-red-500/10 border-red-500/20" : isWarning ? "bg-amber-500/10 border-amber-500/20" : "bg-white/[0.02] border-white/[0.04]"
                     )}
                     title={`${d.name}: ${hos !== null ? `${hos}h remaining` : hosConfig.label}`}
@@ -609,7 +609,7 @@ export default function DispatchCommandCenter() {
                         {hos.toFixed(1)}h
                       </span>
                     ) : (
-                      <span className={cn("text-[9px]", hosConfig.color)}>{hosConfig.label}</span>
+                      <span className={cn("text-xs", hosConfig.color)}>{hosConfig.label}</span>
                     )}
                     {d.hasViolation && <AlertTriangle className="w-3 h-3 text-red-400 animate-pulse" />}
                   </div>
@@ -617,7 +617,7 @@ export default function DispatchCommandCenter() {
               })
             )}
             {eldDrivers.length > 20 && (
-              <span className="text-[10px] text-slate-500 shrink-0">+{eldDrivers.length - 20} more</span>
+              <span className="text-xs text-slate-500 shrink-0">+{eldDrivers.length - 20} more</span>
             )}
           </div>
         </div>
@@ -632,7 +632,7 @@ export default function DispatchCommandCenter() {
               <div className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-amber-400" />
                 <h2 className="text-sm font-bold text-white">Smart Assign Suggestions</h2>
-                <Badge className="bg-amber-500/20 text-amber-400 border-0 text-[10px]">{smartSuggestions.length} loads</Badge>
+                <Badge className="bg-amber-500/20 text-amber-400 border-0 text-xs">{smartSuggestions.length} loads</Badge>
               </div>
               <div className="flex items-center gap-2">
                 {selectedAssignments.size > 0 && (
@@ -656,9 +656,9 @@ export default function DispatchCommandCenter() {
                     <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/[0.04] bg-white/[0.01]">
                       <Package className="w-4 h-4 text-cyan-400" />
                       <span className="text-xs font-bold text-white">{loadSugg.loadNumber}</span>
-                      <span className="text-[10px] text-slate-500"><MapPin className="w-3 h-3 inline mr-0.5" />{loadSugg.origin} → {loadSugg.destination}</span>
-                      {loadSugg.hazmatClass && <Badge className="bg-red-500/15 text-red-400 border-0 text-[9px]">HM-{loadSugg.hazmatClass}</Badge>}
-                      <span className="text-[10px] text-slate-500 ml-auto"><Clock className="w-3 h-3 inline mr-0.5" />{loadSugg.estimatedTripHours}h trip</span>
+                      <span className="text-xs text-slate-500"><MapPin className="w-3 h-3 inline mr-0.5" />{loadSugg.origin} → {loadSugg.destination}</span>
+                      {loadSugg.hazmatClass && <Badge className="bg-red-500/15 text-red-400 border-0 text-xs">HM-{loadSugg.hazmatClass}</Badge>}
+                      <span className="text-xs text-slate-500 ml-auto"><Clock className="w-3 h-3 inline mr-0.5" />{loadSugg.estimatedTripHours}h trip</span>
                     </div>
                     {/* Driver Suggestions */}
                     <div className="divide-y divide-white/[0.03]">
@@ -682,7 +682,7 @@ export default function DispatchCommandCenter() {
                               }}
                             >
                               <div className={cn(
-                                "w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold",
+                                "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold",
                                 idx === 0 ? "bg-amber-500/20 text-amber-400" : idx === 1 ? "bg-slate-500/20 text-slate-300" : "bg-orange-500/20 text-orange-400"
                               )}>
                                 #{idx + 1}
@@ -695,18 +695,18 @@ export default function DispatchCommandCenter() {
                                       "h-1.5 rounded-full",
                                       ds.score >= 70 ? "bg-green-500" : ds.score >= 50 ? "bg-amber-500" : "bg-red-500"
                                     )} style={{ width: `${ds.score}px` }} />
-                                    <span className={cn("text-[10px] font-bold tabular-nums", ds.score >= 70 ? "text-green-400" : ds.score >= 50 ? "text-amber-400" : "text-red-400")}>{ds.score}</span>
+                                    <span className={cn("text-xs font-bold tabular-nums", ds.score >= 70 ? "text-green-400" : ds.score >= 50 ? "text-amber-400" : "text-red-400")}>{ds.score}</span>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   {ds.reasons.slice(0, 3).map((r: string, ri: number) => (
-                                    <span key={ri} className="text-[9px] text-slate-500">{r}{ri < 2 && ri < ds.reasons.length - 1 ? " ·" : ""}</span>
+                                    <span key={ri} className="text-xs text-slate-500">{r}{ri < 2 && ri < ds.reasons.length - 1 ? " ·" : ""}</span>
                                   ))}
                                 </div>
                               </div>
                               <div className="text-right shrink-0 space-y-0.5">
-                                <div className="text-[10px] text-slate-400">{ds.distanceMiles} mi deadhead</div>
-                                <div className="text-[10px] text-slate-500">${ds.estimatedCost} est.</div>
+                                <div className="text-xs text-slate-400">{ds.distanceMiles} mi deadhead</div>
+                                <div className="text-xs text-slate-500">${ds.estimatedCost} est.</div>
                               </div>
                               <div className={cn(
                                 "w-5 h-5 rounded-full border flex items-center justify-center shrink-0",

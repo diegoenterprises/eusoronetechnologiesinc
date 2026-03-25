@@ -191,10 +191,10 @@ const WidgetCard: React.FC<{
               </div>
               <div className="p-3 rounded-xl bg-white/5 border border-white/10">
                 <p className="text-xs font-semibold text-gray-300 mb-1">Data Source</p>
-                <p className="text-[10px] text-gray-500">Connected to live platform data</p>
+                <p className="text-xs text-gray-500">Connected to live platform data</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[10px] text-emerald-400 font-semibold">Active</span>
+                  <span className="text-xs text-emerald-400 font-semibold">Active</span>
                 </div>
               </div>
             </div>
@@ -240,7 +240,7 @@ const PlaceholderWidget: React.FC<{ widget: WidgetDefinition }> = ({ widget }) =
       </div>
       <p className="text-base font-semibold text-white/80">{widget.name}</p>
       <p className="text-xs text-gray-500 mt-1 text-center px-2 max-w-[200px]">{widget.description}</p>
-      <div className={`mt-3 px-3 py-1 rounded-full text-[10px] font-medium ${accent.bg} ${accent.text}`}>
+      <div className={`mt-3 px-3 py-1 rounded-full text-xs font-medium ${accent.bg} ${accent.text}`}>
         {widget.category}
       </div>
     </div>

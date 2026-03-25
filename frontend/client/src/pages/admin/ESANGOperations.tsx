@@ -70,7 +70,7 @@ export default function ESANGOperations() {
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} className={cn("flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all border", tab === t.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-md" : L ? "bg-white border-slate-200 text-slate-600 hover:border-slate-300" : "bg-slate-800/60 border-slate-700/50 text-slate-400 hover:border-slate-600")}>
             {t.icon}{t.label}
-            {t.badge ? <span className="ml-1 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{t.badge}</span> : null}
+            {t.badge ? <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">{t.badge}</span> : null}
           </button>
         ))}
       </div>
@@ -95,7 +95,7 @@ export default function ESANGOperations() {
                       <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{d.decisionId} · {d.modelVersion}</p>
                     </div>
                   </div>
-                  <Badge className={cn("text-[10px]", d.status === "executed" ? "bg-green-500/15 text-green-500" : d.status === "overridden" ? "bg-amber-500/15 text-amber-500" : "bg-slate-500/15 text-slate-500")}>{d.status}</Badge>
+                  <Badge className={cn("text-xs", d.status === "executed" ? "bg-green-500/15 text-green-500" : d.status === "overridden" ? "bg-amber-500/15 text-amber-500" : "bg-slate-500/15 text-slate-500")}>{d.status}</Badge>
                 </div>
               ))}
             </CardContent>
@@ -122,7 +122,7 @@ export default function ESANGOperations() {
             {metricsQuery.data && Object.entries(metricsQuery.data).map(([type, m]: [string, any]) => (
               <Card key={type} className={cc}>
                 <CardContent className="p-4">
-                  <p className={cn("text-[10px] uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>{type.replace(/_/g, " ")}</p>
+                  <p className={cn("text-xs uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>{type.replace(/_/g, " ")}</p>
                   <div className="flex items-end gap-2 mt-1">
                     <p className={cn("text-2xl font-bold", m.accuracy >= 90 ? (L ? "text-green-600" : "text-green-400") : m.accuracy >= 80 ? (L ? "text-amber-600" : "text-amber-400") : (L ? "text-red-600" : "text-red-400"))}>{m.accuracy?.toFixed(1)}%</p>
                     <span className={cn("text-xs mb-1", L ? "text-slate-400" : "text-slate-500")}>accuracy</span>
@@ -131,7 +131,7 @@ export default function ESANGOperations() {
                     <span className={L ? "text-slate-500" : "text-slate-400"}>Override: {m.overrideRate?.toFixed(1)}%</span>
                     <span className={L ? "text-slate-500" : "text-slate-400"}>· {m.totalDecisions} decisions</span>
                   </div>
-                  {disabledTypes.includes(type) && <Badge className="mt-2 bg-red-500/15 text-red-500 text-[10px]">DISABLED</Badge>}
+                  {disabledTypes.includes(type) && <Badge className="mt-2 bg-red-500/15 text-red-500 text-xs">DISABLED</Badge>}
                 </CardContent>
               </Card>
             ))}
@@ -148,23 +148,23 @@ export default function ESANGOperations() {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className={sc}>
-                    <p className={cn("text-[10px] uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>Status</p>
+                    <p className={cn("text-xs uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>Status</p>
                     <div className="flex items-center gap-2 mt-1">
                       {dispatchConfigQuery.data.enabled ? <ToggleRight className="w-5 h-5 text-green-500" /> : <ToggleLeft className="w-5 h-5 text-slate-400" />}
                       <span className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{dispatchConfigQuery.data.enabled ? "Enabled" : "Disabled"}</span>
                     </div>
                   </div>
                   <div className={sc}>
-                    <p className={cn("text-[10px] uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>Confidence Threshold</p>
+                    <p className={cn("text-xs uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>Confidence Threshold</p>
                     <p className={cn("text-lg font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{(dispatchConfigQuery.data.confidenceThreshold * 100).toFixed(0)}%</p>
                   </div>
                   <div className={sc}>
-                    <p className={cn("text-[10px] uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>Daily Quota</p>
+                    <p className={cn("text-xs uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>Daily Quota</p>
                     <p className={cn("text-lg font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{(dispatchConfigQuery.data.dailyQuota * 100).toFixed(0)}%</p>
                     <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{dispatchConfigQuery.data.dailyUsed}/{dispatchConfigQuery.data.dailyTotal} used</p>
                   </div>
                   <div className={sc}>
-                    <p className={cn("text-[10px] uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>Override Window</p>
+                    <p className={cn("text-xs uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>Override Window</p>
                     <p className={cn("text-lg font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{dispatchConfigQuery.data.overrideWindowHours}h</p>
                   </div>
                 </div>
@@ -228,7 +228,7 @@ export default function ESANGOperations() {
                   <CardContent className="p-4 flex items-center gap-3">
                     <div className={cn("p-2 rounded-lg", "bg-[#1473FF]/10 text-[#1473FF]")}>{m.icon}</div>
                     <div>
-                      <p className={cn("text-[10px] uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>{m.label}</p>
+                      <p className={cn("text-xs uppercase tracking-wider font-medium", L ? "text-slate-400" : "text-slate-500")}>{m.label}</p>
                       <p className={cn("text-lg font-bold", L ? "text-slate-800" : "text-white")}>{m.value}</p>
                     </div>
                   </CardContent>
@@ -249,7 +249,7 @@ export default function ESANGOperations() {
                       <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{r.carrier} · Expires {new Date(r.expiryDate).toLocaleDateString()}</p>
                     </div>
                   </div>
-                  <Badge className={cn("text-[10px]", r.urgency === "critical" ? "bg-red-500/15 text-red-500" : r.urgency === "warning" ? "bg-amber-500/15 text-amber-500" : "bg-green-500/15 text-green-500")}>{r.type?.replace(/_/g, " ")}</Badge>
+                  <Badge className={cn("text-xs", r.urgency === "critical" ? "bg-red-500/15 text-red-500" : r.urgency === "warning" ? "bg-amber-500/15 text-amber-500" : "bg-green-500/15 text-green-500")}>{r.type?.replace(/_/g, " ")}</Badge>
                 </div>
               ))}
             </CardContent>

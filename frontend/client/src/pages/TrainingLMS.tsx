@@ -492,13 +492,13 @@ function CourseCard({ course, onClick, isDark, cardBg, textPrimary, textSecondar
           </div>
           <div className="flex gap-1.5">
             {course.isMandatory && (
-              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Required</Badge>
+              <Badge variant="destructive" className="text-xs px-1.5 py-0">Required</Badge>
             )}
             {course.hazmatSpecific && (
-              <Badge className="bg-red-500/20 text-red-400 text-[10px] px-1.5 py-0">HAZMAT</Badge>
+              <Badge className="bg-red-500/20 text-red-400 text-xs px-1.5 py-0">HAZMAT</Badge>
             )}
             {course.crossBorder && (
-              <Badge className="bg-violet-500/20 text-violet-400 text-[10px] px-1.5 py-0">Cross-Border</Badge>
+              <Badge className="bg-violet-500/20 text-violet-400 text-xs px-1.5 py-0">Cross-Border</Badge>
             )}
           </div>
         </div>
@@ -510,7 +510,7 @@ function CourseCard({ course, onClick, isDark, cardBg, textPrimary, textSecondar
           <span className="flex items-center gap-1"><Target className="w-3 h-3" /> {course.passingScore}%</span>
         </div>
         <div className="flex items-center justify-between pt-1">
-          <Badge variant="outline" className="text-[10px] capitalize">{course.difficultyLevel}</Badge>
+          <Badge variant="outline" className="text-xs capitalize">{course.difficultyLevel}</Badge>
           <Button variant="ghost" size="sm" className="text-blue-400 text-xs px-2 h-7">
             View Course <ChevronRight className="w-3 h-3 ml-1" />
           </Button>
@@ -612,7 +612,7 @@ function CourseDetail({ course, isLoading, onEnroll, enrolling, onOpenLesson, on
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center justify-between">
                     <h4 className={cn("font-medium text-sm", textPrimary)}>{mod.title}</h4>
-                    <Badge variant="outline" className="text-[10px] capitalize">{mod.contentType}</Badge>
+                    <Badge variant="outline" className="text-xs capitalize">{mod.contentType}</Badge>
                   </div>
                   <p className={cn("text-xs", textSecondary)}>{mod.description}</p>
                   <div className={cn("flex items-center gap-3 text-xs", textSecondary)}>
@@ -905,7 +905,7 @@ function EnrollmentsList({ enrollments, isLoading, onOpenCourse, isDark, cardBg,
                   <h3 className={cn("font-medium text-sm", textPrimary)}>{e.courseTitle}</h3>
                   <p className={cn("text-xs", textSecondary)}>{e.courseDescription?.substring(0, 100)}...</p>
                   <div className="flex items-center gap-3 text-xs">
-                    <Badge variant="outline" className="capitalize text-[10px]">{e.courseCategory}</Badge>
+                    <Badge variant="outline" className="capitalize text-xs">{e.courseCategory}</Badge>
                     <span className={textSecondary}>{e.courseModuleCount} modules</span>
                     <span className={cn("font-medium capitalize", statusColor)}>{enrollment.status.replace("_", " ")}</span>
                   </div>
@@ -969,7 +969,7 @@ function CertificatesList({ certificates, isLoading, isDark, cardBg, textPrimary
                 <p>Issued: <span className={textPrimary}>{cert.issuedAt ? new Date(cert.issuedAt).toLocaleDateString() : "N/A"}</span></p>
                 <p>Expires: <span className={cn(isExpired ? "text-red-400" : textPrimary)}>{cert.expiresAt ? new Date(cert.expiresAt).toLocaleDateString() : "Never"}</span></p>
               </div>
-              <Badge variant="outline" className="capitalize text-[10px]">{c.courseCategory}</Badge>
+              <Badge variant="outline" className="capitalize text-xs">{c.courseCategory}</Badge>
             </CardContent>
           </Card>
         );

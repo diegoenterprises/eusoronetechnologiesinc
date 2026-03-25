@@ -59,11 +59,11 @@ function FutureVisionPanel() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-white">{g.name}</span>
-                    <span className={cn("text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full border", statusColor)}>{g.status}</span>
+                    <span className={cn("text-xs font-bold uppercase px-1.5 py-0.5 rounded-full border", statusColor)}>{g.status}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[9px] text-slate-500">{g.id}</span>
-                    <span className={cn("text-[9px] font-semibold capitalize", prioColor)}>{g.priority} priority</span>
+                    <span className="text-xs text-slate-500">{g.id}</span>
+                    <span className={cn("text-xs font-semibold capitalize", prioColor)}>{g.priority} priority</span>
                   </div>
                 </div>
               </div>
@@ -95,7 +95,7 @@ export default function Phase5CommandCenter() {
           const active = tab === t.id;
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-t-lg text-[10px] font-semibold transition-all whitespace-nowrap",
+              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-t-lg text-xs font-semibold transition-all whitespace-nowrap",
                 active ? "bg-white/[0.06] text-white border-b-2 border-purple-500" : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.02]")}>
               <Icon className={cn("w-3.5 h-3.5", active ? t.color : "text-slate-600")} />
               {t.label}

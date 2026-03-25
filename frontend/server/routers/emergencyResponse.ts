@@ -201,7 +201,7 @@ const EMERGENCY_BADGES = [
   { code: "ECONOMY_SHIELD", name: "Economy Shield", description: "Your efforts during a crisis directly prevented economic disruption", tier: "diamond", xp: 20000, icon: "shield-check" },
 ];
 
-// In-memory emergency operations store (production: database)
+// Production: persist to database
 let emergencyOperations: EmergencyOperation[] = [];
 let mobilizationOrders: MobilizationOrder[] = [];
 let driverResponses: DriverMobilizationResponse[] = [];

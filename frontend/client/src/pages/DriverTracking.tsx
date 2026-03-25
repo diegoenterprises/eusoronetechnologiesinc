@@ -272,7 +272,7 @@ export default function DriverTracking() {
                     {/* Alert Header */}
                     <div className="flex items-center justify-between p-4">
                       <div className="flex items-center gap-3">
-                        <Badge variant={alert.severity === "emergency" ? "destructive" : "secondary"} className="uppercase text-[10px] font-bold">
+                        <Badge variant={alert.severity === "emergency" ? "destructive" : "secondary"} className="uppercase text-xs font-bold">
                           {alert.severity}
                         </Badge>
                         <div>
@@ -296,16 +296,16 @@ export default function DriverTracking() {
                           <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border">
                             <User className="w-4 h-4 text-blue-500 shrink-0" />
                             <div>
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Person</p>
+                              <p className="text-xs text-muted-foreground uppercase tracking-wider">Person</p>
                               <p className="text-sm font-semibold">{alert.userName}</p>
-                              {alert.userRole && <p className="text-[10px] text-muted-foreground capitalize">{alert.userRole.replace(/_/g, " ")}</p>}
+                              {alert.userRole && <p className="text-xs text-muted-foreground capitalize">{alert.userRole.replace(/_/g, " ")}</p>}
                             </div>
                           </div>
                           {alert.userPhone && (
                             <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border">
                               <Phone className="w-4 h-4 text-green-500 shrink-0" />
                               <div>
-                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Phone</p>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider">Phone</p>
                                 <a href={`tel:${alert.userPhone}`} className="text-sm font-semibold text-green-500 hover:underline">{alert.userPhone}</a>
                               </div>
                             </div>
@@ -314,7 +314,7 @@ export default function DriverTracking() {
                             <div className="flex items-center gap-3 p-3 rounded-lg bg-background/50 border">
                               <MapPin className="w-4 h-4 text-red-500 shrink-0" />
                               <div>
-                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Location</p>
+                                <p className="text-xs text-muted-foreground uppercase tracking-wider">Location</p>
                                 <a
                                   href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`}
                                   target="_blank"
@@ -338,16 +338,16 @@ export default function DriverTracking() {
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                               <div>
-                                <p className="text-[10px] text-muted-foreground">Name</p>
+                                <p className="text-xs text-muted-foreground">Name</p>
                                 <p className="text-sm font-semibold">{alert.emergencyContact.name}</p>
-                                {alert.emergencyContact.relationship && <p className="text-[10px] text-muted-foreground capitalize">{alert.emergencyContact.relationship}</p>}
+                                {alert.emergencyContact.relationship && <p className="text-xs text-muted-foreground capitalize">{alert.emergencyContact.relationship}</p>}
                               </div>
                               <div>
-                                <p className="text-[10px] text-muted-foreground">Phone</p>
+                                <p className="text-xs text-muted-foreground">Phone</p>
                                 <a href={`tel:${alert.emergencyContact.phone}`} className="text-sm font-semibold text-green-500 hover:underline">{alert.emergencyContact.phone}</a>
                               </div>
                               <div>
-                                <p className="text-[10px] text-muted-foreground">Email</p>
+                                <p className="text-xs text-muted-foreground">Email</p>
                                 <a href={`mailto:${alert.emergencyContact.email}`} className="text-sm font-semibold text-blue-500 hover:underline">{alert.emergencyContact.email}</a>
                               </div>
                             </div>

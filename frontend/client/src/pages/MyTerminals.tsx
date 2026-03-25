@@ -80,12 +80,12 @@ export default function MyTerminals() {
                 </span>
                 <div className="flex items-center gap-2 mt-1">
                   {classification.supplyChainRole && (
-                    <Badge className={cn("text-[10px] border font-semibold", isLight ? "bg-purple-100 text-purple-700 border-purple-200" : "bg-purple-500/20 text-purple-400 border-purple-500/30")}>
+                    <Badge className={cn("text-xs border font-semibold", isLight ? "bg-purple-100 text-purple-700 border-purple-200" : "bg-purple-500/20 text-purple-400 border-purple-500/30")}>
                       {classification.supplyChainRole}
                     </Badge>
                   )}
                   {classification.marketerType && (
-                    <Badge className={cn("text-[10px] border font-semibold", isLight ? "bg-indigo-100 text-indigo-700 border-indigo-200" : "bg-indigo-500/20 text-indigo-400 border-indigo-500/30")}>
+                    <Badge className={cn("text-xs border font-semibold", isLight ? "bg-indigo-100 text-indigo-700 border-indigo-200" : "bg-indigo-500/20 text-indigo-400 border-indigo-500/30")}>
                       {classification.marketerType} marketer
                     </Badge>
                   )}
@@ -140,7 +140,7 @@ export default function MyTerminals() {
                       {t.terminalName} {t.terminalCode ? <span className={cn("text-xs font-normal", isLight ? "text-slate-400" : "text-slate-500")}>({t.terminalCode})</span> : ""}
                     </h3>
                     {t.terminalType && (
-                      <Badge className={cn("text-[9px] border mt-1", isLight ? "bg-slate-100 text-slate-600 border-slate-200" : "bg-slate-700/50 text-slate-300 border-slate-600/30")}>
+                      <Badge className={cn("text-xs border mt-1", isLight ? "bg-slate-100 text-slate-600 border-slate-200" : "bg-slate-700/50 text-slate-300 border-slate-600/30")}>
                         {getTerminalTypeLabel(t.terminalType)}
                       </Badge>
                     )}

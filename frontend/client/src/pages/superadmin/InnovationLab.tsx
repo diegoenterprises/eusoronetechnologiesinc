@@ -76,7 +76,7 @@ export default function InnovationLab() {
           return (
             <div key={s} className={cn("p-3 rounded-xl border", STATUS_COLORS[s])}>
               <span className="text-lg font-bold font-mono">{count}</span>
-              <p className="text-[10px] capitalize mt-0.5 opacity-70">{s}</p>
+              <p className="text-xs capitalize mt-0.5 opacity-70">{s}</p>
             </div>
           );
         })}
@@ -90,7 +90,7 @@ export default function InnovationLab() {
           <CardContent className="p-10 text-center">
             <Beaker className="w-10 h-10 text-slate-600 mx-auto mb-3" />
             <p className="text-sm text-slate-400 font-semibold">No Experiments Yet</p>
-            <p className="text-[10px] text-slate-500 mt-1">Create your first A/B test to validate product hypotheses</p>
+            <p className="text-xs text-slate-500 mt-1">Create your first A/B test to validate product hypotheses</p>
           </CardContent>
         </Card>
       ) : (
@@ -102,40 +102,40 @@ export default function InnovationLab() {
                   <div className="flex-1 min-w-0" onClick={() => setSelectedId(selectedId === exp.id ? null : exp.id)}>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-white truncate">{exp.name}</span>
-                      <Badge className={cn("text-[9px]", STATUS_COLORS[exp.status as ExpStatus])}>{exp.status}</Badge>
+                      <Badge className={cn("text-xs", STATUS_COLORS[exp.status as ExpStatus])}>{exp.status}</Badge>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">{exp.hypothesisStatement}</p>
+                    <p className="text-xs text-slate-500 mt-0.5 truncate">{exp.hypothesisStatement}</p>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-[9px] text-slate-600"><Users className="w-3 h-3 inline mr-0.5" />{exp.targetUserSegment}</span>
-                      <span className="text-[9px] text-slate-600"><Target className="w-3 h-3 inline mr-0.5" />Min {exp.minSampleSize} samples</span>
-                      <span className="text-[9px] text-slate-600">{(exp.variants || []).length} variants</span>
+                      <span className="text-xs text-slate-600"><Users className="w-3 h-3 inline mr-0.5" />{exp.targetUserSegment}</span>
+                      <span className="text-xs text-slate-600"><Target className="w-3 h-3 inline mr-0.5" />Min {exp.minSampleSize} samples</span>
+                      <span className="text-xs text-slate-600">{(exp.variants || []).length} variants</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 ml-3">
                     {exp.status === "draft" && (
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] text-emerald-400 hover:bg-emerald-500/10" onClick={() => statusM.mutate({ id: exp.id, status: "active" })}>
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-emerald-400 hover:bg-emerald-500/10" onClick={() => statusM.mutate({ id: exp.id, status: "active" })}>
                         <Play className="w-3 h-3 mr-0.5" />Start
                       </Button>
                     )}
                     {exp.status === "active" && (
                       <>
-                        <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] text-amber-400 hover:bg-amber-500/10" onClick={() => statusM.mutate({ id: exp.id, status: "paused" })}>
+                        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-amber-400 hover:bg-amber-500/10" onClick={() => statusM.mutate({ id: exp.id, status: "paused" })}>
                           <Pause className="w-3 h-3 mr-0.5" />Pause
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] text-blue-400 hover:bg-blue-500/10" onClick={() => computeM.mutate({ experimentId: exp.id })}>
+                        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-blue-400 hover:bg-blue-500/10" onClick={() => computeM.mutate({ experimentId: exp.id })}>
                           <BarChart3 className="w-3 h-3 mr-0.5" />Compute
                         </Button>
                       </>
                     )}
                     {exp.status === "paused" && (
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] text-emerald-400 hover:bg-emerald-500/10" onClick={() => statusM.mutate({ id: exp.id, status: "active" })}>
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-emerald-400 hover:bg-emerald-500/10" onClick={() => statusM.mutate({ id: exp.id, status: "active" })}>
                         <Play className="w-3 h-3 mr-0.5" />Resume
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] text-cyan-400 hover:bg-cyan-500/10" onClick={() => setSelectedId(exp.id)}>
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-cyan-400 hover:bg-cyan-500/10" onClick={() => setSelectedId(exp.id)}>
                       <Eye className="w-3 h-3" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[9px] text-red-400 hover:bg-red-500/10" onClick={() => { if (confirm("Delete this experiment?")) deleteM.mutate({ id: exp.id }); }}>
+                    <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs text-red-400 hover:bg-red-500/10" onClick={() => { if (confirm("Delete this experiment?")) deleteM.mutate({ id: exp.id }); }}>
                       <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
@@ -157,13 +157,13 @@ export default function InnovationLab() {
           <CardContent className="space-y-4">
             {/* Variant Assignment Counts */}
             <div>
-              <p className="text-[10px] text-slate-500 mb-2 uppercase tracking-wider">Variant Assignments</p>
+              <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider">Variant Assignments</p>
               <div className="flex gap-2">
                 {(detail.variants || []).map((v: any) => (
                   <div key={v.variantId} className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06] flex-1 text-center">
                     <p className="text-xs font-semibold text-white">{v.name}</p>
                     <p className="text-lg font-bold font-mono text-purple-400">{detail.assignmentCounts?.[v.variantId] || 0}</p>
-                    <p className="text-[9px] text-slate-500">users</p>
+                    <p className="text-xs text-slate-500">users</p>
                   </div>
                 ))}
               </div>
@@ -172,9 +172,9 @@ export default function InnovationLab() {
             {/* Results Table */}
             {detail.results && detail.results.length > 0 ? (
               <div>
-                <p className="text-[10px] text-slate-500 mb-2 uppercase tracking-wider">Statistical Results</p>
+                <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider">Statistical Results</p>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-[10px]">
+                  <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-white/[0.06] text-slate-500">
                         <th className="text-left py-1.5 px-2">Variant</th>
@@ -207,7 +207,7 @@ export default function InnovationLab() {
                 </div>
               </div>
             ) : (
-              <p className="text-[10px] text-slate-500 text-center py-4">No results computed yet. Click "Compute" to run statistical analysis.</p>
+              <p className="text-xs text-slate-500 text-center py-4">No results computed yet. Click "Compute" to run statistical analysis.</p>
             )}
           </CardContent>
         </Card>
@@ -224,15 +224,15 @@ export default function InnovationLab() {
 
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] text-slate-500 uppercase tracking-wider">Name</label>
+                <label className="text-xs text-slate-500 uppercase tracking-wider">Name</label>
                 <Input value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} placeholder="e.g., Dynamic Pricing Test" className="h-8 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 uppercase tracking-wider">Hypothesis</label>
+                <label className="text-xs text-slate-500 uppercase tracking-wider">Hypothesis</label>
                 <textarea value={form.hypothesisStatement} onChange={(e) => setForm({ ...form, hypothesisStatement: e.target.value })} placeholder="If we implement X, then Y will increase by Z%" className="w-full h-16 text-xs bg-white/[0.04] border border-white/[0.08] text-white rounded-md px-3 py-2 mt-1 resize-none" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 uppercase tracking-wider">Variants ({form.variants.length}/5)</label>
+                <label className="text-xs text-slate-500 uppercase tracking-wider">Variants ({form.variants.length}/5)</label>
                 {form.variants.map((v, i) => (
                   <div key={i} className="flex gap-2 mt-1">
                     <Input value={v.name} onChange={(e: any) => { const nv = [...form.variants]; nv[i] = { ...nv[i], name: e.target.value }; setForm({ ...form, variants: nv }); }} className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white flex-1" />
@@ -242,7 +242,7 @@ export default function InnovationLab() {
                   </div>
                 ))}
                 {form.variants.length < 5 && (
-                  <Button variant="ghost" size="sm" className="h-6 text-[9px] text-purple-400 mt-1" onClick={() => {
+                  <Button variant="ghost" size="sm" className="h-6 text-xs text-purple-400 mt-1" onClick={() => {
                     const id = `treatment_${String.fromCharCode(97 + form.variants.length - 1)}`;
                     setForm({ ...form, variants: [...form.variants, { variantId: id, name: `Treatment ${String.fromCharCode(65 + form.variants.length - 1)}`, config: {} }] });
                   }}><Plus className="w-3 h-3 mr-0.5" />Add Variant</Button>
@@ -250,7 +250,7 @@ export default function InnovationLab() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-500 uppercase tracking-wider">Target Segment</label>
+                  <label className="text-xs text-slate-500 uppercase tracking-wider">Target Segment</label>
                   <select value={form.targetUserSegment} onChange={(e) => setForm({ ...form, targetUserSegment: e.target.value })} className="w-full h-8 text-xs bg-white/[0.04] border border-white/[0.08] text-white rounded-md px-2 mt-1">
                     <option value="all">All Users</option>
                     <option value="all_drivers">All Drivers</option>
@@ -259,7 +259,7 @@ export default function InnovationLab() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-500 uppercase tracking-wider">Min Sample Size</label>
+                  <label className="text-xs text-slate-500 uppercase tracking-wider">Min Sample Size</label>
                   <Input type="number" value={form.minSampleSize} onChange={(e: any) => setForm({ ...form, minSampleSize: parseInt(e.target.value) || 100 })} className="h-8 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
                 </div>
               </div>

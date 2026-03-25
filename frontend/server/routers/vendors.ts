@@ -8,7 +8,7 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { companies, loads } from "../../drizzle/schema";
+import { companies, loads, payments } from "../../drizzle/schema";
 
 const vendorTypeSchema = z.enum([
   "maintenance", "fuel", "insurance", "parts", "tires", "equipment", "technology", "other"
@@ -55,6 +55,28 @@ export const vendorsRouter = router({
       try {
         const [row] = await db.select().from(companies).where(eq(companies.id, parseInt(input.id))).limit(1);
         if (!row) return null;
+        // Compute real statistics from loads
+        const vendorId = parseInt(input.id);
+        const yearStart = new Date(new Date().getFullYear(), 0, 1);
+        const [stats] = await db.select({
+          totalSpend: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+          totalOrders: sql<number>`COUNT(*)`,
+          deliveredOrders: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' OR ${loads.status} = 'complete' OR ${loads.status} = 'paid' THEN 1 ELSE 0 END)`,
+        }).from(loads).where(eq(loads.catalystId, vendorId));
+        const [yearStats] = await db.select({
+          ordersThisYear: sql<number>`COUNT(*)`,
+        }).from(loads).where(and(eq(loads.catalystId, vendorId), sql`${loads.createdAt} >= ${yearStart}`));
+        const totalSpend = Math.round(stats?.totalSpend || 0);
+        const totalOrders = stats?.totalOrders || 0;
+        const deliveredOrders = stats?.deliveredOrders || 0;
+        const completionRate = totalOrders > 0 ? Math.round((deliveredOrders / totalOrders) * 100) : 0;
+        // Compute real pricing from payments if available
+        const [payStats] = await db.select({
+          totalPaid: sql<number>`COALESCE(SUM(CAST(${payments.amount} AS DECIMAL)), 0)`,
+          payCount: sql<number>`COUNT(*)`,
+        }).from(payments).where(and(eq(payments.payeeId, vendorId), eq(payments.status, 'succeeded')));
+        const actualTotalSpend = (payStats?.totalPaid || 0) > 0 ? Math.round(payStats.totalPaid) : totalSpend;
+
         return {
           id: String(row.id), name: row.name, type: 'other', status: row.isActive ? 'active' : 'inactive',
           companyInfo: { legalName: row.name, taxId: '', established: row.createdAt?.toISOString()?.split('T')[0] || '' },
@@ -62,7 +84,13 @@ export const vendorsRouter = router({
           addresses: row.address ? [{ type: 'primary', address: row.address }] : [],
           services: [], paymentTerms: 'Net 30',
           pricing: { laborRate: 0, shopSupplies: 0, partsMarkup: 0 },
-          statistics: { totalSpend: 0, ordersThisYear: 0, avgOrderValue: 0, avgResponseTime: 0, completionRate: 0 },
+          statistics: {
+            totalSpend: actualTotalSpend,
+            ordersThisYear: yearStats?.ordersThisYear || 0,
+            avgOrderValue: totalOrders > 0 ? Math.round(totalSpend / totalOrders) : 0,
+            avgResponseTime: 0,
+            completionRate,
+          },
           certifications: [], insurance: {}, rating: 0, reviews: 0, notes: '',
           createdAt: row.createdAt?.toISOString() || '',
         };
@@ -243,7 +271,17 @@ export const vendorsRouter = router({
           }
           return { id: String(r.catalystId), name, spend: Math.round(r.spend), orders: r.count };
         }));
-        return { period: input.period, totalSpend: Math.round(stats?.totalSpend || 0), byCategory: [], topVendors, trend: { change: 0, direction: 'stable', vsLastPeriod: 0 } };
+        // Compute trend vs previous period
+        const currentSpend = Math.round(stats?.totalSpend || 0);
+        const prevSince = new Date(since.getTime() - (daysMap[input.period] || 90) * 86400000);
+        const [prevStats] = await db.select({
+          totalSpend: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+        }).from(loads).where(and(eq(loads.shipperId, companyId), eq(loads.status, 'delivered'), sql`${loads.createdAt} >= ${prevSince} AND ${loads.createdAt} < ${since}`));
+        const prevSpend = Math.round(prevStats?.totalSpend || 0);
+        const change = prevSpend > 0 ? Math.round(((currentSpend - prevSpend) / prevSpend) * 100) : 0;
+        const direction = change > 2 ? 'up' : change < -2 ? 'down' : 'stable';
+
+        return { period: input.period, totalSpend: currentSpend, byCategory: [], topVendors, trend: { change: Math.abs(change), direction, vsLastPeriod: prevSpend } };
       } catch { return { period: input.period, totalSpend: 0, byCategory: [], topVendors: [], trend: { change: 0, direction: 'stable', vsLastPeriod: 0 } }; }
     }),
 

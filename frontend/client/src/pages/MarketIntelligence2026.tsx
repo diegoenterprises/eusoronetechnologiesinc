@@ -112,7 +112,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
         <div className="absolute flex flex-col items-center justify-center" style={{ width: size, height: size }}>
           <span className="text-lg font-bold text-white">{score}</span>
         </div>
-        <span className="text-[10px] text-slate-400 mt-1">{label}</span>
+        <span className="text-xs text-slate-400 mt-1">{label}</span>
       </div>
     );
   }
@@ -124,7 +124,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
       HIGH: "bg-orange-500/20 text-orange-400 border-orange-500/30",
       CRITICAL: "bg-red-500/20 text-red-400 border-red-500/30",
     };
-    return <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${colors[level] || colors.MODERATE}`}>{level}</span>;
+    return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${colors[level] || colors.MODERATE}`}>{level}</span>;
   }
 
   function TrendArrow({ trend }: { trend: string }) {
@@ -149,7 +149,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                     <Zap className="w-5 h-5 text-cyan-400" />
                     2026 Market Intelligence
                   </h1>
-                  <p className="text-[11px] text-slate-500">Powered by C.H. Robinson, WWEX Group, Magaya industry data</p>
+                  <p className="text-xs text-slate-500">Powered by C.H. Robinson, WWEX Group, Magaya industry data</p>
                 </div>
               </div>
               {/* Lane & load parameters — these drive all scores */}
@@ -221,7 +221,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
       {embedded && (
         <div className="mb-4">
           <div className="mb-3">
-            <p className="text-[11px] text-slate-500 mb-2">C.H. Robinson, WWEX Group, Magaya industry data</p>
+            <p className="text-xs text-slate-500 mb-2">C.H. Robinson, WWEX Group, Magaya industry data</p>
             <div className="flex items-center gap-2 text-xs flex-wrap">
               <select value={laneOrigin} onChange={e => setLaneOrigin(e.target.value)} className="bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/80">
                 {["TX","CA","FL","IL","GA","OH","PA","NJ","NY","WA","LA","CO","AZ","NV","TN","NC"].map(s => <option key={s} value={s}>{s}</option>)}
@@ -300,7 +300,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                   {outlook.data.keyThemes?.slice(0, 6).map((t: any, i: number) => (
                     <div key={i} className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/30 hover:border-slate-600/40 transition-all">
                       <p className="text-xs font-semibold text-white mb-1">{t.theme}</p>
-                      <p className="text-[10px] text-slate-400 leading-relaxed">{t.detail}</p>
+                      <p className="text-xs text-slate-400 leading-relaxed">{t.detail}</p>
                     </div>
                   ))}
                 </div>
@@ -309,33 +309,33 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
 
             {/* Lane-Specific Estimates — driven by the parameters above */}
             <div>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Estimates for {laneOrigin} → {laneDest} · {distance} mi · {equipment.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} · {commodity === "general" ? "General Freight" : commodity} · {weight.toLocaleString()} lbs</p>
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Estimates for {laneOrigin} → {laneDest} · {distance} mi · {equipment.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())} · {commodity === "general" ? "General Freight" : commodity} · {weight.toLocaleString()} lbs</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/30 flex flex-col items-center relative">
                   <ScoreRing score={theftRisk.data?.overallScore || 0} color={theftRisk.data?.overallScore > 50 ? "#f87171" : theftRisk.data?.overallScore > 25 ? "#fbbf24" : "#34d399"} label="Theft Risk" />
                   {theftRisk.data && <RiskBadge level={theftRisk.data.riskLevel} />}
-                  <p className="text-[9px] text-slate-600 mt-1">Route + commodity + value</p>
+                  <p className="text-xs text-slate-600 mt-1">Route + commodity + value</p>
                 </div>
                 <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/30 text-center">
                   <div className="text-2xl font-bold text-cyan-400">${marketIntel.data?.laneIntel?.avgSpotRate?.toFixed(2) || "—"}</div>
-                  <p className="text-[10px] text-slate-400">Spot Rate/mi</p>
+                  <p className="text-xs text-slate-400">Spot Rate/mi</p>
                   <div className="flex items-center justify-center gap-1 mt-1">
                     <TrendArrow trend={marketIntel.data?.spotRateTrend || "FLAT"} />
-                    <span className="text-[10px] text-slate-500">{marketIntel.data?.spotRateTrend}</span>
+                    <span className="text-xs text-slate-500">{marketIntel.data?.spotRateTrend}</span>
                   </div>
-                  <p className="text-[9px] text-slate-600 mt-1">Lane + equipment avg</p>
+                  <p className="text-xs text-slate-600 mt-1">Lane + equipment avg</p>
                 </div>
                 <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/30 text-center">
                   <div className="text-2xl font-bold text-emerald-400">{emissions.data?.co2Tons?.toFixed(1) || "—"}</div>
-                  <p className="text-[10px] text-slate-400">CO2 Tons</p>
-                  <p className="text-[10px] text-emerald-500 mt-1">{emissions.data?.smartwayRating || "—"}</p>
-                  <p className="text-[9px] text-slate-600 mt-1">Distance + weight + equip</p>
+                  <p className="text-xs text-slate-400">CO2 Tons</p>
+                  <p className="text-xs text-emerald-500 mt-1">{emissions.data?.smartwayRating || "—"}</p>
+                  <p className="text-xs text-slate-600 mt-1">Distance + weight + equip</p>
                 </div>
                 <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/30 text-center">
                   <div className="text-2xl font-bold text-amber-400">{tariffs.data?.tariffAlerts?.length || 0}</div>
-                  <p className="text-[10px] text-slate-400">Policy Alerts</p>
-                  <p className="text-[10px] text-amber-500 mt-1">{tariffs.data?.crossBorderRisk === "DOMESTIC" ? "Domestic" : "Cross-border"}</p>
-                  <p className="text-[9px] text-slate-600 mt-1">Trade policy + EPA rules</p>
+                  <p className="text-xs text-slate-400">Policy Alerts</p>
+                  <p className="text-xs text-amber-500 mt-1">{tariffs.data?.crossBorderRisk === "DOMESTIC" ? "Domestic" : "Cross-border"}</p>
+                  <p className="text-xs text-slate-600 mt-1">Trade policy + EPA rules</p>
                 </div>
               </div>
             </div>
@@ -351,7 +351,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                   {outlook.data.actionItems.map((a: string, i: number) => (
                     <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-slate-700/20">
                       <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-[11px] text-slate-300">{a}</span>
+                      <span className="text-xs text-slate-300">{a}</span>
                     </div>
                   ))}
                 </div>
@@ -368,10 +368,10 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                 <div className="space-y-2">
                   {calendar.data.events.slice(0, 5).map((e: any, i: number) => (
                     <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-slate-700/20">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${e.impact === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{e.impact}</span>
-                      <span className="text-[10px] text-slate-500 w-16">{e.month}</span>
-                      <span className="text-[11px] text-white font-medium flex-1">{e.event}</span>
-                      <span className="text-[10px] text-slate-400">{e.description}</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold ${e.impact === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{e.impact}</span>
+                      <span className="text-xs text-slate-500 w-16">{e.month}</span>
+                      <span className="text-xs text-white font-medium flex-1">{e.event}</span>
+                      <span className="text-xs text-slate-400">{e.description}</span>
                     </div>
                   ))}
                 </div>
@@ -394,18 +394,18 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 {theftRisk.data.factors.map((f: any, i: number) => (
                   <div key={i} className="p-3 rounded-lg bg-slate-700/30">
-                    <p className="text-[10px] text-slate-400 mb-1">{f.factor}</p>
+                    <p className="text-xs text-slate-400 mb-1">{f.factor}</p>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 rounded-full bg-slate-600/40 overflow-hidden">
                         <div className={`h-full rounded-full transition-all ${f.score > 60 ? "bg-red-400" : f.score > 30 ? "bg-amber-400" : "bg-emerald-400"}`} style={{ width: `${f.score}%` }} />
                       </div>
                       <span className="text-xs font-bold text-white">{Math.round(f.score)}</span>
                     </div>
-                    <p className="text-[9px] text-slate-500 mt-1">{f.description}</p>
+                    <p className="text-xs text-slate-500 mt-1">{f.description}</p>
                   </div>
                 ))}
               </div>
-              <div className="text-[10px] text-slate-500 flex items-center gap-1">
+              <div className="text-xs text-slate-500 flex items-center gap-1">
                 <Info className="w-3 h-3" />
                 Source: FreightWaves Q3 2025 — 645 incidents, +29% YoY. Top targets: Electronics, F&B, Auto Parts.
               </div>
@@ -420,12 +420,12 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
               <div className="space-y-2">
                 {theftRisk.data.custodyChain.map((c: any) => (
                   <div key={c.step} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-700/20">
-                    <span className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-bold">{c.step}</span>
+                    <span className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold">{c.step}</span>
                     <div className="flex-1">
                       <p className="text-xs text-white font-medium">{c.action}</p>
-                      <p className="text-[10px] text-slate-400">{c.verification}</p>
+                      <p className="text-xs text-slate-400">{c.verification}</p>
                     </div>
-                    {c.required ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <span className="text-[9px] text-slate-500 px-1.5 py-0.5 rounded bg-slate-700">OPT</span>}
+                    {c.required ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <span className="text-xs text-slate-500 px-1.5 py-0.5 rounded bg-slate-700">OPT</span>}
                   </div>
                 ))}
               </div>
@@ -436,7 +436,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
               <h3 className="text-xs font-semibold text-slate-300 mb-3">Theft Prevention Recommendations</h3>
               <div className="space-y-1.5">
                 {theftRisk.data.recommendations.map((r: string, i: number) => (
-                  <div key={i} className="flex items-start gap-2 text-[11px] text-slate-300">
+                  <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
                     <Shield className="w-3 h-3 text-red-400 mt-0.5 flex-shrink-0" />
                     <span>{r}</span>
                   </div>
@@ -457,31 +457,31 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                 </h2>
                 <div className="flex items-center gap-2">
                   {marketIntel.data.keyInsights?.some((k: string) => k.includes("ML Engine")) && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/30">ML ENGINE</span>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/30">ML ENGINE</span>
                   )}
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">{marketIntel.data.currentPhase}</span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">{marketIntel.data.currentPhase}</span>
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                  <p className="text-[10px] text-slate-400">Spot Rate</p>
+                  <p className="text-xs text-slate-400">Spot Rate</p>
                   <p className="text-xl font-bold text-cyan-400">${marketIntel.data.laneIntel.avgSpotRate}</p>
-                  <div className="flex items-center justify-center gap-1"><TrendArrow trend={marketIntel.data.spotRateTrend} /><span className="text-[10px] text-slate-500">{marketIntel.data.spotRateTrend}</span></div>
+                  <div className="flex items-center justify-center gap-1"><TrendArrow trend={marketIntel.data.spotRateTrend} /><span className="text-xs text-slate-500">{marketIntel.data.spotRateTrend}</span></div>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                  <p className="text-[10px] text-slate-400">Contract Rate</p>
+                  <p className="text-xs text-slate-400">Contract Rate</p>
                   <p className="text-xl font-bold text-blue-400">${marketIntel.data.laneIntel.avgContractRate}</p>
-                  <div className="flex items-center justify-center gap-1"><TrendArrow trend={marketIntel.data.contractRateTrend} /><span className="text-[10px] text-slate-500">{marketIntel.data.contractRateTrend}</span></div>
+                  <div className="flex items-center justify-center gap-1"><TrendArrow trend={marketIntel.data.contractRateTrend} /><span className="text-xs text-slate-500">{marketIntel.data.contractRateTrend}</span></div>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                  <p className="text-[10px] text-slate-400">Demand Index</p>
+                  <p className="text-xs text-slate-400">Demand Index</p>
                   <p className="text-xl font-bold text-amber-400">{marketIntel.data.laneIntel.demandIndex}</p>
-                  <p className="text-[10px] text-slate-500">/ 100</p>
+                  <p className="text-xs text-slate-500">/ 100</p>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                  <p className="text-[10px] text-slate-400">Capacity Index</p>
+                  <p className="text-xs text-slate-400">Capacity Index</p>
                   <p className="text-xl font-bold text-emerald-400">{marketIntel.data.laneIntel.capacityIndex}</p>
-                  <p className="text-[10px] text-slate-500">/ 100</p>
+                  <p className="text-xs text-slate-500">/ 100</p>
                 </div>
               </div>
             </div>
@@ -492,10 +492,10 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
               <div className="grid grid-cols-4 gap-3">
                 {marketIntel.data.quarterlyForecast.map((q: any) => (
                   <div key={q.quarter} className="p-3 rounded-lg bg-slate-700/30 text-center">
-                    <p className="text-[10px] text-slate-400 font-medium">{q.quarter}</p>
+                    <p className="text-xs text-slate-400 font-medium">{q.quarter}</p>
                     <p className="text-sm font-bold text-white mt-1">+{q.spotChange}%</p>
-                    <p className="text-[9px] text-slate-500">spot YoY</p>
-                    <p className={`text-[9px] mt-1 px-1.5 py-0.5 rounded ${q.capacity === "SURPLUS" ? "bg-emerald-500/20 text-emerald-400" : q.capacity === "TIGHTENING" ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"}`}>{q.capacity}</p>
+                    <p className="text-xs text-slate-500">spot YoY</p>
+                    <p className={`text-xs mt-1 px-1.5 py-0.5 rounded ${q.capacity === "SURPLUS" ? "bg-emerald-500/20 text-emerald-400" : q.capacity === "TIGHTENING" ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"}`}>{q.capacity}</p>
                   </div>
                 ))}
               </div>
@@ -507,10 +507,10 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
               <div className="space-y-2">
                 {marketIntel.data.seasonalAlerts.map((a: any, i: number) => (
                   <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-700/20">
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${a.impact === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{a.impact}</span>
-                    <span className="text-[10px] text-slate-500 w-20">{a.date}</span>
-                    <span className="text-[11px] text-white font-medium flex-1">{a.event}</span>
-                    <span className="text-[10px] text-cyan-400">{a.action}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${a.impact === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{a.impact}</span>
+                    <span className="text-xs text-slate-500 w-20">{a.date}</span>
+                    <span className="text-xs text-white font-medium flex-1">{a.event}</span>
+                    <span className="text-xs text-cyan-400">{a.action}</span>
                   </div>
                 ))}
               </div>
@@ -521,7 +521,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
               <h3 className="text-xs font-semibold text-slate-300 mb-3">Key Market Insights</h3>
               <div className="space-y-1.5">
                 {marketIntel.data.keyInsights.map((k: string, i: number) => (
-                  <div key={i} className="flex items-start gap-2 text-[11px] text-slate-300">
+                  <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
                     <Zap className="w-3 h-3 text-cyan-400 mt-0.5 flex-shrink-0" />
                     <span>{k}</span>
                   </div>
@@ -541,24 +541,24 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                  <p className="text-[10px] text-slate-400">CO2 Emissions</p>
+                  <p className="text-xs text-slate-400">CO2 Emissions</p>
                   <p className="text-xl font-bold text-emerald-400">{emissions.data.co2Tons.toFixed(2)}</p>
-                  <p className="text-[10px] text-slate-500">metric tons</p>
+                  <p className="text-xs text-slate-500">metric tons</p>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                  <p className="text-[10px] text-slate-400">Fuel Consumed</p>
+                  <p className="text-xs text-slate-400">Fuel Consumed</p>
                   <p className="text-xl font-bold text-blue-400">{emissions.data.fuelGallons.toFixed(0)}</p>
-                  <p className="text-[10px] text-slate-500">gallons</p>
+                  <p className="text-xs text-slate-500">gallons</p>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                  <p className="text-[10px] text-slate-400">Fuel Cost</p>
+                  <p className="text-xs text-slate-400">Fuel Cost</p>
                   <p className="text-xl font-bold text-amber-400">${emissions.data.fuelCost.toLocaleString()}</p>
-                  <p className="text-[10px] text-slate-500">@ $3.85/gal</p>
+                  <p className="text-xs text-slate-500">@ $3.85/gal</p>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                  <p className="text-[10px] text-slate-400">SmartWay Rating</p>
+                  <p className="text-xs text-slate-400">SmartWay Rating</p>
                   <p className={`text-xl font-bold ${emissions.data.smartwayRating === "SUPERIOR" ? "text-emerald-400" : emissions.data.smartwayRating === "GOOD" ? "text-cyan-400" : "text-amber-400"}`}>{emissions.data.smartwayRating}</p>
-                  <p className="text-[10px] text-slate-500">EPA SmartWay</p>
+                  <p className="text-xs text-slate-500">EPA SmartWay</p>
                 </div>
               </div>
 
@@ -567,27 +567,27 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                 <div className="p-3 rounded-lg bg-slate-700/30">
                   <div className="flex items-center gap-2 mb-2">
                     <Truck className="w-4 h-4 text-slate-400" />
-                    <span className="text-[10px] text-slate-400">Truck (current)</span>
+                    <span className="text-xs text-slate-400">Truck (current)</span>
                   </div>
                   <p className="text-sm font-bold text-white">{emissions.data.co2Kg.toFixed(0)} kg CO2</p>
                 </div>
                 <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                   <div className="flex items-center gap-2 mb-2">
                     <Activity className="w-4 h-4 text-emerald-400" />
-                    <span className="text-[10px] text-emerald-400">Intermodal</span>
+                    <span className="text-xs text-emerald-400">Intermodal</span>
                   </div>
                   <p className="text-sm font-bold text-emerald-400">{emissions.data.vsIntermodalPct}% less</p>
                 </div>
                 <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                   <div className="flex items-center gap-2 mb-2">
                     <Activity className="w-4 h-4 text-emerald-400" />
-                    <span className="text-[10px] text-emerald-400">Rail</span>
+                    <span className="text-xs text-emerald-400">Rail</span>
                   </div>
                   <p className="text-sm font-bold text-emerald-400">{emissions.data.vsRailPct}% less</p>
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-700/20 flex items-center gap-2 text-[10px]">
+              <div className="p-3 rounded-lg bg-slate-700/20 flex items-center gap-2 text-xs">
                 <Leaf className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                 <span className="text-slate-400">Carbon offset cost: <span className="text-emerald-400 font-medium">${emissions.data.carbonOffsetCost}</span> | NOx: {emissions.data.noxGrams.toFixed(0)}g | PM2.5: {emissions.data.pm25Grams.toFixed(1)}g</span>
               </div>
@@ -598,7 +598,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
               <h3 className="text-xs font-semibold text-slate-300 mb-3">Sustainability Recommendations</h3>
               <div className="space-y-1.5">
                 {emissions.data.recommendations.map((r: string, i: number) => (
-                  <div key={i} className="flex items-start gap-2 text-[11px] text-slate-300">
+                  <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
                     <Leaf className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
                     <span>{r}</span>
                   </div>
@@ -617,34 +617,34 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                 <Shield className="w-4 h-4 text-violet-400" />
                 Supply Chain Resilience Assessment
               </h2>
-              <p className="text-[11px] text-slate-500 mb-4">Enter your actual operational data to get an accurate resilience score.</p>
+              <p className="text-xs text-slate-500 mb-4">Enter your actual operational data to get an accurate resilience score.</p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Active Carriers</label>
+                  <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Active Carriers</label>
                   <input type="number" min={1} max={100} value={resNumCarriers} onChange={e => { setResNumCarriers(Number(e.target.value)); setResSubmitted(false); }} className="w-full bg-slate-700/40 border border-slate-600/40 rounded-lg px-3 py-2 text-xs text-white" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Transport Modes Used</label>
+                  <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Transport Modes Used</label>
                   <input type="number" min={1} max={5} value={resModesUsed} onChange={e => { setResModesUsed(Number(e.target.value)); setResSubmitted(false); }} className="w-full bg-slate-700/40 border border-slate-600/40 rounded-lg px-3 py-2 text-xs text-white" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Avg Lead Time (days)</label>
+                  <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Avg Lead Time (days)</label>
                   <input type="number" min={1} max={30} value={resLeadTime} onChange={e => { setResLeadTime(Number(e.target.value)); setResSubmitted(false); }} className="w-full bg-slate-700/40 border border-slate-600/40 rounded-lg px-3 py-2 text-xs text-white" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Digitalized (%)</label>
+                  <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Digitalized (%)</label>
                   <input type="number" min={0} max={100} value={resDigitalized} onChange={e => { setResDigitalized(Number(e.target.value)); setResSubmitted(false); }} className="w-full bg-slate-700/40 border border-slate-600/40 rounded-lg px-3 py-2 text-xs text-white" />
                 </div>
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={resHasVisibility} onChange={e => { setResHasVisibility(e.target.checked); setResSubmitted(false); }} className="rounded" />
-                    <span className="text-[10px] text-slate-300">Real-time visibility</span>
+                    <span className="text-xs text-slate-300">Real-time visibility</span>
                   </label>
                 </div>
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={resContingency} onChange={e => { setResContingency(e.target.checked); setResSubmitted(false); }} className="rounded" />
-                    <span className="text-[10px] text-slate-300">Contingency routes</span>
+                    <span className="text-xs text-slate-300">Contingency routes</span>
                   </label>
                 </div>
               </div>
@@ -673,7 +673,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                         <div className="relative flex items-center justify-center">
                           <ScoreRing score={m.value} size={56} color={m.color} label="" />
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-2">{m.label}</p>
+                        <p className="text-xs text-slate-400 mt-2">{m.label}</p>
                       </div>
                     ))}
                   </div>
@@ -682,7 +682,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                   <h3 className="text-xs font-semibold text-slate-300 mb-3">Resilience Improvement Actions</h3>
                   <div className="space-y-1.5">
                     {resilience.data.recommendations.map((r: string, i: number) => (
-                      <div key={i} className="flex items-start gap-2 text-[11px] text-slate-300">
+                      <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
                         <Shield className="w-3 h-3 text-violet-400 mt-0.5 flex-shrink-0" />
                         <span>{r}</span>
                       </div>
@@ -703,32 +703,32 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                 <Heart className="w-4 h-4 text-pink-400" />
                 Driver Wellness Assessment
               </h2>
-              <p className="text-[11px] text-slate-500 mb-4">Enter your current driving data for a personalized wellness check. Best used by drivers on active trips.</p>
+              <p className="text-xs text-slate-500 mb-4">Enter your current driving data for a personalized wellness check. Best used by drivers on active trips.</p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Hours Worked This Week</label>
+                  <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Hours Worked This Week</label>
                   <input type="number" min={0} max={80} value={wellHoursWorked} onChange={e => { setWellHoursWorked(Number(e.target.value)); setWellSubmitted(false); }} className="w-full bg-slate-700/40 border border-slate-600/40 rounded-lg px-3 py-2 text-xs text-white" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Days on Road</label>
+                  <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Days on Road</label>
                   <input type="number" min={0} max={14} value={wellDaysOnRoad} onChange={e => { setWellDaysOnRoad(Number(e.target.value)); setWellSubmitted(false); }} className="w-full bg-slate-700/40 border border-slate-600/40 rounded-lg px-3 py-2 text-xs text-white" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Avg Sleep (hours/night)</label>
+                  <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Avg Sleep (hours/night)</label>
                   <input type="number" min={0} max={12} step={0.5} value={wellSleepHours} onChange={e => { setWellSleepHours(Number(e.target.value)); setWellSubmitted(false); }} className="w-full bg-slate-700/40 border border-slate-600/40 rounded-lg px-3 py-2 text-xs text-white" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Consecutive Driving Days</label>
+                  <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Consecutive Driving Days</label>
                   <input type="number" min={0} max={14} value={wellConsecDays} onChange={e => { setWellConsecDays(Number(e.target.value)); setWellSubmitted(false); }} className="w-full bg-slate-700/40 border border-slate-600/40 rounded-lg px-3 py-2 text-xs text-white" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Miles Driven Today</label>
+                  <label className="text-xs text-slate-400 uppercase tracking-wider block mb-1">Miles Driven Today</label>
                   <input type="number" min={0} max={700} value={wellDistToday} onChange={e => { setWellDistToday(Number(e.target.value)); setWellSubmitted(false); }} className="w-full bg-slate-700/40 border border-slate-600/40 rounded-lg px-3 py-2 text-xs text-white" />
                 </div>
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={wellHadBreak} onChange={e => { setWellHadBreak(e.target.checked); setWellSubmitted(false); }} className="rounded" />
-                    <span className="text-[10px] text-slate-300">Had a break today</span>
+                    <span className="text-xs text-slate-300">Had a break today</span>
                   </label>
                 </div>
               </div>
@@ -753,7 +753,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                     <div key={i} className="p-4 rounded-lg bg-slate-700/30">
                       <div className="flex items-center gap-2 mb-2">
                         <m.icon className="w-4 h-4" style={{ color: m.color }} />
-                        <span className="text-[10px] text-slate-400">{m.label}</span>
+                        <span className="text-xs text-slate-400">{m.label}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-2 rounded-full bg-slate-600/40 overflow-hidden">
@@ -778,7 +778,7 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
 
                 <div className="space-y-1.5">
                   {wellness.data.recommendations.map((r: string, i: number) => (
-                    <div key={i} className="flex items-start gap-2 text-[11px] text-slate-300">
+                    <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
                       <Heart className="w-3 h-3 text-pink-400 mt-0.5 flex-shrink-0" />
                       <span>{r}</span>
                     </div>
@@ -808,10 +808,10 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
                   <div key={i} className="p-3 rounded-lg bg-slate-700/20 border border-slate-700/30">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs text-white font-semibold">{a.policy}</span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{a.status}</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{a.status}</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mb-1">{a.impact}</p>
-                    <p className="text-[10px] text-cyan-400">{a.action}</p>
+                    <p className="text-xs text-slate-400 mb-1">{a.impact}</p>
+                    <p className="text-xs text-cyan-400">{a.action}</p>
                   </div>
                 ))}
               </div>
@@ -830,13 +830,13 @@ export default function MarketIntelligence2026({ embedded }: { embedded?: boolea
               <div className="space-y-2">
                 {calendar.data.events.map((e: any, i: number) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/20 hover:bg-slate-700/30 transition-colors">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold min-w-[50px] text-center ${e.impact === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{e.impact}</span>
-                    <span className="text-[10px] text-slate-500 w-20 font-medium">{e.month}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold min-w-[50px] text-center ${e.impact === "HIGH" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>{e.impact}</span>
+                    <span className="text-xs text-slate-500 w-20 font-medium">{e.month}</span>
                     <div className="flex-1">
                       <p className="text-xs text-white font-medium">{e.event}</p>
-                      <p className="text-[10px] text-slate-400">{e.description}</p>
+                      <p className="text-xs text-slate-400">{e.description}</p>
                     </div>
-                    <span className="text-[10px] text-cyan-400 max-w-[160px] text-right">{e.action}</span>
+                    <span className="text-xs text-cyan-400 max-w-[160px] text-right">{e.action}</span>
                   </div>
                 ))}
               </div>

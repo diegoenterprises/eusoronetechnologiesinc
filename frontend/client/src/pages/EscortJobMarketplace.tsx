@@ -302,24 +302,24 @@ export default function EscortJobMarketplace() {
                   {/* Row 3: Details grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                     <div className="bg-slate-700/30 rounded-lg px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wider text-slate-500">Pickup</p>
+                      <p className="text-xs uppercase tracking-wider text-slate-500">Pickup</p>
                       <p className="text-sm text-white font-medium">{fmtDate(job.pickupDate)}</p>
                     </div>
                     <div className="bg-slate-700/30 rounded-lg px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wider text-slate-500">Weight</p>
+                      <p className="text-xs uppercase tracking-wider text-slate-500">Weight</p>
                       <p className="text-sm text-white font-medium">
                         {job.weight > 0 ? `${job.weight.toLocaleString()} lbs` : "--"}
                       </p>
                     </div>
                     <div className="bg-slate-700/30 rounded-lg px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wider text-slate-500">Escorts Needed</p>
+                      <p className="text-xs uppercase tracking-wider text-slate-500">Escorts Needed</p>
                       <p className="text-sm text-white font-medium">
                         {job.positionsFilled}/{job.escortsNeeded}
                         <span className="text-slate-500 ml-1">filled</span>
                       </p>
                     </div>
                     <div className="bg-slate-700/30 rounded-lg px-3 py-2">
-                      <p className="text-[10px] uppercase tracking-wider text-slate-500">Applicants</p>
+                      <p className="text-xs uppercase tracking-wider text-slate-500">Applicants</p>
                       <p className="text-sm text-white font-medium">{job.applicants}</p>
                     </div>
                   </div>
@@ -336,7 +336,7 @@ export default function EscortJobMarketplace() {
                     <div className="flex items-center gap-3 text-xs text-slate-500">
                       <span>Posted {fmtDateShort(job.postedAt)}</span>
                       {job.positionsOpen > 0 && (
-                        <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-[10px]">
+                        <Badge className="bg-emerald-500/15 text-emerald-400 border-0 text-xs">
                           {job.positionsOpen} position{job.positionsOpen > 1 ? "s" : ""} open
                         </Badge>
                       )}

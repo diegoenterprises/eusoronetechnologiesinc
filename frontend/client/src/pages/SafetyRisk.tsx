@@ -327,7 +327,7 @@ function DashboardTab() {
                       className="w-full bg-red-500/60 rounded-t"
                       style={{ height: `${Math.max(heightPct, 4)}%` }}
                     />
-                    <span className="text-[10px] text-slate-500 truncate w-full text-center">
+                    <span className="text-xs text-slate-500 truncate w-full text-center">
                       {pt.date?.slice(5)}
                     </span>
                   </div>
@@ -453,7 +453,7 @@ function RiskScoringTab() {
                   <div className="flex flex-col items-end gap-1">
                     <Badge variant={getRiskBadgeVariant(d.riskLevel)}>{d.riskLevel}</Badge>
                     {d.contributingFactors?.length > 0 && (
-                      <span className={`text-[10px] ${isLight ? "text-slate-500" : "text-slate-400"}`}>{d.contributingFactors.length} factor(s)</span>
+                      <span className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>{d.contributingFactors.length} factor(s)</span>
                     )}
                   </div>
                 </div>
@@ -569,9 +569,9 @@ function InvestigationsTab() {
                   const heightPct = (pt.count / maxCount) * 100;
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                      <span className={`text-[10px] ${isLight ? "text-slate-500" : "text-slate-400"}`}>{pt.count}</span>
+                      <span className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>{pt.count}</span>
                       <div className="w-full bg-red-500/50 rounded-t" style={{ height: `${Math.max(heightPct, 4)}%` }} />
-                      <span className="text-[9px] text-slate-500">{pt.date?.slice(5)}</span>
+                      <span className="text-xs text-slate-500">{pt.date?.slice(5)}</span>
                     </div>
                   );
                 })}
@@ -611,7 +611,7 @@ function InvestigationsTab() {
                     <Badge variant={a.priority === "high" ? "destructive" : "secondary"}>
                       {a.actionType.replace(/_/g, " ")}
                     </Badge>
-                    <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-slate-400"} mt-1`}>By {a.recommendedDate}</p>
+                    <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"} mt-1`}>By {a.recommendedDate}</p>
                   </div>
                 </div>
               ))}
@@ -769,7 +769,7 @@ function NearMissTab() {
                       <div className={`flex items-center gap-3 mt-1 text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                         {r.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{r.location}</span>}
                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(r.occurredAt).toLocaleDateString()}</span>
-                        <Badge variant="outline" className={`text-[10px] ${isLight ? "border-slate-300" : "border-slate-600"}`}>{r.nearMissType?.replace(/_/g, " ")}</Badge>
+                        <Badge variant="outline" className={`text-xs ${isLight ? "border-slate-300" : "border-slate-600"}`}>{r.nearMissType?.replace(/_/g, " ")}</Badge>
                       </div>
                     </div>
                   </div>

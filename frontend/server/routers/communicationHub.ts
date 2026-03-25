@@ -25,7 +25,7 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc, asc, sql, isNull } from "drizzle-orm";
+import { eq, and, desc, asc, sql, isNull, inArray } from "drizzle-orm";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
@@ -321,7 +321,7 @@ async function ensureDbSeeded() {
   // Seed broadcasts
   const seedBroadcasts: Broadcast[] = [
     { id: "bcast_1", senderId: 1, senderName: "Diego Usoro", title: "Winter Storm Warning - I-40 Corridor", content: "WINTER STORM WARNING: I-40 from Memphis to Nashville expecting 4-6 inches of snow tonight. All drivers on this corridor should secure safe parking before 8 PM CST. Contact dispatch if you need rerouting.", channel: "in_app", priority: "emergency", targetGroup: "all_drivers", targetFilters: { corridor: "I-40" }, recipientCount: 45, deliveredCount: 42, readCount: 38, isEmergency: true, expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date(Date.now() - 3600000).toISOString() },
-    { id: "bcast_2", senderId: 2, senderName: "Maria Garcia", title: "Weekly Safety Reminder", content: "Reminder: Pre-trip inspections are mandatory. Check tires, brakes, lights, and fluid levels before departure. Safety is everyone's responsibility.", channel: "in_app", priority: "normal", targetGroup: "all_drivers", targetFilters: {}, recipientCount: 120, deliveredCount: 115, readCount: 89, isEmergency: false, expiresAt: null, createdAt: new Date(Date.now() - 86400000).toISOString() },
+    { id: "bcast_2", senderId: 2, senderName: "Safety Team", title: "Weekly Safety Reminder", content: "Reminder: Pre-trip inspections are mandatory. Check tires, brakes, lights, and fluid levels before departure. Safety is everyone's responsibility.", channel: "in_app", priority: "normal", targetGroup: "all_drivers", targetFilters: {}, recipientCount: 120, deliveredCount: 115, readCount: 89, isEmergency: false, expiresAt: null, createdAt: new Date(Date.now() - 86400000).toISOString() },
   ];
   for (const b of seedBroadcasts) await persistEntity("comm_broadcast", b.id, b);
 
@@ -367,18 +367,27 @@ async function ensureDbSeeded() {
   ];
   for (const e of seedEscalations) await persistEntity("comm_escalation", e.id, e);
 
+  // Look up real user names for seed data
+  const seedUserIds = [1, 2, 3, 5, 7];
+  const seedUsers = await db
+    .select({ id: users.id, name: users.name })
+    .from(users)
+    .where(inArray(users.id, seedUserIds));
+  const nameMap: Record<number, string> = {};
+  for (const u of seedUsers) nameMap[u.id] = u.name ?? `User #${u.id}`;
+
   // Seed scheduled messages
   const seedScheduled: ScheduledMessage[] = [
-    { id: "sched_1", conversationId: null, senderId: 1, senderName: "Diego Usoro", channel: "sms", content: "Good morning team! Remember: safety meeting at 8 AM today at Houston terminal.", recipientIds: [3, 4, 5, 6], scheduledFor: new Date(Date.now() + 43200000).toISOString(), status: "scheduled", createdAt: now },
-    { id: "sched_2", conversationId: "conv_3", senderId: 2, senderName: "Maria Garcia", channel: "in_app", content: "Reminder: Quarterly equipment inspections start next Monday. Make sure your trucks are ready.", recipientIds: [4, 5, 6], scheduledFor: new Date(Date.now() + 172800000).toISOString(), status: "scheduled", createdAt: now },
+    { id: "sched_1", conversationId: null, senderId: 1, senderName: nameMap[1] ?? "User #1", channel: "sms", content: "Good morning team! Remember: safety meeting at 8 AM today at Houston terminal.", recipientIds: [3, 4, 5, 6], scheduledFor: new Date(Date.now() + 43200000).toISOString(), status: "scheduled", createdAt: now },
+    { id: "sched_2", conversationId: "conv_3", senderId: 2, senderName: nameMap[2] ?? "User #2", channel: "in_app", content: "Reminder: Quarterly equipment inspections start next Monday. Make sure your trucks are ready.", recipientIds: [4, 5, 6], scheduledFor: new Date(Date.now() + 172800000).toISOString(), status: "scheduled", createdAt: now },
   ];
   for (const s of seedScheduled) await persistEntity("comm_scheduled", s.id, s);
 
   // Seed voice calls
   const seedCalls: VoiceCallEntry[] = [
-    { id: "call_1", callerId: 2, callerName: "Maria Garcia", receiverId: 3, receiverName: "James Wilson", direction: "outbound", status: "completed", durationSeconds: 185, outcome: "Confirmed ETA and delivery instructions", notes: "Driver confirmed 2:30 PM arrival. Will call receiver 30 min before.", recordingUrl: null, startedAt: new Date(Date.now() - 7200000).toISOString(), endedAt: new Date(Date.now() - 7015000).toISOString() },
-    { id: "call_2", callerId: 5, callerName: "Robert Johnson", receiverId: 2, receiverName: "Maria Garcia", direction: "inbound", status: "completed", durationSeconds: 92, outcome: "Reported road construction delay", notes: "I-10 construction near Katy. 20 min delay. Rerouted via 99.", recordingUrl: null, startedAt: new Date(Date.now() - 7200000).toISOString(), endedAt: new Date(Date.now() - 7108000).toISOString() },
-    { id: "call_3", callerId: 2, callerName: "Maria Garcia", receiverId: 7, receiverName: "Tom Patel", direction: "outbound", status: "missed", durationSeconds: 0, outcome: "No answer", notes: "", recordingUrl: null, startedAt: new Date(Date.now() - 5400000).toISOString(), endedAt: null },
+    { id: "call_1", callerId: 2, callerName: nameMap[2] ?? "User #2", receiverId: 3, receiverName: nameMap[3] ?? "User #3", direction: "outbound", status: "completed", durationSeconds: 185, outcome: "Confirmed ETA and delivery instructions", notes: "Driver confirmed 2:30 PM arrival. Will call receiver 30 min before.", recordingUrl: null, startedAt: new Date(Date.now() - 7200000).toISOString(), endedAt: new Date(Date.now() - 7015000).toISOString() },
+    { id: "call_2", callerId: 5, callerName: nameMap[5] ?? "User #5", receiverId: 2, receiverName: nameMap[2] ?? "User #2", direction: "inbound", status: "completed", durationSeconds: 92, outcome: "Reported road construction delay", notes: "I-10 construction near Katy. 20 min delay. Rerouted via 99.", recordingUrl: null, startedAt: new Date(Date.now() - 7200000).toISOString(), endedAt: new Date(Date.now() - 7108000).toISOString() },
+    { id: "call_3", callerId: 2, callerName: nameMap[2] ?? "User #2", receiverId: 7, receiverName: nameMap[7] ?? "User #7", direction: "outbound", status: "missed", durationSeconds: 0, outcome: "No answer", notes: "", recordingUrl: null, startedAt: new Date(Date.now() - 5400000).toISOString(), endedAt: null },
   ];
   for (const c of seedCalls) await persistEntity("comm_voice_call", c.id, c);
 }

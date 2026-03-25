@@ -54,7 +54,7 @@ export default function FleetCommandCenter() {
   const fd = drvs.filter((d: any) => (!search || d.name?.toLowerCase().includes(search.toLowerCase())) && (sf === "all" || d.status === sf));
 
   const cc = cn("rounded-2xl border transition-all", L ? "bg-white/80 border-slate-200 shadow-sm hover:shadow-md" : "bg-slate-800/50 border-slate-700/40 hover:border-slate-600/60");
-  const sb = (s: string) => { const m: Record<string, string> = { active: "bg-green-500/15 text-green-500", driving: "bg-blue-500/15 text-blue-500", maintenance: "bg-yellow-500/15 text-yellow-500", off_duty: "bg-slate-500/15 text-slate-400", inactive: "bg-red-500/15 text-red-500", out_of_service: "bg-red-500/15 text-red-500" }; return <Badge className={cn("border-0 text-[10px] font-bold uppercase", m[s] || "bg-slate-500/15 text-slate-400")}>{s?.replace(/_/g, " ") || "Unknown"}</Badge>; };
+  const sb = (s: string) => { const m: Record<string, string> = { active: "bg-green-500/15 text-green-500", driving: "bg-blue-500/15 text-blue-500", maintenance: "bg-yellow-500/15 text-yellow-500", off_duty: "bg-slate-500/15 text-slate-400", inactive: "bg-red-500/15 text-red-500", out_of_service: "bg-red-500/15 text-red-500" }; return <Badge className={cn("border-0 text-xs font-bold uppercase", m[s] || "bg-slate-500/15 text-slate-400")}>{s?.replace(/_/g, " ") || "Unknown"}</Badge>; };
 
   const stats = [
     { l: "Vehicles", v: vehs.length, I: Truck, c: "text-blue-500", b: "from-blue-500/10 to-blue-600/5" },
@@ -89,7 +89,7 @@ export default function FleetCommandCenter() {
           <div key={s.l} className={cn("rounded-2xl p-3 bg-gradient-to-br border", L ? `${s.b} border-slate-200/60` : `${s.b} border-slate-700/30`)}>
             <s.I className={cn("w-4 h-4 mb-1", s.c)} />
             {ld ? <Skeleton className="h-6 w-8" /> : <p className={cn("text-xl font-bold", s.c)}>{s.v}</p>}
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{s.l}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{s.l}</p>
           </div>
         ))}
       </div>

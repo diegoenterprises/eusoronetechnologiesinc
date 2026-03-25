@@ -171,7 +171,7 @@ export default function EmergencyNotification() {
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                 <div>
                   <p className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}</p>
-                  <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                  <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                 </div>
               </div>
             </CardContent>
@@ -233,21 +233,21 @@ export default function EmergencyNotification() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{alert.title}</p>
-                        <Badge className={cn("text-[9px] border", sev.bg, sev.color, "border-current/20")}>{sev.label}</Badge>
+                        <Badge className={cn("text-xs border", sev.bg, sev.color, "border-current/20")}>{sev.label}</Badge>
                         {!isRead && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
                       </div>
                       <p className={cn("text-xs leading-relaxed line-clamp-2", isLight ? "text-slate-500" : "text-slate-400")}>
                         {alert.message}
                       </p>
                       <div className="flex items-center gap-3 mt-2">
-                        <span className={cn("text-[10px] flex items-center gap-1", isLight ? "text-slate-400" : "text-slate-500")}>
+                        <span className={cn("text-xs flex items-center gap-1", isLight ? "text-slate-400" : "text-slate-500")}>
                           <Radio className="w-3 h-3" /> {alert.source}
                         </span>
-                        <span className={cn("text-[10px] flex items-center gap-1", isLight ? "text-slate-400" : "text-slate-500")}>
+                        <span className={cn("text-xs flex items-center gap-1", isLight ? "text-slate-400" : "text-slate-500")}>
                           <Clock className="w-3 h-3" /> {new Date(alert.timestamp).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                         </span>
                         {alert.location && (
-                          <span className={cn("text-[10px] flex items-center gap-1", isLight ? "text-slate-400" : "text-slate-500")}>
+                          <span className={cn("text-xs flex items-center gap-1", isLight ? "text-slate-400" : "text-slate-500")}>
                             <MapPin className="w-3 h-3" /> {alert.location}
                           </span>
                         )}

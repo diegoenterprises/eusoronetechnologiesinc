@@ -30,14 +30,28 @@ export const fuelRouter = router({
           avgPrice: sql<number>`AVG(pricePerGallon)`,
         }).from(fuelTransactions).where(eq(fuelTransactions.companyId, companyId));
 
+        // Compute MPG from actual load distances / total fuel gallons
+        const totalGal = parseFloat(String(totals?.totalGallons || 0));
+        let computedMpg = 0;
+        if (totalGal > 0) {
+          // loads has no companyId — join through drivers/users who belong to this company
+          const [mileage] = await db.select({
+            totalDistance: sql<number>`COALESCE(SUM(${loads.distance}), 0)`,
+          }).from(loads)
+            .innerJoin(users, eq(loads.driverId, users.id))
+            .where(and(eq(users.companyId, companyId), sql`${loads.distance} IS NOT NULL`));
+          const totalDist = parseFloat(String(mileage?.totalDistance || 0));
+          computedMpg = totalDist > 0 ? Math.round((totalDist / totalGal) * 10) / 10 : 0;
+        }
+
         return {
-          totalGallons: Math.round(parseFloat(String(totals?.totalGallons || 0))),
+          totalGallons: Math.round(totalGal),
           totalSpent: parseFloat(String(totals?.totalSpent || 0)),
           avgPrice: parseFloat(String(totals?.avgPrice || 0)).toFixed(2),
-          thisMonthGallons: Math.round(parseFloat(String(totals?.totalGallons || 0))),
+          thisMonthGallons: Math.round(totalGal),
           thisMonthSpent: parseFloat(String(totals?.totalSpent || 0)),
-          mpgAvg: 6.8,
-          avgMpg: 6.8,
+          mpgAvg: computedMpg,
+          avgMpg: computedMpg,
           avgPricePerGallon: parseFloat(String(totals?.avgPrice || 0)).toFixed(2),
         };
       } catch (error) {
@@ -50,12 +64,50 @@ export const fuelRouter = router({
    * Get current fuel prices
    */
   getCurrentPrices: protectedProcedure
-    .query(async () => {
-      return [
-        { fuelType: "Diesel", avg: 3.72, low: 3.45, high: 3.98 },
-        { fuelType: "Gasoline", avg: 2.89, low: 2.65, high: 3.15 },
-        { fuelType: "DEF", avg: 3.25, low: 2.95, high: 3.55 },
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [
+        { fuelType: "Diesel", avg: 0, low: 0, high: 0, noData: true },
+        { fuelType: "Gasoline", avg: 0, low: 0, high: 0, noData: true },
+        { fuelType: "DEF", avg: 0, low: 0, high: 0, noData: true },
       ];
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        // Query recent transactions (last 30 days) for average prices
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+        const recentPrices = await db.select({
+          avgPrice: sql<number>`AVG(${fuelTransactions.pricePerGallon})`,
+          minPrice: sql<number>`MIN(${fuelTransactions.pricePerGallon})`,
+          maxPrice: sql<number>`MAX(${fuelTransactions.pricePerGallon})`,
+          txCount: sql<number>`COUNT(*)`,
+        }).from(fuelTransactions).where(
+          and(eq(fuelTransactions.companyId, companyId), sql`${fuelTransactions.transactionDate} >= ${thirtyDaysAgo}`)
+        );
+
+        const stats = recentPrices[0];
+        const hasData = (stats?.txCount || 0) > 0;
+
+        // fuelTransactions table has no fuelType column, so report aggregate as Diesel (primary fleet fuel)
+        return [
+          {
+            fuelType: "Diesel",
+            avg: hasData ? Math.round(Number(stats?.avgPrice) * 1000) / 1000 : 0,
+            low: hasData ? Math.round(Number(stats?.minPrice) * 1000) / 1000 : 0,
+            high: hasData ? Math.round(Number(stats?.maxPrice) * 1000) / 1000 : 0,
+            noData: !hasData,
+          },
+          { fuelType: "Gasoline", avg: 0, low: 0, high: 0, noData: true },
+          { fuelType: "DEF", avg: 0, low: 0, high: 0, noData: true },
+        ];
+      } catch (error) {
+        logger.error('[Fuel] getCurrentPrices error:', error);
+        return [
+          { fuelType: "Diesel", avg: 0, low: 0, high: 0, noData: true },
+          { fuelType: "Gasoline", avg: 0, low: 0, high: 0, noData: true },
+          { fuelType: "DEF", avg: 0, low: 0, high: 0, noData: true },
+        ];
+      }
     }),
 
   /**
@@ -193,7 +245,7 @@ export const fuelRouter = router({
         return await getRegionalPrices();
       } catch (e) {
         logger.error('[Fuel] getPrices error:', e);
-        return { national: 3.52, regions: [] };
+        return { national: 0, regions: [] };
       }
     }),
 
@@ -281,7 +333,7 @@ export const fuelRouter = router({
         return await getNationalAverages();
       } catch (e) {
         logger.error('[Fuel] getAverages error:', e);
-        return { national: 3.52, lowest: 3.25, highest: 4.32, weekChange: 0.1 };
+        return { national: 0, lowest: 0, highest: 0, weekChange: 0 };
       }
     }),
 

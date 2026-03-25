@@ -24,7 +24,7 @@ const KPIWidget: React.FC<KPIWidgetProps> = ({
     <div className="grid grid-cols-2 gap-4">
       {kpis.map((kpi, index) => (
         <div key={index} className="space-y-1">
-          <p className={`text-xs text-gray-400 ${compact ? 'text-[10px]' : ''}`}>{kpi.label}</p>
+          <p className={`text-xs text-gray-400 ${compact ? 'text-xs' : ''}`}>{kpi.label}</p>
           <p className={`font-bold ${compact ? 'text-lg' : 'text-2xl'} ${kpi.color || 'text-white'}`}>
             {kpi.value}
           </p>

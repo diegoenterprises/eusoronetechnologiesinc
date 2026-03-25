@@ -335,12 +335,12 @@ function TeamCard({ team, expanded, onToggle, isActive }: {
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-slate-500">{member.roleLabel}</span>
                         {member.position && member.role === "escort" && (
-                          <Badge className={cn("border-0 text-[10px] py-0 px-1.5", positionColor[member.position])}>
+                          <Badge className={cn("border-0 text-xs py-0 px-1.5", positionColor[member.position])}>
                             {positionLabel[member.position] || member.position}
                           </Badge>
                         )}
                         {member.status && member.role === "escort" && (
-                          <Badge className={cn("border-0 text-[10px] py-0 px-1.5", statusColor[member.status])}>
+                          <Badge className={cn("border-0 text-xs py-0 px-1.5", statusColor[member.status])}>
                             {statusLabel[member.status] || member.status}
                           </Badge>
                         )}

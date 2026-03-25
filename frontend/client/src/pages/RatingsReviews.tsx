@@ -61,7 +61,7 @@ export default function RatingsReviews() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Ratings & Reviews</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20">
               <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-              <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">Reputation</span>
+              <span className="text-xs font-bold text-yellow-500 uppercase tracking-wider">Reputation</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>Track your reputation and review partners</p>
@@ -79,7 +79,7 @@ export default function RatingsReviews() {
           <div key={s.l} className={cn("rounded-2xl p-3.5 bg-gradient-to-br border", L ? `${s.b} border-slate-200/60` : `${s.b} border-slate-700/30`)}>
             <s.I className={cn("w-4 h-4 mb-1.5", s.c)} />
             {ld ? <Skeleton className="h-7 w-10 rounded-lg" /> : <p className={cn("text-2xl font-bold tracking-tight", s.c)}>{s.v}</p>}
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{s.l}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-0.5">{s.l}</p>
           </div>
         ))}
       </div>

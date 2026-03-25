@@ -99,7 +99,7 @@ export default function DeductionsBreakdown() {
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                 <div>
                   <p className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}</p>
-                  <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                  <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                 </div>
               </div>
             </CardContent>
@@ -154,7 +154,7 @@ export default function DeductionsBreakdown() {
                       <div className="flex items-center gap-2">
                         <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{dt.label}</p>
                         <Badge className={cn(
-                          "text-[9px] border",
+                          "text-xs border",
                           dt.category === "recurring" ? "bg-blue-500/15 text-blue-400 border-blue-500/30" :
                           dt.category === "advance" ? "bg-orange-500/15 text-orange-400 border-orange-500/30" :
                           "bg-slate-500/15 text-slate-400 border-slate-500/30"
@@ -169,7 +169,7 @@ export default function DeductionsBreakdown() {
                         {subtotal > 0 ? `-$${subtotal.toFixed(2)}` : "—"}
                       </p>
                       {lineItems.length > 0 && (
-                        <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{lineItems.length} items</p>
+                        <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{lineItems.length} items</p>
                       )}
                     </div>
                   </div>

@@ -124,7 +124,7 @@ export default function InTransitPage() {
           <div className={cn("flex items-center gap-3 px-4 py-2 rounded-xl border", isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30")}>
             <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
             <div>
-              <p className="text-[10px] text-slate-400 uppercase">Active</p>
+              <p className="text-xs text-slate-400 uppercase">Active</p>
               <p className="text-lg font-bold text-green-500">{filteredLoads.length}</p>
             </div>
           </div>
@@ -197,7 +197,7 @@ export default function InTransitPage() {
                         <Navigation className="w-3 h-3 mr-1" />{isDelayed ? "Delayed" : "On Track"}
                       </Badge>
                       <div className="text-right">
-                        <p className="text-[10px] text-slate-400 uppercase">ETA</p>
+                        <p className="text-xs text-slate-400 uppercase">ETA</p>
                         <p className={cn("font-bold text-sm", isDelayed ? "text-red-500" : "text-green-500")}>{eta}</p>
                       </div>
                     </div>
@@ -223,7 +223,7 @@ export default function InTransitPage() {
                       <span className={cn("font-semibold text-xs flex items-center gap-1.5", isLight ? "text-slate-700" : "text-slate-200")}>
                         <MapPin className="w-3.5 h-3.5 text-green-500" />Current Location
                       </span>
-                      <span className="text-[10px] text-slate-400">Updated 2 min ago</span>
+                      <span className="text-xs text-slate-400">Updated 2 min ago</span>
                     </div>
                     <p className={cn("text-sm mb-1", isLight ? "text-slate-700" : "text-slate-300")}>{location}</p>
                     <div className="flex items-center gap-3 text-xs">
@@ -241,7 +241,7 @@ export default function InTransitPage() {
                         </div>
                         <div>
                           <p className={cn("text-sm font-semibold", valCls)}>{originCity}{originState ? `, ${originState}` : ""}</p>
-                          {load.pickupDate && <p className="text-[10px] text-green-500 flex items-center gap-1"><CheckCircle className="w-2.5 h-2.5" />Picked up</p>}
+                          {load.pickupDate && <p className="text-xs text-green-500 flex items-center gap-1"><CheckCircle className="w-2.5 h-2.5" />Picked up</p>}
                         </div>
                       </div>
                       <div className="flex-1 mx-4 flex items-center">
@@ -252,7 +252,7 @@ export default function InTransitPage() {
                       <div className="flex items-center gap-2">
                         <div>
                           <p className={cn("text-sm font-semibold text-right", valCls)}>{destCity}{destState ? `, ${destState}` : ""}</p>
-                          {load.deliveryDate && <p className="text-[10px] text-slate-400 flex items-center gap-1 justify-end"><Clock className="w-2.5 h-2.5" />Due {new Date(load.deliveryDate).toLocaleDateString()}</p>}
+                          {load.deliveryDate && <p className="text-xs text-slate-400 flex items-center gap-1 justify-end"><Clock className="w-2.5 h-2.5" />Due {new Date(load.deliveryDate).toLocaleDateString()}</p>}
                         </div>
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#BE01FF]/15 to-[#1473FF]/15 flex items-center justify-center">
                           <Building2 className="w-4 h-4 text-[#BE01FF]" />
@@ -270,7 +270,7 @@ export default function InTransitPage() {
                       { label: "Shipper", value: `#${load.shipperId || "—"}` },
                     ].map((s) => (
                       <div key={s.label} className={cellCls}>
-                        <p className="text-[10px] text-slate-400 uppercase">{s.label}</p>
+                        <p className="text-xs text-slate-400 uppercase">{s.label}</p>
                         <p className={cn("font-medium text-sm", (s as any).color || valCls)}>{s.value}</p>
                       </div>
                     ))}

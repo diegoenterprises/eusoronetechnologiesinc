@@ -8,9 +8,123 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { adminProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { factoringInvoices, loads, users, companies, hzCarrierSafety, settlements } from "../../drizzle/schema";
+import { factoringInvoices, loads, users, companies, hzCarrierSafety, settlements, platformFeeConfigs, userFeeOverrides } from "../../drizzle/schema";
 import { like } from "drizzle-orm";
 import { unsafeCast } from "../_core/types/unsafe";
+
+/**
+ * Query a factoring-related rate from platformFeeConfigs, with optional user override.
+ * Falls back to provided default if no row exists.
+ */
+async function getFactoringConfig(
+  db: any,
+  feeCode: string,
+  defaults: { baseRate: number; flatAmount?: number },
+  userId?: number
+): Promise<{ baseRate: number; flatAmount: number }> {
+  try {
+    const now = new Date();
+    const [cfg] = await db.select({
+      baseRate: platformFeeConfigs.baseRate,
+      flatAmount: platformFeeConfigs.flatAmount,
+    }).from(platformFeeConfigs)
+      .where(and(
+        eq(platformFeeConfigs.feeCode, feeCode),
+        eq(platformFeeConfigs.isActive, true),
+        sql`${platformFeeConfigs.effectiveFrom} <= ${now}`,
+        sql`(${platformFeeConfigs.effectiveTo} IS NULL OR ${platformFeeConfigs.effectiveTo} > ${now})`,
+      ))
+      .limit(1);
+
+    let rate = cfg ? parseFloat(String(cfg.baseRate)) || defaults.baseRate : defaults.baseRate;
+    const flat = cfg ? parseFloat(String(cfg.flatAmount)) || (defaults.flatAmount ?? 0) : (defaults.flatAmount ?? 0);
+
+    // Check for user-level override
+    if (userId && cfg) {
+      try {
+        const [cfgRow] = await db.select({ id: platformFeeConfigs.id })
+          .from(platformFeeConfigs)
+          .where(eq(platformFeeConfigs.feeCode, feeCode))
+          .limit(1);
+        if (cfgRow) {
+          const [override] = await db.select({
+            overrideType: userFeeOverrides.overrideType,
+            overrideValue: userFeeOverrides.overrideValue,
+          }).from(userFeeOverrides)
+            .where(and(
+              eq(userFeeOverrides.userId, userId),
+              eq(userFeeOverrides.feeConfigId, cfgRow.id),
+              eq(userFeeOverrides.isActive, true),
+              sql`${userFeeOverrides.effectiveFrom} <= ${now}`,
+              sql`(${userFeeOverrides.effectiveTo} IS NULL OR ${userFeeOverrides.effectiveTo} > ${now})`,
+            ))
+            .limit(1);
+          if (override) {
+            const ov = parseFloat(String(override.overrideValue)) || 0;
+            if (override.overrideType === 'flat_override') rate = ov;
+            else if (override.overrideType === 'rate_adjustment') rate += ov;
+            else if (override.overrideType === 'percentage_off') rate *= (1 - ov / 100);
+            else if (override.overrideType === 'waived') rate = 0;
+          }
+        }
+      } catch { /* no override table — skip */ }
+    }
+
+    return { baseRate: rate, flatAmount: flat };
+  } catch {
+    return { baseRate: defaults.baseRate, flatAmount: defaults.flatAmount ?? 0 };
+  }
+}
+
+/**
+ * Query credit limit from platformFeeConfigs (stored as flatAmount on FACTORING_CREDIT_LIMIT config).
+ */
+async function getCreditLimit(db: any, userId?: number): Promise<number> {
+  const DEFAULT_CREDIT_LIMIT = 100000;
+  try {
+    const now = new Date();
+    const [cfg] = await db.select({ flatAmount: platformFeeConfigs.flatAmount })
+      .from(platformFeeConfigs)
+      .where(and(
+        eq(platformFeeConfigs.feeCode, 'FACTORING_CREDIT_LIMIT'),
+        eq(platformFeeConfigs.isActive, true),
+        sql`${platformFeeConfigs.effectiveFrom} <= ${now}`,
+        sql`(${platformFeeConfigs.effectiveTo} IS NULL OR ${platformFeeConfigs.effectiveTo} > ${now})`,
+      ))
+      .limit(1);
+    let limit = cfg ? parseFloat(String(cfg.flatAmount)) || DEFAULT_CREDIT_LIMIT : DEFAULT_CREDIT_LIMIT;
+
+    // Check user override
+    if (userId && cfg) {
+      try {
+        const [cfgFull] = await db.select({ id: platformFeeConfigs.id })
+          .from(platformFeeConfigs)
+          .where(eq(platformFeeConfigs.feeCode, 'FACTORING_CREDIT_LIMIT'))
+          .limit(1);
+        if (cfgFull) {
+          const [override] = await db.select({
+            overrideType: userFeeOverrides.overrideType,
+            overrideValue: userFeeOverrides.overrideValue,
+          }).from(userFeeOverrides)
+            .where(and(
+              eq(userFeeOverrides.userId, userId),
+              eq(userFeeOverrides.feeConfigId, cfgFull.id),
+              eq(userFeeOverrides.isActive, true),
+            ))
+            .limit(1);
+          if (override) {
+            const ov = parseFloat(String(override.overrideValue)) || 0;
+            if (override.overrideType === 'flat_override') limit = ov;
+            else if (override.overrideType === 'rate_adjustment') limit += ov;
+          }
+        }
+      } catch { /* skip */ }
+    }
+    return limit;
+  } catch {
+    return DEFAULT_CREDIT_LIMIT;
+  }
+}
 
 /**
  * Platform-internal credit scoring algorithm.
@@ -275,6 +389,12 @@ export const factoringRouter = router({
       if (!db) return { account: { status: 'inactive', creditLimit: 0, availableCredit: 0, usedCredit: 0, reserveBalance: 0, factoringRate: 0.025, advanceRate: 0.95 }, currentPeriod: { invoicesSubmitted: 0, totalFactored: 0, feesCharged: 0, pendingPayments: 0 }, recentActivity: [] };
       try {
         const userId = Number(ctx.user?.id) || 0;
+
+        // Query rates and credit limit from platformFeeConfigs
+        const stdCfg = await getFactoringConfig(db, 'FACTORING_STANDARD', { baseRate: 0.025 }, userId);
+        const creditLimit = await getCreditLimit(db, userId);
+        const advanceRate = 1 - stdCfg.baseRate; // advance = 1 - fee rate
+
         const [stats] = await db.select({
           total: sql<number>`COUNT(*)`,
           totalFactored: sql<number>`COALESCE(SUM(CAST(${factoringInvoices.invoiceAmount} AS DECIMAL)), 0)`,
@@ -285,7 +405,7 @@ export const factoringRouter = router({
         const hasActivity = (stats?.total || 0) > 0;
         const recent = await db.select({ id: factoringInvoices.id, invoiceNumber: factoringInvoices.invoiceNumber, status: factoringInvoices.status, invoiceAmount: factoringInvoices.invoiceAmount, submittedAt: factoringInvoices.submittedAt }).from(factoringInvoices).where(eq(factoringInvoices.catalystUserId, userId)).orderBy(desc(factoringInvoices.submittedAt)).limit(5);
         return {
-          account: { status: hasActivity ? 'active' : 'inactive', creditLimit: 100000, availableCredit: 100000 - Math.round(stats?.totalFactored || 0), usedCredit: Math.round(stats?.totalFactored || 0), reserveBalance: Math.round(stats?.totalReserve || 0), factoringRate: 0.03, advanceRate: 0.97 },
+          account: { status: hasActivity ? 'active' : 'inactive', creditLimit, availableCredit: creditLimit - Math.round(stats?.totalFactored || 0), usedCredit: Math.round(stats?.totalFactored || 0), reserveBalance: Math.round(stats?.totalReserve || 0), factoringRate: stdCfg.baseRate, advanceRate },
           currentPeriod: { invoicesSubmitted: stats?.total || 0, totalFactored: Math.round(stats?.totalFactored || 0), feesCharged: Math.round(stats?.totalFees || 0), pendingPayments: stats?.pending || 0 },
           recentActivity: recent.map(r => ({ id: String(r.id), invoiceNumber: r.invoiceNumber, status: r.status, amount: r.invoiceAmount ? parseFloat(String(r.invoiceAmount)) : 0, date: r.submittedAt?.toISOString() || '' })),
         };
@@ -334,8 +454,11 @@ export const factoringRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const userId = Number(ctx.user?.id) || 0;
-      const advanceRate = input.quickPay ? 97 : 95;
-      const feeRate = input.quickPay ? 3 : 2.5;
+      // Query rates from platformFeeConfigs
+      const stdCfg = await getFactoringConfig(db, 'FACTORING_STANDARD', { baseRate: 0.025 }, userId);
+      const qpCfg = await getFactoringConfig(db, 'FACTORING_QUICKPAY', { baseRate: 0.03 }, userId);
+      const feeRate = input.quickPay ? (qpCfg.baseRate * 100) : (stdCfg.baseRate * 100);
+      const advanceRate = input.quickPay ? (100 - qpCfg.baseRate * 100) : (100 - stdCfg.baseRate * 100);
       const feeAmount = input.invoiceAmount * (feeRate / 100);
       const advanceAmount = input.invoiceAmount * (advanceRate / 100);
       const reserveAmount = input.invoiceAmount - advanceAmount - feeAmount;
@@ -556,26 +679,52 @@ export const factoringRouter = router({
    */
   getFeeSchedule: protectedProcedure
     .query(async ({ ctx }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+
+      // Defaults used when DB is unavailable or no config rows exist
+      let stdRate = 0.025, qpRate = 0.03, sdRate = 0.045, nrRate = 0.005;
+      let nrCoverage = 50000, invoiceMin = 500, monthlyMin = 2500, addlDaysFee = 0.0005;
+
+      if (db) {
+        try {
+          const stdCfg = await getFactoringConfig(db, 'FACTORING_STANDARD', { baseRate: stdRate }, userId);
+          const qpCfg = await getFactoringConfig(db, 'FACTORING_QUICKPAY', { baseRate: qpRate }, userId);
+          const sdCfg = await getFactoringConfig(db, 'FACTORING_SAMEDAY', { baseRate: sdRate }, userId);
+          const nrCfg = await getFactoringConfig(db, 'FACTORING_NONRECOURSE', { baseRate: nrRate, flatAmount: nrCoverage }, userId);
+          stdRate = stdCfg.baseRate;
+          qpRate = qpCfg.baseRate;
+          sdRate = sdCfg.baseRate;
+          nrRate = nrCfg.baseRate;
+          nrCoverage = nrCfg.flatAmount || nrCoverage;
+
+          // Query minimums from config
+          const minCfg = await getFactoringConfig(db, 'FACTORING_MINIMUMS', { baseRate: addlDaysFee, flatAmount: invoiceMin }, userId);
+          addlDaysFee = minCfg.baseRate;
+          invoiceMin = minCfg.flatAmount || invoiceMin;
+        } catch { /* use defaults */ }
+      }
+
       return {
         standardFactoring: {
-          advanceRate: 0.95,
-          feeRate: 0.025,
-          additionalDaysFee: 0.0005,
+          advanceRate: 1 - stdRate,
+          feeRate: stdRate,
+          additionalDaysFee: addlDaysFee,
           processingTime: "24 hours",
         },
         quickPay: {
-          advanceRate: 0.97,
-          feeRate: 0.03,
+          advanceRate: 1 - qpRate,
+          feeRate: qpRate,
           processingTime: "4 hours",
         },
         nonRecourse: {
           available: true,
-          additionalFee: 0.005,
-          coverageLimit: 50000,
+          additionalFee: nrRate,
+          coverageLimit: nrCoverage,
         },
         minimums: {
-          invoiceMinimum: 500,
-          monthlyMinimum: 2500,
+          invoiceMinimum: invoiceMin,
+          monthlyMinimum: monthlyMin,
         },
       };
     }),
@@ -653,8 +802,10 @@ export const factoringRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       if (!userId) throw new Error("Authentication required");
 
-      const QUICK_PAY_ADVANCE_RATE = 97;
-      const QUICK_PAY_FEE_RATE = 3.5; // Higher fee for instant funding
+      // Query quick pay rates from platformFeeConfigs
+      const qpCfg = await getFactoringConfig(db, 'FACTORING_QUICKPAY', { baseRate: 0.035 }, userId);
+      const QUICK_PAY_FEE_RATE = qpCfg.baseRate * 100; // e.g. 3.5
+      const QUICK_PAY_ADVANCE_RATE = 100 - QUICK_PAY_FEE_RATE; // e.g. 96.5
       const PLATFORM_SPREAD = 1.0; // Platform keeps 1% of invoice value
 
       const feeAmount = input.invoiceAmount * (QUICK_PAY_FEE_RATE / 100);
@@ -761,16 +912,33 @@ export const factoringRouter = router({
     const db = await getDb(); if (!db) return { totalFactored: 0, pendingPayments: 0, availableCredit: 0, totalFunded: 0, pending: 0, invoicesFactored: 0 };
     try {
       const userId = Number(ctx.user?.id) || 0;
+      const creditLimit = await getCreditLimit(db, userId);
       const [s] = await db.select({
         total: sql<number>`COUNT(*)`,
         totalFactored: sql<number>`COALESCE(SUM(CAST(${factoringInvoices.invoiceAmount} AS DECIMAL)), 0)`,
         totalFunded: sql<number>`COALESCE(SUM(CAST(${factoringInvoices.advanceAmount} AS DECIMAL)), 0)`,
         pending: sql<number>`SUM(CASE WHEN ${factoringInvoices.status} IN ('submitted','under_review','approved') THEN 1 ELSE 0 END)`,
       }).from(factoringInvoices).where(eq(factoringInvoices.catalystUserId, userId));
-      return { totalFactored: Math.round(s?.totalFactored || 0), pendingPayments: s?.pending || 0, availableCredit: 100000, totalFunded: Math.round(s?.totalFunded || 0), pending: s?.pending || 0, invoicesFactored: s?.total || 0 };
+      return { totalFactored: Math.round(s?.totalFactored || 0), pendingPayments: s?.pending || 0, availableCredit: Math.max(0, creditLimit - Math.round(s?.totalFactored || 0)), totalFunded: Math.round(s?.totalFunded || 0), pending: s?.pending || 0, invoicesFactored: s?.total || 0 };
     } catch (e) { return { totalFactored: 0, pendingPayments: 0, availableCredit: 0, totalFunded: 0, pending: 0, invoicesFactored: 0 }; }
   }),
-  getRates: protectedProcedure.query(async () => ({ standard: 0.025, quickPay: 0.035, sameDay: 0.045, currentRate: 0.025, advanceRate: 0.95 })),
+  getRates: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const userId = Number(ctx.user?.id) || 0;
+    // Defaults
+    let standard = 0.025, quickPay = 0.035, sameDay = 0.045;
+    if (db) {
+      try {
+        const stdCfg = await getFactoringConfig(db, 'FACTORING_STANDARD', { baseRate: standard }, userId);
+        const qpCfg = await getFactoringConfig(db, 'FACTORING_QUICKPAY', { baseRate: quickPay }, userId);
+        const sdCfg = await getFactoringConfig(db, 'FACTORING_SAMEDAY', { baseRate: sameDay }, userId);
+        standard = stdCfg.baseRate;
+        quickPay = qpCfg.baseRate;
+        sameDay = sdCfg.baseRate;
+      } catch { /* use defaults */ }
+    }
+    return { standard, quickPay, sameDay, currentRate: standard, advanceRate: 1 - standard };
+  }),
 
   // ============================================================================
   // DEBTORS & CREDIT CHECK (B-042)

@@ -117,17 +117,17 @@ export default function DirectDeposit() {
                           {primaryAccount.bankName || primaryAccount.bank || "Bank Account"}
                         </span>
                       </div>
-                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[9px]">Primary</Badge>
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">Primary</Badge>
                     </div>
                     <div className="relative z-10">
                       <p className="text-lg font-mono font-bold text-white tracking-widest">
                         {maskNumber(primaryAccount.accountNumber || primaryAccount.last4 || "")}
                       </p>
                       <div className="flex items-center justify-between mt-2">
-                        <p className="text-[10px] text-white/50">
+                        <p className="text-xs text-white/50">
                           {primaryAccount.accountType?.toUpperCase() || "CHECKING"}
                         </p>
-                        <p className="text-[10px] text-white/50">DIRECT DEPOSIT</p>
+                        <p className="text-xs text-white/50">DIRECT DEPOSIT</p>
                       </div>
                     </div>
                   </div>
@@ -145,14 +145,14 @@ export default function DirectDeposit() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                        <p className={cn("text-[10px] uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>Status</p>
+                        <p className={cn("text-xs uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>Status</p>
                         <div className="flex items-center gap-1.5 mt-1">
                           <CheckCircle className="w-3.5 h-3.5 text-green-500" />
                           <p className="text-sm font-bold text-green-500">Verified</p>
                         </div>
                       </div>
                       <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                        <p className={cn("text-[10px] uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>Schedule</p>
+                        <p className={cn("text-xs uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>Schedule</p>
                         <p className={cn("text-sm font-bold mt-1", isLight ? "text-slate-800" : "text-white")}>Weekly</p>
                       </div>
                     </div>

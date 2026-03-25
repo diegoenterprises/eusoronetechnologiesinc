@@ -119,7 +119,7 @@ export default function NRCReport() {
               isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/30"
             )}>
               <div className="w-6 h-6 rounded-md bg-red-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-[10px] font-bold text-red-500">{i + 1}</span>
+                <span className="text-xs font-bold text-red-500">{i + 1}</span>
               </div>
               <p className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-200")}>{trigger}</p>
             </div>
@@ -185,7 +185,7 @@ export default function NRCReport() {
                   )}>
                     {item.label}
                   </p>
-                  <p className={cn("text-[10px] mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>{item.placeholder}</p>
+                  <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>{item.placeholder}</p>
                 </div>
               </button>
             );

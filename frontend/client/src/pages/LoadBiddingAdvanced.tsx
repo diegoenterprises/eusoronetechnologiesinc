@@ -77,7 +77,7 @@ export default function LoadBiddingAdvanced() {
             <CardContent className="p-3 text-center">
               <div className="flex justify-center mb-1">{s.icon}</div>
               {statsQuery.isLoading ? <Skeleton className="h-6 w-10 mx-auto" /> : <p className={cn("text-lg font-bold", s.color)}>{s.value}</p>}
-              <p className="text-[9px] text-slate-400 uppercase">{s.label}</p>
+              <p className="text-xs text-slate-400 uppercase">{s.label}</p>
             </CardContent>
           </Card>
         ))}
@@ -108,8 +108,8 @@ export default function LoadBiddingAdvanced() {
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-white font-medium text-sm">Bid #{b.id}</span>
-                        <Badge className={cn("text-[9px]", BID_STATUS_COLORS[b.status])}>{b.status}</Badge>
-                        {b.isAutoAccepted && <Badge className="bg-emerald-500/20 text-emerald-400 text-[9px]"><Zap className="w-3 h-3 mr-0.5" />Auto</Badge>}
+                        <Badge className={cn("text-xs", BID_STATUS_COLORS[b.status])}>{b.status}</Badge>
+                        {b.isAutoAccepted && <Badge className="bg-emerald-500/20 text-emerald-400 text-xs"><Zap className="w-3 h-3 mr-0.5" />Auto</Badge>}
                       </div>
                       <p className="text-xs text-slate-500">Load #{b.loadId} · R{b.bidRound} · ${Number(b.bidAmount || 0).toLocaleString()} {b.rateType}</p>
                     </div>
@@ -141,7 +141,7 @@ export default function LoadBiddingAdvanced() {
                     <div>
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-white font-medium text-sm">${Number(b.bidAmount || 0).toLocaleString()}</span>
-                        <Badge className={cn("text-[9px]", BID_STATUS_COLORS[b.status])}>{b.status}</Badge>
+                        <Badge className={cn("text-xs", BID_STATUS_COLORS[b.status])}>{b.status}</Badge>
                       </div>
                       <p className="text-xs text-slate-500">Load #{b.loadId} · Round {b.bidRound} · {b.rateType}</p>
                     </div>

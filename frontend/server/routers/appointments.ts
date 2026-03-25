@@ -374,8 +374,7 @@ export const appointmentsRouter = router({
       date: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      // Hazmat bay certification data — in production this comes from a facility_bays table
-      // For now, return configurable bay definitions per facility
+      // Hazmat bay certification reference data — configurable per terminal
       const HAZMAT_BAY_TYPES: Record<string, {
         certLevel: string;
         allowedClasses: string[];

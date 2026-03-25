@@ -89,7 +89,7 @@ export default function HazmatRouteCompliance() {
                 <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                 <div>
                   <p className={cn("text-lg font-bold tabular-nums", s.color)}>{s.value}</p>
-                  <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                  <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                 </div>
               </div>
             </CardContent>
@@ -109,7 +109,7 @@ export default function HazmatRouteCompliance() {
               { l: "Distance", v: "487 miles / ~8.5 hrs", icon: <Navigation className="w-3.5 h-3.5 text-blue-500" /> },
             ].map((d) => (
               <div key={d.l} className={cn("p-3 rounded-xl", isLight ? "bg-slate-50" : "bg-slate-700/30")}>
-                <div className="flex items-center gap-1.5 mb-1">{d.icon}<p className={cn("text-[9px] uppercase tracking-wider font-medium", isLight ? "text-slate-400" : "text-slate-500")}>{d.l}</p></div>
+                <div className="flex items-center gap-1.5 mb-1">{d.icon}<p className={cn("text-xs uppercase tracking-wider font-medium", isLight ? "text-slate-400" : "text-slate-500")}>{d.l}</p></div>
                 <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{d.v}</p>
               </div>
             ))}
@@ -142,7 +142,7 @@ export default function HazmatRouteCompliance() {
                       <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{check.item}</p>
                       <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>{check.detail}</p>
                     </div>
-                    <Badge className={cn("text-[9px] border flex-shrink-0", st.bg, st.color, "border-current/20")}>{st.label}</Badge>
+                    <Badge className={cn("text-xs border flex-shrink-0", st.bg, st.color, "border-current/20")}>{st.label}</Badge>
                   </div>
                 );
               })}

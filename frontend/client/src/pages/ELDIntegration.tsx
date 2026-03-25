@@ -63,7 +63,7 @@ export default function ELDIntegration() {
       off_duty: { label: "Off Duty", cls: isLight ? "bg-slate-100 text-slate-600" : "bg-slate-500/20 text-slate-400" },
     };
     const s = map[status] || { label: status, cls: isLight ? "bg-slate-100 text-slate-500" : "bg-slate-500/20 text-slate-400" };
-    return <Badge className={cn("border-0 text-[10px] font-bold", s.cls)}>{s.label}</Badge>;
+    return <Badge className={cn("border-0 text-xs font-bold", s.cls)}>{s.label}</Badge>;
   };
 
   const TABS = [
@@ -117,7 +117,7 @@ export default function ELDIntegration() {
               </div>
               <div>
                 {s.loading ? <Skeleton className="h-7 w-10" /> : <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>}
-                <p className={cn("text-[10px] font-medium", muted)}>{s.label}</p>
+                <p className={cn("text-xs font-medium", muted)}>{s.label}</p>
               </div>
             </div>
           </div>
@@ -140,7 +140,7 @@ export default function ELDIntegration() {
             <t.icon className="w-4 h-4" />
             {t.label}
             {t.count !== undefined && t.count > 0 && (
-              <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded-full", isLight ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/15 text-emerald-400")}>
+              <span className={cn("text-xs font-bold px-1.5 py-0.5 rounded-full", isLight ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/15 text-emerald-400")}>
                 {t.count}
               </span>
             )}
@@ -165,7 +165,7 @@ export default function ELDIntegration() {
                   <div className={muted}>
                     {fleetGPS?.count || 0} vehicles tracked
                     {fleetGPS?.source && fleetGPS.source !== "none" && (
-                      <span className={cn("ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded-md", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
+                      <span className={cn("ml-2 text-xs font-medium px-1.5 py-0.5 rounded-md", isLight ? "bg-slate-100" : "bg-white/[0.04]")}>
                         via {fleetGPS.provider} ({fleetGPS.source})
                       </span>
                     )}
@@ -203,7 +203,7 @@ export default function ELDIntegration() {
                       <div className={cn("text-sm font-semibold", heading)}>
                         {loc.driverId ? `Driver ${loc.driverId}` : `Vehicle ${loc.vehicleId || i + 1}`}
                       </div>
-                      <div className={cn("text-[11px] flex items-center gap-2", muted)}>
+                      <div className={cn("text-xs flex items-center gap-2", muted)}>
                         <MapPin className="w-3 h-3" /> {loc.lat?.toFixed(4)}°, {loc.lng?.toFixed(4)}°
                         {loc.roadName && <span>• {loc.roadName}</span>}
                       </div>
@@ -212,7 +212,7 @@ export default function ELDIntegration() {
                       <div className={cn("text-sm font-bold tabular-nums", loc.speed > 0 ? (isLight ? "text-emerald-600" : "text-emerald-400") : muted)}>
                         {Math.round(loc.speed || 0)} mph
                       </div>
-                      <div className={cn("text-[10px]", muted)}>
+                      <div className={cn("text-xs", muted)}>
                         {loc.heading ? `${Math.round(loc.heading)}°` : "—"}
                       </div>
                     </div>
@@ -269,12 +269,12 @@ export default function ELDIntegration() {
                               <p className={cn("font-medium", heading)}>{driver.name || `Driver ${driver.driverId}`}</p>
                               {getStatusBadge(driver.currentStatus || driver.status)}
                               {driver.hasViolation && (
-                                <Badge className={cn("border-0 text-[10px] font-bold", isLight ? "bg-red-100 text-red-700" : "bg-red-500/20 text-red-400")}>
+                                <Badge className={cn("border-0 text-xs font-bold", isLight ? "bg-red-100 text-red-700" : "bg-red-500/20 text-red-400")}>
                                   <AlertTriangle className="w-3 h-3 mr-1" />Violation
                                 </Badge>
                               )}
                             </div>
-                            <p className={cn("text-[11px]", muted)}>
+                            <p className={cn("text-xs", muted)}>
                               {driver.vehicle || "—"} | {driver.provider || "ELD"} | Updated {driver.lastUpdate ? new Date(driver.lastUpdate).toLocaleTimeString() : "—"}
                             </p>
                           </div>
@@ -288,8 +288,8 @@ export default function ELDIntegration() {
                         ].map(h => (
                           <div key={h.label} className={cn("p-3 rounded-xl", isLight ? "bg-slate-50 border border-slate-100" : "bg-white/[0.02] border border-white/[0.04]")}>
                             <div className="flex items-center justify-between mb-1.5">
-                              <span className={cn("text-[10px] font-medium", muted)}>{h.label}</span>
-                              <span className={cn("text-[10px] font-bold tabular-nums", heading)}>{h.used}h / {h.max}h</span>
+                              <span className={cn("text-xs font-medium", muted)}>{h.label}</span>
+                              <span className={cn("text-xs font-bold tabular-nums", heading)}>{h.used}h / {h.max}h</span>
                             </div>
                             <div className={cn("h-1.5 rounded-full overflow-hidden", isLight ? "bg-slate-200" : "bg-white/[0.06]")}>
                               <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (h.used / h.max) * 100)}%`, backgroundColor: h.color }} />

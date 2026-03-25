@@ -10,7 +10,7 @@ import { getDb } from "../db";
 
 export const featuresRouter = router({
   /**
-   * List feature requests for FeatureRequests page
+   * List feature requests — no feature_requests table exists yet
    */
   list: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(50) }))
@@ -19,7 +19,7 @@ export const featuresRouter = router({
     }),
 
   /**
-   * Get feature summary for FeatureRequests page
+   * Get feature summary — no feature_requests table exists yet
    */
   getSummary: protectedProcedure
     .query(async () => {

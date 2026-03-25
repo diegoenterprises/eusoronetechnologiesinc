@@ -117,7 +117,7 @@ function KpiCard({
         <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>{label}</p>
         {progress !== undefined && (
           <div className="mt-3">
-            <div className={`flex justify-between text-[10px] ${isLight ? "text-slate-400" : "text-slate-500"} mb-1`}>
+            <div className={`flex justify-between text-xs ${isLight ? "text-slate-400" : "text-slate-500"} mb-1`}>
               <span>Progress</span>
               <span>{progress.toFixed(0)}%</span>
             </div>
@@ -448,12 +448,12 @@ function ExecutiveTab() {
                 const h = (m.revenue / maxRev) * 100;
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-[10px] text-slate-500">{formatCurrency(m.revenue)}</span>
+                    <span className="text-xs text-slate-500">{formatCurrency(m.revenue)}</span>
                     <div
                       className="w-full rounded-t bg-gradient-to-t from-indigo-600 to-blue-500 transition-all hover:from-indigo-500 hover:to-blue-400"
                       style={{ height: `${Math.max(h, 4)}%` }}
                     />
-                    <span className="text-[10px] text-slate-500">{m.month.split("-")[1]}</span>
+                    <span className="text-xs text-slate-500">{m.month.split("-")[1]}</span>
                   </div>
                 );
               })}
@@ -617,7 +617,7 @@ function FinancialTab() {
                   <Badge
                     variant="outline"
                     className={cn(
-                      "text-[10px]",
+                      "text-xs",
                       item.category === "Revenue"
                         ? "text-emerald-400 border-emerald-500/30"
                         : "text-red-400 border-red-500/30",
@@ -1292,8 +1292,8 @@ function TrendsTab() {
                   })}
                 </div>
                 <div className="flex justify-between mt-2">
-                  <span className="text-[10px] text-slate-500">{data.dataPoints[0]?.period}</span>
-                  <span className="text-[10px] text-slate-500">{data.dataPoints[data.dataPoints.length - 1]?.period}</span>
+                  <span className="text-xs text-slate-500">{data.dataPoints[0]?.period}</span>
+                  <span className="text-xs text-slate-500">{data.dataPoints[data.dataPoints.length - 1]?.period}</span>
                 </div>
               </CardContent>
             </Card>
@@ -1399,7 +1399,7 @@ function BuilderTab() {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <p className={cn("text-sm font-medium", isSelected ? "text-indigo-300" : "text-white")}>{f.label}</p>
-                        <Badge variant="outline" className="text-[10px] text-slate-500 border-slate-600">{f.type}</Badge>
+                        <Badge variant="outline" className="text-xs text-slate-500 border-slate-600">{f.type}</Badge>
                       </div>
                       <p className="text-xs text-slate-500">{f.description}</p>
                     </div>
@@ -1461,7 +1461,7 @@ function ScheduledTab() {
                       {s.lastRun && <span>Last: {new Date(s.lastRun).toLocaleDateString()}</span>}
                       {s.lastStatus && (
                         <Badge variant="outline" className={cn(
-                          "text-[10px]",
+                          "text-xs",
                           s.lastStatus === "completed" ? "text-emerald-400 border-emerald-500/30" : "text-red-400 border-red-500/30",
                         )}>
                           {s.lastStatus}

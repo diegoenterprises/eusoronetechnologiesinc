@@ -106,12 +106,12 @@ export default function ConvoyRoutePlan({
             </div>
             <div>
               <p className="text-sm font-semibold text-white">Convoy Route Plan</p>
-              <p className="text-[10px] text-slate-400">Fuel, rest, timing & permits optimization</p>
+              <p className="text-xs text-slate-400">Fuel, rest, timing & permits optimization</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {plan && (
-              <Badge variant="outline" className="text-[9px] border-emerald-500/30 text-emerald-400">
+              <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-400">
                 {plan.summary.estimatedDays} day{plan.summary.estimatedDays > 1 ? "s" : ""}
               </Badge>
             )}
@@ -132,19 +132,19 @@ export default function ConvoyRoutePlan({
             <div className="p-4 rounded-xl border border-slate-700/30 bg-slate-900/30 space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div>
-                  <Label className="text-[10px] text-slate-400">Distance (miles)</Label>
+                  <Label className="text-xs text-slate-400">Distance (miles)</Label>
                   <Input type="number" value={formDistance} onChange={(e: any) => setFormDistance(Number(e.target.value))}
                     className="h-8 text-xs bg-slate-800/50 border-slate-700" />
                 </div>
                 <div>
-                  <Label className="text-[10px] text-slate-400">Departure</Label>
+                  <Label className="text-xs text-slate-400">Departure</Label>
                   <Input type="datetime-local" value={formDeparture} onChange={(e: any) => setFormDeparture(e.target.value)}
                     className="h-8 text-xs bg-slate-800/50 border-slate-700" />
                 </div>
                 <div className="flex items-end gap-2">
                   <div className="flex items-center gap-2 h-8">
                     <Checkbox checked={formIsOversize} onCheckedChange={(c: any) => setFormIsOversize(!!c)} />
-                    <Label className="text-[10px] text-slate-300">Oversize Load</Label>
+                    <Label className="text-xs text-slate-300">Oversize Load</Label>
                   </div>
                 </div>
               </div>
@@ -152,17 +152,17 @@ export default function ConvoyRoutePlan({
               {formIsOversize && (
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <Label className="text-[10px] text-slate-400">Width (ft)</Label>
+                    <Label className="text-xs text-slate-400">Width (ft)</Label>
                     <Input type="number" value={formWidth || ""} onChange={(e: any) => setFormWidth(Number(e.target.value) || undefined)}
                       className="h-8 text-xs bg-slate-800/50 border-slate-700" placeholder="12" />
                   </div>
                   <div>
-                    <Label className="text-[10px] text-slate-400">Height (ft)</Label>
+                    <Label className="text-xs text-slate-400">Height (ft)</Label>
                     <Input type="number" value={formHeight || ""} onChange={(e: any) => setFormHeight(Number(e.target.value) || undefined)}
                       className="h-8 text-xs bg-slate-800/50 border-slate-700" placeholder="14" />
                   </div>
                   <div>
-                    <Label className="text-[10px] text-slate-400">Weight (lbs)</Label>
+                    <Label className="text-xs text-slate-400">Weight (lbs)</Label>
                     <Input type="number" value={formWeight || ""} onChange={(e: any) => setFormWeight(Number(e.target.value) || undefined)}
                       className="h-8 text-xs bg-slate-800/50 border-slate-700" placeholder="100000" />
                   </div>
@@ -170,14 +170,14 @@ export default function ConvoyRoutePlan({
               )}
 
               <div>
-                <Label className="text-[10px] text-slate-400 mb-1.5 block">Transit States</Label>
+                <Label className="text-xs text-slate-400 mb-1.5 block">Transit States</Label>
                 <div className="flex flex-wrap gap-1.5">
                   {US_STATES.map(st => (
                     <button
                       key={st}
                       onClick={() => toggleState(st)}
                       className={cn(
-                        "text-[9px] px-1.5 py-0.5 rounded border transition-colors",
+                        "text-xs px-1.5 py-0.5 rounded border transition-colors",
                         formTransitStates.includes(st)
                           ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
                           : "bg-slate-800/50 border-slate-700/50 text-slate-500 hover:text-slate-300"
@@ -217,7 +217,7 @@ export default function ConvoyRoutePlan({
                   <div key={s.label} className="p-2.5 rounded-xl border border-slate-700/30 bg-slate-900/20">
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className={s.color}>{s.icon}</span>
-                      <span className="text-[9px] text-slate-500 uppercase tracking-wider">{s.label}</span>
+                      <span className="text-xs text-slate-500 uppercase tracking-wider">{s.label}</span>
                     </div>
                     <p className={cn("text-sm font-bold font-mono", s.color)}>{s.value}</p>
                   </div>
@@ -235,15 +235,15 @@ export default function ConvoyRoutePlan({
                     {plan.fuelStops.map((stop: any) => (
                       <div key={stop.stopNumber} className="flex items-center justify-between p-2 rounded-lg bg-slate-900/30">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded">#{stop.stopNumber}</span>
+                          <span className="text-xs font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded">#{stop.stopNumber}</span>
                           <span className="text-xs text-white">Mile {stop.approximateMile}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-400">{stop.estimatedTime}</span>
+                          <span className="text-xs text-slate-400">{stop.estimatedTime}</span>
                         </div>
                       </div>
                     ))}
-                    <p className="text-[9px] text-slate-500 italic mt-1">{plan.fuelStops[0]?.notes}</p>
+                    <p className="text-xs text-slate-500 italic mt-1">{plan.fuelStops[0]?.notes}</p>
                   </div>
                 </div>
               )}
@@ -260,16 +260,16 @@ export default function ConvoyRoutePlan({
                       <div key={stop.stopNumber} className="p-2 rounded-lg bg-slate-900/30">
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline" className={cn("text-[9px]",
+                            <Badge variant="outline" className={cn("text-xs",
                               stop.type === "overnight" ? "border-indigo-500/40 text-indigo-400" : "border-cyan-500/40 text-cyan-400"
                             )}>
                               {stop.type === "overnight" ? "Overnight" : "Break"}
                             </Badge>
                             <span className="text-xs text-white">At hour {stop.approximateHour}</span>
                           </div>
-                          <span className="text-[10px] text-slate-400">{stop.duration}</span>
+                          <span className="text-xs text-slate-400">{stop.duration}</span>
                         </div>
-                        <p className="text-[9px] text-slate-500">{stop.reason}</p>
+                        <p className="text-xs text-slate-500">{stop.reason}</p>
                       </div>
                     ))}
                   </div>
@@ -282,22 +282,22 @@ export default function ConvoyRoutePlan({
                   <div className="flex items-center gap-2 mb-2">
                     <Sun className="w-4 h-4 text-yellow-400" />
                     <span className="text-xs font-semibold text-yellow-400">Daylight Travel Windows</span>
-                    <Badge variant="outline" className="text-[8px] border-yellow-500/30 text-yellow-400">Oversize</Badge>
+                    <Badge variant="outline" className="text-xs border-yellow-500/30 text-yellow-400">Oversize</Badge>
                   </div>
                   <div className="space-y-2">
                     {plan.daylightWindows.map((w: any) => (
                       <div key={w.day} className="flex items-center justify-between p-2 rounded-lg bg-slate-900/30">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-yellow-400 bg-yellow-500/15 px-1.5 py-0.5 rounded">Day {w.day}</span>
-                          <span className="text-[10px] text-white">{w.start.split(" ")[0]}</span>
+                          <span className="text-xs font-bold text-yellow-400 bg-yellow-500/15 px-1.5 py-0.5 rounded">Day {w.day}</span>
+                          <span className="text-xs text-white">{w.start.split(" ")[0]}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-[10px] text-slate-400">{w.start.split(" ")[1]} → {w.end.split(" ")[1]}</span>
-                          <span className="text-[10px] text-yellow-400 font-mono">{w.miles} mi</span>
+                          <span className="text-xs text-slate-400">{w.start.split(" ")[1]} → {w.end.split(" ")[1]}</span>
+                          <span className="text-xs text-yellow-400 font-mono">{w.miles} mi</span>
                         </div>
                       </div>
                     ))}
-                    <p className="text-[9px] text-slate-500 italic">No weekend travel. Daylight hours only per state DOT requirements.</p>
+                    <p className="text-xs text-slate-500 italic">No weekend travel. Daylight hours only per state DOT requirements.</p>
                   </div>
                 </div>
               )}
@@ -316,15 +316,15 @@ export default function ConvoyRoutePlan({
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-blue-400">{pc.state}</span>
                             <div className="flex gap-1">
-                              {pc.restrictions.daylightOnly && <Badge variant="outline" className="text-[7px] border-yellow-500/30 text-yellow-400">Daylight</Badge>}
-                              {pc.restrictions.noWeekends && <Badge variant="outline" className="text-[7px] border-slate-500/30 text-slate-400">No Wknd</Badge>}
-                              {pc.restrictions.escortRequired && <Badge variant="outline" className="text-[7px] border-purple-500/30 text-purple-400">Escort Req</Badge>}
-                              {pc.restrictions.policeEscort && <Badge variant="outline" className="text-[7px] border-red-500/30 text-red-400">Police</Badge>}
+                              {pc.restrictions.daylightOnly && <Badge variant="outline" className="text-xs border-yellow-500/30 text-yellow-400">Daylight</Badge>}
+                              {pc.restrictions.noWeekends && <Badge variant="outline" className="text-xs border-slate-500/30 text-slate-400">No Wknd</Badge>}
+                              {pc.restrictions.escortRequired && <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">Escort Req</Badge>}
+                              {pc.restrictions.policeEscort && <Badge variant="outline" className="text-xs border-red-500/30 text-red-400">Police</Badge>}
                             </div>
                           </div>
-                          <span className="text-[10px] text-slate-400">Max {pc.restrictions.maxSpeed} mph</span>
+                          <span className="text-xs text-slate-400">Max {pc.restrictions.maxSpeed} mph</span>
                         </div>
-                        <p className="text-[9px] text-slate-500">{pc.restrictions.notes}</p>
+                        <p className="text-xs text-slate-500">{pc.restrictions.notes}</p>
                       </div>
                     ))}
                   </div>
@@ -342,7 +342,7 @@ export default function ConvoyRoutePlan({
                     {plan.warnings.map((w: string, i: number) => (
                       <div key={i} className="flex items-start gap-2">
                         <AlertTriangle className="w-3 h-3 text-red-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-[10px] text-red-300">{w}</span>
+                        <span className="text-xs text-red-300">{w}</span>
                       </div>
                     ))}
                   </div>
@@ -360,7 +360,7 @@ export default function ConvoyRoutePlan({
                     {plan.recommendations.map((r: string, i: number) => (
                       <div key={i} className="flex items-start gap-2">
                         <CheckCircle className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-[10px] text-emerald-300">{r}</span>
+                        <span className="text-xs text-emerald-300">{r}</span>
                       </div>
                     ))}
                   </div>

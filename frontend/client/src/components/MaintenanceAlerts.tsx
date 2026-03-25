@@ -61,7 +61,7 @@ export default function MaintenanceAlerts({ compact = false, maxAlerts = 20 }: M
           <Bell className={cn("w-4 h-4", (alertCounts?.critical || 0) > 0 ? "text-red-500 animate-pulse" : "text-slate-400")} />
           <span className={cn("text-xs font-bold", L ? "text-slate-700" : "text-slate-200")}>Maintenance Alerts</span>
           {(alertCounts?.total || 0) > 0 && (
-            <Badge className="bg-red-500/15 text-red-500 border-0 text-[10px] font-bold">{alertCounts.total}</Badge>
+            <Badge className="bg-red-500/15 text-red-500 border-0 text-xs font-bold">{alertCounts.total}</Badge>
           )}
         </div>
         {isLoading ? (
@@ -101,19 +101,19 @@ export default function MaintenanceAlerts({ compact = false, maxAlerts = 20 }: M
             </div>
             <div>
               <p className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>Maintenance Alerts</p>
-              <p className={cn("text-[10px]", L ? "text-slate-400" : "text-slate-500")}>
+              <p className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>
                 AI-predicted service needs
               </p>
             </div>
             {(alertCounts?.total || 0) > 0 && (
               <div className="flex gap-1.5 ml-2">
                 {(alertCounts?.critical || 0) > 0 && (
-                  <Badge className="bg-red-500/15 text-red-500 border-0 text-[10px] font-bold animate-pulse">
+                  <Badge className="bg-red-500/15 text-red-500 border-0 text-xs font-bold animate-pulse">
                     {alertCounts.critical} Critical
                   </Badge>
                 )}
                 {(alertCounts?.high || 0) > 0 && (
-                  <Badge className="bg-orange-500/15 text-orange-500 border-0 text-[10px] font-bold">
+                  <Badge className="bg-orange-500/15 text-orange-500 border-0 text-xs font-bold">
                     {alertCounts.high} High
                   </Badge>
                 )}
@@ -125,7 +125,7 @@ export default function MaintenanceAlerts({ compact = false, maxAlerts = 20 }: M
           <div className="flex gap-1">
             {(["all", "critical", "high"] as const).map((s) => (
               <button key={s} onClick={() => setSeverityFilter(s)}
-                className={cn("px-2 py-1 rounded-lg text-[10px] font-bold transition-all border capitalize",
+                className={cn("px-2 py-1 rounded-lg text-xs font-bold transition-all border capitalize",
                   severityFilter === s
                     ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent"
                     : L ? "border-slate-200 text-slate-500 hover:border-blue-300" : "border-slate-700 text-slate-400 hover:border-blue-500/50"
@@ -160,26 +160,26 @@ export default function MaintenanceAlerts({ compact = false, maxAlerts = 20 }: M
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className={cn("text-xs font-bold", L ? "text-slate-700" : "text-slate-200")}>{alert.vehicleUnit}</span>
-                        <Badge className={cn("border-0 text-[9px] font-bold capitalize",
+                        <Badge className={cn("border-0 text-xs font-bold capitalize",
                           alert.severity === "critical" ? "bg-red-500/15 text-red-500" : "bg-orange-500/15 text-orange-500"
                         )}>{alert.severity}</Badge>
-                        <span className={cn("text-[10px] font-medium capitalize", L ? "text-slate-400" : "text-slate-500")}>{alert.component}</span>
+                        <span className={cn("text-xs font-medium capitalize", L ? "text-slate-400" : "text-slate-500")}>{alert.component}</span>
                       </div>
                       <p className={cn("text-xs leading-relaxed", L ? "text-slate-600" : "text-slate-300")}>{alert.message}</p>
                       <div className="flex items-center gap-3 mt-1.5">
                         <div className="flex items-center gap-1">
                           <Clock className="w-3 h-3 text-slate-400" />
-                          <span className={cn("text-[10px]", L ? "text-slate-400" : "text-slate-500")}>
+                          <span className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>
                             {alert.daysRemaining <= 0 ? "Overdue" : `${alert.daysRemaining} days`}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Truck className="w-3 h-3 text-slate-400" />
-                          <span className={cn("text-[10px]", L ? "text-slate-400" : "text-slate-500")}>
+                          <span className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>
                             {alert.milesRemaining.toLocaleString()} mi
                           </span>
                         </div>
-                        <span className={cn("text-[9px]", L ? "text-slate-400" : "text-slate-500")}>
+                        <span className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>
                           {(alert.confidenceScore * 100).toFixed(0)}% confidence
                         </span>
                       </div>
@@ -213,11 +213,11 @@ export default function MaintenanceAlerts({ compact = false, maxAlerts = 20 }: M
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-dashed" style={{ borderColor: L ? "#e2e8f0" : "#334155" }}>
             <div className="flex items-center gap-1.5">
               <BellOff className="w-3 h-3 text-slate-400" />
-              <span className={cn("text-[10px]", L ? "text-slate-400" : "text-slate-500")}>{dismissedIds.size} dismissed</span>
+              <span className={cn("text-xs", L ? "text-slate-400" : "text-slate-500")}>{dismissedIds.size} dismissed</span>
             </div>
             <button
               onClick={() => setDismissedIds(new Set())}
-              className={cn("text-[10px] font-bold", L ? "text-blue-500 hover:text-blue-600" : "text-blue-400 hover:text-blue-300")}
+              className={cn("text-xs font-bold", L ? "text-blue-500 hover:text-blue-600" : "text-blue-400 hover:text-blue-300")}
             >
               Show all
             </button>

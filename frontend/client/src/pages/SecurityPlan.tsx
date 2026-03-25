@@ -172,7 +172,7 @@ export default function SecurityPlan() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={cn("text-[9px]", section.bg, section.color, "border-current/20")}>{section.items.length} items</Badge>
+                    <Badge className={cn("text-xs", section.bg, section.color, "border-current/20")}>{section.items.length} items</Badge>
                     <ChevronRight className={cn("w-4 h-4 transition-transform", isExpanded && "rotate-90", isLight ? "text-slate-300" : "text-slate-600")} />
                   </div>
                 </div>
@@ -219,13 +219,13 @@ export default function SecurityPlan() {
                 </div>
                 <div>
                   <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{item.label}</p>
-                  <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+                  <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
                     {item.frequency} · {item.regulation}
                   </p>
                 </div>
               </div>
               <Badge className={cn(
-                "text-[9px] border",
+                "text-xs border",
                 item.required ? "bg-blue-500/15 text-blue-400 border-blue-500/30" : "bg-slate-500/15 text-slate-400 border-slate-500/30"
               )}>
                 {item.required ? "Required" : "Recommended"}
@@ -264,7 +264,7 @@ export default function SecurityPlan() {
                 <div>
                   <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{c.name}</p>
                   <p className="text-xs font-mono text-red-500">{c.number}</p>
-                  <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{c.desc}</p>
+                  <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{c.desc}</p>
                 </div>
               </a>
             ))}

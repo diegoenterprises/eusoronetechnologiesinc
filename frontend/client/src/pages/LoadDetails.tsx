@@ -536,7 +536,7 @@ export default function LoadDetails() {
               </h1>
               <LoadStatusBadge state={load.status} size="md" />
               {wsConnected && (
-                <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-medium">
+                <span className="flex items-center gap-1 text-xs text-emerald-500 font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   LIVE
                 </span>
@@ -574,22 +574,22 @@ export default function LoadDetails() {
         <div className="bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 px-6 py-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Load Rate</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Load Rate</p>
               <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${rate.toLocaleString()}</p>
               <p className="text-xs text-slate-400 mt-0.5">${ratePerMile}/mi</p>
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Distance</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Distance</p>
               <p className={cn("text-3xl font-bold", isLight ? "text-slate-800" : "text-white")}>{distance}</p>
               <p className="text-xs text-slate-400 mt-0.5">miles</p>
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Weight</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Weight</p>
               <p className={cn("text-3xl font-bold", isLight ? "text-slate-800" : "text-white")}>{Number(load.weight || 0).toLocaleString()}</p>
               <p className="text-xs text-slate-400 mt-0.5">{load.weightUnit || "lbs"}</p>
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Equipment</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wider font-medium">Equipment</p>
               <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{getEquipmentLabel(load.equipmentType, load.cargoType, load.hazmatClass)}</p>
               <p className="text-xs text-slate-400 mt-0.5">{getLoadTitle(load)}</p>
             </div>
@@ -607,43 +607,43 @@ export default function LoadDetails() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {mlRatePrediction.data && (
               <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
-                <p className="text-[10px] text-slate-400 uppercase mb-1">ML Rate Prediction</p>
+                <p className="text-xs text-slate-400 uppercase mb-1">ML Rate Prediction</p>
                 <div className="flex items-baseline gap-2">
                   <span className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${mlRatePrediction.data.predictedSpotRate.toLocaleString()}</span>
-                  <span className="text-[10px] text-slate-400">${(mlRatePrediction.data.predictedSpotRate / Math.max(distance, 1)).toFixed(2)}/mi</span>
+                  <span className="text-xs text-slate-400">${(mlRatePrediction.data.predictedSpotRate / Math.max(distance, 1)).toFixed(2)}/mi</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1">
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${mlRatePrediction.data.marketCondition === "SELLER" ? "bg-red-500/15 text-red-400" : mlRatePrediction.data.marketCondition === "BUYER" ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"}`}>
+                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${mlRatePrediction.data.marketCondition === "SELLER" ? "bg-red-500/15 text-red-400" : mlRatePrediction.data.marketCondition === "BUYER" ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"}`}>
                     {mlRatePrediction.data.marketCondition === "BUYER" ? "Buyer's" : mlRatePrediction.data.marketCondition === "SELLER" ? "Seller's" : "Balanced"}
                   </span>
-                  <span className="text-[10px] text-slate-500">{mlRatePrediction.data.confidence}% conf</span>
+                  <span className="text-xs text-slate-500">{mlRatePrediction.data.confidence}% conf</span>
                 </div>
               </div>
             )}
             {mlETA.data && (
               <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
-                <p className="text-[10px] text-slate-400 uppercase mb-1">ML Transit Estimate</p>
+                <p className="text-xs text-slate-400 uppercase mb-1">ML Transit Estimate</p>
                 <div className="flex items-baseline gap-2">
                   <span className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{mlETA.data.estimatedDays}d</span>
-                  <span className="text-[10px] text-slate-400">{mlETA.data.estimatedHours}h</span>
+                  <span className="text-xs text-slate-400">{mlETA.data.estimatedHours}h</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1">
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${mlETA.data.riskLevel === "HIGH" ? "bg-red-500/15 text-red-400" : mlETA.data.riskLevel === "MODERATE" ? "bg-amber-500/15 text-amber-400" : "bg-green-500/15 text-green-400"}`}>
+                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${mlETA.data.riskLevel === "HIGH" ? "bg-red-500/15 text-red-400" : mlETA.data.riskLevel === "MODERATE" ? "bg-amber-500/15 text-amber-400" : "bg-green-500/15 text-green-400"}`}>
                     {mlETA.data.riskLevel} RISK
                   </span>
-                  <span className="text-[10px] text-slate-500">{Math.round(mlETA.data.range.bestCase)}h - {Math.round(mlETA.data.range.worstCase)}h</span>
+                  <span className="text-xs text-slate-500">{Math.round(mlETA.data.range.bestCase)}h - {Math.round(mlETA.data.range.worstCase)}h</span>
                 </div>
               </div>
             )}
             {mlDynamicPrice.data && (
               <div className={cn("p-3 rounded-xl border", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/40")}>
-                <p className="text-[10px] text-slate-400 uppercase mb-1">Dynamic Pricing</p>
+                <p className="text-xs text-slate-400 uppercase mb-1">Dynamic Pricing</p>
                 <div className="flex items-baseline gap-2">
                   <span className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${mlDynamicPrice.data.recommendedRate.toLocaleString()}</span>
-                  <span className="text-[10px] text-slate-400">${mlDynamicPrice.data.ratePerMile}/mi</span>
+                  <span className="text-xs text-slate-400">${mlDynamicPrice.data.ratePerMile}/mi</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1">
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${mlDynamicPrice.data.competitivePosition === "BELOW_MARKET" ? "bg-green-500/15 text-green-400" : mlDynamicPrice.data.competitivePosition === "ABOVE_MARKET" ? "bg-red-500/15 text-red-400" : "bg-blue-500/15 text-blue-400"}`}>
+                  <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${mlDynamicPrice.data.competitivePosition === "BELOW_MARKET" ? "bg-green-500/15 text-green-400" : mlDynamicPrice.data.competitivePosition === "ABOVE_MARKET" ? "bg-red-500/15 text-red-400" : "bg-blue-500/15 text-blue-400"}`}>
                     {mlDynamicPrice.data.competitivePosition.replace(/_/g, " ")}
                   </span>
                 </div>
@@ -658,7 +658,7 @@ export default function LoadDetails() {
                   <AlertTriangle className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${a.severity === "CRITICAL" ? "text-red-400" : a.severity === "WARNING" ? "text-amber-400" : "text-blue-400"}`} />
                   <div>
                     <p className={cn("text-xs font-semibold", a.severity === "CRITICAL" ? (isLight ? "text-red-700" : "text-red-300") : a.severity === "WARNING" ? (isLight ? "text-amber-700" : "text-amber-300") : (isLight ? "text-blue-700" : "text-blue-300"))}>{a.message}</p>
-                    <p className={cn("text-[10px] mt-0.5", isLight ? "text-slate-500" : "text-slate-500")}>{a.suggestedAction}</p>
+                    <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-500")}>{a.suggestedAction}</p>
                   </div>
                 </div>
               ))}
@@ -689,27 +689,27 @@ export default function LoadDetails() {
                   <Shield className="w-5 h-5 text-cyan-400" />
                   <span className={cn("text-xs font-bold uppercase tracking-wider", isLight ? "text-cyan-600" : "text-cyan-400")}>Gate Access Card</span>
                 </div>
-                <p className="text-[10px] text-slate-400">Present this Load ID to the gate controller at the terminal</p>
+                <p className="text-xs text-slate-400">Present this Load ID to the gate controller at the terminal</p>
               </div>
               <div className="text-right">
                 <p className="text-4xl font-black tracking-wider bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                   {load.id}
                 </p>
-                <p className="text-[10px] text-slate-500 mt-1">LOAD ID</p>
+                <p className="text-xs text-slate-500 mt-1">LOAD ID</p>
               </div>
             </div>
             <div className={cn("mt-3 p-3 rounded-xl flex items-center justify-between", isLight ? "bg-slate-50 border border-slate-200" : "bg-slate-900/50 border border-slate-700/30")}>
               <div className="grid grid-cols-3 gap-4 w-full text-center">
                 <div>
-                  <p className="text-[10px] text-slate-400">Origin</p>
+                  <p className="text-xs text-slate-400">Origin</p>
                   <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{originCity}, {originState}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400">Destination</p>
+                  <p className="text-xs text-slate-400">Destination</p>
                   <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-slate-200")}>{destCity}, {destState}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400">Status</p>
+                  <p className="text-xs text-slate-400">Status</p>
                   <p className={cn("text-xs font-medium capitalize", isLight ? "text-slate-700" : "text-slate-200")}>{(load.status || "").replace(/_/g, " ")}</p>
                 </div>
               </div>
@@ -806,7 +806,7 @@ export default function LoadDetails() {
                   <p className="text-xs text-slate-400">{load.origin?.address || ""}</p>
                   <div className="flex items-center gap-1 mt-1">
                     <Calendar className="w-3 h-3 text-slate-400" />
-                    <span className="text-[11px] text-slate-400">Pickup: {String(load.pickupDate || "TBD")}</span>
+                    <span className="text-xs text-slate-400">Pickup: {String(load.pickupDate || "TBD")}</span>
                   </div>
                 </div>
               </div>
@@ -825,7 +825,7 @@ export default function LoadDetails() {
                   <p className="text-xs text-slate-400">{load.destination?.address || ""}</p>
                   <div className="flex items-center gap-1 mt-1">
                     <Calendar className="w-3 h-3 text-slate-400" />
-                    <span className="text-[11px] text-slate-400">Delivery: {String(load.deliveryDate || "TBD")}</span>
+                    <span className="text-xs text-slate-400">Delivery: {String(load.deliveryDate || "TBD")}</span>
                   </div>
                 </div>
               </div>
@@ -846,14 +846,14 @@ export default function LoadDetails() {
               <CardTitle className={cn(titleCls, "flex items-center gap-2")}>
                 <Activity className="w-5 h-5 text-[#1473FF]" />
                 Route Intelligence
-                <span className="ml-auto flex items-center gap-1 text-[10px] text-emerald-500 font-medium">
+                <span className="ml-auto flex items-center gap-1 text-xs text-emerald-500 font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   LIVE
                 </span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className={cn("text-[10px] uppercase tracking-wider font-medium mb-2", isLight ? "text-slate-400" : "text-slate-500")}>
+              <p className={cn("text-xs uppercase tracking-wider font-medium mb-2", isLight ? "text-slate-400" : "text-slate-500")}>
                 {originState} to {destState} Corridor
               </p>
 
@@ -888,7 +888,7 @@ export default function LoadDetails() {
                   <div className={cellCls}>
                     <div className="flex items-center gap-1.5 mb-1">
                       <Fuel className="w-3.5 h-3.5 text-amber-500" />
-                      <span className="text-[10px] text-slate-400 uppercase">Diesel</span>
+                      <span className="text-xs text-slate-400 uppercase">Diesel</span>
                     </div>
                     {routeIntel.fuelPrices.map((fp: any) => (
                       <div key={fp.state} className="flex items-center justify-between">
@@ -896,7 +896,7 @@ export default function LoadDetails() {
                         <span className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>
                           ${fp.price.toFixed(2)}
                           {fp.change !== 0 && (
-                            <span className={cn("text-[10px] ml-1", fp.change > 0 ? "text-red-400" : "text-emerald-400")}>
+                            <span className={cn("text-xs ml-1", fp.change > 0 ? "text-red-400" : "text-emerald-400")}>
                               {fp.change > 0 ? "+" : ""}{fp.change.toFixed(2)}
                             </span>
                           )}
@@ -910,12 +910,12 @@ export default function LoadDetails() {
                 <div className={cellCls}>
                   <div className="flex items-center gap-1.5 mb-1">
                     <Radio className="w-3.5 h-3.5 text-purple-500" />
-                    <span className="text-[10px] text-slate-400 uppercase">Hazmat (90d)</span>
+                    <span className="text-xs text-slate-400 uppercase">Hazmat (90d)</span>
                   </div>
                   <p className={cn("text-lg font-bold", routeIntel.hazmatIncidents > 5 ? "text-red-400" : isLight ? "text-slate-800" : "text-white")}>
                     {routeIntel.hazmatIncidents}
                   </p>
-                  <p className="text-[10px] text-slate-400">incidents on route</p>
+                  <p className="text-xs text-slate-400">incidents on route</p>
                 </div>
 
                 {/* Wildfires */}
@@ -923,10 +923,10 @@ export default function LoadDetails() {
                   <div className={cellCls}>
                     <div className="flex items-center gap-1.5 mb-1">
                       <Flame className="w-3.5 h-3.5 text-orange-500" />
-                      <span className="text-[10px] text-slate-400 uppercase">Wildfires</span>
+                      <span className="text-xs text-slate-400 uppercase">Wildfires</span>
                     </div>
                     <p className={cn("text-lg font-bold text-orange-400")}>{routeIntel.wildfires}</p>
-                    <p className="text-[10px] text-slate-400">active in corridor</p>
+                    <p className="text-xs text-slate-400">active in corridor</p>
                   </div>
                 )}
 
@@ -935,10 +935,10 @@ export default function LoadDetails() {
                   <div className={cellCls}>
                     <div className="flex items-center gap-1.5 mb-1">
                       <Activity className="w-3.5 h-3.5 text-cyan-500" />
-                      <span className="text-[10px] text-slate-400 uppercase">Seismic</span>
+                      <span className="text-xs text-slate-400 uppercase">Seismic</span>
                     </div>
                     <p className={cn("text-lg font-bold text-cyan-400")}>{routeIntel.earthquakes}</p>
-                    <p className="text-[10px] text-slate-400">M2.5+ (30d)</p>
+                    <p className="text-xs text-slate-400">M2.5+ (30d)</p>
                   </div>
                 )}
               </div>
@@ -953,7 +953,7 @@ export default function LoadDetails() {
                     </span>
                   </div>
                   {routeIntel.femaDisasters.slice(0, 2).map((d: any, i: number) => (
-                    <p key={i} className={cn("text-[11px] leading-snug", isLight ? "text-red-600/80" : "text-red-300/80")}>
+                    <p key={i} className={cn("text-xs leading-snug", isLight ? "text-red-600/80" : "text-red-300/80")}>
                       {d.state}: {d.title || d.type}
                     </p>
                   ))}
@@ -970,7 +970,7 @@ export default function LoadDetails() {
                 </div>
               )}
 
-              <p className="text-[9px] text-slate-400 mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 Sources: NWS, EIA, PHMSA, NIFC, USGS, FEMA, FMCSA
               </p>
             </CardContent>
@@ -994,7 +994,7 @@ export default function LoadDetails() {
                 { label: "Weight", value: `${Number(load.weight || 0).toLocaleString()} ${load.weightUnit || "lbs"}`, icon: <Scale className="w-4 h-4 text-purple-500" /> },
               ].map((item) => (
                 <div key={item.label} className={cellCls}>
-                  <div className="flex items-center gap-2 mb-1">{item.icon}<span className="text-[10px] text-slate-400 uppercase">{item.label}</span></div>
+                  <div className="flex items-center gap-2 mb-1">{item.icon}<span className="text-xs text-slate-400 uppercase">{item.label}</span></div>
                   <p className={valCls}>{item.value}</p>
                 </div>
               ))}
@@ -1003,40 +1003,40 @@ export default function LoadDetails() {
             {/* Equipment Requirements */}
             {(load.hoseType || load.hoseLength || load.pumpRequired || load.compressorRequired || load.fittingType || load.bottomLoadRequired || load.vaporRecoveryRequired) && (
               <div className={cn("p-3 rounded-xl border", isLight ? "bg-blue-50/50 border-blue-200/50" : "bg-blue-500/5 border-blue-500/15")}>
-                <p className={cn("text-[10px] font-semibold uppercase tracking-wider mb-2", isLight ? "text-blue-600" : "text-blue-400")}>Equipment Requirements</p>
+                <p className={cn("text-xs font-semibold uppercase tracking-wider mb-2", isLight ? "text-blue-600" : "text-blue-400")}>Equipment Requirements</p>
                 <div className="flex flex-wrap gap-1.5">
                   {load.hoseType && (
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-blue-100 text-blue-700" : "bg-blue-500/15 text-blue-300")}>
+                    <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", isLight ? "bg-blue-100 text-blue-700" : "bg-blue-500/15 text-blue-300")}>
                       Hose: {load.hoseType}
                     </span>
                   )}
                   {load.hoseLength && (
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-blue-100 text-blue-700" : "bg-blue-500/15 text-blue-300")}>
+                    <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", isLight ? "bg-blue-100 text-blue-700" : "bg-blue-500/15 text-blue-300")}>
                       {load.hoseLength}ft hose
                     </span>
                   )}
                   {load.fittingType && (
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-purple-100 text-purple-700" : "bg-purple-500/15 text-purple-300")}>
+                    <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", isLight ? "bg-purple-100 text-purple-700" : "bg-purple-500/15 text-purple-300")}>
                       Fittings: {load.fittingType}
                     </span>
                   )}
                   {load.pumpRequired && (
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-amber-100 text-amber-700" : "bg-amber-500/15 text-amber-300")}>
+                    <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", isLight ? "bg-amber-100 text-amber-700" : "bg-amber-500/15 text-amber-300")}>
                       Pump Required
                     </span>
                   )}
                   {load.compressorRequired && (
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-amber-100 text-amber-700" : "bg-amber-500/15 text-amber-300")}>
+                    <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", isLight ? "bg-amber-100 text-amber-700" : "bg-amber-500/15 text-amber-300")}>
                       Compressor Required
                     </span>
                   )}
                   {load.bottomLoadRequired && (
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-cyan-100 text-cyan-700" : "bg-cyan-500/15 text-cyan-300")}>
+                    <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", isLight ? "bg-cyan-100 text-cyan-700" : "bg-cyan-500/15 text-cyan-300")}>
                       Bottom Load
                     </span>
                   )}
                   {load.vaporRecoveryRequired && (
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium", isLight ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/15 text-emerald-300")}>
+                    <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", isLight ? "bg-emerald-100 text-emerald-700" : "bg-emerald-500/15 text-emerald-300")}>
                       Vapor Recovery
                     </span>
                   )}
@@ -1046,7 +1046,7 @@ export default function LoadDetails() {
 
             {load.notes && !String(load.notes).includes("[WARNING]") && (
               <div className={cellCls}>
-                <p className="text-[10px] text-slate-400 uppercase mb-1">Notes</p>
+                <p className="text-xs text-slate-400 uppercase mb-1">Notes</p>
                 <p className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{load.notes}</p>
               </div>
             )}
@@ -1061,7 +1061,7 @@ export default function LoadDetails() {
                 <Shield className="w-5 h-5 text-cyan-500" />
                 ERG Hazmat Classification
                 {load.spectraMatchVerified && (
-                  <Badge variant="outline" className="text-[10px] border-emerald-500/30 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent ml-auto">
+                  <Badge variant="outline" className="text-xs border-emerald-500/30 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent ml-auto">
                     <CheckCircle className="w-3 h-3 mr-1" />SPECTRA-MATCH Verified
                   </Badge>
                 )}
@@ -1071,25 +1071,25 @@ export default function LoadDetails() {
               <div className="grid grid-cols-2 gap-3">
                 {load.commodity && (
                   <div className={cellCls}>
-                    <p className="text-[10px] text-slate-400 uppercase">Product</p>
+                    <p className="text-xs text-slate-400 uppercase">Product</p>
                     <p className={valCls}>{load.commodity}</p>
                   </div>
                 )}
                 {load.unNumber && (
                   <div className={cellCls}>
-                    <p className="text-[10px] text-slate-400 uppercase">UN Number</p>
+                    <p className="text-xs text-slate-400 uppercase">UN Number</p>
                     <p className="text-cyan-500 font-bold text-sm">{load.unNumber}</p>
                   </div>
                 )}
                 {load.hazmatClass && (
                   <div className={cellCls}>
-                    <p className="text-[10px] text-slate-400 uppercase">Hazmat Class</p>
+                    <p className="text-xs text-slate-400 uppercase">Hazmat Class</p>
                     <p className="text-purple-500 font-medium text-sm">Class {load.hazmatClass}</p>
                   </div>
                 )}
                 {load.ergGuide && (
                   <div className={cellCls}>
-                    <p className="text-[10px] text-slate-400 uppercase">ERG Guide</p>
+                    <p className="text-xs text-slate-400 uppercase">ERG Guide</p>
                     <p className={valCls}>Guide {load.ergGuide}</p>
                   </div>
                 )}
@@ -1110,7 +1110,7 @@ export default function LoadDetails() {
                   )}
                 </div>
               )}
-              <p className="text-[10px] text-slate-400">Classification data from U.S. DOT ERG 2020 Emergency Response Guidebook</p>
+              <p className="text-xs text-slate-400">Classification data from U.S. DOT ERG 2020 Emergency Response Guidebook</p>
             </CardContent>
           </Card>
         )}
@@ -1170,7 +1170,7 @@ export default function LoadDetails() {
           <CardHeader className="pb-3">
             <CardTitle className={cn(titleCls, "flex items-center gap-2")}>
               <Receipt className="w-5 h-5 text-emerald-500" />EusoTicket Receipt
-              <Badge className="ml-auto bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-[10px]">
+              <Badge className="ml-auto bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-xs">
                 {load.loadNumber || `#${String(load.id).slice(0, 8)}`}
               </Badge>
             </CardTitle>
@@ -1179,23 +1179,23 @@ export default function LoadDetails() {
             {/* Rate & Settlement Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className={cellCls}>
-                <div className="flex items-center gap-1.5 mb-1"><DollarSign className="w-3.5 h-3.5 text-emerald-500" /><span className="text-[10px] text-slate-400 uppercase">Agreed Rate</span></div>
+                <div className="flex items-center gap-1.5 mb-1"><DollarSign className="w-3.5 h-3.5 text-emerald-500" /><span className="text-xs text-slate-400 uppercase">Agreed Rate</span></div>
                 <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${rate.toLocaleString()}</p>
-                <p className="text-[10px] text-slate-400">${ratePerMile}/mi</p>
+                <p className="text-xs text-slate-400">${ratePerMile}/mi</p>
               </div>
               {isInvolvedParty && <div className={cellCls}>
-                <div className="flex items-center gap-1.5 mb-1"><Scale className="w-3.5 h-3.5 text-purple-500" /><span className="text-[10px] text-slate-400 uppercase">Platform Fee</span></div>
+                <div className="flex items-center gap-1.5 mb-1"><Scale className="w-3.5 h-3.5 text-purple-500" /><span className="text-xs text-slate-400 uppercase">Platform Fee</span></div>
                 {platformFeeQuery.data ? (
                   <>
                     <p className={cn("text-lg font-bold", isLight ? "text-purple-600" : "text-purple-400")}>${platformFeeQuery.data.platformFeeAmount?.toFixed(2)}</p>
-                    <p className="text-[10px] text-slate-400">{platformFeeQuery.data.platformFeePercent}% + ${platformFeeQuery.data.paymentProcessingFee?.toFixed(2)} processing</p>
+                    <p className="text-xs text-slate-400">{platformFeeQuery.data.platformFeePercent}% + ${platformFeeQuery.data.paymentProcessingFee?.toFixed(2)} processing</p>
                   </>
                 ) : (
                   <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>--</p>
                 )}
               </div>}
               {isInvolvedParty && <div className={cellCls}>
-                <div className="flex items-center gap-1.5 mb-1"><ArrowRight className="w-3.5 h-3.5 text-emerald-500" /><span className="text-[10px] text-slate-400 uppercase">Carrier Receives</span></div>
+                <div className="flex items-center gap-1.5 mb-1"><ArrowRight className="w-3.5 h-3.5 text-emerald-500" /><span className="text-xs text-slate-400 uppercase">Carrier Receives</span></div>
                 {platformFeeQuery.data ? (
                   <p className="text-lg font-bold text-emerald-500">${platformFeeQuery.data.carrierReceives?.toFixed(2)}</p>
                 ) : (
@@ -1203,7 +1203,7 @@ export default function LoadDetails() {
                 )}
               </div>}
               {isInvolvedParty && <div className={cellCls}>
-                <div className="flex items-center gap-1.5 mb-1"><DollarSign className="w-3.5 h-3.5 text-red-500" /><span className="text-[10px] text-slate-400 uppercase">Shipper Owes</span></div>
+                <div className="flex items-center gap-1.5 mb-1"><DollarSign className="w-3.5 h-3.5 text-red-500" /><span className="text-xs text-slate-400 uppercase">Shipper Owes</span></div>
                 {platformFeeQuery.data ? (
                   <p className={cn("text-lg font-bold", isLight ? "text-red-600" : "text-red-400")}>${platformFeeQuery.data.shipperPays?.toFixed(2)}</p>
                 ) : (
@@ -1221,24 +1221,24 @@ export default function LoadDetails() {
                 </div>
                 <div className="grid grid-cols-4 gap-3">
                   <div className="text-center">
-                    <p className="text-[10px] text-slate-400 uppercase">Rate/BBL</p>
+                    <p className="text-xs text-slate-400 uppercase">Rate/BBL</p>
                     <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>${scheduleARateQuery.data.ratePerBarrel?.toFixed(2)}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[10px] text-slate-400 uppercase">Base</p>
+                    <p className="text-xs text-slate-400 uppercase">Base</p>
                     <p className={cn("text-sm font-bold", isLight ? "text-amber-600" : "text-amber-300")}>${scheduleARateQuery.data.baseAmount?.toFixed(2)}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[10px] text-slate-400 uppercase">FSC</p>
+                    <p className="text-xs text-slate-400 uppercase">FSC</p>
                     <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")}>{scheduleARateQuery.data.fsc > 0 ? `$${scheduleARateQuery.data.fsc.toFixed(2)}` : "$0"}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[10px] text-slate-400 uppercase">Sched A Total</p>
+                    <p className="text-xs text-slate-400 uppercase">Sched A Total</p>
                     <p className="text-sm font-bold text-emerald-500">${scheduleARateQuery.data.totalAmount?.toFixed(2)}</p>
                   </div>
                 </div>
                 {rate > 0 && scheduleARateQuery.data.totalAmount > 0 && (
-                  <div className={cn("mt-2 text-[10px] flex items-center gap-1", rate >= scheduleARateQuery.data.totalAmount ? (isLight ? "text-emerald-600" : "text-emerald-400") : (isLight ? "text-red-600" : "text-red-400"))}>
+                  <div className={cn("mt-2 text-xs flex items-center gap-1", rate >= scheduleARateQuery.data.totalAmount ? (isLight ? "text-emerald-600" : "text-emerald-400") : (isLight ? "text-red-600" : "text-red-400"))}>
                     <CheckCircle className="w-3 h-3" />
                     Agreed rate ${rate.toLocaleString()} is {rate >= scheduleARateQuery.data.totalAmount ? "at or above" : "below"} Schedule A reference (${scheduleARateQuery.data.totalAmount.toFixed(2)})
                   </div>
@@ -1248,7 +1248,7 @@ export default function LoadDetails() {
 
             {/* Product Requirement Verification */}
             <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/40 border-slate-700/30")}>
-              <p className={cn("text-[10px] font-semibold uppercase tracking-wider mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Product & Equipment Verification</p>
+              <p className={cn("text-xs font-semibold uppercase tracking-wider mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Product & Equipment Verification</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="flex items-center gap-2">
                   <CheckCircle className={cn("w-3.5 h-3.5", load.commodity ? "text-emerald-500" : "text-slate-400")} />
@@ -1272,7 +1272,7 @@ export default function LoadDetails() {
             {/* EusoTicket Documents — only for involved parties */}
             {isInvolvedParty && eusoTicketDocsQuery.data?.documents?.length > 0 && (
               <div>
-                <p className={cn("text-[10px] font-semibold uppercase tracking-wider mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Related Documents</p>
+                <p className={cn("text-xs font-semibold uppercase tracking-wider mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Related Documents</p>
                 <div className="space-y-1.5">
                   {eusoTicketDocsQuery.data.documents.slice(0, 5).map((doc: any) => {
                     const typeIcon: Record<string, React.ReactNode> = {
@@ -1287,7 +1287,7 @@ export default function LoadDetails() {
                         <div className="flex items-center gap-2">
                           {typeIcon[doc.type] || <FileText className="w-3.5 h-3.5 text-slate-400" />}
                           <span className={cn("text-xs", isLight ? "text-slate-700" : "text-slate-300")}>{doc.name}</span>
-                          <Badge className={cn("text-[8px] border-0", doc.type === "bol" ? "bg-blue-500/15 text-blue-500" : doc.type === "run_ticket" ? "bg-amber-500/15 text-amber-500" : doc.type === "rate_sheet" ? "bg-purple-500/15 text-purple-500" : "bg-emerald-500/15 text-emerald-500")}>
+                          <Badge className={cn("text-xs border-0", doc.type === "bol" ? "bg-blue-500/15 text-blue-500" : doc.type === "run_ticket" ? "bg-amber-500/15 text-amber-500" : doc.type === "rate_sheet" ? "bg-purple-500/15 text-purple-500" : "bg-emerald-500/15 text-emerald-500")}>
                             {typeLabel[doc.type] || doc.type}
                           </Badge>
                         </div>
@@ -1302,21 +1302,21 @@ export default function LoadDetails() {
             {/* Settlement Flow — only for involved parties */}
             {isInvolvedParty && platformFeeQuery.data && rate > 0 && (
               <div className={cn("p-3 rounded-xl border", isLight ? "bg-gradient-to-r from-blue-50/50 to-purple-50/50 border-blue-200/50" : "bg-gradient-to-r from-blue-500/5 to-purple-500/5 border-blue-500/20")}>
-                <p className={cn("text-[10px] font-semibold uppercase tracking-wider mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Settlement Flow</p>
+                <p className={cn("text-xs font-semibold uppercase tracking-wider mb-2", isLight ? "text-slate-500" : "text-slate-400")}>Settlement Flow</p>
                 <div className="flex items-center justify-between text-xs">
                   <div className="text-center">
                     <p className={cn("font-semibold", isLight ? "text-slate-700" : "text-slate-300")}>Shipper</p>
-                    <p className={cn("text-[10px]", isLight ? "text-red-600" : "text-red-400")}>${platformFeeQuery.data.shipperPays?.toFixed(2)}</p>
+                    <p className={cn("text-xs", isLight ? "text-red-600" : "text-red-400")}>${platformFeeQuery.data.shipperPays?.toFixed(2)}</p>
                   </div>
                   <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
                   <div className="text-center">
                     <p className="font-semibold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">EusoTrip</p>
-                    <p className={cn("text-[10px]", isLight ? "text-purple-600" : "text-purple-400")}>${platformFeeQuery.data.platformFeeAmount?.toFixed(2)} fee</p>
+                    <p className={cn("text-xs", isLight ? "text-purple-600" : "text-purple-400")}>${platformFeeQuery.data.platformFeeAmount?.toFixed(2)} fee</p>
                   </div>
                   <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
                   <div className="text-center">
                     <p className={cn("font-semibold", isLight ? "text-slate-700" : "text-slate-300")}>Carrier</p>
-                    <p className="text-[10px] text-emerald-500">${platformFeeQuery.data.carrierReceives?.toFixed(2)}</p>
+                    <p className="text-xs text-emerald-500">${platformFeeQuery.data.carrierReceives?.toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -1612,7 +1612,7 @@ export default function LoadDetails() {
             {/* Blocked transitions info */}
             {availableTransitions.filter((t: any) => !t.canExecute).length > 0 && (
               <div className="mt-2 text-center">
-                <p className="text-[10px] text-slate-500">
+                <p className="text-xs text-slate-500">
                   {availableTransitions.filter((t: any) => !t.canExecute).length} transition(s) blocked — {
                     availableTransitions.filter((t: any) => !t.canExecute).flatMap((t: any) => t.blockedReasons).slice(0, 2).join(", ")
                   }

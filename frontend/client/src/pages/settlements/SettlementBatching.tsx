@@ -162,7 +162,7 @@ export default function SettlementBatching() {
           </div>
           <div className="grid grid-cols-4 gap-3">
             <div>
-              <label className="text-[10px] text-slate-500 uppercase mb-1 block">Batch Type</label>
+              <label className="text-xs text-slate-500 uppercase mb-1 block">Batch Type</label>
               <select
                 value={createType}
                 onChange={e => setCreateType(e.target.value)}
@@ -174,7 +174,7 @@ export default function SettlementBatching() {
               </select>
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase mb-1 block">Period Start</label>
+              <label className="text-xs text-slate-500 uppercase mb-1 block">Period Start</label>
               <Input
                 type="date"
                 value={periodStart}
@@ -183,7 +183,7 @@ export default function SettlementBatching() {
               />
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase mb-1 block">Period End</label>
+              <label className="text-xs text-slate-500 uppercase mb-1 block">Period End</label>
               <Input
                 type="date"
                 value={periodEnd}
@@ -192,7 +192,7 @@ export default function SettlementBatching() {
               />
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase mb-1 block">Load IDs (comma-separated)</label>
+              <label className="text-xs text-slate-500 uppercase mb-1 block">Load IDs (comma-separated)</label>
               <div className="flex gap-2">
                 <Input
                   value={loadIdsText}
@@ -217,12 +217,12 @@ export default function SettlementBatching() {
       {/* Filters */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-white/[0.06] bg-slate-900/30">
         <Filter className="w-3.5 h-3.5 text-slate-500" />
-        <span className="text-[10px] text-slate-500 mr-1">Status:</span>
+        <span className="text-xs text-slate-500 mr-1">Status:</span>
         {["", "draft", "pending_approval", "approved", "processing", "paid", "failed"].map(s => (
           <button
             key={s}
             className={cn(
-              "text-[10px] px-2 py-0.5 rounded border transition-all",
+              "text-xs px-2 py-0.5 rounded border transition-all",
               statusFilter === s ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400" : "border-white/[0.06] text-slate-400 hover:bg-white/[0.04]"
             )}
             onClick={() => setStatusFilter(s)}
@@ -231,12 +231,12 @@ export default function SettlementBatching() {
           </button>
         ))}
         <span className="text-white/[0.06] mx-1">|</span>
-        <span className="text-[10px] text-slate-500 mr-1">Type:</span>
+        <span className="text-xs text-slate-500 mr-1">Type:</span>
         {["", "shipper_payable", "carrier_receivable", "driver_payable"].map(t => (
           <button
             key={t}
             className={cn(
-              "text-[10px] px-2 py-0.5 rounded border transition-all capitalize",
+              "text-xs px-2 py-0.5 rounded border transition-all capitalize",
               typeFilter === t ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-400" : "border-white/[0.06] text-slate-400 hover:bg-white/[0.04]"
             )}
             onClick={() => setTypeFilter(t)}
@@ -244,7 +244,7 @@ export default function SettlementBatching() {
             {t ? t.replace(/_/g, " ") : "All"}
           </button>
         ))}
-        <span className="ml-auto text-[10px] text-slate-500">
+        <span className="ml-auto text-xs text-slate-500">
           {batches.length} batch{batches.length !== 1 ? "es" : ""}
         </span>
       </div>
@@ -283,38 +283,38 @@ export default function SettlementBatching() {
                   {/* Batch number */}
                   <div className="w-40 shrink-0">
                     <div className="text-sm font-semibold text-white">{b.batchNumber}</div>
-                    <div className="text-[10px] text-slate-500">
+                    <div className="text-xs text-slate-500">
                       {b.periodStart} → {b.periodEnd}
                     </div>
                   </div>
 
                   {/* Type */}
-                  <Badge className={cn("text-[10px] border-0 gap-1 shrink-0", tc.color)}>
+                  <Badge className={cn("text-xs border-0 gap-1 shrink-0", tc.color)}>
                     <TypeIcon className="w-3 h-3" />{tc.label}
                   </Badge>
 
                   {/* Loads */}
                   <div className="text-center w-16 shrink-0">
                     <div className="text-sm font-medium text-white">{b.totalLoads}</div>
-                    <div className="text-[10px] text-slate-500">loads</div>
+                    <div className="text-xs text-slate-500">loads</div>
                   </div>
 
                   {/* Amounts */}
                   <div className="flex-1 grid grid-cols-4 gap-2 text-center">
                     <div>
-                      <div className="text-[10px] text-slate-500">Subtotal</div>
+                      <div className="text-xs text-slate-500">Subtotal</div>
                       <div className="text-xs text-slate-300">{fmt(b.subtotalAmount)}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-slate-500">FSC</div>
+                      <div className="text-xs text-slate-500">FSC</div>
                       <div className="text-xs text-slate-300">{fmt(b.fscAmount)}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-slate-500">Accessorial</div>
+                      <div className="text-xs text-slate-500">Accessorial</div>
                       <div className="text-xs text-slate-300">{fmt(b.accessorialAmount)}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] text-slate-500">Deductions</div>
+                      <div className="text-xs text-slate-500">Deductions</div>
                       <div className="text-xs text-red-400">{fmt(b.deductionAmount)}</div>
                     </div>
                   </div>
@@ -322,11 +322,11 @@ export default function SettlementBatching() {
                   {/* Total */}
                   <div className="w-28 text-right shrink-0">
                     <div className="text-sm font-bold text-emerald-400">{fmt(b.totalAmount)}</div>
-                    <div className="text-[10px] text-slate-500">total</div>
+                    <div className="text-xs text-slate-500">total</div>
                   </div>
 
                   {/* Status */}
-                  <Badge className={cn("text-[10px] border-0 gap-1 shrink-0 w-32 justify-center", sc.color)}>
+                  <Badge className={cn("text-xs border-0 gap-1 shrink-0 w-32 justify-center", sc.color)}>
                     <StatusIcon className="w-3 h-3" />{sc.label}
                   </Badge>
 
@@ -336,7 +336,7 @@ export default function SettlementBatching() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 px-2 text-[10px] text-green-400 hover:text-green-300"
+                        className="h-6 px-2 text-xs text-green-400 hover:text-green-300"
                         onClick={() => approveMut.mutate({ batchId: b.id })}
                         disabled={approveMut.isPending}
                       >
@@ -347,7 +347,7 @@ export default function SettlementBatching() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 px-2 text-[10px] text-blue-400 hover:text-blue-300"
+                        className="h-6 px-2 text-xs text-blue-400 hover:text-blue-300"
                         onClick={() => payMut.mutate({ batchId: b.id })}
                         disabled={payMut.isPending}
                       >
@@ -368,7 +368,7 @@ export default function SettlementBatching() {
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs">
                           <thead>
-                            <tr className="text-[10px] text-slate-500 uppercase border-b border-white/[0.04]">
+                            <tr className="text-xs text-slate-500 uppercase border-b border-white/[0.04]">
                               <th className="px-4 py-2 text-left">Load #</th>
                               <th className="px-3 py-2 text-left">Pickup</th>
                               <th className="px-3 py-2 text-left">Delivery</th>
@@ -394,7 +394,7 @@ export default function SettlementBatching() {
                                 {b.status === "draft" && (
                                   <td className="px-3 py-2 text-center">
                                     <button
-                                      className="text-red-400 hover:text-red-300 text-[10px]"
+                                      className="text-red-400 hover:text-red-300 text-xs"
                                       onClick={() => removeMut.mutate({ batchId: b.id, settlementId: item.settlementId })}
                                     >
                                       <X className="w-3 h-3 inline" /> Remove
@@ -420,7 +420,7 @@ export default function SettlementBatching() {
                     )}
 
                     {/* Batch footer info */}
-                    <div className="flex items-center justify-between px-4 py-2 border-t border-white/[0.04] text-[10px] text-slate-500">
+                    <div className="flex items-center justify-between px-4 py-2 border-t border-white/[0.04] text-xs text-slate-500">
                       <div className="flex gap-4">
                         {b.approvedBy && <span>Approved by user #{b.approvedBy}</span>}
                         {b.approvedAt && <span>at {new Date(b.approvedAt).toLocaleString()}</span>}

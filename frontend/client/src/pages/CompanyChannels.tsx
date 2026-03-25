@@ -354,7 +354,7 @@ export default function CompanyChannels() {
                     {activeChannel.description}
                   </p>
                   {e2eReady && (
-                    <span className="flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent/80 ml-2">
+                    <span className="flex items-center gap-0.5 text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent/80 ml-2">
                       <Lock size={10} /> E2E Encrypted
                     </span>
                   )}
@@ -408,7 +408,7 @@ export default function CompanyChannels() {
                       />
                     ) : (
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#1473FF] via-[#3B5FFF] to-[#BE01FF] flex-shrink-0 flex items-center justify-center ring-1 ring-white/10 shadow-md shadow-blue-500/10">
-                      <span className="text-[11px] font-semibold text-white tracking-tight">
+                      <span className="text-xs font-semibold text-white tracking-tight">
                         {message.author
                           .split(" ")
                           .map((n: any) => n[0])
@@ -418,7 +418,7 @@ export default function CompanyChannels() {
                     )
                   ) : (
                     <div className="w-9 flex-shrink-0 flex items-center justify-center">
-                      <span className="text-[9px] text-slate-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-xs text-slate-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                         {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
@@ -430,7 +430,7 @@ export default function CompanyChannels() {
                         <span className="text-[13px] font-semibold text-white tracking-[-0.01em]">
                           {message.author}
                         </span>
-                        <span className="text-[10px] text-slate-500 font-medium">
+                        <span className="text-xs text-slate-500 font-medium">
                           {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
@@ -480,7 +480,7 @@ export default function CompanyChannels() {
             {/* Message Input */}
             <div className="bg-slate-800 border-t border-slate-700 px-6 py-4">
               {e2eReady && (
-                <div className="mb-2 flex items-center justify-center gap-1.5 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent/60">
+                <div className="mb-2 flex items-center justify-center gap-1.5 text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent/60">
                   <Lock size={10} />
                   <span>Channel messages are end-to-end encrypted. Only company members can read them.</span>
                 </div>

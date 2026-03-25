@@ -121,7 +121,7 @@ export default function ZeunProviderNetwork() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Provider Network</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
               <Zap className="w-3 h-3 text-purple-500" />
-              <span className="text-[10px] font-bold text-purple-500 uppercase tracking-wider">ESANG AI</span>
+              <span className="text-xs font-bold text-purple-500 uppercase tracking-wider">ESANG AI</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>AI-powered repair provider discovery across the continental US</p>
@@ -217,7 +217,7 @@ export default function ZeunProviderNetwork() {
             {debouncedSearch ? ` for "${debouncedSearch}"` : ` within ${radius} mi`}
           </p>
           {filteredProviders.some((p: any) => p.aiGenerated || p.source === "openstreetmap") && (
-            <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[10px] border-0">
+            <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs border-0">
               <Zap className="w-3 h-3 mr-1" />{filteredProviders.some((p: any) => p.source === "openstreetmap") ? "Live Discovery" : "AI-Discovered"}
             </Badge>
           )}
@@ -244,9 +244,9 @@ export default function ZeunProviderNetwork() {
                   <div className="flex justify-between items-start gap-3 mb-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        {isTop && <Badge className="border-0 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[9px] font-bold px-2 py-0.5">TOP PICK</Badge>}
-                        {provider.source === "openstreetmap" && <Badge variant="outline" className="text-[9px] border-green-500/30 text-green-600 px-1.5 py-0.5"><Globe className="w-2.5 h-2.5 mr-0.5" />OSM</Badge>}
-                      {provider.aiGenerated && !provider.source && <Badge variant="outline" className="text-[9px] border-blue-500/30 text-blue-500 px-1.5 py-0.5">AI</Badge>}
+                        {isTop && <Badge className="border-0 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs font-bold px-2 py-0.5">TOP PICK</Badge>}
+                        {provider.source === "openstreetmap" && <Badge variant="outline" className="text-xs border-green-500/30 text-green-600 px-1.5 py-0.5"><Globe className="w-2.5 h-2.5 mr-0.5" />OSM</Badge>}
+                      {provider.aiGenerated && !provider.source && <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-500 px-1.5 py-0.5">AI</Badge>}
                       </div>
                       <h3 className={cn("font-bold text-base mt-1 truncate", L ? "text-slate-800" : "text-white")}>{provider.name}</h3>
                       <p className={cn("text-xs mt-0.5", L ? "text-slate-500" : "text-slate-400")}>
@@ -262,7 +262,7 @@ export default function ZeunProviderNetwork() {
                           <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
                           <span className={cn("text-lg font-bold", L ? "text-slate-800" : "text-white")}>{Number(provider.rating).toFixed(1)}</span>
                         </div>
-                        {provider.reviewCount > 0 && <p className="text-[10px] text-slate-400">{provider.reviewCount} reviews</p>}
+                        {provider.reviewCount > 0 && <p className="text-xs text-slate-400">{provider.reviewCount} reviews</p>}
                       </div>
                     )}
                   </div>
@@ -291,12 +291,12 @@ export default function ZeunProviderNetwork() {
                   {provider.services && provider.services.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-4">
                       {provider.services.slice(0, 5).map((svc: string) => (
-                        <Badge key={svc} variant="outline" className={cn("text-[10px] font-medium rounded-lg", L ? "border-slate-200 text-slate-500" : "border-slate-700 text-slate-400")}>
+                        <Badge key={svc} variant="outline" className={cn("text-xs font-medium rounded-lg", L ? "border-slate-200 text-slate-500" : "border-slate-700 text-slate-400")}>
                           {svc.replace(/_/g, " ")}
                         </Badge>
                       ))}
                       {provider.services.length > 5 && (
-                        <Badge variant="outline" className={cn("text-[10px] rounded-lg", L ? "border-slate-200 text-slate-400" : "border-slate-700 text-slate-500")}>
+                        <Badge variant="outline" className={cn("text-xs rounded-lg", L ? "border-slate-200 text-slate-400" : "border-slate-700 text-slate-500")}>
                           +{provider.services.length - 5}
                         </Badge>
                       )}
@@ -359,7 +359,7 @@ export default function ZeunProviderNetwork() {
                   <stat.icon className="w-5 h-5" />
                 </div>
                 <p className={cn("text-2xl font-bold", L ? "text-slate-800" : "text-white")}>{stat.value}</p>
-                <p className={cn("text-[10px] font-medium uppercase tracking-wider mt-0.5", L ? "text-slate-400" : "text-slate-500")}>{stat.sub}</p>
+                <p className={cn("text-xs font-medium uppercase tracking-wider mt-0.5", L ? "text-slate-400" : "text-slate-500")}>{stat.sub}</p>
               </CardContent>
             </Card>
           );

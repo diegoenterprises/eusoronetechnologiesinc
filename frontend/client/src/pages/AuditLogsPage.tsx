@@ -56,7 +56,7 @@ function ActivityLogTab() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-full bg-slate-700/30">{s.icon}</div>
-                  <div><p className={cn("text-xl font-bold", s.color)}>{s.value}</p><p className="text-[10px] text-slate-400 uppercase">{s.label}</p></div>
+                  <div><p className={cn("text-xl font-bold", s.color)}>{s.value}</p><p className="text-xs text-slate-400 uppercase">{s.label}</p></div>
                 </div>
               </CardContent>
             </Card>
@@ -101,9 +101,9 @@ function ActivityLogTab() {
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-white text-sm font-medium">{log.description || log.action}</span>
-                          <Badge className={cn("text-[9px]", ACTION_COLORS[log.action] || "bg-slate-500/20 text-slate-400")}>{log.action}</Badge>
+                          <Badge className={cn("text-xs", ACTION_COLORS[log.action] || "bg-slate-500/20 text-slate-400")}>{log.action}</Badge>
                         </div>
-                        <div className="flex items-center gap-3 text-[10px] text-slate-500">
+                        <div className="flex items-center gap-3 text-xs text-slate-500">
                           {log.userName && <span className="flex items-center gap-1"><User className="w-3 h-3" />{log.userName}</span>}
                           {log.resource && <span>{log.resource}</span>}
                           {log.ipAddress && <span>IP: {log.ipAddress}</span>}
@@ -111,7 +111,7 @@ function ActivityLogTab() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] text-slate-500">{log.createdAt ? new Date(log.createdAt).toLocaleString() : log.timestamp || ""}</span>
+                      <span className="text-xs text-slate-500">{log.createdAt ? new Date(log.createdAt).toLocaleString() : log.timestamp || ""}</span>
                       {expandedId === (log.id || String(i)) ? <ChevronDown className="w-3.5 h-3.5 text-slate-500" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-500" />}
                     </div>
                   </div>

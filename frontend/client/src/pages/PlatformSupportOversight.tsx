@@ -125,7 +125,7 @@ export default function PlatformSupportOversight() {
                     </div>
                     <div className="col-span-3">
                       <p className="text-white text-sm truncate">{t.subject || t.title || "Untitled"}</p>
-                      <p className="text-[10px] text-slate-500 truncate">{t.description || ""}</p>
+                      <p className="text-xs text-slate-500 truncate">{t.description || ""}</p>
                     </div>
                     <div className="col-span-2">
                       <span className="text-slate-300 text-sm capitalize">{(t.category || "general").replace(/_/g, " ")}</span>
@@ -134,15 +134,15 @@ export default function PlatformSupportOversight() {
                       <p className="text-white text-xs">{t.userName || t.userEmail || "Unknown"}</p>
                     </div>
                     <div className="col-span-1">
-                      <Badge className={`border-0 text-[10px] ${pr.color}`}>{pr.label}</Badge>
+                      <Badge className={`border-0 text-xs ${pr.color}`}>{pr.label}</Badge>
                     </div>
                     <div className="col-span-1">
-                      <Badge className={`border-0 text-[10px] ${st.bg} ${st.color} gap-1`}>
+                      <Badge className={`border-0 text-xs ${st.bg} ${st.color} gap-1`}>
                         {st.icon}{st.label}
                       </Badge>
                     </div>
                     <div className="col-span-2">
-                      <span className="text-[10px] text-slate-500">{t.createdAt || ""}</span>
+                      <span className="text-xs text-slate-500">{t.createdAt || ""}</span>
                     </div>
                   </div>
                 );

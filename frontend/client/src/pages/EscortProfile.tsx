@@ -193,7 +193,7 @@ export default function EscortProfile() {
               <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20">
                 <Trophy className="w-6 h-6 text-amber-400 mx-auto mb-1" />
                 <p className="text-amber-300 text-xs font-bold">{rankInfo.rank}</p>
-                <p className="text-[10px] text-slate-500">Level {rankInfo.level}</p>
+                <p className="text-xs text-slate-500">Level {rankInfo.level}</p>
               </div>
             </div>
           </div>
@@ -202,19 +202,19 @@ export default function EscortProfile() {
           <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-700/50">
             <div className="text-center">
               <p className="text-2xl font-bold text-white tabular-nums">{(profile.stats?.totalConvoys || 0).toLocaleString()}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Convoys</p>
+              <p className="text-xs text-slate-500 mt-0.5">Convoys</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-white tabular-nums">{profile.stats?.onTimePercentage || 0}%</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">On-Time</p>
+              <p className="text-xs text-slate-500 mt-0.5">On-Time</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-white tabular-nums">{profile.stats?.totalMiles ? (profile.stats.totalMiles > 999999 ? `${(profile.stats.totalMiles / 1000000).toFixed(1)}M` : profile.stats.totalMiles > 999 ? `${(profile.stats.totalMiles / 1000).toFixed(0)}K` : profile.stats.totalMiles) : "0"}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Miles</p>
+              <p className="text-xs text-slate-500 mt-0.5">Miles</p>
             </div>
             <div className="text-center">
               <p className={cn("text-2xl font-bold tabular-nums", profile.stats?.incidentCount === 0 ? "text-emerald-400" : "text-white")}>{profile.stats?.incidentCount || 0}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Incidents</p>
+              <p className="text-xs text-slate-500 mt-0.5">Incidents</p>
             </div>
           </div>
         </CardContent>
@@ -257,8 +257,8 @@ export default function EscortProfile() {
                           : "bg-slate-800/50 border-slate-700/50 text-slate-500"
                       )}
                     >
-                      <p className="text-[10px] font-medium">{day.dayName?.slice(0, 3)}</p>
-                      <p className="text-[10px] mt-0.5">{day.available ? "ON" : "OFF"}</p>
+                      <p className="text-xs font-medium">{day.dayName?.slice(0, 3)}</p>
+                      <p className="text-xs mt-0.5">{day.available ? "ON" : "OFF"}</p>
                     </button>
                   ))}
                 </div>
@@ -311,11 +311,11 @@ export default function EscortProfile() {
                   </div>
                   {profile.positions?.leadEscort ? (
                     <>
-                      <Badge className="border-0 bg-emerald-500/20 text-emerald-400 text-[10px]"><CheckCircle className="w-3 h-3 mr-1" />Certified</Badge>
+                      <Badge className="border-0 bg-emerald-500/20 text-emerald-400 text-xs"><CheckCircle className="w-3 h-3 mr-1" />Certified</Badge>
                       <p className="text-slate-400 text-xs mt-2">{profile.stats?.leadJobs || 0} jobs</p>
                     </>
                   ) : (
-                    <Badge className="border-0 bg-slate-700/50 text-slate-500 text-[10px]">Not Certified</Badge>
+                    <Badge className="border-0 bg-slate-700/50 text-slate-500 text-xs">Not Certified</Badge>
                   )}
                 </div>
 
@@ -327,11 +327,11 @@ export default function EscortProfile() {
                   </div>
                   {profile.positions?.rearEscort ? (
                     <>
-                      <Badge className="border-0 bg-emerald-500/20 text-emerald-400 text-[10px]"><CheckCircle className="w-3 h-3 mr-1" />Certified</Badge>
+                      <Badge className="border-0 bg-emerald-500/20 text-emerald-400 text-xs"><CheckCircle className="w-3 h-3 mr-1" />Certified</Badge>
                       <p className="text-slate-400 text-xs mt-2">{profile.stats?.chaseJobs || 0} jobs</p>
                     </>
                   ) : (
-                    <Badge className="border-0 bg-slate-700/50 text-slate-500 text-[10px]">Not Certified</Badge>
+                    <Badge className="border-0 bg-slate-700/50 text-slate-500 text-xs">Not Certified</Badge>
                   )}
                 </div>
 
@@ -343,11 +343,11 @@ export default function EscortProfile() {
                   </div>
                   {profile.positions?.heightPole ? (
                     <>
-                      <Badge className="border-0 bg-emerald-500/20 text-emerald-400 text-[10px]"><CheckCircle className="w-3 h-3 mr-1" />Certified</Badge>
+                      <Badge className="border-0 bg-emerald-500/20 text-emerald-400 text-xs"><CheckCircle className="w-3 h-3 mr-1" />Certified</Badge>
                       {profile.heightPole?.maxHeight && <p className="text-amber-300 text-xs mt-2">Max: {profile.heightPole.maxHeight} ft</p>}
                     </>
                   ) : (
-                    <Badge className="border-0 bg-slate-700/50 text-slate-500 text-[10px]">Not Certified</Badge>
+                    <Badge className="border-0 bg-slate-700/50 text-slate-500 text-xs">Not Certified</Badge>
                   )}
                 </div>
 
@@ -358,9 +358,9 @@ export default function EscortProfile() {
                     <span className="text-white font-medium text-sm">Route Survey</span>
                   </div>
                   {profile.positions?.routeSurvey ? (
-                    <Badge className="border-0 bg-emerald-500/20 text-emerald-400 text-[10px]"><CheckCircle className="w-3 h-3 mr-1" />Certified</Badge>
+                    <Badge className="border-0 bg-emerald-500/20 text-emerald-400 text-xs"><CheckCircle className="w-3 h-3 mr-1" />Certified</Badge>
                   ) : (
-                    <Badge className="border-0 bg-slate-700/50 text-slate-500 text-[10px]">Not Certified</Badge>
+                    <Badge className="border-0 bg-slate-700/50 text-slate-500 text-xs">Not Certified</Badge>
                   )}
                 </div>
               </div>
@@ -423,15 +423,15 @@ export default function EscortProfile() {
               {earnings && (
                 <div className="grid grid-cols-3 gap-3">
                   <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                    <p className="text-[10px] text-slate-500">This Week</p>
+                    <p className="text-xs text-slate-500">This Week</p>
                     <p className="text-white font-bold text-sm tabular-nums">${(earnings.thisWeek || 0).toLocaleString()}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                    <p className="text-[10px] text-slate-500">This Month</p>
+                    <p className="text-xs text-slate-500">This Month</p>
                     <p className="text-white font-bold text-sm tabular-nums">${(earnings.thisMonth || 0).toLocaleString()}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                    <p className="text-[10px] text-slate-500">Avg/Job</p>
+                    <p className="text-xs text-slate-500">Avg/Job</p>
                     <p className="text-white font-bold text-sm tabular-nums">${(earnings.avgPerJob || 0).toLocaleString()}</p>
                   </div>
                 </div>
@@ -441,11 +441,11 @@ export default function EscortProfile() {
               {jobsSummary && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <p className="text-[10px] text-blue-400">Active Jobs</p>
+                    <p className="text-xs text-blue-400">Active Jobs</p>
                     <p className="text-white font-bold">{jobsSummary.inProgress || 0}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                    <p className="text-[10px] text-emerald-400">Completed</p>
+                    <p className="text-xs text-emerald-400">Completed</p>
                     <p className="text-white font-bold">{jobsSummary.completed || 0}</p>
                   </div>
                 </div>
@@ -472,7 +472,7 @@ export default function EscortProfile() {
                     <Medal className="w-10 h-10 text-amber-400" />
                   </div>
                   <p className="text-amber-300 text-xs font-bold mt-2">{rankInfo.rank}</p>
-                  <p className="text-[10px] text-slate-500">Level {rankInfo.level}</p>
+                  <p className="text-xs text-slate-500">Level {rankInfo.level}</p>
                 </div>
 
                 {/* Progress */}
@@ -487,10 +487,10 @@ export default function EscortProfile() {
 
                   {/* Quick achievements */}
                   <div className="flex gap-2 mt-4 flex-wrap">
-                    {profile.stats?.totalConvoys >= 1 && <Badge className="border-0 bg-slate-700/50 text-slate-300 text-[10px]"><Zap className="w-3 h-3 mr-1 text-amber-400" />First Convoy</Badge>}
-                    {profile.stats?.incidentCount === 0 && profile.stats?.totalConvoys >= 10 && <Badge className="border-0 bg-emerald-500/10 text-emerald-400 text-[10px]"><Shield className="w-3 h-3 mr-1" />Zero Incidents</Badge>}
-                    {(profile.stateCertifications?.length || 0) >= 5 && <Badge className="border-0 bg-blue-500/10 text-blue-400 text-[10px]"><Award className="w-3 h-3 mr-1" />Multi-State Pro</Badge>}
-                    {profile.stats?.totalConvoys >= 100 && <Badge className="border-0 bg-purple-500/10 text-purple-400 text-[10px]"><Target className="w-3 h-3 mr-1" />Centurion</Badge>}
+                    {profile.stats?.totalConvoys >= 1 && <Badge className="border-0 bg-slate-700/50 text-slate-300 text-xs"><Zap className="w-3 h-3 mr-1 text-amber-400" />First Convoy</Badge>}
+                    {profile.stats?.incidentCount === 0 && profile.stats?.totalConvoys >= 10 && <Badge className="border-0 bg-emerald-500/10 text-emerald-400 text-xs"><Shield className="w-3 h-3 mr-1" />Zero Incidents</Badge>}
+                    {(profile.stateCertifications?.length || 0) >= 5 && <Badge className="border-0 bg-blue-500/10 text-blue-400 text-xs"><Award className="w-3 h-3 mr-1" />Multi-State Pro</Badge>}
+                    {profile.stats?.totalConvoys >= 100 && <Badge className="border-0 bg-purple-500/10 text-purple-400 text-xs"><Target className="w-3 h-3 mr-1" />Centurion</Badge>}
                   </div>
                 </div>
               </div>
@@ -532,7 +532,7 @@ export default function EscortProfile() {
                             "bg-emerald-500/10 border-emerald-500/30"
                           )}>
                             <p className="text-white font-bold text-lg">{cert.state}</p>
-                            <p className={cn("text-[10px] mt-0.5",
+                            <p className={cn("text-xs mt-0.5",
                               isExpired ? "text-red-400" : isExpiring ? "text-amber-400" : "text-emerald-400"
                             )}>
                               {isExpired ? "EXPIRED" : cert.expirationDate ? new Date(cert.expirationDate).getFullYear() : "Active"}
@@ -796,7 +796,7 @@ export default function EscortProfile() {
                       </div>
                       <div className="text-right flex-shrink-0 ml-3">
                         <p className="text-emerald-400 font-bold text-sm tabular-nums">${(job.rate || job.earnings || 0).toLocaleString()}</p>
-                        <p className="text-slate-500 text-[10px]">{job.completedAt || ''}</p>
+                        <p className="text-slate-500 text-xs">{job.completedAt || ''}</p>
                       </div>
                     </div>
                   ))}

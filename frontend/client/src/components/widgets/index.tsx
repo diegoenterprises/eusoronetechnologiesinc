@@ -158,9 +158,9 @@ export const NotificationsWidget: React.FC<{ compact?: boolean }> = ({ compact =
       {unreadCount > 0 && (
         <div className="flex items-center gap-2 mb-1">
           <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center">
-            <span className="text-[10px] font-bold text-blue-400">{unreadCount}</span>
+            <span className="text-xs font-bold text-blue-400">{unreadCount}</span>
           </div>
-          <span className="text-[11px] text-gray-500 font-medium">unread</span>
+          <span className="text-xs text-gray-500 font-medium">unread</span>
         </div>
       )}
       {notifications.slice(0, compact ? 3 : 6).map((n: any) => {
@@ -174,7 +174,7 @@ export const NotificationsWidget: React.FC<{ compact?: boolean }> = ({ compact =
             </div>
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-medium tracking-wide truncate ${n.read ? 'text-gray-400' : 'text-white'}`}>{n.text}</p>
-              <p className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1">
+              <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
                 <Clock className="w-3 h-3" />{n.time}
               </p>
             </div>
@@ -232,7 +232,7 @@ export const QuickActionsWidget: React.FC<{ compact?: boolean; role?: string }> 
           <div className="p-2 rounded-xl bg-white/[0.06] group-hover:bg-white/[0.12] transition-colors">
             <action.icon className={`w-4 h-4 ${action.color}`} />
           </div>
-          <span className="text-[11px] font-semibold text-gray-300 group-hover:text-white tracking-wide transition-colors">{action.label}</span>
+          <span className="text-xs font-semibold text-gray-300 group-hover:text-white tracking-wide transition-colors">{action.label}</span>
         </button>
       ))}
     </div>
@@ -271,11 +271,11 @@ export const RecentActivityWidget: React.FC<{ compact?: boolean }> = ({ compact 
                 <p className="text-sm text-white font-medium tracking-wide truncate">{a.action}</p>
                 <ArrowUpRight className="w-3 h-3 text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              <p className="text-[11px] text-gray-500 mt-0.5 truncate">{a.details}</p>
+              <p className="text-xs text-gray-500 mt-0.5 truncate">{a.details}</p>
             </div>
             <div className="flex flex-col items-end flex-shrink-0">
-              <span className="text-[10px] text-gray-600 font-medium tabular-nums">{a.time}</span>
-              {a.user && <span className="text-[9px] text-gray-700 mt-0.5">{a.user}</span>}
+              <span className="text-xs text-gray-600 font-medium tabular-nums">{a.time}</span>
+              {a.user && <span className="text-xs text-gray-700 mt-0.5">{a.user}</span>}
             </div>
           </div>
         );
@@ -315,11 +315,11 @@ export const PerformanceSummaryWidget: React.FC<{ compact?: boolean }> = ({ comp
             <m.icon className={`w-4 h-4 ${m.color}`} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] text-gray-500 font-medium tracking-wide">{m.label}</p>
+            <p className="text-xs text-gray-500 font-medium tracking-wide">{m.label}</p>
             <div className="flex items-baseline gap-2 mt-0.5">
               <span className="text-lg font-bold text-white tabular-nums">{m.value}</span>
               {m.trend && (
-                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${
+                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-md ${
                   m.trend.startsWith('+') ? 'text-emerald-400 bg-emerald-400/10' : m.trend.startsWith('-') ? 'text-red-400 bg-red-400/10' : 'text-gray-400 bg-gray-400/10'
                 }`}>{m.trend}</span>
               )}
@@ -346,7 +346,7 @@ export const SearchWidget: React.FC<{ compact?: boolean }> = ({ compact = false 
           onChange={(e) => setQuery(e.target.value)}
           className="pl-11 pr-16 bg-white/[0.06] border-white/[0.1] text-white placeholder:text-gray-600 rounded-xl h-11 focus:border-purple-500/40 focus:ring-1 focus:ring-purple-500/20 transition-all"
         />
-        <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-600 bg-white/[0.06] border border-white/[0.08] px-1.5 py-0.5 rounded-md font-mono">⌘K</kbd>
+        <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600 bg-white/[0.06] border border-white/[0.08] px-1.5 py-0.5 rounded-md font-mono">⌘K</kbd>
       </div>
       {!compact && !query && (
         <div className="flex flex-wrap gap-1.5">
@@ -354,7 +354,7 @@ export const SearchWidget: React.FC<{ compact?: boolean }> = ({ compact = false 
             <button
               key={i}
               onClick={() => setQuery(s)}
-              className="text-[11px] text-gray-500 bg-white/[0.04] border border-white/[0.06] px-2.5 py-1 rounded-lg hover:bg-white/[0.08] hover:text-gray-300 transition-all"
+              className="text-xs text-gray-500 bg-white/[0.04] border border-white/[0.06] px-2.5 py-1 rounded-lg hover:bg-white/[0.08] hover:text-gray-300 transition-all"
             >
               {s}
             </button>
@@ -372,7 +372,7 @@ export const MessagesWidget: React.FC<{ compact?: boolean }> = ({ compact = fals
       <div className="flex flex-col items-center justify-center py-6 text-gray-500">
         <MessageSquare className="w-8 h-8 mb-2 opacity-40" />
         <p className="text-xs">No messages yet</p>
-        <p className="text-[10px] text-gray-600 mt-1">Messages from your network will appear here</p>
+        <p className="text-xs text-gray-600 mt-1">Messages from your network will appear here</p>
       </div>
     </div>
   );
@@ -390,17 +390,17 @@ export const CalendarWidget: React.FC<{ compact?: boolean }> = ({ compact = fals
         <div className="flex items-center justify-between">
           <div>
             <p className="text-lg font-bold text-white tabular-nums">{dateStr}</p>
-            <p className="text-[11px] text-gray-500">{dayName}</p>
+            <p className="text-xs text-gray-500">{dayName}</p>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-gray-500 font-medium">0 events today</span>
+            <span className="text-xs text-gray-500 font-medium">0 events today</span>
           </div>
         </div>
       )}
       <div className="flex flex-col items-center justify-center py-6 text-gray-500">
         <CalendarIcon className="w-8 h-8 mb-2 opacity-40" />
         <p className="text-xs">No events scheduled</p>
-        <p className="text-[10px] text-gray-600 mt-1">Your appointments and loads will appear here</p>
+        <p className="text-xs text-gray-600 mt-1">Your appointments and loads will appear here</p>
       </div>
     </div>
   );

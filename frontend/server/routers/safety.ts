@@ -746,8 +746,51 @@ export const safetyRouter = router({
     const db = await getDb(); if (!db) return [];
     try {
       const companyId = ctx.user?.companyId || 0;
-      const basics = ['Unsafe Driving', 'HOS Compliance', 'Driver Fitness', 'Controlled Substances', 'Vehicle Maintenance', 'Hazardous Materials', 'Crash Indicator'];
-      return basics.map(name => ({ name, score: 0, percentile: 0, threshold: 65, alert: false }));
+
+      // Gather real inspection & incident data to derive per-BASIC scores
+      const [inspStats] = await db.select({
+        total: sql<number>`count(*)`,
+        defectTotal: sql<number>`COALESCE(SUM(${inspections.defectsFound}), 0)`,
+        failed: sql<number>`SUM(CASE WHEN ${inspections.status} = 'failed' THEN 1 ELSE 0 END)`,
+      }).from(inspections).where(eq(inspections.companyId, companyId));
+
+      const [incStats] = await db.select({
+        total: sql<number>`count(*)`,
+        critical: sql<number>`SUM(CASE WHEN ${incidents.severity} = 'critical' THEN 1 ELSE 0 END)`,
+        major: sql<number>`SUM(CASE WHEN ${incidents.severity} = 'major' THEN 1 ELSE 0 END)`,
+        accidents: sql<number>`SUM(CASE WHEN ${incidents.type} = 'accident' THEN 1 ELSE 0 END)`,
+      }).from(incidents).where(eq(incidents.companyId, companyId));
+
+      const inspTotal = inspStats?.total || 0;
+      const defectRate = inspTotal > 0 ? (inspStats?.defectTotal || 0) / inspTotal : 0;
+      const failRate = inspTotal > 0 ? (inspStats?.failed || 0) / inspTotal : 0;
+      const incTotal = incStats?.total || 0;
+      const criticalCount = incStats?.critical || 0;
+      const majorCount = incStats?.major || 0;
+      const accidentCount = incStats?.accidents || 0;
+
+      // Score each BASIC: start at 100, deduct based on relevant signals
+      // No data → score 0 (unknown, not falsely perfect)
+      const hasData = inspTotal > 0 || incTotal > 0;
+      const computeScore = (deductions: number) => hasData ? Math.max(0, Math.round(100 - deductions)) : 0;
+
+      const basics = [
+        { name: 'Unsafe Driving',       score: computeScore(failRate * 40 + criticalCount * 15 + majorCount * 5) },
+        { name: 'HOS Compliance',       score: computeScore(failRate * 30 + defectRate * 10) },
+        { name: 'Driver Fitness',       score: computeScore(criticalCount * 10 + majorCount * 5) },
+        { name: 'Controlled Substances', score: computeScore(criticalCount * 20) },
+        { name: 'Vehicle Maintenance',  score: computeScore(defectRate * 25 + failRate * 20) },
+        { name: 'Hazardous Materials',  score: computeScore(criticalCount * 15 + majorCount * 8) },
+        { name: 'Crash Indicator',      score: computeScore(accidentCount * 20 + criticalCount * 10) },
+      ];
+
+      return basics.map(b => ({
+        name: b.name,
+        score: b.score,
+        percentile: b.score,
+        threshold: 65,
+        alert: b.score > 0 && b.score >= 65,
+      }));
     } catch (e) { return []; }
   }),
 
@@ -783,7 +826,18 @@ export const safetyRouter = router({
       const [driver] = await db.select({ safetyScore: drivers.safetyScore, licenseNumber: drivers.licenseNumber, userId: drivers.userId, userName: users.name }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.id, did)).limit(1);
       if (!driver) return fallback;
       const recentInsp = await db.select().from(inspections).where(eq(inspections.driverId, driver.userId)).orderBy(desc(inspections.createdAt)).limit(5);
-      return { driverId: input.driverId, name: driver.userName || '', overall: driver.safetyScore || 0, overallScore: driver.safetyScore || 0, licenseNumber: driver.licenseNumber || '', categories: [{ name: 'Driving', score: driver.safetyScore || 0 }, { name: 'Compliance', score: 100 }, { name: 'Vehicle Care', score: 100 }], recentEvents: recentInsp.map(i => ({ type: 'inspection', date: i.createdAt?.toISOString() || '', status: i.status || '' })) };
+      // Compute Compliance & Vehicle Care from this driver's inspections
+      const [driverInspStats] = await db.select({
+        total: sql<number>`count(*)`,
+        passed: sql<number>`SUM(CASE WHEN ${inspections.status} = 'passed' THEN 1 ELSE 0 END)`,
+        defectTotal: sql<number>`COALESCE(SUM(${inspections.defectsFound}), 0)`,
+      }).from(inspections).where(eq(inspections.driverId, driver.userId));
+      const dInspTotal = driverInspStats?.total || 0;
+      const complianceScore = dInspTotal > 0 ? Math.round(((driverInspStats?.passed || 0) / dInspTotal) * 100) : 0;
+      const avgDefects = dInspTotal > 0 ? (driverInspStats?.defectTotal || 0) / dInspTotal : 0;
+      const vehicleCareScore = dInspTotal > 0 ? Math.max(0, Math.round(100 - avgDefects * 15)) : 0;
+
+      return { driverId: input.driverId, name: driver.userName || '', overall: driver.safetyScore || 0, overallScore: driver.safetyScore || 0, licenseNumber: driver.licenseNumber || '', categories: [{ name: 'Driving', score: driver.safetyScore || 0 }, { name: 'Compliance', score: complianceScore }, { name: 'Vehicle Care', score: vehicleCareScore }], recentEvents: recentInsp.map(i => ({ type: 'inspection', date: i.createdAt?.toISOString() || '', status: i.status || '' })) };
     } catch (e) { return fallback; }
   }),
   getScorecardStats: protectedProcedure.query(async ({ ctx }) => {
@@ -800,8 +854,8 @@ export const safetyRouter = router({
   }),
 
   // Meetings
+  // No safety_meetings table exists in the schema — return empty collections
   getMeetings: protectedProcedure.input(z.object({ type: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => {
-    // Safety meetings would need a dedicated table; return empty until schema supports it
     return [];
   }),
   getMeetingStats: protectedProcedure.query(async () => ({ thisMonth: 0, attendance: 0, topics: [] as string[], total: 0, upcoming: 0, completed: 0, avgAttendance: 0 })),

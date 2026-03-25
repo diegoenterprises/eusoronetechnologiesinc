@@ -134,20 +134,43 @@ export const catalystsRouter = router({
           .where(eq(companies.isActive, true))
           .limit(input.limit);
 
-        // Get vehicle counts per company
+        // Get vehicle counts per company, equipment type, and avg rate
         const result = await Promise.all(catalysts.map(async (c) => {
           const [available] = await db
             .select({ count: sql<number>`count(*)` })
             .from(vehicles)
             .where(and(eq(vehicles.companyId, c.id), eq(vehicles.status, 'available')));
 
+          // Get the most common vehicle type for this company
+          let equipment = 'general';
+          try {
+            const [topType] = await db
+              .select({ vType: vehicles.vehicleType, cnt: sql<number>`count(*)` })
+              .from(vehicles)
+              .where(eq(vehicles.companyId, c.id))
+              .groupBy(vehicles.vehicleType)
+              .orderBy(sql`count(*) DESC`)
+              .limit(1);
+            if (topType?.vType) equipment = topType.vType;
+          } catch { /* fallback to general */ }
+
+          // Get average rate from completed loads for this carrier
+          let rate = 0;
+          try {
+            const [avgRate] = await db
+              .select({ avg: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)` })
+              .from(loads)
+              .where(and(eq(loads.catalystId, c.id), sql`${loads.status} IN ('delivered', 'complete', 'paid')`));
+            rate = avgRate?.avg ? Math.round(avgRate.avg * 100) / 100 : 0;
+          } catch { /* rate unavailable */ }
+
           return {
             id: String(c.id),
             catalyst: c.name,
-            equipment: 'tanker',
+            equipment,
             available: available?.count || 0,
             location: c.city && c.state ? `${c.city}, ${c.state}` : 'Unknown',
-            rate: 2.50,
+            rate,
           };
         }));
 
@@ -219,15 +242,38 @@ export const catalystsRouter = router({
 
         if ((available?.count || 0) === 0) return null;
 
+        // Get most common vehicle type
+        let equipment = 'general';
+        try {
+          const [topType] = await db
+            .select({ vType: vehicles.vehicleType, cnt: sql<number>`count(*)` })
+            .from(vehicles)
+            .where(eq(vehicles.companyId, c.id))
+            .groupBy(vehicles.vehicleType)
+            .orderBy(sql`count(*) DESC`)
+            .limit(1);
+          if (topType?.vType) equipment = topType.vType;
+        } catch { /* fallback */ }
+
+        // Get average rate from loads
+        let rate = 0;
+        try {
+          const [avgRate] = await db
+            .select({ avg: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)` })
+            .from(loads)
+            .where(and(eq(loads.catalystId, c.id), sql`${loads.status} IN ('delivered', 'complete', 'paid')`));
+          rate = avgRate?.avg ? Math.round(avgRate.avg * 100) / 100 : 0;
+        } catch { /* rate unavailable */ }
+
         return {
           id: `cap_${c.id}`,
           catalystId: String(c.id),
           catalystName: c.name,
-          equipment: 'tanker',
+          equipment,
           origin: c.city && c.state ? `${c.city}, ${c.state}` : 'Unknown',
           destination: 'Flexible',
           available: new Date().toISOString().split('T')[0],
-          rate: 2.50,
+          rate,
         };
       }));
 
@@ -285,13 +331,44 @@ export const catalystsRouter = router({
 
         const utilization = totalVehicles?.count ? Math.round((inUseVehicles?.count || 0) / totalVehicles.count * 100) : 0;
 
+        // Compute safety score: 100 - (incidents in last 365 days * 10), min 0
+        let safetyScore = 100;
+        try {
+          const { incidents } = await import('../../drizzle/schema');
+          const yearAgo = new Date();
+          yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+          const [incidentCount] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(incidents)
+            .where(and(eq(incidents.companyId, companyId), gte(incidents.occurredAt, yearAgo)));
+          safetyScore = Math.max(0, 100 - (incidentCount?.count || 0) * 10);
+        } catch { /* incidents unavailable */ }
+
+        // Compute on-time rate: delivered loads where actualDelivery <= deliveryDate / total delivered
+        let onTimeRate = 0;
+        try {
+          const [totalDelivered] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(loads)
+            .where(and(eq(loads.catalystId, companyId), sql`${loads.status} IN ('delivered', 'complete', 'paid')`));
+          const [onTime] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(loads)
+            .where(and(
+              eq(loads.catalystId, companyId),
+              sql`${loads.status} IN ('delivered', 'complete', 'paid')`,
+              sql`${loads.deliveryDate} IS NOT NULL AND ${loads.actualDeliveryDate} IS NOT NULL AND ${loads.actualDeliveryDate} <= ${loads.deliveryDate}`
+            ));
+          onTimeRate = totalDelivered?.count ? Math.round((onTime?.count || 0) / totalDelivered.count * 100) : 0;
+        } catch { /* on-time data unavailable */ }
+
         return {
           activeLoads: activeLoads?.count || 0,
           availableCapacity: available?.count || 0,
           weeklyRevenue: weeklyStats?.revenue || 0,
           fleetUtilization: utilization,
-          safetyScore: 0,
-          onTimeRate: 0,
+          safetyScore,
+          onTimeRate,
         };
       } catch (error) {
         logger.error('[Catalysts] getDashboardStats error:', error);
@@ -324,6 +401,8 @@ export const catalystsRouter = router({
           .where(eq(drivers.companyId, companyId))
           .limit(input.limit);
 
+        const { gpsTracking, hosLogs } = await import('../../drizzle/schema');
+
         return await Promise.all(driverList.map(async (d) => {
           const [currentLoad] = await db
             .select({ loadNumber: loads.loadNumber })
@@ -331,13 +410,43 @@ export const catalystsRouter = router({
             .where(and(eq(loads.driverId, d.userId), sql`${loads.status} IN ('in_transit', 'assigned')`))
             .limit(1);
 
+          // Get HOS hours remaining from hos_logs: 11hrs max driving - driving minutes today
+          let hoursRemaining: number | null = null;
+          try {
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            const [latestHos] = await db
+              .select({ drivingMin: hosLogs.drivingMinutesAtEvent })
+              .from(hosLogs)
+              .where(and(eq(hosLogs.userId, d.userId), gte(hosLogs.createdAt, todayStart)))
+              .orderBy(desc(hosLogs.createdAt))
+              .limit(1);
+            if (latestHos?.drivingMin != null) {
+              hoursRemaining = Math.max(0, Math.round((660 - latestHos.drivingMin) / 60 * 10) / 10);
+            }
+          } catch { /* HOS data unavailable */ }
+
+          // Get location from GPS tracking
+          let location = 'Unknown';
+          try {
+            const [latestGps] = await db
+              .select({ latitude: gpsTracking.latitude, longitude: gpsTracking.longitude })
+              .from(gpsTracking)
+              .where(eq(gpsTracking.driverId, d.userId))
+              .orderBy(desc(gpsTracking.timestamp))
+              .limit(1);
+            if (latestGps) {
+              location = `${parseFloat(String(latestGps.latitude)).toFixed(2)}, ${parseFloat(String(latestGps.longitude)).toFixed(2)}`;
+            }
+          } catch { /* GPS data unavailable */ }
+
           return {
             id: String(d.id),
             name: d.userName || 'Unknown',
             status: currentLoad ? 'driving' : (d.status || 'available'),
             currentLoad: currentLoad?.loadNumber || null,
-            hoursRemaining: 11,
-            location: 'Unknown',
+            hoursRemaining,
+            location,
           };
         }));
       } catch (error) {
@@ -368,17 +477,47 @@ export const catalystsRouter = router({
           .orderBy(desc(loads.createdAt))
           .limit(input.limit);
 
+        // Get driver names for active loads
+        const driverIdsForLoads = activeLoads.filter(l => l.driverId).map(l => l.driverId!);
+        const driverNameMap = new Map<number, string>();
+        if (driverIdsForLoads.length > 0) {
+          try {
+            const drvRows = await db.select({ id: users.id, name: users.name }).from(users)
+              .where(sql`${users.id} IN (${sql.raw(driverIdsForLoads.join(','))})`);
+            drvRows.forEach(d => driverNameMap.set(d.id, d.name || 'Unknown'));
+          } catch { /* driver lookup failed */ }
+        }
+
         return activeLoads.map(l => {
           const pickup = l.pickupLocation ?? { city: '', state: '' };
           const delivery = l.deliveryLocation ?? { city: '', state: '' };
+
+          // Compute ETA based on delivery date
+          let eta = 'TBD';
+          if (l.deliveryDate) {
+            const now = new Date();
+            const deliveryTime = l.deliveryDate.getTime();
+            if (deliveryTime < now.getTime()) {
+              eta = 'Overdue';
+            } else {
+              const hoursLeft = Math.ceil((deliveryTime - now.getTime()) / (1000 * 60 * 60));
+              if (hoursLeft <= 24) {
+                eta = `${hoursLeft}h remaining`;
+              } else {
+                const daysLeft = Math.ceil(hoursLeft / 24);
+                eta = `${daysLeft}d remaining`;
+              }
+            }
+          }
+
           return {
             id: String(l.id),
             loadNumber: l.loadNumber,
             status: l.status,
             origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
             destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
-            driver: 'Assigned',
-            eta: l.deliveryDate ? 'On Schedule' : 'TBD',
+            driver: l.driverId ? (driverNameMap.get(l.driverId) || 'Assigned') : 'Unassigned',
+            eta,
             rate: l.rate ? parseFloat(String(l.rate)) : 0,
           };
         });

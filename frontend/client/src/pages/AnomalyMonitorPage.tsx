@@ -72,7 +72,7 @@ export default function AnomalyMonitorPage() {
             <Brain className={cn("w-5 h-5", dash.healthScore >= 80 ? "text-emerald-400" : dash.healthScore >= 60 ? "text-amber-400" : "text-red-400")} />
             <div>
               <p className={cn("text-lg font-bold font-mono", dash.healthScore >= 80 ? "text-emerald-400" : dash.healthScore >= 60 ? "text-amber-400" : "text-red-400")}>{dash.healthScore}%</p>
-              <p className="text-[7px] text-slate-500">Health Score</p>
+              <p className="text-xs text-slate-500">Health Score</p>
             </div>
           </div>
         )}
@@ -85,7 +85,7 @@ export default function AnomalyMonitorPage() {
           { id: "anomalies" as Tab, icon: <AlertTriangle className="w-3.5 h-3.5 mr-1" />, label: "Anomalies", color: "bg-red-600" },
           { id: "risks" as Tab, icon: <Eye className="w-3.5 h-3.5 mr-1" />, label: "Risk Forecast", color: "bg-purple-600" },
         ].map(t => (
-          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-[11px]", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
+          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-xs", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
             {t.icon}{t.label}
           </Button>
         ))}
@@ -108,7 +108,7 @@ export default function AnomalyMonitorPage() {
               <Card key={k.label} className={cn("rounded-xl border-slate-700/50", k.bg)}>
                 <CardContent className="p-3 text-center">
                   <p className={cn("text-2xl font-bold font-mono", k.color)}>{k.count}</p>
-                  <p className="text-[8px] text-slate-500">{k.label}</p>
+                  <p className="text-xs text-slate-500">{k.label}</p>
                 </CardContent>
               </Card>
             ))}
@@ -125,7 +125,7 @@ export default function AnomalyMonitorPage() {
                       {CAT_ICONS[cat]}
                     </div>
                     <p className="text-lg font-bold font-mono text-white">{dash.byCategory[cat] || 0}</p>
-                    <p className="text-[7px] text-slate-500 capitalize">{cat}</p>
+                    <p className="text-xs text-slate-500 capitalize">{cat}</p>
                   </div>
                 ))}
               </div>
@@ -143,9 +143,9 @@ export default function AnomalyMonitorPage() {
                   const color = t.avgSeverity > 3.5 ? "bg-red-500" : t.avgSeverity > 2.5 ? "bg-amber-500" : "bg-emerald-500";
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                      <span className="text-[8px] text-slate-400 font-mono">{t.count}</span>
+                      <span className="text-xs text-slate-400 font-mono">{t.count}</span>
                       <div className={cn("w-full rounded-t-sm transition-all", color)} style={{ height: `${h}%` }} />
-                      <span className="text-[7px] text-slate-500">{t.date.slice(5)}</span>
+                      <span className="text-xs text-slate-500">{t.date.slice(5)}</span>
                     </div>
                   );
                 })}
@@ -166,10 +166,10 @@ export default function AnomalyMonitorPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-semibold text-white truncate">{a.title}</span>
-                          <Badge variant="outline" className={cn("text-[7px]", sev.color)}>{a.severity}</Badge>
+                          <span className="text-xs font-semibold text-white truncate">{a.title}</span>
+                          <Badge variant="outline" className={cn("text-xs", sev.color)}>{a.severity}</Badge>
                         </div>
-                        <p className="text-[9px] text-slate-500 truncate">{a.description}</p>
+                        <p className="text-xs text-slate-500 truncate">{a.description}</p>
                       </div>
                       <div className="flex items-center gap-1">{TREND_ICONS[a.trend]}</div>
                     </div>
@@ -187,9 +187,9 @@ export default function AnomalyMonitorPage() {
           {/* Category Filter */}
           <div className="flex gap-1 flex-wrap">
             {(["all", "delivery", "pricing", "safety", "compliance", "operational", "financial"] as const).map(cat => (
-              <Button key={cat} size="sm" variant={catFilter === cat ? "default" : "ghost"} className={cn("text-[10px] rounded-md", catFilter === cat ? "bg-slate-700" : "text-slate-400")} onClick={() => setCatFilter(cat)}>
+              <Button key={cat} size="sm" variant={catFilter === cat ? "default" : "ghost"} className={cn("text-xs rounded-md", catFilter === cat ? "bg-slate-700" : "text-slate-400")} onClick={() => setCatFilter(cat)}>
                 {cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
-                {cat !== "all" && <span className="ml-1 text-[8px] opacity-60">({dash.byCategory[cat] || 0})</span>}
+                {cat !== "all" && <span className="ml-1 text-xs opacity-60">({dash.byCategory[cat] || 0})</span>}
               </Button>
             ))}
           </div>
@@ -200,7 +200,7 @@ export default function AnomalyMonitorPage() {
               <CardContent className="p-8 text-center">
                 <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
                 <p className="text-sm text-white font-semibold">No Anomalies</p>
-                <p className="text-[10px] text-slate-500">All clear in this category</p>
+                <p className="text-xs text-slate-500">All clear in this category</p>
               </CardContent>
             </Card>
           )}
@@ -216,18 +216,18 @@ export default function AnomalyMonitorPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-semibold text-white">{a.title}</span>
-                        <Badge variant="outline" className={cn("text-[7px]", sev.color)}>{a.severity}</Badge>
-                        <Badge variant="outline" className="text-[7px] text-slate-400">{a.status}</Badge>
+                        <span className="text-xs font-semibold text-white">{a.title}</span>
+                        <Badge variant="outline" className={cn("text-xs", sev.color)}>{a.severity}</Badge>
+                        <Badge variant="outline" className="text-xs text-slate-400">{a.status}</Badge>
                       </div>
-                      <p className="text-[9px] text-slate-400 mt-0.5">{a.description}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{a.description}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="flex items-center gap-1 justify-end mb-0.5">
                         {TREND_ICONS[a.trend]}
-                        <span className="text-[8px] text-slate-500">{a.trend}</span>
+                        <span className="text-xs text-slate-500">{a.trend}</span>
                       </div>
-                      <p className="text-[9px] text-slate-500">AI: {a.aiConfidence}%</p>
+                      <p className="text-xs text-slate-500">AI: {a.aiConfidence}%</p>
                       <ChevronRight className={cn("w-3 h-3 text-slate-500 transition-transform ml-auto", isExpanded && "rotate-90")} />
                     </div>
                   </div>
@@ -238,16 +238,16 @@ export default function AnomalyMonitorPage() {
                       {/* Metric Deviation */}
                       <div className="grid grid-cols-3 gap-2">
                         <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                          <p className="text-[8px] text-slate-500">Expected</p>
-                          <p className="text-[11px] font-mono font-bold text-white">{a.expected}</p>
+                          <p className="text-xs text-slate-500">Expected</p>
+                          <p className="text-xs font-mono font-bold text-white">{a.expected}</p>
                         </div>
                         <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                          <p className="text-[8px] text-slate-500">Actual</p>
-                          <p className={cn("text-[11px] font-mono font-bold", a.deviationPct > 0 ? "text-red-400" : "text-emerald-400")}>{a.actual}</p>
+                          <p className="text-xs text-slate-500">Actual</p>
+                          <p className={cn("text-xs font-mono font-bold", a.deviationPct > 0 ? "text-red-400" : "text-emerald-400")}>{a.actual}</p>
                         </div>
                         <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                          <p className="text-[8px] text-slate-500">Deviation</p>
-                          <p className={cn("text-[11px] font-mono font-bold", a.deviationPct > 0 ? "text-red-400" : "text-emerald-400")}>
+                          <p className="text-xs text-slate-500">Deviation</p>
+                          <p className={cn("text-xs font-mono font-bold", a.deviationPct > 0 ? "text-red-400" : "text-emerald-400")}>
                             {a.deviationPct > 0 ? "+" : ""}{a.deviationPct.toFixed(1)}%
                           </p>
                         </div>
@@ -257,20 +257,20 @@ export default function AnomalyMonitorPage() {
                       {a.affectedEntities.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {a.affectedEntities.map((e: any, i: number) => (
-                            <Badge key={i} variant="outline" className="text-[8px] text-slate-300">{e.name}</Badge>
+                            <Badge key={i} variant="outline" className="text-xs text-slate-300">{e.name}</Badge>
                           ))}
                         </div>
                       )}
 
                       {/* Suggested Actions */}
                       <div className="p-2 rounded-lg bg-slate-900/30">
-                        <p className="text-[8px] text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1"><Zap className="w-3 h-3 text-amber-400" />Suggested Actions</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1"><Zap className="w-3 h-3 text-amber-400" />Suggested Actions</p>
                         {a.suggestedActions.map((action: string, i: number) => (
-                          <p key={i} className="text-[9px] text-slate-300 py-0.5">• {action}</p>
+                          <p key={i} className="text-xs text-slate-300 py-0.5">• {action}</p>
                         ))}
                       </div>
 
-                      <div className="flex items-center gap-2 text-[8px] text-slate-500">
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
                         <Clock className="w-3 h-3" />
                         Detected: {new Date(a.detectedAt).toLocaleString()}
                       </div>
@@ -289,7 +289,7 @@ export default function AnomalyMonitorPage() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-2"><CardTitle className="text-xs text-white flex items-center gap-2"><Eye className="w-4 h-4 text-purple-400" />Predicted Risks</CardTitle></CardHeader>
             <CardContent className="pb-3">
-              <p className="text-[10px] text-slate-400 mb-3">AI-forecasted risks based on current anomaly patterns and historical data</p>
+              <p className="text-xs text-slate-400 mb-3">AI-forecasted risks based on current anomaly patterns and historical data</p>
               <div className="space-y-2">
                 {dash.topRisks.map((risk: any, i: number) => (
                   <div key={i} className="p-3 rounded-lg bg-slate-900/30 border border-slate-700/30">
@@ -298,14 +298,14 @@ export default function AnomalyMonitorPage() {
                         <div className={cn("w-6 h-6 rounded flex items-center justify-center", CAT_COLORS[risk.category])}>
                           {CAT_ICONS[risk.category]}
                         </div>
-                        <Badge variant="outline" className="text-[7px] text-slate-400 capitalize">{risk.category}</Badge>
+                        <Badge variant="outline" className="text-xs text-slate-400 capitalize">{risk.category}</Badge>
                       </div>
                       <div className="text-right">
                         <p className={cn("text-lg font-bold font-mono", risk.probability > 60 ? "text-red-400" : risk.probability > 40 ? "text-amber-400" : "text-slate-400")}>{risk.probability}%</p>
-                        <p className="text-[7px] text-slate-500">probability</p>
+                        <p className="text-xs text-slate-500">probability</p>
                       </div>
                     </div>
-                    <p className="text-[10px] text-white">{risk.risk}</p>
+                    <p className="text-xs text-white">{risk.risk}</p>
                     <div className="mt-2 h-1.5 rounded-full bg-slate-800 overflow-hidden">
                       <div className={cn("h-full rounded-full transition-all", risk.probability > 60 ? "bg-red-500" : risk.probability > 40 ? "bg-amber-500" : "bg-slate-500")} style={{ width: `${risk.probability}%` }} />
                     </div>

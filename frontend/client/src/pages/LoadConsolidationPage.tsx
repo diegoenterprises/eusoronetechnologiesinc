@@ -43,7 +43,7 @@ export default function LoadConsolidationPage() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Multi-shipper shipment consolidation for cost savings</p>
         </div>
-        <Badge variant="outline" className="text-[8px] border-cyan-500/30 text-cyan-400"><Layers className="w-3 h-3 mr-0.5" />AI Matching</Badge>
+        <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400"><Layers className="w-3 h-3 mr-0.5" />AI Matching</Badge>
       </div>
 
       {/* KPIs */}
@@ -61,7 +61,7 @@ export default function LoadConsolidationPage() {
                 {k.icon}
                 <div>
                   <p className={cn("text-lg font-bold font-mono", k.color)}>{k.value}</p>
-                  <p className="text-[7px] text-slate-500">{k.label}</p>
+                  <p className="text-xs text-slate-500">{k.label}</p>
                 </div>
               </CardContent>
             </Card>
@@ -75,7 +75,7 @@ export default function LoadConsolidationPage() {
           { id: "opportunities" as Tab, icon: <Layers className="w-3.5 h-3.5 mr-1" />, label: "Opportunities", color: "bg-blue-600" },
           { id: "corridors" as Tab, icon: <MapPin className="w-3.5 h-3.5 mr-1" />, label: "Top Corridors", color: "bg-indigo-600" },
         ].map(t => (
-          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-[11px]", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
+          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-xs", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
             {t.icon}{t.label}
           </Button>
         ))}
@@ -98,11 +98,11 @@ export default function LoadConsolidationPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold font-mono text-white">{g.groupId}</span>
-                        <Badge variant="outline" className={cn("text-[7px]", stCfg.color)}>{stCfg.label}</Badge>
-                        <span className="text-[9px] text-slate-400">{g.corridor}</span>
+                        <span className="text-xs font-bold font-mono text-white">{g.groupId}</span>
+                        <Badge variant="outline" className={cn("text-xs", stCfg.color)}>{stCfg.label}</Badge>
+                        <span className="text-xs text-slate-400">{g.corridor}</span>
                       </div>
-                      <div className="flex items-center gap-3 mt-0.5 text-[8px]">
+                      <div className="flex items-center gap-3 mt-0.5 text-xs">
                         <span className="text-slate-500"><Package className="w-2.5 h-2.5 inline mr-0.5" />{g.shipments.length} shipments</span>
                         <span className="text-slate-500"><Weight className="w-2.5 h-2.5 inline mr-0.5" />{(g.totalWeight / 1000).toFixed(1)}K lbs</span>
                         <span className="text-slate-500"><Percent className="w-2.5 h-2.5 inline mr-0.5" />{g.capacityUtilization}% full</span>
@@ -110,7 +110,7 @@ export default function LoadConsolidationPage() {
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="text-emerald-400 text-lg font-bold font-mono">-${g.savings.toLocaleString()}</p>
-                      <p className="text-[8px] text-emerald-400">{g.savingsPct}% savings</p>
+                      <p className="text-xs text-emerald-400">{g.savingsPct}% savings</p>
                     </div>
                     <ChevronRight className={cn("w-4 h-4 text-slate-500 transition-transform", isExp && "rotate-90")} />
                   </div>
@@ -121,30 +121,30 @@ export default function LoadConsolidationPage() {
                       {/* Rate Comparison */}
                       <div className="grid grid-cols-3 gap-2">
                         <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                          <p className="text-[8px] text-slate-500">Solo Total</p>
+                          <p className="text-xs text-slate-500">Solo Total</p>
                           <p className="text-[12px] font-mono font-bold text-red-400 line-through">${g.soloTotalRate.toLocaleString()}</p>
                         </div>
                         <div className="p-2 rounded-lg bg-emerald-500/10 text-center">
-                          <p className="text-[8px] text-slate-500">Consolidated</p>
+                          <p className="text-xs text-slate-500">Consolidated</p>
                           <p className="text-[12px] font-mono font-bold text-emerald-400">${g.consolidatedRate.toLocaleString()}</p>
                         </div>
                         <div className="p-2 rounded-lg bg-slate-900/30 text-center">
-                          <p className="text-[8px] text-slate-500">Miles Saved</p>
+                          <p className="text-xs text-slate-500">Miles Saved</p>
                           <p className="text-[12px] font-mono font-bold text-cyan-400">{g.distanceSaved} mi</p>
                         </div>
                       </div>
 
                       {/* Per-Shipper Savings */}
                       <div>
-                        <p className="text-[8px] text-slate-500 uppercase tracking-wide mb-1.5">Per-Shipper Breakdown</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5">Per-Shipper Breakdown</p>
                         <div className="space-y-1">
                           {g.perShipperSavings.map((ps: any) => (
                             <div key={ps.shipperId} className="flex items-center justify-between p-2 rounded-lg bg-slate-900/20">
                               <div className="flex items-center gap-2">
                                 <Users className="w-3 h-3 text-slate-400" />
-                                <span className="text-[10px] text-white">{ps.shipperName}</span>
+                                <span className="text-xs text-white">{ps.shipperName}</span>
                               </div>
-                              <div className="flex items-center gap-3 text-[9px]">
+                              <div className="flex items-center gap-3 text-xs">
                                 <span className="text-slate-500 line-through">${ps.soloRate.toLocaleString()}</span>
                                 <ArrowRight className="w-3 h-3 text-slate-500" />
                                 <span className="text-white font-mono">${ps.consolidatedShare.toLocaleString()}</span>
@@ -157,14 +157,14 @@ export default function LoadConsolidationPage() {
 
                       {/* Shipments */}
                       <div>
-                        <p className="text-[8px] text-slate-500 uppercase tracking-wide mb-1.5">Shipments in Group</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1.5">Shipments in Group</p>
                         <div className="space-y-1">
                           {g.shipments.map((sh: any) => (
-                            <div key={sh.loadId} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/20 text-[9px]">
+                            <div key={sh.loadId} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/20 text-xs">
                               <div className="flex items-center gap-2">
                                 <span className="font-mono text-blue-400">{sh.loadId}</span>
                                 <span className="text-slate-400">{sh.commodity}</span>
-                                {sh.hazmat && <Badge variant="outline" className="text-[6px] text-red-400 border-red-500/30">HAZMAT</Badge>}
+                                {sh.hazmat && <Badge variant="outline" className="text-xs text-red-400 border-red-500/30">HAZMAT</Badge>}
                               </div>
                               <div className="flex items-center gap-2 text-slate-400">
                                 <span>{(sh.weight / 1000).toFixed(1)}K lbs</span>
@@ -177,10 +177,10 @@ export default function LoadConsolidationPage() {
 
                       {/* Compatibility */}
                       <div className="flex items-center gap-3 p-2 rounded-lg bg-slate-900/30">
-                        <span className="text-[9px] text-slate-500">Compatibility:</span>
-                        <span className={cn("text-[11px] font-bold font-mono", g.compatibility.score >= 80 ? "text-emerald-400" : g.compatibility.score >= 60 ? "text-amber-400" : "text-red-400")}>{g.compatibility.score}%</span>
+                        <span className="text-xs text-slate-500">Compatibility:</span>
+                        <span className={cn("text-xs font-bold font-mono", g.compatibility.score >= 80 ? "text-emerald-400" : g.compatibility.score >= 60 ? "text-amber-400" : "text-red-400")}>{g.compatibility.score}%</span>
                         {g.compatibility.issues.map((issue: string, i: number) => (
-                          <Badge key={i} variant="outline" className="text-[7px] text-amber-400 border-amber-500/30">{issue}</Badge>
+                          <Badge key={i} variant="outline" className="text-xs text-amber-400 border-amber-500/30">{issue}</Badge>
                         ))}
                       </div>
                     </div>
@@ -200,17 +200,17 @@ export default function LoadConsolidationPage() {
               <CardContent className="p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold", i < 3 ? "bg-cyan-500/20 text-cyan-400" : "bg-slate-700/50 text-slate-400")}>
+                    <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold", i < 3 ? "bg-cyan-500/20 text-cyan-400" : "bg-slate-700/50 text-slate-400")}>
                       #{i + 1}
                     </div>
                     <div>
-                      <p className="text-[11px] font-semibold text-white">{c.corridor}</p>
-                      <p className="text-[9px] text-slate-500">{c.opportunities} consolidation opportunities</p>
+                      <p className="text-xs font-semibold text-white">{c.corridor}</p>
+                      <p className="text-xs text-slate-500">{c.opportunities} consolidation opportunities</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-emerald-400 text-lg font-bold font-mono">${c.potentialSavings.toLocaleString()}</p>
-                    <p className="text-[8px] text-slate-500">potential savings</p>
+                    <p className="text-xs text-slate-500">potential savings</p>
                   </div>
                 </div>
               </CardContent>

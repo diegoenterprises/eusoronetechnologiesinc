@@ -114,19 +114,90 @@ export const ratesRouter = router({
       weight: z.number(),
     }))
     .query(async ({ input }) => {
-      const distance = 350;
-      const baseRate = 3.25;
+      const db = await getDb();
+
+      // Default fallbacks
+      let distance = 0;
+      let baseRate = 3.25;
+
+      if (db) {
+        try {
+          // Look up average rate-per-mile and distance from delivered loads on similar lanes
+          const [laneStats] = await db.select({
+            avgRate: sql<number>`COALESCE(AVG(CAST(rate AS DECIMAL(10,2)) / NULLIF(CAST(distance AS DECIMAL(10,2)), 0)), 0)`,
+            avgDistance: sql<number>`COALESCE(AVG(CAST(distance AS DECIMAL(10,2))), 0)`,
+            count: sql<number>`count(*)`,
+          }).from(loads).where(
+            and(
+              eq(loads.status, 'delivered'),
+              sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.state')) = SUBSTRING_INDEX(${input.origin}, ', ', -1)`,
+              sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.state')) = SUBSTRING_INDEX(${input.destination}, ', ', -1)`,
+            )
+          );
+
+          if (laneStats && laneStats.count > 0 && laneStats.avgDistance > 0) {
+            distance = Math.round(laneStats.avgDistance);
+            baseRate = Math.round(laneStats.avgRate * 100) / 100;
+          }
+
+          // If no lane-specific data, try broader market average
+          if (distance === 0) {
+            const [marketStats] = await db.select({
+              avgRate: sql<number>`COALESCE(AVG(CAST(rate AS DECIMAL(10,2)) / NULLIF(CAST(distance AS DECIMAL(10,2)), 0)), 0)`,
+              avgDistance: sql<number>`COALESCE(AVG(CAST(distance AS DECIMAL(10,2))), 0)`,
+              count: sql<number>`count(*)`,
+            }).from(loads).where(eq(loads.status, 'delivered'));
+
+            if (marketStats && marketStats.count > 0 && marketStats.avgDistance > 0) {
+              distance = Math.round(marketStats.avgDistance);
+              baseRate = Math.round(marketStats.avgRate * 100) / 100;
+            }
+          }
+
+          // Also check pricebook for equipment-specific rate override
+          const [pbEntry] = await db.select({
+            rate: sql<number>`CAST(rate AS DECIMAL(12,4))`,
+            rateType: sql<string>`rateType`,
+          }).from(unsafeCast<typeof loads>(sql`pricebook_entries`)).where(
+            and(
+              sql`isActive = 1`,
+              sql`effectiveDate <= CURDATE()`,
+              sql`(expirationDate IS NULL OR expirationDate >= CURDATE())`,
+              sql`LOWER(cargoType) = LOWER(${input.equipmentType})`,
+            )
+          ).limit(1);
+
+          if (pbEntry && pbEntry.rate > 0 && pbEntry.rateType === 'per_mile') {
+            baseRate = Number(pbEntry.rate);
+          }
+        } catch (err) {
+          logger.error('[Rates] calculate lookup error:', err);
+          // Fall through to defaults
+        }
+      }
+
+      // If still no distance, use a reasonable default
+      if (distance === 0) distance = 350;
+      if (baseRate === 0) baseRate = 3.25;
+
+      const fuelSurchargePerMile = 0.20;
       const estimatedRate = Math.round(distance * baseRate);
+      const fuelSurcharge = Math.round(distance * fuelSurchargePerMile);
+      const total = estimatedRate + fuelSurcharge;
+      const driveHours = Math.round(distance / 55); // ~55 mph avg
+      const driveMinutes = Math.round((distance / 55 - driveHours) * 60);
+      const fuelCost = Math.round(distance / 6.5 * 3.80); // ~6.5 mpg, ~$3.80/gal
+
       return {
         distance,
         estimatedRate,
         recommendedRate: estimatedRate,
         ratePerMile: baseRate,
-        fuelSurcharge: Math.round(distance * 0.20),
-        total: Math.round(distance * baseRate + distance * 0.20),
-        driveTime: "5h 30m",
-        fuelCost: 245,
-        estimatedProfit: 580,
+        fuelSurcharge,
+        total,
+        driveTime: `${driveHours}h ${driveMinutes}m`,
+        fuelCost,
+        estimatedProfit: Math.max(0, total - fuelCost),
         lowRate: Math.round(estimatedRate * 0.85),
         highRate: Math.round(estimatedRate * 1.15),
       };
@@ -154,19 +225,89 @@ export const ratesRouter = router({
       pickupDate: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const baseRate = 3.25;
-      const distance = 350;
-      
+      const db = await getDb();
+
+      let baseRate = 3.25;
+      let distance = 0;
+      let marketAvgRate = 0;
+      let marketLowRate = 0;
+      let marketHighRate = 0;
+      let marketLoadCount = 0;
+
+      if (db) {
+        try {
+          // Look up lane-specific stats from delivered loads matching origin/dest states
+          const [laneStats] = await db.select({
+            avgRpm: sql<number>`COALESCE(AVG(CAST(rate AS DECIMAL(10,2)) / NULLIF(CAST(distance AS DECIMAL(10,2)), 0)), 0)`,
+            avgDist: sql<number>`COALESCE(AVG(CAST(distance AS DECIMAL(10,2))), 0)`,
+            minRate: sql<number>`COALESCE(MIN(CAST(rate AS DECIMAL(10,2))), 0)`,
+            maxRate: sql<number>`COALESCE(MAX(CAST(rate AS DECIMAL(10,2))), 0)`,
+            avgRate: sql<number>`COALESCE(AVG(CAST(rate AS DECIMAL(10,2))), 0)`,
+            cnt: sql<number>`count(*)`,
+          }).from(loads).where(
+            and(
+              eq(loads.status, 'delivered'),
+              sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.state')) = ${input.origin.state}`,
+              sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.state')) = ${input.destination.state}`,
+            )
+          );
+
+          if (laneStats && laneStats.cnt > 0 && laneStats.avgDist > 0) {
+            distance = Math.round(laneStats.avgDist);
+            baseRate = Math.round(laneStats.avgRpm * 100) / 100;
+            marketAvgRate = Math.round(laneStats.avgRate);
+            marketLowRate = Math.round(laneStats.minRate);
+            marketHighRate = Math.round(laneStats.maxRate);
+            marketLoadCount = laneStats.cnt;
+          }
+
+          // If no lane data, fall back to market-wide averages
+          if (distance === 0) {
+            const [mkt] = await db.select({
+              avgRpm: sql<number>`COALESCE(AVG(CAST(rate AS DECIMAL(10,2)) / NULLIF(CAST(distance AS DECIMAL(10,2)), 0)), 0)`,
+              avgDist: sql<number>`COALESCE(AVG(CAST(distance AS DECIMAL(10,2))), 0)`,
+            }).from(loads).where(eq(loads.status, 'delivered'));
+            if (mkt && mkt.avgDist > 0) {
+              distance = Math.round(mkt.avgDist);
+              baseRate = Math.round(mkt.avgRpm * 100) / 100;
+            }
+          }
+
+          // Check pricebook for equipment-specific per_mile rate
+          const [pbEntry] = await db.select({
+            rate: sql<number>`CAST(rate AS DECIMAL(12,4))`,
+            rateType: sql<string>`rateType`,
+          }).from(unsafeCast<typeof loads>(sql`pricebook_entries`)).where(
+            and(
+              sql`isActive = 1`,
+              sql`effectiveDate <= CURDATE()`,
+              sql`(expirationDate IS NULL OR expirationDate >= CURDATE())`,
+              sql`LOWER(cargoType) = LOWER(${input.equipment})`,
+            )
+          ).limit(1);
+
+          if (pbEntry && pbEntry.rate > 0 && pbEntry.rateType === 'per_mile') {
+            baseRate = Number(pbEntry.rate);
+          }
+        } catch (err) {
+          logger.error('[Rates] calculateDetailed lookup error:', err);
+        }
+      }
+
+      // Fallback defaults
+      if (distance === 0) distance = 350;
+      if (baseRate === 0) baseRate = 3.25;
+
       let ratePerMile = baseRate;
       if (input.equipment === "tanker") ratePerMile += 0.35;
       if (input.equipment === "specialized") ratePerMile += 0.50;
       if (input.hazmatClass !== "none") ratePerMile += 0.45;
       if (input.urgency === "expedited") ratePerMile += 0.25;
       if (input.urgency === "hot") ratePerMile += 0.50;
-      
+
       const fuelSurcharge = distance * 0.20;
       const baseTotal = distance * ratePerMile;
-      
+
       return {
         estimatedRate: {
           low: Math.round(baseTotal * 0.9),
@@ -182,7 +323,13 @@ export const ratesRouter = router({
         },
         perMile: ratePerMile.toFixed(2),
         distance,
-        marketData: { avgRate: 0, lowRate: 0, highRate: 0, loadCount: 0, capacityTight: false },
+        marketData: {
+          avgRate: marketAvgRate,
+          lowRate: marketLowRate,
+          highRate: marketHighRate,
+          loadCount: marketLoadCount,
+          capacityTight: marketLoadCount > 50,
+        },
       };
     }),
 

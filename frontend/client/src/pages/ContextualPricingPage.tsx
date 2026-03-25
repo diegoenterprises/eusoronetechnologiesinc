@@ -79,7 +79,7 @@ export default function ContextualPricingPage() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">AI-enriched dynamic pricing with real-time market signals</p>
         </div>
-        <Badge variant="outline" className="text-[8px] border-amber-500/30 text-amber-400"><Zap className="w-3 h-3 mr-0.5" />Live Signals</Badge>
+        <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400"><Zap className="w-3 h-3 mr-0.5" />Live Signals</Badge>
       </div>
 
       {/* Lane Input */}
@@ -92,7 +92,7 @@ export default function ContextualPricingPage() {
               <ArrowRight className="w-4 h-4 text-slate-500" />
               <Input placeholder="Dest State" value={destState} onChange={e => setDestState(e.target.value.toUpperCase().slice(0, 2))} className="w-20 bg-slate-900/50 border-slate-700 text-sm text-center" />
               <Input type="number" placeholder="Miles" value={distance} onChange={e => setDistance(Number(e.target.value))} className="w-24 bg-slate-900/50 border-slate-700 text-sm text-center" />
-              <span className="text-[10px] text-slate-500">miles</span>
+              <span className="text-xs text-slate-500">miles</span>
             </div>
           </div>
         </CardContent>
@@ -105,7 +105,7 @@ export default function ContextualPricingPage() {
           { id: "signals" as Tab, icon: <Activity className="w-3.5 h-3.5 mr-1" />, label: "Active Signals", color: "bg-blue-600" },
           { id: "hotlanes" as Tab, icon: <BarChart3 className="w-3.5 h-3.5 mr-1" />, label: "Hot Lanes", color: "bg-red-600" },
         ].map(t => (
-          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-[11px]", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
+          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-xs", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
             {t.icon}{t.label}
           </Button>
         ))}
@@ -121,12 +121,12 @@ export default function ContextualPricingPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wide">Contextual Rate</p>
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">Contextual Rate</p>
                   <p className="text-3xl font-bold font-mono text-white">${price.contextualRate.toLocaleString()}</p>
-                  <p className="text-[10px] text-slate-400">${(price.contextualRate / Math.max(distance, 1)).toFixed(2)}/mi</p>
+                  <p className="text-xs text-slate-400">${(price.contextualRate / Math.max(distance, 1)).toFixed(2)}/mi</p>
                 </div>
                 <div className="text-right">
-                  <Badge variant="outline" className={cn("text-[8px] mb-1", PHASE_CONFIG[price.marketPhase]?.color)}>
+                  <Badge variant="outline" className={cn("text-xs mb-1", PHASE_CONFIG[price.marketPhase]?.color)}>
                     {PHASE_CONFIG[price.marketPhase]?.label}
                   </Badge>
                   <div className="flex items-center gap-1 justify-end">
@@ -140,13 +140,13 @@ export default function ContextualPricingPage() {
                       {price.adjustmentPct > 0 ? "+" : ""}{price.adjustmentPct}%
                     </span>
                   </div>
-                  <p className="text-[9px] text-slate-500">vs base ${price.baseRate.toLocaleString()}</p>
+                  <p className="text-xs text-slate-500">vs base ${price.baseRate.toLocaleString()}</p>
                 </div>
               </div>
 
-              <p className="text-[10px] text-slate-300 italic mb-3">"{price.recommendation}"</p>
+              <p className="text-xs text-slate-300 italic mb-3">"{price.recommendation}"</p>
 
-              <div className="flex items-center gap-3 text-[9px]">
+              <div className="flex items-center gap-3 text-xs">
                 <span className="text-slate-500">Confidence: <span className="text-white font-mono">{price.confidenceLevel}%</span></span>
                 <span className="text-slate-500">Signals: <span className="text-amber-400 font-mono">{price.signals.length}</span></span>
                 <span className="text-slate-500">Valid until: <span className="text-white">{new Date(price.validUntil).toLocaleTimeString()}</span></span>
@@ -169,14 +169,14 @@ export default function ContextualPricingPage() {
                   { label: "Pattern Adjustment", value: price.rateBreakdown.patternAdjustment, color: "text-slate-400" },
                 ].filter(r => r.value !== 0 || r.label === "Base Line Haul").map(row => (
                   <div key={row.label} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-900/20">
-                    <span className="text-[10px] text-slate-400">{row.label}</span>
-                    <span className={cn("text-[11px] font-mono font-bold", row.color)}>
+                    <span className="text-xs text-slate-400">{row.label}</span>
+                    <span className={cn("text-xs font-mono font-bold", row.color)}>
                       {row.value > 0 ? "+" : ""}{row.value === 0 && row.label !== "Base Line Haul" ? "—" : `$${row.value.toLocaleString()}`}
                     </span>
                   </div>
                 ))}
                 <div className="flex items-center justify-between p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <span className="text-[10px] font-semibold text-amber-400">Contextual Total</span>
+                  <span className="text-xs font-semibold text-amber-400">Contextual Total</span>
                   <span className="text-sm font-bold font-mono text-amber-400">${price.contextualRate.toLocaleString()}</span>
                 </div>
               </div>
@@ -197,14 +197,14 @@ export default function ContextualPricingPage() {
                   ].map(kpi => (
                     <div key={kpi.label} className="p-2 rounded-lg bg-slate-900/30 text-center">
                       <p className={cn("text-sm font-bold font-mono", kpi.color)}>{kpi.value}</p>
-                      <p className="text-[8px] text-slate-500">{kpi.label}</p>
+                      <p className="text-xs text-slate-500">{kpi.label}</p>
                     </div>
                   ))}
                 </div>
                 <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-900/20">
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-[10px] text-slate-300">{lane.bestTimeToBook}</span>
-                  <Badge variant="outline" className={cn("text-[7px] ml-auto", lane.forecastDirection === "rising" ? "text-red-400 border-red-500/30" : lane.forecastDirection === "falling" ? "text-emerald-400 border-emerald-500/30" : "text-blue-400 border-blue-500/30")}>
+                  <span className="text-xs text-slate-300">{lane.bestTimeToBook}</span>
+                  <Badge variant="outline" className={cn("text-xs ml-auto", lane.forecastDirection === "rising" ? "text-red-400 border-red-500/30" : lane.forecastDirection === "falling" ? "text-emerald-400 border-emerald-500/30" : "text-blue-400 border-blue-500/30")}>
                     {lane.forecastDirection === "rising" ? <TrendingUp className="w-2.5 h-2.5 mr-0.5" /> : lane.forecastDirection === "falling" ? <TrendingDown className="w-2.5 h-2.5 mr-0.5" /> : <Target className="w-2.5 h-2.5 mr-0.5" />}
                     {lane.forecastDirection}
                   </Badge>
@@ -223,7 +223,7 @@ export default function ContextualPricingPage() {
               <CardContent className="p-8 text-center">
                 <Activity className="w-8 h-8 text-blue-400 mx-auto mb-2" />
                 <p className="text-sm text-white font-semibold">No Active Signals</p>
-                <p className="text-[10px] text-slate-500">Market conditions are stable for this lane</p>
+                <p className="text-xs text-slate-500">Market conditions are stable for this lane</p>
               </CardContent>
             </Card>
           )}
@@ -238,12 +238,12 @@ export default function ContextualPricingPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-semibold text-white">{signal.name}</span>
-                        <Badge variant="outline" className={cn("text-[7px]", STRENGTH_COLORS[signal.strength])}>{signal.strength}</Badge>
-                        <Badge variant="outline" className="text-[7px] text-slate-400">{signal.category}</Badge>
+                        <span className="text-xs font-semibold text-white">{signal.name}</span>
+                        <Badge variant="outline" className={cn("text-xs", STRENGTH_COLORS[signal.strength])}>{signal.strength}</Badge>
+                        <Badge variant="outline" className="text-xs text-slate-400">{signal.category}</Badge>
                       </div>
-                      <p className="text-[9px] text-slate-400 mt-0.5">{signal.description}</p>
-                      <div className="flex items-center gap-3 mt-1 text-[8px]">
+                      <p className="text-xs text-slate-400 mt-0.5">{signal.description}</p>
+                      <div className="flex items-center gap-3 mt-1 text-xs">
                         <span className="text-slate-500">Source: {signal.source}</span>
                         <span className="text-slate-500">Confidence: {signal.confidence}%</span>
                       </div>
@@ -252,7 +252,7 @@ export default function ContextualPricingPage() {
                       <p className={cn("text-lg font-bold font-mono", signal.impact > 0 ? "text-red-400" : "text-emerald-400")}>
                         {signal.impact > 0 ? "+" : ""}{signal.impact}%
                       </p>
-                      <p className="text-[8px] text-slate-500">rate impact</p>
+                      <p className="text-xs text-slate-500">rate impact</p>
                     </div>
                   </div>
                 </CardContent>
@@ -272,27 +272,27 @@ export default function ContextualPricingPage() {
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold", i < 3 ? "bg-red-500/20 text-red-400" : "bg-slate-700/50 text-slate-400")}>
+                      <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold", i < 3 ? "bg-red-500/20 text-red-400" : "bg-slate-700/50 text-slate-400")}>
                         #{i + 1}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-[12px] font-bold font-mono text-white">{hl.lane}</span>
-                          <Badge variant="outline" className={cn("text-[7px]", phCfg.color)}>{phCfg.label}</Badge>
+                          <Badge variant="outline" className={cn("text-xs", phCfg.color)}>{phCfg.label}</Badge>
                         </div>
-                        <p className="text-[9px] text-slate-500">{hl.signals} active signals</p>
+                        <p className="text-xs text-slate-500">{hl.signals} active signals</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <p className="text-[9px] text-slate-500">Spot Rate</p>
-                        <p className="text-[11px] font-mono text-white">${hl.spotRate.toLocaleString()}</p>
+                        <p className="text-xs text-slate-500">Spot Rate</p>
+                        <p className="text-xs font-mono text-white">${hl.spotRate.toLocaleString()}</p>
                       </div>
                       <div className="text-right">
                         <p className={cn("text-lg font-bold font-mono", hl.adjustment > 0 ? "text-red-400" : "text-emerald-400")}>
                           {hl.adjustment > 0 ? "+" : ""}{hl.adjustment}%
                         </p>
-                        <p className="text-[8px] text-slate-500">context adj</p>
+                        <p className="text-xs text-slate-500">context adj</p>
                       </div>
                     </div>
                   </div>

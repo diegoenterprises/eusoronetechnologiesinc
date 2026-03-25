@@ -69,16 +69,16 @@ function RoleContextPanel({ role, isLight, onNavigate, stats }: { role: string; 
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Building2 className="w-4 h-4 text-blue-500" />
           <span className={cn("text-xs font-semibold", isLight ? "text-blue-700" : "text-blue-400")}>Shipper View</span>
-          <span className="text-[10px] text-slate-400">•</span>
-          <span className="text-[10px] text-slate-400">{stats.posted} posted</span>
-          <span className="text-[10px] text-slate-400">•</span>
-          <span className="text-[10px] text-slate-400">${stats.value.toLocaleString()} total value</span>
+          <span className="text-xs text-slate-400">•</span>
+          <span className="text-xs text-slate-400">{stats.posted} posted</span>
+          <span className="text-xs text-slate-400">•</span>
+          <span className="text-xs text-slate-400">${stats.value.toLocaleString()} total value</span>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" className="h-7 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg" onClick={() => onNavigate("/loads/create")}>
+          <Button size="sm" className="h-7 text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg" onClick={() => onNavigate("/loads/create")}>
             <Plus className="w-3 h-3 mr-1" />Post Load
           </Button>
-          <Button size="sm" variant="outline" className={cn("h-7 text-[10px] rounded-lg", isLight ? "border-blue-200" : "border-blue-500/30")} onClick={() => onNavigate("/loads")}>
+          <Button size="sm" variant="outline" className={cn("h-7 text-xs rounded-lg", isLight ? "border-blue-200" : "border-blue-500/30")} onClick={() => onNavigate("/loads")}>
             My Loads
           </Button>
         </div>
@@ -92,16 +92,16 @@ function RoleContextPanel({ role, isLight, onNavigate, stats }: { role: string; 
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Truck className="w-4 h-4 text-emerald-500" />
           <span className={cn("text-xs font-semibold", isLight ? "text-emerald-700" : "text-emerald-400")}>{isDriver ? "Driver" : "Carrier"} View</span>
-          <span className="text-[10px] text-slate-400">•</span>
-          <span className="text-[10px] text-slate-400">{stats.posted} available loads</span>
-          <span className="text-[10px] text-slate-400">•</span>
-          <span className="text-[10px] text-emerald-500 font-semibold">{stats.inTransit} in transit</span>
+          <span className="text-xs text-slate-400">•</span>
+          <span className="text-xs text-slate-400">{stats.posted} available loads</span>
+          <span className="text-xs text-slate-400">•</span>
+          <span className="text-xs text-emerald-500 font-semibold">{stats.inTransit} in transit</span>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" className={cn("h-7 text-[10px] rounded-lg", isLight ? "border-emerald-200" : "border-emerald-500/30")} onClick={() => onNavigate("/find-loads")}>
+          <Button size="sm" variant="outline" className={cn("h-7 text-xs rounded-lg", isLight ? "border-emerald-200" : "border-emerald-500/30")} onClick={() => onNavigate("/find-loads")}>
             <Search className="w-3 h-3 mr-1" />Find Loads
           </Button>
-          <Button size="sm" variant="outline" className={cn("h-7 text-[10px] rounded-lg", isLight ? "border-emerald-200" : "border-emerald-500/30")} onClick={() => onNavigate("/bids")}>
+          <Button size="sm" variant="outline" className={cn("h-7 text-xs rounded-lg", isLight ? "border-emerald-200" : "border-emerald-500/30")} onClick={() => onNavigate("/bids")}>
             <Gavel className="w-3 h-3 mr-1" />My Bids
           </Button>
         </div>
@@ -115,14 +115,14 @@ function RoleContextPanel({ role, isLight, onNavigate, stats }: { role: string; 
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <TrendingUp className="w-4 h-4 text-purple-500" />
           <span className={cn("text-xs font-semibold", isLight ? "text-purple-700" : "text-purple-400")}>Broker View</span>
-          <span className="text-[10px] text-slate-400">•</span>
-          <span className="text-[10px] text-slate-400">{stats.total} loads • {stats.posted} open</span>
+          <span className="text-xs text-slate-400">•</span>
+          <span className="text-xs text-slate-400">{stats.total} loads • {stats.posted} open</span>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" className="h-7 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg" onClick={() => onNavigate("/loads/create")}>
+          <Button size="sm" className="h-7 text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg" onClick={() => onNavigate("/loads/create")}>
             <Plus className="w-3 h-3 mr-1" />Broker Load
           </Button>
-          <Button size="sm" variant="outline" className={cn("h-7 text-[10px] rounded-lg", isLight ? "border-purple-200" : "border-purple-500/30")} onClick={() => onNavigate("/carrier-intelligence")}>
+          <Button size="sm" variant="outline" className={cn("h-7 text-xs rounded-lg", isLight ? "border-purple-200" : "border-purple-500/30")} onClick={() => onNavigate("/carrier-intelligence")}>
             Match Carrier
           </Button>
         </div>
@@ -136,11 +136,11 @@ function RoleContextPanel({ role, isLight, onNavigate, stats }: { role: string; 
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <Navigation className="w-4 h-4 text-amber-500" />
           <span className={cn("text-xs font-semibold", isLight ? "text-amber-700" : "text-amber-400")}>Dispatch View</span>
-          <span className="text-[10px] text-slate-400">•</span>
-          <span className="text-[10px] text-slate-400">{stats.inTransit} active • {stats.posted} awaiting assignment</span>
+          <span className="text-xs text-slate-400">•</span>
+          <span className="text-xs text-slate-400">{stats.inTransit} active • {stats.posted} awaiting assignment</span>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" className={cn("h-7 text-[10px] rounded-lg", isLight ? "border-amber-200" : "border-amber-500/30")} onClick={() => onNavigate("/mission-balancer")}>
+          <Button size="sm" variant="outline" className={cn("h-7 text-xs rounded-lg", isLight ? "border-amber-200" : "border-amber-500/30")} onClick={() => onNavigate("/mission-balancer")}>
             Assign Loads
           </Button>
         </div>
@@ -286,11 +286,11 @@ export default function LoadBoard() {
               {formatMonthYear(selectedDate)}
             </p>
             {dateFilterActive ? (
-              <button onClick={() => setDateFilterActive(false)} className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-medium">
+              <button onClick={() => setDateFilterActive(false)} className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-medium">
                 Show All
               </button>
             ) : (
-              <button onClick={() => setDateFilterActive(true)} className={cn("text-[10px] px-2 py-0.5 rounded-full font-medium border", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-slate-700")}>
+              <button onClick={() => setDateFilterActive(true)} className={cn("text-xs px-2 py-0.5 rounded-full font-medium border", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-100" : "border-slate-600 text-slate-400 hover:bg-slate-700")}>
                 Showing All
               </button>
             )}
@@ -316,7 +316,7 @@ export default function LoadBoard() {
                       : isLight ? "hover:bg-slate-50 text-slate-600" : "hover:bg-slate-700/50 text-slate-400"
                 )}
               >
-                <span className="text-[10px] font-medium mb-0.5">{DAY_LABELS[day.getDay()]}</span>
+                <span className="text-xs font-medium mb-0.5">{DAY_LABELS[day.getDay()]}</span>
                 <span className={cn("text-base font-bold", isSelected ? "text-white" : "")}>{day.getDate()}</span>
               </button>
             );

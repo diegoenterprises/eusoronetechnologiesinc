@@ -192,7 +192,7 @@ export function HOSMonitor({ data, onStatusChange, onRefresh, isDriver = false }
             <div className="relative">
               <Progress value={drivingPercentage} className="h-3 bg-slate-700" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[10px] text-white font-medium">
+                <span className="text-xs text-white font-medium">
                   {formatMinutes(drivingTotal - data.drivingRemaining)} / {formatMinutes(drivingTotal)}
                 </span>
               </div>
@@ -216,7 +216,7 @@ export function HOSMonitor({ data, onStatusChange, onRefresh, isDriver = false }
             <div className="relative">
               <Progress value={dutyPercentage} className="h-3 bg-slate-700" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[10px] text-white font-medium">
+                <span className="text-xs text-white font-medium">
                   {formatMinutes(dutyTotal - data.dutyRemaining)} / {formatMinutes(dutyTotal)}
                 </span>
               </div>
@@ -242,7 +242,7 @@ export function HOSMonitor({ data, onStatusChange, onRefresh, isDriver = false }
             <div className="relative">
               <Progress value={cyclePercentage} className="h-3 bg-slate-700" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[10px] text-white font-medium">
+                <span className="text-xs text-white font-medium">
                   {formatMinutes(data.cycleUsed)} / {formatMinutes(cycleTotal)}
                 </span>
               </div>

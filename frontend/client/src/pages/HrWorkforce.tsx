@@ -108,7 +108,7 @@ function StatCard({
         {change !== undefined && change !== 0 && (
           <span
             className={cn(
-              "flex items-center gap-0.5 text-[10px] font-bold",
+              "flex items-center gap-0.5 text-xs font-bold",
               change >= 0 ? "text-green-500" : "text-red-500"
             )}
           >
@@ -213,7 +213,7 @@ function StatusBadge({
   return (
     <span
       className={cn(
-        "px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide",
+        "px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wide",
         s.bg,
         s.text
       )}
@@ -369,12 +369,13 @@ function DashboardTab({ L }: { L: boolean }) {
 
         <SectionCard title="Upcoming Deadlines" L={L} icon={Calendar}>
           <div className="space-y-3">
-            {[
-              { label: "EEO-1 Report Filing", date: "Mar 31, 2026", urgency: "high" },
-              { label: "OSHA 300A Posting", date: "Apr 30, 2026", urgency: "medium" },
-              { label: "DOT Random Drug Test (Q2)", date: "Jun 30, 2026", urgency: "low" },
-              { label: "Open Enrollment", date: "Nov 1, 2026", urgency: "low" },
-            ].map((dl) => (
+            {/* TODO: Replace with trpc query for compliance deadlines (e.g. trpc.compliance.getUpcomingDeadlines) */}
+            {([] as { label: string; date: string; urgency: string }[]).length === 0 && (
+              <div className={cn("text-xs text-center py-4", L ? "text-slate-400" : "text-slate-500")}>
+                No upcoming deadlines — connect compliance data source
+              </div>
+            )}
+            {([] as { label: string; date: string; urgency: string }[]).map((dl) => (
               <div key={dl.label} className="flex items-center gap-3">
                 <div
                   className={cn(
@@ -390,7 +391,7 @@ function DashboardTab({ L }: { L: boolean }) {
                   <div className={cn("text-xs font-medium truncate", L ? "text-slate-700" : "text-slate-200")}>
                     {dl.label}
                   </div>
-                  <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>
+                  <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>
                     {dl.date}
                   </div>
                 </div>
@@ -438,7 +439,7 @@ function RecruitingTab({ L }: { L: boolean }) {
                     opacity: 0.85,
                   }}
                 />
-                <span className={cn("text-[10px] font-medium text-center", L ? "text-slate-600" : "text-slate-400")}>
+                <span className={cn("text-xs font-medium text-center", L ? "text-slate-600" : "text-slate-400")}>
                   {stage.label}
                 </span>
               </div>
@@ -447,15 +448,15 @@ function RecruitingTab({ L }: { L: boolean }) {
         </div>
         <div className="flex gap-6 mt-4 pt-3 border-t border-slate-700/20">
           <div>
-            <span className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>Conversion</span>
+            <span className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>Conversion</span>
             <div className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>{pipeline?.conversionRate || 0}%</div>
           </div>
           <div>
-            <span className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>Avg Time to Hire</span>
+            <span className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>Avg Time to Hire</span>
             <div className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>{pipeline?.avgTimeToHire || 0} days</div>
           </div>
           <div>
-            <span className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>Cost/Hire</span>
+            <span className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>Cost/Hire</span>
             <div className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>{fmt$(pipeline?.costPerHire || 0)}</div>
           </div>
         </div>
@@ -527,8 +528,8 @@ function RecruitingTab({ L }: { L: boolean }) {
           {(pipeline?.sourceBreakdown || []).map((src: any) => (
             <div key={src.source} className={cn("p-3 rounded-xl text-center", L ? "bg-slate-50" : "bg-slate-700/30")}>
               <div className={cn("text-lg font-bold", L ? "text-slate-800" : "text-white")}>{src.count}</div>
-              <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-400")}>{src.source}</div>
-              <div className="text-[10px] text-violet-500 font-semibold">{src.percentage}%</div>
+              <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-400")}>{src.source}</div>
+              <div className="text-xs text-violet-500 font-semibold">{src.percentage}%</div>
             </div>
           ))}
         </div>
@@ -571,7 +572,7 @@ function OnboardingTab({ L }: { L: boolean }) {
           return (
             <SectionCard key={phase.id} title={phase.label} L={L} icon={FileText}>
               <div className="mb-3">
-                <div className="flex justify-between text-[10px] mb-1">
+                <div className="flex justify-between text-xs mb-1">
                   <span className={L ? "text-slate-500" : "text-slate-400"}>
                     {completed}/{total} complete
                   </span>
@@ -622,7 +623,7 @@ function OnboardingTab({ L }: { L: boolean }) {
                       </div>
                       <div
                         className={cn(
-                          "text-[10px]",
+                          "text-xs",
                           L ? "text-slate-400" : "text-slate-500"
                         )}
                       >
@@ -707,7 +708,7 @@ function PayrollTab({ L }: { L: boolean }) {
                   <div className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>
                     {adj.description}
                   </div>
-                  <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-400")}>
+                  <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-400")}>
                     {adj.driverCount} driver(s) affected
                   </div>
                 </div>
@@ -773,7 +774,7 @@ function TimeTrackingTab({ L }: { L: boolean }) {
                 </div>
                 <div className="flex items-center gap-2">
                   {rec.violations > 0 && (
-                    <Badge variant="destructive" className="text-[10px]">
+                    <Badge variant="destructive" className="text-xs">
                       {rec.violations} violation(s)
                     </Badge>
                   )}
@@ -789,7 +790,7 @@ function TimeTrackingTab({ L }: { L: boolean }) {
                 ].map((m) => (
                   <div key={m.label} className="text-center">
                     <div className={cn("text-xs font-bold", m.color)}>{m.value}</div>
-                    <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>{m.label}</div>
+                    <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>{m.label}</div>
                   </div>
                 ))}
               </div>
@@ -858,8 +859,8 @@ function PerformanceTab({ L }: { L: boolean }) {
                   <div className="grid grid-cols-5 gap-1">
                     {Object.entries(rev.categories).map(([k, v]) => (
                       <div key={k} className="text-center">
-                        <div className="text-[10px] text-violet-400 font-bold">{v as number}</div>
-                        <div className={cn("text-[9px] capitalize", L ? "text-slate-400" : "text-slate-500")}>
+                        <div className="text-xs text-violet-400 font-bold">{v as number}</div>
+                        <div className={cn("text-xs capitalize", L ? "text-slate-400" : "text-slate-500")}>
                           {k.replace(/([A-Z])/g, " $1").trim()}
                         </div>
                       </div>
@@ -934,7 +935,7 @@ function BenefitsTab({ L }: { L: boolean }) {
                   <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>
                     {plan.name}
                   </span>
-                  <Badge className="ml-2 text-[10px] bg-violet-500/20 text-violet-400">{plan.type}</Badge>
+                  <Badge className="ml-2 text-xs bg-violet-500/20 text-violet-400">{plan.type}</Badge>
                 </div>
                 <span className={cn("text-sm font-bold", L ? "text-slate-800" : "text-white")}>
                   {plan.enrolled} enrolled
@@ -945,7 +946,7 @@ function BenefitsTab({ L }: { L: boolean }) {
                   <div className={cn("text-xs font-bold", L ? "text-slate-700" : "text-slate-200")}>
                     {fmt$(plan.monthlyCost)}
                   </div>
-                  <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>
+                  <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>
                     Total/mo
                   </div>
                 </div>
@@ -953,7 +954,7 @@ function BenefitsTab({ L }: { L: boolean }) {
                   <div className="text-xs font-bold text-green-500">
                     {fmt$(plan.employerContribution)}
                   </div>
-                  <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>
+                  <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>
                     Employer
                   </div>
                 </div>
@@ -961,7 +962,7 @@ function BenefitsTab({ L }: { L: boolean }) {
                   <div className="text-xs font-bold text-amber-500">
                     {fmt$(plan.employeeContribution)}
                   </div>
-                  <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>
+                  <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>
                     Employee
                   </div>
                 </div>
@@ -1006,7 +1007,7 @@ function CompensationTab({ L }: { L: boolean }) {
         L={L}
         icon={BarChart3}
         action={
-          <span className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>
+          <span className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>
             Source: {comp.dataSource} | Updated: {fmtDate(comp.lastUpdated)}
           </span>
         }
@@ -1026,7 +1027,7 @@ function CompensationTab({ L }: { L: boolean }) {
                 </span>
                 <Badge
                   className={cn(
-                    "text-[10px]",
+                    "text-xs",
                     pos.percentile >= 70
                       ? "bg-green-500/20 text-green-500"
                       : pos.percentile >= 50
@@ -1039,7 +1040,7 @@ function CompensationTab({ L }: { L: boolean }) {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>Company Avg</div>
+                  <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>Company Avg</div>
                   <div className="text-sm font-bold text-violet-500">
                     {pos.unit === "salary"
                       ? fmt$(pos.companyAvg)
@@ -1049,7 +1050,7 @@ function CompensationTab({ L }: { L: boolean }) {
                   </div>
                 </div>
                 <div>
-                  <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>Market Avg</div>
+                  <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>Market Avg</div>
                   <div className={cn("text-sm font-bold", L ? "text-slate-700" : "text-slate-300")}>
                     {pos.unit === "salary"
                       ? fmt$(pos.marketAvg)
@@ -1059,7 +1060,7 @@ function CompensationTab({ L }: { L: boolean }) {
                   </div>
                 </div>
                 <div>
-                  <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>Difference</div>
+                  <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>Difference</div>
                   <div className={cn("text-sm font-bold", pos.companyAvg >= pos.marketAvg ? "text-green-500" : "text-red-400")}>
                     {pos.companyAvg >= pos.marketAvg ? "+" : ""}
                     {pos.unit === "salary"
@@ -1103,11 +1104,11 @@ function OrgChartTab({ L }: { L: boolean }) {
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className={cn("p-3 rounded-xl text-center", L ? "bg-slate-50" : "bg-slate-700/30")}>
               <div className={cn("text-2xl font-bold", L ? "text-slate-800" : "text-white")}>{org.totalEmployees}</div>
-              <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-400")}>Total Employees</div>
+              <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-400")}>Total Employees</div>
             </div>
             <div className={cn("p-3 rounded-xl text-center", L ? "bg-slate-50" : "bg-slate-700/30")}>
               <div className={cn("text-2xl font-bold text-violet-500")}>{org.departments.length}</div>
-              <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-400")}>Departments</div>
+              <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-400")}>Departments</div>
             </div>
           </div>
           <div className="space-y-2">
@@ -1166,7 +1167,7 @@ function OrgChartTab({ L }: { L: boolean }) {
                         <span className={cn("text-xs", L ? "text-slate-600" : "text-slate-300")}>
                           {s.name}
                         </span>
-                        <Badge className="text-[9px] bg-violet-500/20 text-violet-400">
+                        <Badge className="text-xs bg-violet-500/20 text-violet-400">
                           {s.readiness.replace(/_/g, " ")}
                         </Badge>
                       </div>
@@ -1203,7 +1204,7 @@ function OrgChartTab({ L }: { L: boolean }) {
                   <div className={cn("text-xs font-medium truncate", L ? "text-slate-700" : "text-slate-200")}>
                     {node.name}
                   </div>
-                  <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>
+                  <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>
                     {node.role}
                   </div>
                 </div>
@@ -1251,7 +1252,7 @@ function ComplianceTab({ L }: { L: boolean }) {
                   <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>
                     {cat.name}
                   </span>
-                  <Badge className="text-[9px] bg-slate-500/20 text-slate-400">{cat.id}</Badge>
+                  <Badge className="text-xs bg-slate-500/20 text-slate-400">{cat.id}</Badge>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-violet-500">{cat.score}%</span>
@@ -1272,7 +1273,7 @@ function ComplianceTab({ L }: { L: boolean }) {
                   </div>
                 ))}
               </div>
-              <div className={cn("text-[10px] mt-1", L ? "text-slate-400" : "text-slate-500")}>
+              <div className={cn("text-xs mt-1", L ? "text-slate-400" : "text-slate-500")}>
                 Last audit: {fmtDate(cat.lastAudit)}
               </div>
             </div>
@@ -1322,7 +1323,7 @@ function ComplianceTab({ L }: { L: boolean }) {
                 <div className={cn("text-xs mb-1", L ? "text-slate-700" : "text-slate-300")}>
                   {c.subject}
                 </div>
-                <div className={cn("text-[10px]", L ? "text-slate-500" : "text-slate-500")}>
+                <div className={cn("text-xs", L ? "text-slate-500" : "text-slate-500")}>
                   {c.type} | {c.priority} priority | {c.assignedTo} | Opened: {fmtDate(c.openedAt)}
                 </div>
               </div>

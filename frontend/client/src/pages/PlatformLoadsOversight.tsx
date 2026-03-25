@@ -129,14 +129,14 @@ export default function PlatformLoadsOversight() {
                       <p className="text-white text-sm font-medium truncate">
                         {originCity || originState || "Origin"} <span className="text-slate-500 mx-1">-&gt;</span> {destCity || destState || "Dest"}
                       </p>
-                      <p className="text-[10px] text-slate-500 truncate">{getLoadTitle(l)} {l.weight ? `| ${l.weight} lbs` : ""}</p>
+                      <p className="text-xs text-slate-500 truncate">{getLoadTitle(l)} {l.weight ? `| ${l.weight} lbs` : ""}</p>
                     </div>
                     <div className="col-span-2">
                       <div className="flex items-center gap-2">
                         {(l.shipperProfilePicture || l.companyLogo) && <img src={l.shipperProfilePicture || l.companyLogo} className="w-6 h-6 rounded-full object-cover" alt={`${l.shipperName || l.companyName || 'Shipper'} photo`} />}
                         <div>
                           <p className="text-white text-xs truncate">{l.shipperName || "—"}</p>
-                          <p className="text-[10px] text-slate-500 truncate">{l.companyName || ""}</p>
+                          <p className="text-xs text-slate-500 truncate">{l.companyName || ""}</p>
                         </div>
                       </div>
                     </div>
@@ -144,7 +144,7 @@ export default function PlatformLoadsOversight() {
                       <div className="flex items-center gap-2">
                         <div>
                           <p className="text-white text-xs truncate">{l.catalystName || "Unassigned"}</p>
-                          <p className="text-[10px] text-slate-500 truncate">{l.catalystCompanyName || ""}</p>
+                          <p className="text-xs text-slate-500 truncate">{l.catalystCompanyName || ""}</p>
                         </div>
                       </div>
                     </div>
@@ -152,12 +152,12 @@ export default function PlatformLoadsOversight() {
                       <span className="text-emerald-400 font-medium text-sm">${(l.rate || 0).toLocaleString()}</span>
                     </div>
                     <div className="col-span-1">
-                      <Badge className={`border-0 text-[10px] ${st.bg} ${st.color} gap-1`}>
+                      <Badge className={`border-0 text-xs ${st.bg} ${st.color} gap-1`}>
                         {st.icon}{st.label}
                       </Badge>
                     </div>
                     <div className="col-span-1">
-                      <span className="text-[10px] text-slate-500">{l.createdAt || ""}</span>
+                      <span className="text-xs text-slate-500">{l.createdAt || ""}</span>
                     </div>
                     <div className="col-span-1 flex justify-end">
                       <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-8 w-8 p-0" onClick={() => nav(`/loads/${l.id}`)}>

@@ -164,7 +164,7 @@ export default function EvacuationDistance() {
                   <p className={cn("text-2xl font-black tabular-nums", isLight ? "text-red-600" : "text-red-400")}>
                     {getDistances(activeClass).isolationFt}
                   </p>
-                  <p className={cn("text-[10px] font-medium", isLight ? "text-red-500" : "text-red-400/70")}>
+                  <p className={cn("text-xs font-medium", isLight ? "text-red-500" : "text-red-400/70")}>
                     ft isolation
                   </p>
                 </div>
@@ -172,7 +172,7 @@ export default function EvacuationDistance() {
                   <p className={cn("text-2xl font-black tabular-nums", isLight ? "text-orange-600" : "text-orange-400")}>
                     {getDistances(activeClass).protectiveMi}
                   </p>
-                  <p className={cn("text-[10px] font-medium", isLight ? "text-orange-500" : "text-orange-400/70")}>
+                  <p className={cn("text-xs font-medium", isLight ? "text-orange-500" : "text-orange-400/70")}>
                     mi downwind
                   </p>
                 </div>
@@ -268,7 +268,7 @@ export default function EvacuationDistance() {
         <CardContent>
           {/* Column headers */}
           <div className={cn(
-            "grid grid-cols-12 gap-2 px-4 py-2 rounded-lg mb-2 text-[10px] uppercase tracking-wider font-medium",
+            "grid grid-cols-12 gap-2 px-4 py-2 rounded-lg mb-2 text-xs uppercase tracking-wider font-medium",
             isLight ? "bg-slate-100 text-slate-500" : "bg-slate-700/30 text-slate-500"
           )}>
             <div className="col-span-1">Class</div>
@@ -312,7 +312,7 @@ export default function EvacuationDistance() {
                         {item.name}
                       </p>
                       {isActive && (
-                        <Badge className="bg-red-500/15 text-red-500 border-0 text-[9px] mt-0.5">YOUR LOAD</Badge>
+                        <Badge className="bg-red-500/15 text-red-500 border-0 text-xs mt-0.5">YOUR LOAD</Badge>
                       )}
                     </div>
                     <div className="col-span-1 text-center">
@@ -324,13 +324,13 @@ export default function EvacuationDistance() {
                       <p className={cn("text-lg font-bold tabular-nums", isLight ? "text-red-600" : "text-red-400")}>
                         {dist.isolationFt} ft
                       </p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>all directions</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>all directions</p>
                     </div>
                     <div className="col-span-3 text-center">
                       <p className={cn("text-lg font-bold tabular-nums", isLight ? "text-orange-600" : "text-orange-400")}>
                         {dist.protectiveMi} mi
                       </p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>downwind</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>downwind</p>
                     </div>
                   </div>
                 );

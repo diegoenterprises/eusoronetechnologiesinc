@@ -78,7 +78,7 @@ const TIER_CONFIG = {
 type RiskTier = keyof typeof TIER_CONFIG;
 
 const SIZE_CONFIG = {
-  sm: { dot: "w-2 h-2", text: "text-[10px]", badge: "px-1.5 py-0.5 gap-1", icon: 10 },
+  sm: { dot: "w-2 h-2", text: "text-xs", badge: "px-1.5 py-0.5 gap-1", icon: 10 },
   md: { dot: "w-2.5 h-2.5", text: "text-xs", badge: "px-2 py-1 gap-1.5", icon: 12 },
   lg: { dot: "w-3 h-3", text: "text-sm", badge: "px-2.5 py-1.5 gap-2", icon: 14 },
 };
@@ -160,7 +160,7 @@ export default function CarrierSafetyBadge({
               <>
                 {/* BASICs Summary */}
                 <div className="space-y-1 mb-2">
-                  <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">BASICs Scores</div>
+                  <div className="text-xs text-slate-500 uppercase tracking-wider font-medium">BASICs Scores</div>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
                     <BasicRow label="Unsafe Driving" value={profile.unsafeDrivingPercentile} alert={profile.unsafeDrivingAlert} />
                     <BasicRow label="HOS" value={profile.hosPercentile} alert={profile.hosAlert} />

@@ -56,7 +56,7 @@ export default function DriverPositionCard({ driverId, driverName, loadNumber, c
             </div>
             <div>
               {driverName && <p className="text-sm font-medium">{driverName}</p>}
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {position?.lat?.toFixed(5)}, {position?.lng?.toFixed(5)}
               </p>
             </div>
@@ -76,19 +76,19 @@ export default function DriverPositionCard({ driverId, driverName, loadNumber, c
             <div className="p-1.5 rounded-md bg-muted/50">
               <Gauge className="h-3.5 w-3.5 mx-auto text-blue-500" />
               <p className="text-xs font-semibold mt-0.5">{Math.round(position.speed)} mph</p>
-              <p className="text-[9px] text-muted-foreground">Speed</p>
+              <p className="text-xs text-muted-foreground">Speed</p>
             </div>
             <div className="p-1.5 rounded-md bg-muted/50">
               <Navigation2 className="h-3.5 w-3.5 mx-auto text-blue-500" style={{ transform: `rotate(${position.heading}deg)` }} />
               <p className="text-xs font-semibold mt-0.5">{Math.round(position.heading)}</p>
-              <p className="text-[9px] text-muted-foreground">Heading</p>
+              <p className="text-xs text-muted-foreground">Heading</p>
             </div>
             <div className="p-1.5 rounded-md bg-muted/50">
               <MapPin className="h-3.5 w-3.5 mx-auto text-blue-500" />
               <p className="text-xs font-semibold mt-0.5">
                 {position.updatedAt ? new Date(position.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--"}
               </p>
-              <p className="text-[9px] text-muted-foreground">Updated</p>
+              <p className="text-xs text-muted-foreground">Updated</p>
             </div>
           </div>
         )}

@@ -250,10 +250,10 @@ function DashboardTab({ isLight = false, cardCls = "", headerCls = "", mutedCls 
           <CardHeader className="pb-3">
             <CardTitle className={cn(headerCls, "flex items-center gap-2")}>
               <Clock className="w-5 h-5 text-cyan-400" /> Live Border Wait Times
-              {w?.live && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 ml-2 text-[10px]">LIVE</Badge>}
-              {w?.live === false && <Badge className="bg-red-500/20 text-red-400 border-red-500/30 ml-2 text-[10px]">UNAVAILABLE</Badge>}
+              {w?.live && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 ml-2 text-xs">LIVE</Badge>}
+              {w?.live === false && <Badge className="bg-red-500/20 text-red-400 border-red-500/30 ml-2 text-xs">UNAVAILABLE</Badge>}
             </CardTitle>
-            {w?.dataSource && <p className="text-[10px] text-slate-500 mt-0.5">{w.dataSource}</p>}
+            {w?.dataSource && <p className="text-xs text-slate-500 mt-0.5">{w.dataSource}</p>}
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -261,7 +261,7 @@ function DashboardTab({ isLight = false, cardCls = "", headerCls = "", mutedCls 
                 <div key={p.id} className={cn("p-3 rounded-lg border text-center", severityColor(p.severity))}>
                   <div className="text-xs font-medium truncate">{p.name}</div>
                   <div className="text-xl font-bold mt-1">{p.currentWaitMinutes}m</div>
-                  <div className="text-[10px] opacity-70">{p.border}</div>
+                  <div className="text-xs opacity-70">{p.border}</div>
                 </div>
               ))}
             </div>
@@ -584,7 +584,7 @@ function DutiesCalculatorTab({ isLight = false, cardCls = "", headerCls = "", mu
                   </div>
                   <div className="flex gap-3 text-xs">
                     <span className="text-slate-400">Duty: <span className="text-white">{h.dutyRate}%</span></span>
-                    {h.usmcaEligible && <Badge className="bg-emerald-500/20 text-emerald-400 text-[10px]">USMCA Eligible</Badge>}
+                    {h.usmcaEligible && <Badge className="bg-emerald-500/20 text-emerald-400 text-xs">USMCA Eligible</Badge>}
                   </div>
                 </div>
               ))}
@@ -734,7 +734,7 @@ function ComplianceTab({ isLight = false, cardCls = "", headerCls = "", mutedCls
                     <span className="text-sm text-white">{r.area}</span>
                     <span className={cn("text-sm font-bold", r.score >= 90 ? "text-emerald-400" : "text-amber-400")}>{r.score}</span>
                   </div>
-                  <Badge className={cn("mt-1 text-[10px]", r.status === "compliant" ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400")}>
+                  <Badge className={cn("mt-1 text-xs", r.status === "compliant" ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400")}>
                     {r.status}
                   </Badge>
                 </div>
@@ -828,7 +828,7 @@ function ComplianceTab({ isLight = false, cardCls = "", headerCls = "", mutedCls
                     <span className="text-sm font-medium text-white">{rule.country}</span>
                   </div>
                   <p className="text-xs text-slate-300 mt-1">{rule.description}</p>
-                  <p className="text-[10px] text-red-400 mt-1">Penalty: {rule.penalty}</p>
+                  <p className="text-xs text-red-400 mt-1">Penalty: {rule.penalty}</p>
                 </div>
               ))}
             </CardContent>
@@ -1052,10 +1052,10 @@ function BrokersTab({ isLight = false, cardCls = "", headerCls = "", mutedCls = 
               </div>
               <div className="flex flex-wrap gap-1 mb-3">
                 {broker.specialties?.map((s: string) => (
-                  <Badge key={s} className="bg-teal-500/10 text-teal-300 border-teal-500/20 text-[10px]">{s}</Badge>
+                  <Badge key={s} className="bg-teal-500/10 text-teal-300 border-teal-500/20 text-xs">{s}</Badge>
                 ))}
               </div>
-              <div className="flex gap-2 text-[10px]">
+              <div className="flex gap-2 text-xs">
                 {broker.ctpatCertified && <Badge className="bg-emerald-500/10 text-emerald-400">C-TPAT</Badge>}
                 {broker.fastCertified && <Badge className="bg-cyan-500/10 text-cyan-400">FAST</Badge>}
                 {broker.hazmatCapable && <Badge className="bg-amber-500/10 text-amber-400">HAZMAT</Badge>}
@@ -1106,7 +1106,7 @@ function ExportControlTab({ isLight = false, cardCls = "", headerCls = "", muted
         <CardHeader className="pb-3">
           <CardTitle className={cn(headerCls, "flex items-center gap-2")}>
             <Lock className="w-5 h-5 text-red-400" /> Export Control Screening
-            {sr && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 ml-2 text-[10px]">LIVE OFAC</Badge>}
+            {sr && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 ml-2 text-xs">LIVE OFAC</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -1154,7 +1154,7 @@ function ExportControlTab({ isLight = false, cardCls = "", headerCls = "", muted
                     <div key={i} className="p-3 rounded-lg bg-red-500/5 border border-red-500/20">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-white">{m.name}</span>
-                        <Badge className={cn("text-[10px]", m.score >= 95 ? "bg-red-500/20 text-red-400 border-red-500/30" : m.score >= 85 ? "bg-orange-500/20 text-orange-400 border-orange-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30")}>
+                        <Badge className={cn("text-xs", m.score >= 95 ? "bg-red-500/20 text-red-400 border-red-500/30" : m.score >= 85 ? "bg-orange-500/20 text-orange-400 border-orange-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30")}>
                           {m.score}% match
                         </Badge>
                       </div>
@@ -1393,7 +1393,7 @@ function MiniStat({ label, value, color }: { label: string; value: string | numb
   };
   return (
     <div className="p-2 rounded-lg bg-slate-800/50 border border-slate-700/30">
-      <div className="text-[10px] text-slate-500">{label}</div>
+      <div className="text-xs text-slate-500">{label}</div>
       <div className={cn("text-sm font-semibold", textMap[color] || "text-white")}>{value}</div>
     </div>
   );

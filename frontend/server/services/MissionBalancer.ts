@@ -10,6 +10,10 @@
  * 6. Fatigue management — prevent driver burnout patterns
  */
 
+import { getDb } from "../db";
+import { drivers, users, loads, vehicles } from "../../drizzle/schema";
+import { eq, and, inArray, gte, sql, isNull } from "drizzle-orm";
+
 export interface DriverMission {
   driverId: string;
   driverName: string;
@@ -78,69 +82,198 @@ export interface MissionDashboard {
   };
 }
 
-// ── Sample Data Generators ──
+// ── Real Data Queries ──
 
-const DRIVER_NAMES = [
-  "Mike Rodriguez", "Sarah Chen", "James Wilson", "Maria Garcia", "David Kim",
-  "Lisa Thompson", "Robert Johnson", "Emily Davis", "Carlos Martinez", "Angela Brown",
-];
+async function generateDrivers(): Promise<DriverMission[]> {
+  const db = await getDb();
 
-const CITIES: { city: string; state: string }[] = [
-  { city: "Houston", state: "TX" }, { city: "Dallas", state: "TX" }, { city: "Los Angeles", state: "CA" },
-  { city: "Chicago", state: "IL" }, { city: "Atlanta", state: "GA" }, { city: "Miami", state: "FL" },
-  { city: "Phoenix", state: "AZ" }, { city: "Columbus", state: "OH" }, { city: "Charlotte", state: "NC" },
-  { city: "Nashville", state: "TN" }, { city: "Memphis", state: "TN" }, { city: "New Orleans", state: "LA" },
-];
+  // Get active drivers joined with user info
+  const driverRows = await db
+    .select({
+      driverId: drivers.id,
+      userId: drivers.userId,
+      driverName: users.name,
+      currentLocation: users.currentLocation,
+      status: drivers.status,
+      totalMiles: drivers.totalMiles,
+      totalLoads: drivers.totalLoads,
+    })
+    .from(drivers)
+    .innerJoin(users, eq(drivers.userId, users.id))
+    .where(
+      and(
+        inArray(drivers.status, ["active", "available"]),
+        eq(users.isActive, true)
+      )
+    );
 
-function generateDrivers(): DriverMission[] {
-  return DRIVER_NAMES.map((name, i) => {
-    const loc = CITIES[i % CITIES.length];
-    // Deterministic values based on driver index (no Math.random)
-    const seed = ((i * 7 + 3) % 11);
-    const hoursUsed = 2 + (seed / 11) * 8;
-    const loads = 1 + (seed % 5);
-    const loadedMiles = loads * (200 + (seed / 11) * 600);
-    const deadhead = loadedMiles * (0.05 + (seed / 11) * 0.25);
-    const revenue = loadedMiles * (2.0 + (seed / 11) * 1.0);
-    const utilization = Math.min(100, (hoursUsed / 11) * 100);
-    const fatigue = Math.min(100, hoursUsed * 8 + loads * 5 + seed);
+  if (driverRows.length === 0) return [];
+
+  // Start of current week (Monday 00:00)
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+  monday.setHours(0, 0, 0, 0);
+
+  // Start of today
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+
+  // Get weekly load stats per driver (loads completed/in-transit this week)
+  const driverIds = driverRows.map((d) => d.userId);
+  const weeklyStats = await db
+    .select({
+      driverId: loads.driverId,
+      loadsThisWeek: sql<number>`COUNT(*)`.as("loadsThisWeek"),
+      revenueThisWeek: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL(12,2))), 0)`.as("revenueThisWeek"),
+      loadedMiles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL(12,2))), 0)`.as("loadedMiles"),
+    })
+    .from(loads)
+    .where(
+      and(
+        inArray(loads.driverId, driverIds),
+        gte(loads.createdAt, monday),
+        inArray(loads.status, [
+          "accepted", "assigned", "confirmed",
+          "en_route_pickup", "at_pickup", "loading", "loaded",
+          "in_transit", "at_delivery", "unloading", "delivered",
+          "complete",
+        ])
+      )
+    )
+    .groupBy(loads.driverId);
+
+  const statsMap = new Map(weeklyStats.map((s) => [s.driverId, s]));
+
+  // Get vehicle equipment type per driver
+  const vehicleRows = await db
+    .select({
+      currentDriverId: vehicles.currentDriverId,
+      vehicleType: vehicles.vehicleType,
+    })
+    .from(vehicles)
+    .where(
+      and(
+        inArray(vehicles.currentDriverId, driverIds),
+        eq(vehicles.status, "in_use")
+      )
+    );
+
+  const vehicleMap = new Map(vehicleRows.map((v) => [v.currentDriverId, v.vehicleType]));
+
+  return driverRows.map((d) => {
+    const stats = statsMap.get(d.userId);
+    const loadsThisWeek = stats?.loadsThisWeek ?? 0;
+    const revenueThisWeek = Number(stats?.revenueThisWeek ?? 0);
+    const loadedMiles = Number(stats?.loadedMiles ?? 0);
+
+    // Estimate deadhead as ~15% of loaded miles (industry avg when no tracking data)
+    const deadheadMiles = Math.round(loadedMiles * 0.15);
+
+    // Estimate hours used today based on loads in transit today
+    // Rough heuristic: each load ~ 3 hrs driving today
+    const hoursUsedToday = Math.min(11, loadsThisWeek > 0 ? Math.min(8, loadsThisWeek * 1.5) : 0);
+    const hoursAvailable = Math.max(0, 11 - hoursUsedToday);
+
+    const utilization = hoursUsedToday > 0 ? Math.min(100, Math.round((hoursUsedToday / 11) * 100)) : 0;
+    const fatigue = Math.min(100, Math.round(hoursUsedToday * 8 + loadsThisWeek * 5));
+
+    const loc = d.currentLocation as { lat?: number; lng?: number; city?: string; state?: string } | null;
+    const city = loc?.city ?? "Unknown";
+    const state = loc?.state ?? "XX";
+
+    const equipmentType = vehicleMap.get(d.userId) ?? "dry_van";
 
     return {
-      driverId: `DRV-${100 + i}`,
-      driverName: name,
-      currentLocation: loc,
-      hoursAvailable: Math.max(0, 11 - hoursUsed),
-      hoursUsedToday: Math.round(hoursUsed * 10) / 10,
-      loadsThisWeek: loads,
-      revenueThisWeek: Math.round(revenue),
-      deadheadMilesThisWeek: Math.round(deadhead),
+      driverId: `DRV-${d.driverId}`,
+      driverName: d.driverName ?? `Driver #${d.driverId}`,
+      currentLocation: { state, city },
+      hoursAvailable: Math.round(hoursAvailable * 10) / 10,
+      hoursUsedToday: Math.round(hoursUsedToday * 10) / 10,
+      loadsThisWeek,
+      revenueThisWeek: Math.round(revenueThisWeek),
+      deadheadMilesThisWeek: deadheadMiles,
       loadedMilesThisWeek: Math.round(loadedMiles),
-      utilizationPct: Math.round(utilization),
-      fatigueScore: Math.round(fatigue),
-      preferredLanes: [`${loc.state}-${CITIES[(i + 3) % CITIES.length].state}`],
-      equipmentType: i % 3 === 0 ? "reefer" : i % 3 === 1 ? "flatbed" : "dry_van",
+      utilizationPct: utilization,
+      fatigueScore: fatigue,
+      preferredLanes: [`${state}-*`],
+      equipmentType,
     };
   });
 }
 
-function generatePendingLoads(): LoadCandidate[] {
-  // Real implementation: query unassigned loads from database
-  return Array.from({ length: 8 }, (_, i) => {
-    const origIdx = (i * 3) % CITIES.length;
-    const destIdx = (i * 3 + 5) % CITIES.length;
-    const orig = CITIES[origIdx];
-    const dest = origIdx === destIdx ? CITIES[(destIdx + 1) % CITIES.length] : CITIES[destIdx];
-    const dist = 200 + ((i * 137 + 51) % 15) * 100;
+async function generatePendingLoads(): Promise<LoadCandidate[]> {
+  const db = await getDb();
+
+  // Query loads that are pending assignment (posted, bidding, accepted but no driver)
+  const pendingRows = await db
+    .select({
+      id: loads.id,
+      loadNumber: loads.loadNumber,
+      pickupLocation: loads.pickupLocation,
+      deliveryLocation: loads.deliveryLocation,
+      originState: loads.originState,
+      destState: loads.destState,
+      distance: loads.distance,
+      rate: loads.rate,
+      pickupDate: loads.pickupDate,
+      cargoType: loads.cargoType,
+      weight: loads.weight,
+      status: loads.status,
+      createdAt: loads.createdAt,
+    })
+    .from(loads)
+    .where(
+      and(
+        inArray(loads.status, ["posted", "bidding", "accepted", "awarded"]),
+        isNull(loads.driverId),
+        isNull(loads.deletedAt)
+      )
+    )
+    .orderBy(loads.pickupDate)
+    .limit(50);
+
+  return pendingRows.map((row, i) => {
+    const pickup = row.pickupLocation as { city?: string; state?: string } | null;
+    const delivery = row.deliveryLocation as { city?: string; state?: string } | null;
+
+    const originCity = pickup?.city ?? "Unknown";
+    const originState = pickup?.state ?? row.originState ?? "XX";
+    const destCity = delivery?.city ?? "Unknown";
+    const destState = delivery?.state ?? row.destState ?? "XX";
+
+    const dist = Number(row.distance ?? 0);
+    const rate = Number(row.rate ?? 0);
+
+    // Map cargoType to equipment requirement
+    let equipmentRequired = "dry_van";
+    if (row.cargoType === "refrigerated" || row.cargoType === "food_grade") {
+      equipmentRequired = "reefer";
+    } else if (row.cargoType === "oversized" || row.cargoType === "timber") {
+      equipmentRequired = "flatbed";
+    } else if (row.cargoType === "liquid" || row.cargoType === "petroleum" || row.cargoType === "chemicals" || row.cargoType === "cryogenic") {
+      equipmentRequired = "tanker";
+    }
+
+    // Priority based on how soon pickup is
+    let priority: "standard" | "hot" | "critical" = "standard";
+    if (row.pickupDate) {
+      const hoursUntilPickup = (new Date(row.pickupDate).getTime() - Date.now()) / 3600000;
+      if (hoursUntilPickup <= 4) priority = "critical";
+      else if (hoursUntilPickup <= 12) priority = "hot";
+    }
+
     return {
-      loadId: `LD-${50000 + i}`,
-      origin: orig,
-      destination: dest,
+      loadId: row.loadNumber,
+      origin: { state: originState, city: originCity },
+      destination: { state: destState, city: destCity },
       distance: Math.round(dist),
-      rate: Math.round(dist * 2.50),
-      pickupTime: new Date(Date.now() + (1 + i * 6) * 3600000).toISOString(),
-      equipmentRequired: i % 3 === 0 ? "reefer" : i % 3 === 1 ? "flatbed" : "dry_van",
-      weight: 30000 + (i * 2500),
-      priority: i < 2 ? "critical" : i < 4 ? "hot" : "standard",
+      rate: Math.round(rate),
+      pickupTime: row.pickupDate ? new Date(row.pickupDate).toISOString() : new Date(Date.now() + (1 + i * 6) * 3600000).toISOString(),
+      equipmentRequired,
+      weight: Number(row.weight ?? 0),
+      priority,
     };
   });
 }
@@ -211,6 +344,22 @@ function generateAssignments(drivers: DriverMission[], loads: LoadCandidate[]): 
 }
 
 function calculateFleetBalance(drivers: DriverMission[]): FleetBalance {
+  if (drivers.length === 0) {
+    return {
+      totalDrivers: 0,
+      totalLoads: 0,
+      avgUtilization: 0,
+      utilizationStdDev: 0,
+      avgRevenuePerDriver: 0,
+      revenueStdDev: 0,
+      totalDeadheadMiles: 0,
+      deadheadRatio: 0,
+      balanceGrade: "A",
+      imbalanceAreas: [],
+      recommendations: ["No active drivers found — onboard drivers to begin optimization"],
+    };
+  }
+
   const utils = drivers.map(d => d.utilizationPct);
   const revs = drivers.map(d => d.revenueThisWeek);
   const avgUtil = utils.reduce((a, b) => a + b, 0) / utils.length;
@@ -255,26 +404,25 @@ function calculateFleetBalance(drivers: DriverMission[]): FleetBalance {
 
 // ── Main API ──
 
-export function getMissionDashboard(): MissionDashboard {
-  const drivers = generateDrivers();
-  const pendingLoads = generatePendingLoads();
-  const suggestedAssignments = generateAssignments(drivers, pendingLoads);
-  const fleetBalance = calculateFleetBalance(drivers);
+export async function getMissionDashboard(): Promise<MissionDashboard> {
+  const driverList = await generateDrivers();
+  const pendingLoads = await generatePendingLoads();
+  const suggestedAssignments = generateAssignments(driverList, pendingLoads);
+  const fleetBalance = calculateFleetBalance(driverList);
 
-  const totalCurrentDH = drivers.reduce((s, d) => s + d.deadheadMilesThisWeek, 0);
   const optimizedDH = suggestedAssignments.reduce((s, a) => s + a.deadheadMiles, 0);
   const naiveDH = suggestedAssignments.length * 250; // naive average
 
   return {
     fleetBalance,
-    drivers,
+    drivers: driverList,
     pendingLoads,
     suggestedAssignments,
     optimizationSummary: {
       estimatedDeadheadSaved: Math.max(0, naiveDH - optimizedDH),
       estimatedRevenueLift: Math.round(suggestedAssignments.reduce((s, a) => s + a.estimatedRevenue, 0) * 0.03),
-      driverBalanceImprovement: 10,
-      hosUtilizationGain: 5,
+      driverBalanceImprovement: fleetBalance.utilizationStdDev > 0 ? Math.round(Math.max(0, 25 - fleetBalance.utilizationStdDev)) : 10,
+      hosUtilizationGain: fleetBalance.avgUtilization > 0 ? Math.round(Math.min(15, 100 - fleetBalance.avgUtilization) * 0.1) : 5,
     },
   };
 }

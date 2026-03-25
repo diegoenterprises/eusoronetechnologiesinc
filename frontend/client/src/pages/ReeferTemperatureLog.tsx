@@ -216,7 +216,7 @@ export default function ReeferTemperatureLog() {
           </div>
           <div className="flex justify-between mt-1 px-1">
             {hourlyAvgs.filter((_, i) => i % 4 === 0).map((h) => (
-              <span key={h.hour} className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>
+              <span key={h.hour} className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>
                 {h.hour.toString().padStart(2, "0")}:00
               </span>
             ))}

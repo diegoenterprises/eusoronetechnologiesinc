@@ -149,7 +149,7 @@ export default function NotificationCenter() {
           <div key={s.label} className={cn("rounded-2xl p-4 bg-gradient-to-br border", L ? `${s.bg} border-slate-200/60` : `${s.bg} border-slate-700/30`)}>
             <div className="flex items-center justify-between mb-2"><span className={s.color}>{s.icon}</span></div>
             <p className={cn("text-2xl font-bold tracking-tight", s.color)}>{s.value}</p>
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-1">{s.label}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-1">{s.label}</p>
           </div>
         ))}
       </div>
@@ -160,14 +160,14 @@ export default function NotificationCenter() {
           const catCount = cat.id === "all" ? totalAll : (catCounts[cat.id]?.total || 0);
           const catUnread = cat.id === "all" ? unreadAll : (catCounts[cat.id]?.unread || 0);
           return (
-            <button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={cn("flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-medium whitespace-nowrap transition-all border",
+            <button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={cn("flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
               activeCategory === cat.id
                 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-sm"
                 : L ? "bg-white border-slate-200 text-slate-500 hover:border-blue-300" : "bg-slate-800/60 border-slate-700/50 text-slate-400 hover:border-slate-600"
             )}>
               <cat.icon className="w-3.5 h-3.5" />
               {cat.label}
-              {catCount > 0 && <span className={cn("text-[10px] font-bold ml-0.5", activeCategory === cat.id ? "text-white/80" : "text-slate-400")}>{catCount}</span>}
+              {catCount > 0 && <span className={cn("text-xs font-bold ml-0.5", activeCategory === cat.id ? "text-white/80" : "text-slate-400")}>{catCount}</span>}
               {catUnread > 0 && activeCategory !== cat.id && <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />}
             </button>
           );
@@ -227,13 +227,13 @@ export default function NotificationCenter() {
                       <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                         <p className={cn("font-bold text-sm", n.read ? (L ? "text-slate-500" : "text-slate-400") : vl)}>{n.title}</p>
                         {!n.read && <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
-                        <Badge className={cn("border text-[9px] font-medium", colors.bg, colors.text, colors.ring, "ring-1")}>{n.category}</Badge>
+                        <Badge className={cn("border text-xs font-medium", colors.bg, colors.text, colors.ring, "ring-1")}>{n.category}</Badge>
                       </div>
                       <p className={cn("text-xs line-clamp-2", n.read ? "text-slate-400" : (L ? "text-slate-500" : "text-slate-400"))}>{n.message}</p>
                       <div className="flex items-center gap-3 mt-1.5">
-                        <p className="text-[10px] text-slate-500">{n.timeAgo}</p>
+                        <p className="text-xs text-slate-500">{n.timeAgo}</p>
                         {n.actionUrl && (
-                          <span className="flex items-center gap-0.5 text-[10px] text-blue-500 font-medium">
+                          <span className="flex items-center gap-0.5 text-xs text-blue-500 font-medium">
                             <ExternalLink className="w-2.5 h-2.5" />View
                           </span>
                         )}

@@ -756,12 +756,12 @@ export default function SatelliteIntelligenceMap({
       }`}>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className={`text-[10px] font-bold tracking-widest uppercase ${isLight ? "text-slate-600" : "text-white/60"}`}>
+          <span className={`text-xs font-bold tracking-widest uppercase ${isLight ? "text-slate-600" : "text-white/60"}`}>
             Spatial Intel
           </span>
-          <span className="text-[9px] font-mono text-[#1473FF]">LIVE</span>
+          <span className="text-xs font-mono text-[#1473FF]">LIVE</span>
         </div>
-        <div className={`text-[10px] mt-1 ${isLight ? "text-slate-500" : "text-white/35"}`}>
+        <div className={`text-xs mt-1 ${isLight ? "text-slate-500" : "text-white/35"}`}>
           {perspectiveLabel} · {dataPoints} data points
         </div>
       </div>
@@ -777,7 +777,7 @@ export default function SatelliteIntelligenceMap({
             const active = mapType === mt.id;
             return (
               <button key={mt.id} onClick={() => setMapType(mt.id)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-medium transition-all w-full ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-all w-full ${
                   active
                     ? isLight ? "bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-[#1473FF] font-semibold" : "bg-gradient-to-r from-[#1473FF]/20 to-[#BE01FF]/20 text-white"
                     : isLight ? "text-slate-500 hover:bg-slate-100" : "text-white/40 hover:bg-white/[0.06]"
@@ -813,7 +813,7 @@ export default function SatelliteIntelligenceMap({
           isLight ? "bg-white/90 border-slate-200/60" : "bg-slate-900/85 border-white/[0.08]"
         }`}>
           <div className="flex items-center justify-between mb-1">
-            <span className={`text-[9px] font-bold tracking-widest uppercase ${isLight ? "text-slate-500" : "text-white/40"}`}>
+            <span className={`text-xs font-bold tracking-widest uppercase ${isLight ? "text-slate-500" : "text-white/40"}`}>
               Layers
             </span>
             <button onClick={() => setShowPanel(false)} className={`p-0.5 rounded ${isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]"}`}>
@@ -825,7 +825,7 @@ export default function SatelliteIntelligenceMap({
             const active = visibleLayers.includes(layer.id);
             return (
               <button key={layer.id} onClick={() => toggleLayer(layer.id)}
-                className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
+                className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   active
                     ? ""
                     : isLight ? "text-slate-400 hover:bg-slate-100" : "text-white/25 hover:bg-white/[0.04]"
@@ -853,7 +853,7 @@ export default function SatelliteIntelligenceMap({
       <div className={`absolute bottom-3 left-3 z-10 backdrop-blur-xl rounded-xl border px-3 py-2 ${
         isLight ? "bg-white/90 border-slate-200/60" : "bg-slate-900/85 border-white/[0.08]"
       }`}>
-        <div className={`text-[8px] font-bold tracking-widest uppercase mb-1.5 ${isLight ? "text-slate-500" : "text-white/35"}`}>
+        <div className={`text-xs font-bold tracking-widest uppercase mb-1.5 ${isLight ? "text-slate-500" : "text-white/35"}`}>
           Demand Severity
         </div>
         <div className="flex items-center gap-3">
@@ -865,7 +865,7 @@ export default function SatelliteIntelligenceMap({
           ].map(s => (
             <div key={s.label} className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full" style={{ background: s.color, boxShadow: `0 0 4px ${s.color}` }} />
-              <span className={`text-[9px] ${isLight ? "text-slate-500" : "text-white/40"}`}>{s.label}</span>
+              <span className={`text-xs ${isLight ? "text-slate-500" : "text-white/40"}`}>{s.label}</span>
             </div>
           ))}
         </div>
@@ -874,7 +874,7 @@ export default function SatelliteIntelligenceMap({
             {Object.entries(FACILITY_ICONS).map(([type, cfg]) => (
               <div key={type} className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full" style={{ background: cfg.color }} />
-                <span className={`text-[9px] capitalize ${isLight ? "text-slate-500" : "text-white/40"}`}>{type}</span>
+                <span className={`text-xs capitalize ${isLight ? "text-slate-500" : "text-white/40"}`}>{type}</span>
               </div>
             ))}
           </div>
@@ -887,7 +887,7 @@ export default function SatelliteIntelligenceMap({
       }`}>
         <div className="flex items-center gap-2">
           <Navigation className={`w-3 h-3 ${isLight ? "text-slate-400" : "text-white/30"}`} />
-          <span className={`text-[10px] font-mono tabular-nums ${isLight ? "text-slate-500" : "text-white/40"}`}>
+          <span className={`text-xs font-mono tabular-nums ${isLight ? "text-slate-500" : "text-white/40"}`}>
             {cursorPos ? `${cursorPos.lat.toFixed(4)}°N ${Math.abs(cursorPos.lng).toFixed(4)}°W` : "—"}
           </span>
         </div>
@@ -901,11 +901,11 @@ export default function SatelliteIntelligenceMap({
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className={`text-[10px] font-semibold ${isLight ? "text-slate-600" : "text-white/60"}`}>
+              <span className={`text-xs font-semibold ${isLight ? "text-slate-600" : "text-white/60"}`}>
                 {roadIntel.stats.liveDrivers} live drivers
               </span>
             </div>
-            <div className={`text-[10px] ${isLight ? "text-slate-400" : "text-white/30"}`}>
+            <div className={`text-xs ${isLight ? "text-slate-400" : "text-white/30"}`}>
               {roadIntel.stats.totalSegments.toLocaleString()} segments · {roadIntel.stats.totalMiles.toLocaleString()} mi mapped
             </div>
           </div>

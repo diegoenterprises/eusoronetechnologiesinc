@@ -133,7 +133,7 @@ function SeparationBar({ label, distance, maxDistance, position }: {
           style={{ width: `${Math.min(pct * 100, 100)}%` }}
         />
       </div>
-      <div className="flex justify-between text-[9px] text-slate-600">
+      <div className="flex justify-between text-xs text-slate-600">
         <span>0</span>
         <span className="text-slate-500">Max: {metersToFeet(maxDistance)}</span>
       </div>
@@ -164,14 +164,14 @@ export default function ConvoySyncDashboard({ convoy, className = "" }: ConvoySy
             </div>
             <div>
               <p className="text-sm font-semibold text-white">Convoy Formation</p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-xs text-slate-400">
                 {convoy.loadNumber ? `Load ${convoy.loadNumber}` : `Convoy #${convoy.id}`}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {isActive && (
-              <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-medium">
+              <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
                 <Wifi className="w-3 h-3" />
                 ACTIVE
               </span>
@@ -193,14 +193,14 @@ export default function ConvoySyncDashboard({ convoy, className = "" }: ConvoySy
             <div className="p-3 rounded-xl border border-slate-700/30 bg-slate-900/30">
               <div className="flex items-center gap-2 mb-1.5">
                 <Truck className="w-4 h-4 text-blue-400" />
-                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">Primary</span>
+                <span className="text-xs uppercase tracking-wider text-slate-500 font-medium">Primary</span>
               </div>
               <p className="text-xs text-white font-medium">{convoy.primaryDriverName || "Unassigned"}</p>
             </div>
             <div className="p-3 rounded-xl border border-slate-700/30 bg-slate-900/30">
               <div className="flex items-center gap-2 mb-1.5">
                 <Shield className="w-4 h-4 text-purple-400" />
-                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">Escort</span>
+                <span className="text-xs uppercase tracking-wider text-slate-500 font-medium">Escort</span>
               </div>
               <p className="text-xs text-white font-medium">{convoy.escortDriverName || "Unassigned"}</p>
             </div>
@@ -236,11 +236,11 @@ export default function ConvoySyncDashboard({ convoy, className = "" }: ConvoySy
                       {isCompleted ? (
                         <CheckCircle2 className="w-3 h-3" />
                       ) : (
-                        <span className="text-[8px] font-bold">{i + 1}</span>
+                        <span className="text-xs font-bold">{i + 1}</span>
                       )}
                     </div>
                     {/* Label */}
-                    <p className={`text-[8px] mt-1.5 text-center leading-tight ${
+                    <p className={`text-xs mt-1.5 text-center leading-tight ${
                       isCompleted ? "text-emerald-400/70" : isCurrent ? "text-blue-400" : "text-slate-600"
                     }`}>
                       {sp.name}
@@ -248,8 +248,8 @@ export default function ConvoySyncDashboard({ convoy, className = "" }: ConvoySy
                     {/* Tooltip on hover */}
                     <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-20 w-40">
                       <div className="bg-slate-900 border border-slate-700 rounded-lg p-2 text-center shadow-xl">
-                        <p className="text-[10px] font-semibold text-white">{sp.name}</p>
-                        <p className="text-[9px] text-slate-400 mt-0.5">{sp.description}</p>
+                        <p className="text-xs font-semibold text-white">{sp.name}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{sp.description}</p>
                       </div>
                     </div>
                   </div>
@@ -283,7 +283,7 @@ export default function ConvoySyncDashboard({ convoy, className = "" }: ConvoySy
                (convoy.rearDistance && convoy.rearDistance > MAX_REAR_METERS) ? (
                 <div className="mt-3 flex items-center gap-2 p-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
                   <AlertTriangle className="w-4 h-4 text-red-500 animate-pulse" />
-                  <p className="text-[10px] text-red-400 font-medium">
+                  <p className="text-xs text-red-400 font-medium">
                     Convoy separation exceeded maximum distance. Reduce speed and close formation.
                   </p>
                 </div>
@@ -293,7 +293,7 @@ export default function ConvoySyncDashboard({ convoy, className = "" }: ConvoySy
 
           {/* ── Formation Time ── */}
           {convoy.formationTime && (
-            <div className="flex items-center gap-2 text-[10px] text-slate-500">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
               <Clock className="w-3 h-3" />
               <span>Formation since {new Date(convoy.formationTime).toLocaleString("en-US", {
                 month: "short", day: "numeric", hour: "numeric", minute: "2-digit",

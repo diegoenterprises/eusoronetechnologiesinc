@@ -77,8 +77,8 @@ export default function CarrierTierBadge({
   if (tier === "standard" && !showScore) return null; // Don't show badge for standard unless explicitly requested
 
   const sizeClasses = {
-    sm: "text-[9px] px-1.5 py-0.5 gap-1",
-    md: "text-[10px] px-2 py-1 gap-1.5",
+    sm: "text-xs px-1.5 py-0.5 gap-1",
+    md: "text-xs px-2 py-1 gap-1.5",
     lg: "text-xs px-2.5 py-1 gap-1.5",
   };
 

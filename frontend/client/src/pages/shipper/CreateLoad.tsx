@@ -267,7 +267,7 @@ export default function CreateLoad() {
               {formData.isHazmat && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30">
                   <div><Label>Hazmat Class</Label>{(hazmatQuery as any).isLoading || (hazmatQuery as any).isPending ? <Skeleton className="h-10" /> : <Select value={formData.hazmatClass} onValueChange={v => updateField("hazmatClass", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select class" /></SelectTrigger><SelectContent><SelectItem value="1">Class 1 - Explosives</SelectItem><SelectItem value="2">Class 2 - Gases</SelectItem><SelectItem value="3">Class 3 - Flammable Liquids</SelectItem><SelectItem value="4">Class 4 - Flammable Solids</SelectItem><SelectItem value="5">Class 5 - Oxidizers</SelectItem><SelectItem value="6">Class 6 - Poisons</SelectItem><SelectItem value="7">Class 7 - Radioactive</SelectItem><SelectItem value="8">Class 8 - Corrosives</SelectItem><SelectItem value="9">Class 9 - Misc</SelectItem></SelectContent></Select>}</div>
-                  <div ref={ergRef} className="relative"><Label>UN Number</Label><div className="flex gap-1.5"><Input value={formData.unNumber} onChange={e => { updateField("unNumber", e.target.value); const v = e.target.value.replace(/^un/i, "").trim(); if (v.length >= 2) { setErgQ(v); setShowErg(true); } else setShowErg(false); }} onFocus={() => { if (ergQ.length >= 2) setShowErg(true); }} placeholder="UN1234" className="bg-slate-700/50" /><Button variant="outline" size="sm" className="bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20 px-2" onClick={() => { if (formData.unNumber?.trim().length >= 2) { setErgQ(formData.unNumber.replace(/^un/i, "").trim()); setShowErg(true); } }}><EsangIcon className="w-4 h-4" /></Button></div>{showErg && ergRes?.data?.results?.length > 0 && (<div className="absolute z-50 left-0 right-0 mt-1 border border-slate-600/50 rounded-lg shadow-xl max-h-56 overflow-y-auto" style={{ backgroundColor: '#0c0e18' }}><div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2024 — {ergRes.data.count} results</div>{ergRes.data.results.map((m: any, i: number) => (<button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0" onClick={() => { updateField("unNumber", `UN${m.unNumber}`); updateField("hazmatClass", m.hazardClass); updateField("packingGroup", m.packingGroup || ""); setShowErg(false); toast.success("ESANG AI — Product Verified", { description: `${m.name} — UN${m.unNumber} (Class ${m.hazardClass}) Guide ${m.guide}` }); }}><div className="flex-1 min-w-0"><p className="text-white text-sm font-medium truncate">{m.name}</p></div><div className="flex items-center gap-1.5 flex-shrink-0"><Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge><Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge></div></button>))}</div>)}{showErg && ergQ.length >= 2 && ergRes?.isLoading && (<div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-3"><div className="flex items-center gap-2 text-slate-400 text-sm"><EsangIcon className="w-4 h-4 animate-spin" />Searching ERG 2024...</div></div>)}</div>
+                  <div ref={ergRef} className="relative"><Label>UN Number</Label><div className="flex gap-1.5"><Input value={formData.unNumber} onChange={e => { updateField("unNumber", e.target.value); const v = e.target.value.replace(/^un/i, "").trim(); if (v.length >= 2) { setErgQ(v); setShowErg(true); } else setShowErg(false); }} onFocus={() => { if (ergQ.length >= 2) setShowErg(true); }} placeholder="UN1234" className="bg-slate-700/50" /><Button variant="outline" size="sm" className="bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20 px-2" onClick={() => { if (formData.unNumber?.trim().length >= 2) { setErgQ(formData.unNumber.replace(/^un/i, "").trim()); setShowErg(true); } }}><EsangIcon className="w-4 h-4" /></Button></div>{showErg && ergRes?.data?.results?.length > 0 && (<div className="absolute z-50 left-0 right-0 mt-1 border border-slate-600/50 rounded-lg shadow-xl max-h-56 overflow-y-auto" style={{ backgroundColor: '#0c0e18' }}><div className="px-3 py-1.5 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2024 — {ergRes.data.count} results</div>{ergRes.data.results.map((m: any, i: number) => (<button key={`${m.unNumber}-${i}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0" onClick={() => { updateField("unNumber", `UN${m.unNumber}`); updateField("hazmatClass", m.hazardClass); updateField("packingGroup", m.packingGroup || ""); setShowErg(false); toast.success("ESANG AI — Product Verified", { description: `${m.name} — UN${m.unNumber} (Class ${m.hazardClass}) Guide ${m.guide}` }); }}><div className="flex-1 min-w-0"><p className="text-white text-sm font-medium truncate">{m.name}</p></div><div className="flex items-center gap-1.5 flex-shrink-0"><Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge><Badge variant="outline" className="text-xs border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge></div></button>))}</div>)}{showErg && ergQ.length >= 2 && ergRes?.isLoading && (<div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-3"><div className="flex items-center gap-2 text-slate-400 text-sm"><EsangIcon className="w-4 h-4 animate-spin" />Searching ERG 2024...</div></div>)}</div>
                   <div><Label>Packing Group</Label><Select value={formData.packingGroup} onValueChange={v => updateField("packingGroup", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="I">I - Great Danger</SelectItem><SelectItem value="II">II - Medium Danger</SelectItem><SelectItem value="III">III - Minor Danger</SelectItem></SelectContent></Select></div>
                 </div>
               )}
@@ -291,7 +291,7 @@ export default function CreateLoad() {
                   <div className="flex items-center gap-2">
                     <Truck className="w-5 h-5 text-[#BE01FF]" />
                     <h3 className={cn("font-semibold", isLight ? "text-slate-800" : "text-white")}>Tanker Configuration</h3>
-                    <Badge className="bg-[#BE01FF]/15 text-[#BE01FF] border-[#BE01FF]/30 text-[10px]">Variable Capacity</Badge>
+                    <Badge className="bg-[#BE01FF]/15 text-[#BE01FF] border-[#BE01FF]/30 text-xs">Variable Capacity</Badge>
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setUseUniformCapacity(true)} className={cn("px-3 py-1 rounded-lg text-xs font-medium transition-colors", useUniformCapacity ? "bg-[#1473FF] text-white" : isLight ? "bg-slate-200 text-slate-600" : "bg-slate-700 text-slate-400")}>Uniform</button>
@@ -303,9 +303,9 @@ export default function CreateLoad() {
                   <>
                     <p className={cn("text-xs mb-3", isLight ? "text-slate-500" : "text-slate-400")}>All trucks use the same tanker capacity and fill level.</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div><Label>Tanker Max Capacity (bbl)</Label><Input type="number" value={formData.tankerCapacity} onChange={e => updateField("tankerCapacity", e.target.value)} placeholder="130-210" className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-[10px] text-slate-500 mt-1">Industry range: 130-210 bbl</p></div>
-                      <div><Label>Actual Fill Per Load (bbl)</Label><Input type="number" value={formData.actualFill} onChange={e => updateField("actualFill", e.target.value)} placeholder="e.g. 190" className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-[10px] text-slate-500 mt-1">Operators rarely fill to max</p></div>
-                      <div><Label>Loads Per Truck / Day</Label><Input type="number" min="1" value={formData.loadsPerTruckPerDay} onChange={e => updateField("loadsPerTruckPerDay", e.target.value)} className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-[10px] text-slate-500 mt-1">Round trips per truck daily</p></div>
+                      <div><Label>Tanker Max Capacity (bbl)</Label><Input type="number" value={formData.tankerCapacity} onChange={e => updateField("tankerCapacity", e.target.value)} placeholder="130-210" className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-xs text-slate-500 mt-1">Industry range: 130-210 bbl</p></div>
+                      <div><Label>Actual Fill Per Load (bbl)</Label><Input type="number" value={formData.actualFill} onChange={e => updateField("actualFill", e.target.value)} placeholder="e.g. 190" className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-xs text-slate-500 mt-1">Operators rarely fill to max</p></div>
+                      <div><Label>Loads Per Truck / Day</Label><Input type="number" min="1" value={formData.loadsPerTruckPerDay} onChange={e => updateField("loadsPerTruckPerDay", e.target.value)} className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-xs text-slate-500 mt-1">Round trips per truck daily</p></div>
                     </div>
                     <div className="flex items-center gap-2 mt-3">
                       <Checkbox checked={formData.manualTruckOverride} onCheckedChange={v => updateField("manualTruckOverride", v)} />
@@ -323,9 +323,9 @@ export default function CreateLoad() {
                         <div key={t.id} className={cn("flex items-center gap-3 p-3 rounded-lg border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700")}>
                           <span className={cn("text-xs font-mono w-6 text-center", isLight ? "text-slate-400" : "text-slate-500")}>{i + 1}</span>
                           <Input value={t.name} onChange={e => updateTruck(t.id, "name", e.target.value)} className={cn("w-32 h-8 text-xs", isLight ? "bg-slate-50" : "bg-slate-700/50")} placeholder="Name" />
-                          <div className="flex items-center gap-1"><Label className="text-[10px] text-slate-400 shrink-0">Max</Label><Input type="number" value={t.capacity} onChange={e => updateTruck(t.id, "capacity", parseInt(e.target.value) || 0)} className={cn("w-20 h-8 text-xs", isLight ? "bg-slate-50" : "bg-slate-700/50")} /></div>
-                          <div className="flex items-center gap-1"><Label className="text-[10px] text-slate-400 shrink-0">Fill</Label><Input type="number" value={t.fill} onChange={e => updateTruck(t.id, "fill", parseInt(e.target.value) || 0)} className={cn("w-20 h-8 text-xs", isLight ? "bg-slate-50" : "bg-slate-700/50")} /></div>
-                          <Badge className={cn("text-[9px] shrink-0", t.fill > 0 && t.capacity > 0 ? "bg-green-500/15 text-green-400 border-0" : "bg-slate-500/15 text-slate-400 border-0")}>{t.capacity > 0 ? Math.round((t.fill / t.capacity) * 100) : 0}%</Badge>
+                          <div className="flex items-center gap-1"><Label className="text-xs text-slate-400 shrink-0">Max</Label><Input type="number" value={t.capacity} onChange={e => updateTruck(t.id, "capacity", parseInt(e.target.value) || 0)} className={cn("w-20 h-8 text-xs", isLight ? "bg-slate-50" : "bg-slate-700/50")} /></div>
+                          <div className="flex items-center gap-1"><Label className="text-xs text-slate-400 shrink-0">Fill</Label><Input type="number" value={t.fill} onChange={e => updateTruck(t.id, "fill", parseInt(e.target.value) || 0)} className={cn("w-20 h-8 text-xs", isLight ? "bg-slate-50" : "bg-slate-700/50")} /></div>
+                          <Badge className={cn("text-xs shrink-0", t.fill > 0 && t.capacity > 0 ? "bg-green-500/15 text-green-400 border-0" : "bg-slate-500/15 text-slate-400 border-0")}>{t.capacity > 0 ? Math.round((t.fill / t.capacity) * 100) : 0}%</Badge>
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => removeTruck(t.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                         </div>
                       ))}
@@ -362,7 +362,7 @@ export default function CreateLoad() {
                             <span className={cn("font-medium", isLight ? "text-slate-700" : "text-white")}>{tb.name}</span>
                             <div className="flex items-center gap-4">
                               <span className="text-slate-400">{tb.fill} bbl fill / {tb.capacity} bbl max</span>
-                              <Badge className="bg-[#1473FF]/15 text-[#1473FF] border-0 text-[10px]">{tb.loads} loads</Badge>
+                              <Badge className="bg-[#1473FF]/15 text-[#1473FF] border-0 text-xs">{tb.loads} loads</Badge>
                               <span className={cn("font-mono", isLight ? "text-slate-600" : "text-slate-300")}>{tb.volume.toLocaleString()} bbl</span>
                             </div>
                           </div>
@@ -512,7 +512,7 @@ export default function CreateLoad() {
                   ].map(opt => (
                     <button key={opt.v} onClick={() => updateField("assignmentType", opt.v)} className={cn("p-3 rounded-xl border text-left transition-all", formData.assignmentType === opt.v ? "border-[#1473FF] bg-[#1473FF]/10" : isLight ? "border-slate-200 bg-white" : "border-slate-700 bg-slate-800/30")}>
                       <p className={cn("font-semibold text-xs", isLight ? "text-slate-800" : "text-white")}>{opt.label}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{opt.desc}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{opt.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -523,7 +523,7 @@ export default function CreateLoad() {
                   <div className="flex items-center gap-2 mb-3">
                     <Link2 className="w-4 h-4 text-[#1473FF]" />
                     <h4 className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>Link to Agreement</h4>
-                    <Badge className="bg-[#1473FF]/15 text-[#1473FF] border-[#1473FF]/30 text-[10px]">Contract Integration</Badge>
+                    <Badge className="bg-[#1473FF]/15 text-[#1473FF] border-[#1473FF]/30 text-xs">Contract Integration</Badge>
                   </div>
                   <p className={cn("text-xs mb-3", isLight ? "text-slate-500" : "text-slate-400")}>Link this job to an existing agreement to inherit rates and payment terms.</p>
                   <Select value={linkedAgreementId} onValueChange={(v) => {
@@ -552,7 +552,7 @@ export default function CreateLoad() {
                         <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-white")}>Linked: #{ag.agreementNumber || ag.id}</p>
-                          <p className="text-[10px] text-slate-400">Rate: ${ag.baseRate ? parseFloat(ag.baseRate).toLocaleString() : "N/A"} / {ag.rateType?.replace(/_/g, " ") || "per load"} - Net {ag.paymentTermDays || 30} days</p>
+                          <p className="text-xs text-slate-400">Rate: ${ag.baseRate ? parseFloat(ag.baseRate).toLocaleString() : "N/A"} / {ag.rateType?.replace(/_/g, " ") || "per load"} - Net {ag.paymentTermDays || 30} days</p>
                         </div>
                         <FileText className="w-4 h-4 text-green-400 shrink-0" />
                       </div>
@@ -628,7 +628,7 @@ export default function CreateLoad() {
                         <span className={cn("font-medium", isLight ? "text-slate-700" : "text-white")}>{tb.name}</span>
                         <div className="flex items-center gap-3">
                           <span className="text-slate-400">{tb.fill}/{tb.capacity} bbl</span>
-                          <Badge className="bg-[#1473FF]/15 text-[#1473FF] border-0 text-[10px]">{tb.loads} loads</Badge>
+                          <Badge className="bg-[#1473FF]/15 text-[#1473FF] border-0 text-xs">{tb.loads} loads</Badge>
                           <span className={cn("font-mono", isLight ? "text-slate-600" : "text-slate-300")}>{tb.volume.toLocaleString()} bbl</span>
                         </div>
                       </div>

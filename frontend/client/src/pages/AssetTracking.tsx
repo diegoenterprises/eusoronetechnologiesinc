@@ -99,7 +99,7 @@ function SeverityBadge({ severity }: { severity: string }) {
     low: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   };
   return (
-    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${styles[severity] || styles.low}`}>
+    <Badge variant="outline" className={`text-xs px-1.5 py-0 ${styles[severity] || styles.low}`}>
       {severity}
     </Badge>
   );
@@ -286,7 +286,7 @@ export default function AssetTracking() {
           </TabsTrigger>
           <TabsTrigger value="alerts" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
             <Bell className="h-3.5 w-3.5 mr-1" /> Alerts
-            {alertCount > 0 && <span className="ml-1 bg-red-500/20 text-red-400 text-[10px] px-1 rounded">{alertCount}</span>}
+            {alertCount > 0 && <span className="ml-1 bg-red-500/20 text-red-400 text-xs px-1 rounded">{alertCount}</span>}
           </TabsTrigger>
           <TabsTrigger value="utilization" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
             <Gauge className="h-3.5 w-3.5 mr-1" /> Utilization
@@ -404,11 +404,11 @@ export default function AssetTracking() {
                           <div key={m.assetId} className={`flex items-center justify-between py-1.5 ${isLight ? "border-b border-slate-200" : "border-b border-zinc-800"} last:border-0`}>
                             <div>
                               <p className="text-xs font-medium text-zinc-200">{m.assetName}</p>
-                              <p className="text-[10px] text-zinc-500">{m.serviceType}</p>
+                              <p className="text-xs text-zinc-500">{m.serviceType}</p>
                             </div>
                             <Badge
                               variant="outline"
-                              className={`text-[10px] ${
+                              className={`text-xs ${
                                 m.priority === "overdue"
                                   ? "bg-red-500/20 text-red-400 border-red-500/30"
                                   : m.priority === "urgent"
@@ -445,7 +445,7 @@ export default function AssetTracking() {
                               <SeverityBadge severity={alert.severity} />
                               <div>
                                 <p className="text-xs font-medium text-zinc-200">{alert.assetName}</p>
-                                <p className="text-[10px] text-zinc-500">{alert.message}</p>
+                                <p className="text-xs text-zinc-500">{alert.message}</p>
                               </div>
                             </div>
                             {alert.acknowledged ? (
@@ -509,7 +509,7 @@ export default function AssetTracking() {
                           title={asset.assetName}
                         >
                           <Truck className={`h-3.5 w-3.5 ${asset.status === "active" ? CYAN : "text-zinc-500"}`} />
-                          <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] text-zinc-500 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs text-zinc-500 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
                             {asset.assetName.slice(0, 15)}
                           </span>
                         </button>
@@ -528,9 +528,9 @@ export default function AssetTracking() {
                         <StatusDot status={asset.status} />
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-zinc-200 truncate">{asset.assetName}</p>
-                          <p className="text-[10px] text-zinc-500 truncate">{asset.address}</p>
+                          <p className="text-xs text-zinc-500 truncate">{asset.address}</p>
                         </div>
-                        <span className="text-[10px] text-zinc-600">{asset.speed} mph</span>
+                        <span className="text-xs text-zinc-600">{asset.speed} mph</span>
                       </button>
                     ))}
                   </div>
@@ -554,19 +554,19 @@ export default function AssetTracking() {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="text-center p-2 bg-zinc-800 rounded-lg">
-                    <p className="text-[10px] text-zinc-500">Speed</p>
+                    <p className="text-xs text-zinc-500">Speed</p>
                     <p className="text-lg font-bold text-zinc-200">{assetDetails.data.speed} <span className="text-xs">mph</span></p>
                   </div>
                   <div className="text-center p-2 bg-zinc-800 rounded-lg">
-                    <p className="text-[10px] text-zinc-500">Heading</p>
+                    <p className="text-xs text-zinc-500">Heading</p>
                     <p className="text-lg font-bold text-zinc-200">{assetDetails.data.heading}&deg;</p>
                   </div>
                   <div className="text-center p-2 bg-zinc-800 rounded-lg">
-                    <p className="text-[10px] text-zinc-500">Fuel</p>
+                    <p className="text-xs text-zinc-500">Fuel</p>
                     <p className="text-lg font-bold text-zinc-200">{assetDetails.data.fuelLevel}%</p>
                   </div>
                   <div className="text-center p-2 bg-zinc-800 rounded-lg">
-                    <p className="text-[10px] text-zinc-500">Engine Hours</p>
+                    <p className="text-xs text-zinc-500">Engine Hours</p>
                     <p className="text-lg font-bold text-zinc-200">{assetDetails.data.engineHours?.toLocaleString()}</p>
                   </div>
                 </div>
@@ -575,9 +575,9 @@ export default function AssetTracking() {
                   {(assetDetails.data.sensors || []).map((s) => (
                     <div key={s.sensorId} className="p-2 bg-zinc-800 rounded-lg text-center">
                       <StatusDot status={s.status} />
-                      <p className="text-[10px] text-zinc-500 mt-1 capitalize">{s.type.replace("_", " ")}</p>
+                      <p className="text-xs text-zinc-500 mt-1 capitalize">{s.type.replace("_", " ")}</p>
                       <p className="text-sm font-semibold text-zinc-200">{s.value} {s.unit}</p>
-                      <p className="text-[9px] text-zinc-600 mt-0.5">
+                      <p className="text-xs text-zinc-600 mt-0.5">
                         <Battery className="h-2.5 w-2.5 inline mr-0.5" />{s.batteryLevel}%
                       </p>
                     </div>
@@ -643,7 +643,7 @@ export default function AssetTracking() {
                             <td className="py-1.5 px-2 text-zinc-300 font-mono">{s.sensorId}</td>
                             <td className="py-1.5 px-2 text-zinc-400">{s.assetName}</td>
                             <td className="py-1.5 px-2">
-                              <Badge variant="outline" className="text-[10px] bg-zinc-800 border-zinc-700 capitalize">{s.type}</Badge>
+                              <Badge variant="outline" className="text-xs bg-zinc-800 border-zinc-700 capitalize">{s.type}</Badge>
                             </td>
                             <td className="py-1.5 px-2 text-center">
                               <StatusDot status={s.status} />
@@ -708,7 +708,7 @@ export default function AssetTracking() {
                       );
                     })}
                   </div>
-                  <div className="flex justify-between text-[10px] text-zinc-600 mt-1 px-4">
+                  <div className="flex justify-between text-xs text-zinc-600 mt-1 px-4">
                     <span>24h ago</span>
                     <span>12h ago</span>
                     <span>Now</span>
@@ -743,7 +743,7 @@ export default function AssetTracking() {
                               {asset.currentTemp}°F
                             </p>
                           </div>
-                          <div className="flex-1 text-[10px] text-zinc-500 space-y-0.5">
+                          <div className="flex-1 text-xs text-zinc-500 space-y-0.5">
                             <p>Set: {asset.setPoint}°F</p>
                             <p>Range: {asset.minTemp}°F - {asset.maxTemp}°F</p>
                             <p>Zone: <span className="capitalize">{asset.zone}</span></p>
@@ -798,19 +798,19 @@ export default function AssetTracking() {
                           <SeverityBadge severity={alert.severity} />
                           <div>
                             <p className="text-xs font-medium text-zinc-200">{alert.assetName}</p>
-                            <p className="text-[11px] text-zinc-400 mt-0.5">{alert.message}</p>
-                            <p className="text-[10px] text-zinc-600 mt-1">
+                            <p className="text-xs text-zinc-400 mt-0.5">{alert.message}</p>
+                            <p className="text-xs text-zinc-600 mt-1">
                               Value: {alert.value} | Threshold: {alert.threshold} | {new Date(alert.timestamp).toLocaleString()}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {alert.acknowledged ? (
-                            <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+                            <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
                               <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />ACK
                             </Badge>
                           ) : (
-                            <Button variant="ghost" size="sm" className="text-[10px] text-zinc-400 h-6 px-2">
+                            <Button variant="ghost" size="sm" className="text-xs text-zinc-400 h-6 px-2">
                               Acknowledge
                             </Button>
                           )}
@@ -950,7 +950,7 @@ export default function AssetTracking() {
                           <span className="text-xs font-medium text-zinc-200">{trailer.trailerNumber}</span>
                           <Badge
                             variant="outline"
-                            className={`text-[10px] ${
+                            className={`text-xs ${
                               trailer.loadStatus === "loaded"
                                 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                                 : trailer.loadStatus === "empty"
@@ -961,7 +961,7 @@ export default function AssetTracking() {
                             {trailer.loadStatus}
                           </Badge>
                         </div>
-                        <div className="text-[10px] text-zinc-500 space-y-0.5">
+                        <div className="text-xs text-zinc-500 space-y-0.5">
                           <p>Type: <span className="capitalize">{trailer.trailerType.replace("_", " ")}</span></p>
                           <p>Location: {trailer.currentLocation.address}</p>
                           {trailer.assignedDriver && <p>Driver: {trailer.assignedDriver}</p>}
@@ -1020,7 +1020,7 @@ export default function AssetTracking() {
                           <td className="py-1.5 px-2 text-zinc-300 font-mono">{c.containerNumber}</td>
                           <td className="py-1.5 px-2 text-zinc-400">{c.size}</td>
                           <td className="py-1.5 px-2">
-                            <Badge variant="outline" className="text-[10px] capitalize bg-zinc-800 border-zinc-700">{c.currentMode}</Badge>
+                            <Badge variant="outline" className="text-xs capitalize bg-zinc-800 border-zinc-700">{c.currentMode}</Badge>
                           </td>
                           <td className="py-1.5 px-2 text-zinc-400">{c.origin}</td>
                           <td className="py-1.5 px-2 text-zinc-400">{c.destination}</td>
@@ -1028,7 +1028,7 @@ export default function AssetTracking() {
                           <td className="py-1.5 px-2 text-center">
                             <Badge
                               variant="outline"
-                              className={`text-[10px] capitalize ${
+                              className={`text-xs capitalize ${
                                 c.status === "delivered"
                                   ? "bg-emerald-500/10 text-emerald-400"
                                   : c.status === "customs_hold"
@@ -1098,7 +1098,7 @@ export default function AssetTracking() {
                           <span className="text-zinc-500 ml-1.5 capitalize">{event.eventType}</span>
                           <span className={`ml-1.5 ${CYAN}`}>{event.geofenceName}</span>
                         </p>
-                        <p className="text-[10px] text-zinc-500 mt-0.5">
+                        <p className="text-xs text-zinc-500 mt-0.5">
                           {new Date(event.timestamp).toLocaleString()}
                           {event.speed > 0 && ` | ${event.speed} mph`}
                           {event.dwellSeconds && ` | Dwell: ${Math.round(event.dwellSeconds / 60)}min`}
@@ -1139,17 +1139,17 @@ export default function AssetTracking() {
                             <MapPin className="h-3.5 w-3.5 text-cyan-400" />
                             {loc.locationName}
                           </p>
-                          <p className="text-[10px] text-zinc-500 capitalize ml-5">{loc.locationType}</p>
+                          <p className="text-xs text-zinc-500 capitalize ml-5">{loc.locationType}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-zinc-200">{loc.assetsPresent} <span className="text-[10px] text-zinc-500 font-normal">assets</span></p>
-                          <p className="text-[10px] text-zinc-500">Cost impact: ${loc.costImpact.toLocaleString()}</p>
+                          <p className="text-sm font-bold text-zinc-200">{loc.assetsPresent} <span className="text-xs text-zinc-500 font-normal">assets</span></p>
+                          <p className="text-xs text-zinc-500">Cost impact: ${loc.costImpact.toLocaleString()}</p>
                         </div>
                       </div>
 
                       {/* Dwell bar */}
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="text-[10px] text-zinc-500 w-8">Min</span>
+                        <span className="text-xs text-zinc-500 w-8">Min</span>
                         <div className="flex-1 bg-zinc-900 rounded-full h-2 relative">
                           <div
                             className="bg-cyan-500/50 h-2 rounded-full"
@@ -1161,19 +1161,19 @@ export default function AssetTracking() {
                             title="Target dwell threshold"
                           />
                         </div>
-                        <span className="text-[10px] text-zinc-500 w-12 text-right">{loc.maxDwellHours}h max</span>
+                        <span className="text-xs text-zinc-500 w-12 text-right">{loc.maxDwellHours}h max</span>
                       </div>
-                      <p className="text-[10px] text-zinc-400 ml-11">
+                      <p className="text-xs text-zinc-400 ml-11">
                         Avg: {loc.avgDwellHours}h | Min: {loc.minDwellHours}h | Max: {loc.maxDwellHours}h
                       </p>
 
                       {/* Top Dwellers */}
                       {loc.topDwellers.length > 0 && (
                         <div className="mt-2 ml-5">
-                          <p className="text-[10px] text-zinc-600 mb-1">Longest dwellers:</p>
+                          <p className="text-xs text-zinc-600 mb-1">Longest dwellers:</p>
                           <div className="flex flex-wrap gap-2">
                             {loc.topDwellers.map((d) => (
-                              <Badge key={d.assetId} variant="outline" className="text-[10px] bg-zinc-900 border-zinc-700">
+                              <Badge key={d.assetId} variant="outline" className="text-xs bg-zinc-900 border-zinc-700">
                                 {d.assetName} - {d.dwellHours}h
                               </Badge>
                             ))}

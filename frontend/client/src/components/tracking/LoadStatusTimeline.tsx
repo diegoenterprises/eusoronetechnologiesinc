@@ -76,7 +76,7 @@ export default function LoadStatusTimeline({ loadId }: LoadStatusTimelineProps) 
         <CardTitle className="text-sm flex items-center gap-2">
           <CircleDot className="h-4 w-4 text-blue-500" />
           Load Timeline
-          <Badge variant="outline" className="ml-auto text-[10px]">
+          <Badge variant="outline" className="ml-auto text-xs">
             {tags.length} event{tags.length !== 1 ? "s" : ""}
           </Badge>
         </CardTitle>
@@ -118,18 +118,18 @@ export default function LoadStatusTimeline({ loadId }: LoadStatusTimelineProps) 
                       {tag.timestamp ? new Date(tag.timestamp).toLocaleString() : ""}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {Number(tag.lat).toFixed(4)}, {Number(tag.lng).toFixed(4)}
                       </span>
-                      <Badge variant="outline" className="text-[9px] capitalize">
+                      <Badge variant="outline" className="text-xs capitalize">
                         {tag.source?.replace(/_/g, " ")}
                       </Badge>
-                      <Badge variant="outline" className="text-[9px] capitalize">
+                      <Badge variant="outline" className="text-xs capitalize">
                         {tag.eventCategory?.replace(/_/g, " ")}
                       </Badge>
                     </div>
                     {tag.photoUrls && tag.photoUrls.length > 0 && (
-                      <div className="flex items-center gap-1 mt-1 text-[10px] text-amber-600">
+                      <div className="flex items-center gap-1 mt-1 text-xs text-amber-600">
                         <Camera className="h-3 w-3" />
                         {tag.photoUrls.length} photo{tag.photoUrls.length > 1 ? "s" : ""}
                       </div>

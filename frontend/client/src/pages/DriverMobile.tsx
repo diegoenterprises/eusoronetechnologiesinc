@@ -106,17 +106,17 @@ function HOSStatusBar() {
         </div>
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <div className="text-[11px] text-slate-400 mb-1">Drive</div>
+            <div className="text-xs text-slate-400 mb-1">Drive</div>
             <Progress value={drivePercent} className="h-2 bg-slate-700" />
             <div className="text-xs text-cyan-300 mt-0.5">{formatMinutes(hos.driveTimeRemaining)}</div>
           </div>
           <div>
-            <div className="text-[11px] text-slate-400 mb-1">Duty</div>
+            <div className="text-xs text-slate-400 mb-1">Duty</div>
             <Progress value={dutyPercent} className="h-2 bg-slate-700" />
             <div className="text-xs text-cyan-300 mt-0.5">{formatMinutes(hos.dutyTimeRemaining)}</div>
           </div>
           <div>
-            <div className="text-[11px] text-slate-400 mb-1">Cycle</div>
+            <div className="text-xs text-slate-400 mb-1">Cycle</div>
             <Progress value={(hos.cycleTimeRemaining / 4200) * 100} className="h-2 bg-slate-700" />
             <div className="text-xs text-cyan-300 mt-0.5">{formatMinutes(hos.cycleTimeRemaining)}</div>
           </div>
@@ -174,7 +174,7 @@ function QuickActionsGrid() {
           className={cn("flex flex-col items-center justify-center gap-1 p-3 rounded-xl border transition-all", isLight ? "bg-white border-slate-200 hover:border-cyan-400 hover:bg-slate-50 shadow-sm" : "bg-slate-800/60 border-slate-700/40 hover:border-cyan-500/40 hover:bg-slate-800")}
         >
           <div style={{ color: action.color }}>{iconMap[action.icon] || <Zap className="w-5 h-5" />}</div>
-          <span className="text-[11px] text-slate-300 text-center leading-tight">{action.label}</span>
+          <span className="text-xs text-slate-300 text-center leading-tight">{action.label}</span>
         </button>
       ))}
     </div>
@@ -249,7 +249,7 @@ function DashboardTab() {
             <CardContent className="p-2 text-center">
               <div className={cn("mx-auto mb-1", stat.color)}>{stat.icon}</div>
               <div className="text-sm font-bold text-slate-100">{stat.value}</div>
-              <div className="text-[10px] text-slate-400">{stat.label}</div>
+              <div className="text-xs text-slate-400">{stat.label}</div>
             </CardContent>
           </Card>
         ))}
@@ -380,15 +380,15 @@ function TripPlannerTab() {
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
                   <div className="text-lg font-bold text-slate-100">{tripQuery.data.summary.totalDistance}</div>
-                  <div className="text-[10px] text-slate-400">Miles</div>
+                  <div className="text-xs text-slate-400">Miles</div>
                 </div>
                 <div>
                   <div className="text-lg font-bold text-slate-100">{formatMinutes(tripQuery.data.summary.estimatedDriveTime)}</div>
-                  <div className="text-[10px] text-slate-400">Drive Time</div>
+                  <div className="text-xs text-slate-400">Drive Time</div>
                 </div>
                 <div>
                   <div className="text-lg font-bold text-slate-100">{formatCurrency(tripQuery.data.summary.estimatedFuelCost)}</div>
-                  <div className="text-[10px] text-slate-400">Est. Fuel</div>
+                  <div className="text-xs text-slate-400">Est. Fuel</div>
                 </div>
               </div>
             </CardContent>
@@ -466,14 +466,14 @@ function ExpensesTab() {
             <CardContent className="p-3 text-center">
               <DollarSign className="w-5 h-5 mx-auto mb-1 text-emerald-400" />
               <div className="text-lg font-bold text-slate-100">{formatCurrency(tracker.totalSpent)}</div>
-              <div className="text-[10px] text-slate-400">Total Spent</div>
+              <div className="text-xs text-slate-400">Total Spent</div>
             </CardContent>
           </Card>
           <Card className={cn(isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-900/60 border-slate-700/50")}>
             <CardContent className="p-3 text-center">
               <Wallet className="w-5 h-5 mx-auto mb-1 text-cyan-400" />
               <div className="text-lg font-bold text-slate-100">{formatCurrency(tracker.totalReimbursed)}</div>
-              <div className="text-[10px] text-slate-400">Reimbursed</div>
+              <div className="text-xs text-slate-400">Reimbursed</div>
             </CardContent>
           </Card>
         </div>
@@ -532,7 +532,7 @@ function ExpensesTab() {
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-medium text-slate-200">{formatCurrency(exp.amount)}</div>
-                  <Badge className={cn("text-[10px]", getStatusColor(exp.status))}>{exp.status}</Badge>
+                  <Badge className={cn("text-xs", getStatusColor(exp.status))}>{exp.status}</Badge>
                 </div>
               </div>
             ))}
@@ -622,7 +622,7 @@ function ServicesTab() {
                         <div className="text-xs text-slate-400">{svc.address}</div>
                         <div className="flex gap-1 mt-1">
                           {svc.amenities.slice(0, 4).map((a: string) => (
-                            <Badge key={a} variant="outline" className="text-[9px] py-0 px-1 border-slate-600 text-slate-400">
+                            <Badge key={a} variant="outline" className="text-xs py-0 px-1 border-slate-600 text-slate-400">
                               {a}
                             </Badge>
                           ))}
@@ -662,11 +662,11 @@ function ServicesTab() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <Badge variant="outline" className="text-[9px] py-0 border-slate-600 text-slate-400">
+                      <Badge variant="outline" className="text-xs py-0 border-slate-600 text-slate-400">
                         {stop.availableParking} spots
                       </Badge>
                       {stop.amenities.slice(0, 5).map((a: string) => (
-                        <Badge key={a} variant="outline" className="text-[9px] py-0 border-slate-600 text-slate-400">
+                        <Badge key={a} variant="outline" className="text-xs py-0 border-slate-600 text-slate-400">
                           {a}
                         </Badge>
                       ))}
@@ -701,7 +701,7 @@ function ServicesTab() {
                         )}>
                           {loc.availableSpaces}
                         </div>
-                        <div className="text-[10px] text-slate-400">of {loc.totalSpaces} spots</div>
+                        <div className="text-xs text-slate-400">of {loc.totalSpaces} spots</div>
                       </div>
                     </div>
                     <Progress
@@ -710,22 +710,22 @@ function ServicesTab() {
                     />
                     <div className="flex items-center gap-2 text-xs">
                       {loc.pricePerNight > 0 && (
-                        <Badge className="text-[9px] bg-amber-500/20 text-amber-400 border-amber-500/30">
+                        <Badge className="text-xs bg-amber-500/20 text-amber-400 border-amber-500/30">
                           ${loc.pricePerNight}/night
                         </Badge>
                       )}
                       {loc.pricePerNight === 0 && (
-                        <Badge className="text-[9px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                        <Badge className="text-xs bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
                           Free
                         </Badge>
                       )}
                       {loc.reservable && (
-                        <Badge className="text-[9px] bg-blue-500/20 text-blue-400 border-blue-500/30">
+                        <Badge className="text-xs bg-blue-500/20 text-blue-400 border-blue-500/30">
                           Reservable
                         </Badge>
                       )}
                       {loc.security.map((s: string) => (
-                        <Badge key={s} variant="outline" className="text-[9px] py-0 border-slate-600 text-slate-400">
+                        <Badge key={s} variant="outline" className="text-xs py-0 border-slate-600 text-slate-400">
                           {s}
                         </Badge>
                       ))}
@@ -825,19 +825,19 @@ function PayTab() {
           <div className="grid grid-cols-2 gap-3">
             <div className="text-center">
               <div className="text-lg font-bold text-slate-100">{formatCurrency(pay.ytd.grossPay)}</div>
-              <div className="text-[10px] text-slate-400">Gross Pay</div>
+              <div className="text-xs text-slate-400">Gross Pay</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-slate-100">{pay.ytd.totalMiles.toLocaleString()}</div>
-              <div className="text-[10px] text-slate-400">Miles</div>
+              <div className="text-xs text-slate-400">Miles</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-slate-100">{formatCurrency(pay.ytd.netPay)}</div>
-              <div className="text-[10px] text-slate-400">Net Pay</div>
+              <div className="text-xs text-slate-400">Net Pay</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-slate-100">{pay.ytd.totalLoads}</div>
-              <div className="text-[10px] text-slate-400">Loads</div>
+              <div className="text-xs text-slate-400">Loads</div>
             </div>
           </div>
         </CardContent>
@@ -896,7 +896,7 @@ function DocumentsTab() {
               {doc.endorsements && (
                 <div className="flex gap-1 mt-1">
                   {doc.endorsements.map((e: string) => (
-                    <Badge key={e} variant="outline" className="text-[9px] py-0 px-1 border-cyan-500/30 text-cyan-400">
+                    <Badge key={e} variant="outline" className="text-xs py-0 px-1 border-cyan-500/30 text-cyan-400">
                       {e}
                     </Badge>
                   ))}

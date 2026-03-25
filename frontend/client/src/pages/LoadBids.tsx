@@ -280,7 +280,7 @@ function HazmatAuthCheckOverlay({ dotNumber, hazmatClass, isLight, onConfirm, on
                   {data.authorized ? "AUTHORIZED" : "NOT AUTHORIZED"}
                 </span>
                 {data.needsHMSP && (
-                  <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-[10px] ml-auto">HMSP Required</Badge>
+                  <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs ml-auto">HMSP Required</Badge>
                 )}
               </div>
               <p className={cn("text-xs", isLight ? "text-slate-600" : "text-slate-400")}>{data.recommendation}</p>
@@ -323,15 +323,15 @@ function HazmatAuthCheckOverlay({ dotNumber, hazmatClass, isLight, onConfirm, on
             <div className={cn("grid grid-cols-3 gap-2 text-center", isLight ? "" : "")}>
               <div className={cn("p-2 rounded-lg", isLight ? "bg-slate-100" : "bg-slate-700/30")}>
                 <p className="text-green-400 font-bold text-lg">{data.summary?.passed || 0}</p>
-                <p className="text-[10px] text-slate-400">Passed</p>
+                <p className="text-xs text-slate-400">Passed</p>
               </div>
               <div className={cn("p-2 rounded-lg", isLight ? "bg-slate-100" : "bg-slate-700/30")}>
                 <p className="text-red-400 font-bold text-lg">{data.summary?.criticalGaps || 0}</p>
-                <p className="text-[10px] text-slate-400">Critical</p>
+                <p className="text-xs text-slate-400">Critical</p>
               </div>
               <div className={cn("p-2 rounded-lg", isLight ? "bg-slate-100" : "bg-slate-700/30")}>
                 <p className="text-amber-400 font-bold text-lg">{data.summary?.warnings || 0}</p>
-                <p className="text-[10px] text-slate-400">Warnings</p>
+                <p className="text-xs text-slate-400">Warnings</p>
               </div>
             </div>
           </div>

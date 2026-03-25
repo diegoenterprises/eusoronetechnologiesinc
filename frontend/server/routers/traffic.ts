@@ -14,6 +14,7 @@ export const trafficRouter = router({
    */
   getIncidents: protectedProcedure
     .query(async () => {
+      // Requires external traffic API integration (e.g. HERE, TomTom, MapQuest)
       return [];
     }),
 
@@ -22,6 +23,7 @@ export const trafficRouter = router({
    */
   getConstruction: protectedProcedure
     .query(async () => {
+      // Requires external traffic API integration (e.g. HERE, TomTom, MapQuest)
       return [];
     }),
 
@@ -30,8 +32,7 @@ export const trafficRouter = router({
    */
   getDelays: protectedProcedure
     .query(async () => {
-      return {
-        avgDelay: 0, routes: [],
-      };
+      // Requires external traffic API integration (e.g. HERE, TomTom, MapQuest)
+      return { avgDelay: 0, routes: [] };
     }),
 });

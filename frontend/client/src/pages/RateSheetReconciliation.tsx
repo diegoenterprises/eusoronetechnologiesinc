@@ -88,7 +88,7 @@ function ComparisonDashboard({ sheetIds, allSheets }: { sheetIds: number[]; allS
           <BarChart3 className="w-4 h-4 text-[#BE01FF]" />
           <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Rate Sheet Comparison</span>
         </h3>
-        <span className="text-[9px] text-slate-400">{sheets.length} sheets selected</span>
+        <span className="text-xs text-slate-400">{sheets.length} sheets selected</span>
       </div>
 
       {/* Summary cards side by side */}
@@ -98,26 +98,26 @@ function ComparisonDashboard({ sheetIds, allSheets }: { sheetIds: number[]; allS
             <div className="absolute top-0 left-0 right-0 h-1" style={{ background: COMPARE_COLORS[i] }} />
             <p className="text-xs font-semibold text-slate-800 dark:text-white truncate mt-1">{s.name}</p>
             <div className="flex items-center gap-2 mt-1 mb-3">
-              {s.region && <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ color: COMPARE_COLORS[i], background: `${COMPARE_COLORS[i]}15` }}>{s.region}</span>}
-              <span className="text-[9px] text-slate-400">{s.product}</span>
+              {s.region && <span className="text-xs px-1.5 py-0.5 rounded font-medium" style={{ color: COMPARE_COLORS[i], background: `${COMPARE_COLORS[i]}15` }}>{s.region}</span>}
+              <span className="text-xs text-slate-400">{s.product}</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div className="text-center">
                 <p className="text-lg font-bold" style={{ color: COMPARE_COLORS[i] }}>${s.avgRate}</p>
-                <p className="text-[8px] text-slate-400">Avg $/BBL</p>
+                <p className="text-xs text-slate-400">Avg $/BBL</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-slate-600 dark:text-slate-300">{s.tierCount}</p>
-                <p className="text-[8px] text-slate-400">Tiers</p>
+                <p className="text-xs text-slate-400">Tiers</p>
               </div>
               <div className="text-center">
                 <p className="text-lg font-bold text-slate-600 dark:text-slate-300">{s.maxMiles}</p>
-                <p className="text-[8px] text-slate-400">Max Mi</p>
+                <p className="text-xs text-slate-400">Max Mi</p>
               </div>
             </div>
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 dark:border-white/[0.04]">
-              <span className="text-[9px] text-emerald-500">${s.minRate} min</span>
-              <span className="text-[9px] text-amber-500">${s.maxRate} max</span>
+              <span className="text-xs text-emerald-500">${s.minRate} min</span>
+              <span className="text-xs text-amber-500">${s.maxRate} max</span>
             </div>
           </div>
         ))}
@@ -125,19 +125,19 @@ function ComparisonDashboard({ sheetIds, allSheets }: { sheetIds: number[]; allS
 
       {/* Tier-by-tier comparison grid */}
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-3">Tier-by-Tier Comparison</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Tier-by-Tier Comparison</p>
         <div className="max-h-[360px] overflow-y-auto rounded-xl border border-slate-100 dark:border-white/[0.04]">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-slate-50 dark:bg-white/[0.04]">
               <tr>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Miles</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Miles</th>
                 {stats.map((s, i) => (
-                  <th key={i} className="px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-wider" style={{ color: COMPARE_COLORS[i] }}>
+                  <th key={i} className="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: COMPARE_COLORS[i] }}>
                     {s.name.length > 18 ? s.name.slice(0, 18) + "…" : s.name}
                   </th>
                 ))}
                 {stats.length === 2 && (
-                  <th className="px-3 py-2 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Delta</th>
+                  <th className="px-3 py-2 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">Delta</th>
                 )}
               </tr>
             </thead>
@@ -165,7 +165,7 @@ function ComparisonDashboard({ sheetIds, allSheets }: { sheetIds: number[]; allS
                             const delta = tierData[1].ratePerBarrel - tierData[0].ratePerBarrel;
                             const pct = tierData[0].ratePerBarrel > 0 ? (delta / tierData[0].ratePerBarrel) * 100 : 0;
                             return (
-                              <span className={cn("text-[10px] font-semibold", delta > 0 ? "text-red-400" : delta < 0 ? "text-emerald-500" : "text-slate-400")}>
+                              <span className={cn("text-xs font-semibold", delta > 0 ? "text-red-400" : delta < 0 ? "text-emerald-500" : "text-slate-400")}>
                                 {delta > 0 ? "+" : ""}{delta.toFixed(2)} ({pct > 0 ? "+" : ""}{pct.toFixed(1)}%)
                               </span>
                             );
@@ -183,7 +183,7 @@ function ComparisonDashboard({ sheetIds, allSheets }: { sheetIds: number[]; allS
 
       {/* Rate curve visualization */}
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-3">Rate Curve Overlay</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Rate Curve Overlay</p>
         <div className="h-40 relative rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] overflow-hidden">
           {stats.map((s, i) => {
             const globalMax = Math.max(...stats.flatMap(st => st.tiers.map((t: any) => t.ratePerBarrel || 0)), 1);
@@ -206,7 +206,7 @@ function ComparisonDashboard({ sheetIds, allSheets }: { sheetIds: number[]; allS
             {stats.map((s, i) => (
               <div key={i} className="flex items-center gap-1">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ background: COMPARE_COLORS[i] }} />
-                <span className="text-[8px] text-slate-400 font-medium">{s.name.length > 12 ? s.name.slice(0, 12) + "…" : s.name}</span>
+                <span className="text-xs text-slate-400 font-medium">{s.name.length > 12 ? s.name.slice(0, 12) + "…" : s.name}</span>
               </div>
             ))}
           </div>
@@ -664,7 +664,7 @@ export default function RateSheetReconciliation() {
             </h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
               <DollarSign className="w-3 h-3 text-blue-500" />
-              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Intelligence</span>
+              <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">Intelligence</span>
             </div>
           </div>
           <p className="text-slate-400 text-sm mt-1">
@@ -686,7 +686,7 @@ export default function RateSheetReconciliation() {
           <div key={k.l} className={cn("rounded-2xl p-3 bg-gradient-to-br border", `${k.b} border-slate-200/60 dark:border-slate-700/30`)}>
             <k.I className={cn("w-4 h-4 mb-1", k.c)} />
             <p className={cn("text-xl font-bold", k.c)}>{k.v}</p>
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{k.l}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{k.l}</p>
           </div>
         ))}
       </div>
@@ -714,44 +714,44 @@ export default function RateSheetReconciliation() {
               <Calculator className="w-4 h-4 text-[#1473FF]" />Rate Inputs
             </h3>
             <div>
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Net Barrels</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Net Barrels</label>
               <Input type="number" value={calcForm.netBarrels} onChange={e => setCalcForm(p => ({ ...p, netBarrels: e.target.value }))} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
             </div>
             <div>
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">One-Way Miles</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">One-Way Miles</label>
               <Input type="number" value={calcForm.oneWayMiles} onChange={e => setCalcForm(p => ({ ...p, oneWayMiles: e.target.value }))} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
             </div>
             <div>
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Current Diesel ($/gal)</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Current Diesel ($/gal)</label>
               <div className="relative">
                 <Input type="number" step="0.01" value={calcForm.currentDieselPrice} onChange={e => { setCalcForm(p => ({ ...p, currentDieselPrice: e.target.value })); setDieselAutoSet(true); }} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] pr-16" />
                 {dieselData?.source === "EIA" && (
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wide">
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 tracking-wide">
                     EIA LIVE
                   </span>
                 )}
               </div>
               {dieselData && (
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                  <span className="text-[9px] text-slate-400">PADD {dieselData.padd?.replace("PADD", "")}</span>
-                  {dieselData.reportDate && <span className="text-[9px] text-slate-400">{dieselData.reportDate}</span>}
+                  <span className="text-xs text-slate-400">PADD {dieselData.padd?.replace("PADD", "")}</span>
+                  {dieselData.reportDate && <span className="text-xs text-slate-400">{dieselData.reportDate}</span>}
                   {dieselData.change1w !== null && dieselData.change1w !== 0 && (
-                    <span className={cn("text-[9px] font-semibold", dieselData.change1w > 0 ? "text-red-400" : "text-emerald-400")}>
+                    <span className={cn("text-xs font-semibold", dieselData.change1w > 0 ? "text-red-400" : "text-emerald-400")}>
                       {dieselData.change1w > 0 ? "+" : ""}{dieselData.change1w.toFixed(3)}/wk
                     </span>
                   )}
                   {!dieselAutoSet && dieselData.source === "EIA" && (
-                    <span className="text-[9px] text-[#1473FF]">Auto-populated</span>
+                    <span className="text-xs text-[#1473FF]">Auto-populated</span>
                   )}
                 </div>
               )}
             </div>
             <div>
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Wait Time (hours)</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Wait Time (hours)</label>
               <Input type="number" step="0.5" value={calcForm.waitTimeHours} onChange={e => setCalcForm(p => ({ ...p, waitTimeHours: e.target.value }))} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
             </div>
             <div>
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Travel Surcharge Miles</label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Travel Surcharge Miles</label>
               <Input type="number" value={calcForm.travelSurchargeMiles} onChange={e => setCalcForm(p => ({ ...p, travelSurchargeMiles: e.target.value }))} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06]" />
             </div>
             <div className="flex gap-3">
@@ -834,7 +834,7 @@ export default function RateSheetReconciliation() {
 
                 {/* Breakdown text */}
                 <div className="mt-4 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.04]">
-                  <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1.5 font-semibold">Breakdown</p>
+                  <p className="text-xs uppercase tracking-wider text-slate-500 mb-1.5 font-semibold">Breakdown</p>
                   {calc.breakdown?.map((line: string, i: number) => (
                     <p key={i} className="text-xs text-slate-600 dark:text-slate-400">{line}</p>
                   ))}
@@ -858,12 +858,12 @@ export default function RateSheetReconciliation() {
             </h3>
             <div className="flex items-center gap-2">
               {rateIntel?.totalLoads ? (
-                <span className="text-[9px] font-semibold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/15">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/15">
                   {rateIntel.totalLoads} completed loads indexed
                 </span>
               ) : null}
               {rateIntel?.lastUpdated && (
-                <span className="text-[9px] text-slate-400">Updated {new Date(rateIntel.lastUpdated).toLocaleTimeString()}</span>
+                <span className="text-xs text-slate-400">Updated {new Date(rateIntel.lastUpdated).toLocaleTimeString()}</span>
               )}
             </div>
           </div>
@@ -878,25 +878,25 @@ export default function RateSheetReconciliation() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="p-3 rounded-xl bg-gradient-to-br from-[#1473FF]/5 to-[#1473FF]/10 border border-[#1473FF]/10 text-center">
                   <p className="text-xl font-bold text-[#1473FF]">{rateIntel.totalLoads}</p>
-                  <p className="text-[9px] text-slate-400 uppercase tracking-wider">Loads Indexed</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Loads Indexed</p>
                 </div>
                 <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 border border-emerald-500/10 text-center">
                   <p className="text-xl font-bold text-emerald-500">${rateIntel.avgRatePerMile}</p>
-                  <p className="text-[9px] text-slate-400 uppercase tracking-wider">Avg $/Mile</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Avg $/Mile</p>
                 </div>
                 <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/5 to-purple-500/10 border border-purple-500/10 text-center">
                   <p className="text-xl font-bold text-purple-500">{rateIntel.bands.length}</p>
-                  <p className="text-[9px] text-slate-400 uppercase tracking-wider">Mileage Bands</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">Mileage Bands</p>
                 </div>
                 <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/5 to-amber-500/10 border border-amber-500/10 text-center">
                   <p className="text-xl font-bold text-amber-500">{rateIntel.states.length}</p>
-                  <p className="text-[9px] text-slate-400 uppercase tracking-wider">States Active</p>
+                  <p className="text-xs text-slate-400 uppercase tracking-wider">States Active</p>
                 </div>
               </div>
 
               {/* Mileage band breakdown */}
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Rate by Mileage Band</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Rate by Mileage Band</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
                   {rateIntel.bands.slice(0, 12).map((band: any) => {
                     const maxAvg = Math.max(...rateIntel.bands.map((b: any) => b.avgRate || 0), 1);
@@ -905,9 +905,9 @@ export default function RateSheetReconciliation() {
                       <div key={band.minMiles} className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] relative overflow-hidden">
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#1473FF]/8 to-transparent" style={{ height: `${pct}%` }} />
                         <div className="relative">
-                          <p className="text-[9px] text-slate-400">{band.minMiles}-{band.maxMiles} mi</p>
+                          <p className="text-xs text-slate-400">{band.minMiles}-{band.maxMiles} mi</p>
                           <p className="text-sm font-bold text-slate-800 dark:text-white">${band.avgRate}</p>
-                          <p className="text-[8px] text-slate-400">{band.loadCount} loads</p>
+                          <p className="text-xs text-slate-400">{band.loadCount} loads</p>
                         </div>
                       </div>
                     );
@@ -918,9 +918,9 @@ export default function RateSheetReconciliation() {
               {/* Active states */}
               {rateIntel.states.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Coverage:</span>
+                  <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Coverage:</span>
                   {rateIntel.states.slice(0, 8).map((s: any) => (
-                    <span key={s.state} className="text-[9px] px-2 py-0.5 rounded bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-300 font-medium">
+                    <span key={s.state} className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-300 font-medium">
                       {s.state} <span className="text-slate-400">({s.count})</span>
                     </span>
                   ))}
@@ -931,7 +931,7 @@ export default function RateSheetReconciliation() {
             <div className="text-center py-6">
               <BarChart3 className="w-8 h-8 text-slate-200 dark:text-white/10 mx-auto mb-2" />
               <p className="text-xs text-slate-400">Rate intelligence builds as loads complete on the platform</p>
-              <p className="text-[10px] text-slate-300 dark:text-white/[0.06] mt-1">Mileage band averages, state coverage, and rate trends will appear here</p>
+              <p className="text-xs text-slate-300 dark:text-white/[0.06] mt-1">Mileage band averages, state coverage, and rate trends will appear here</p>
             </div>
           )}
         </div>
@@ -950,7 +950,7 @@ export default function RateSheetReconciliation() {
                   <h3 className="text-sm font-semibold text-slate-800 dark:text-white flex items-center gap-2">
                     <FolderOpen className="w-4 h-4 text-[#1473FF]" />My Rate Sheets
                   </h3>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Store regional rate sheets for different routes, products, and agreements</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Store regional rate sheets for different routes, products, and agreements</p>
                 </div>
                 <div className="flex gap-2">
                   {mySheets.length >= 2 && (
@@ -976,7 +976,7 @@ export default function RateSheetReconciliation() {
                   <h4 className="text-sm font-semibold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
                     <Upload className="w-4 h-4 text-[#1473FF]" />Import Rate Sheet from File
                   </h4>
-                  <p className="text-[10px] text-slate-400 mb-3">
+                  <p className="text-xs text-slate-400 mb-3">
                     Upload a CSV, Excel (.xlsx/.xls), or PDF rate sheet. We'll extract the mileage tiers and surcharges automatically.
                     PDFs are analyzed by ESANG AI for intelligent extraction.
                   </p>
@@ -996,13 +996,13 @@ export default function RateSheetReconciliation() {
                         <div className="flex flex-col items-center gap-2">
                           <RefreshCw className="w-8 h-8 text-[#1473FF] animate-spin" />
                           <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Analyzing {uploadFileName}...</p>
-                          <p className="text-[10px] text-slate-400">Extracting rate tiers and surcharges</p>
+                          <p className="text-xs text-slate-400">Extracting rate tiers and surcharges</p>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center gap-2">
                           <FileSpreadsheet className="w-8 h-8 text-slate-300 dark:text-white/20" />
                           <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Drop file here or click to browse</p>
-                          <p className="text-[10px] text-slate-400">CSV, XLSX, XLS, PDF (max 20MB)</p>
+                          <p className="text-xs text-slate-400">CSV, XLSX, XLS, PDF (max 20MB)</p>
                         </div>
                       )}
                       <input ref={fileInputRef} type="file" className="hidden"
@@ -1015,24 +1015,24 @@ export default function RateSheetReconciliation() {
                   {uploadPreview && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <Badge variant="outline" className="text-[10px] rounded-full">
+                        <Badge variant="outline" className="text-xs rounded-full">
                           <FileSpreadsheet className="w-3 h-3 mr-1" />{uploadPreview.source?.toUpperCase()}
                         </Badge>
-                        <Badge variant="outline" className="text-[10px] rounded-full text-emerald-600 border-emerald-200">
+                        <Badge variant="outline" className="text-xs rounded-full text-emerald-600 border-emerald-200">
                           <CheckCircle className="w-3 h-3 mr-1" />{uploadPreview.tierCount} tiers extracted
                         </Badge>
                         {uploadPreview.rateUnit && (
-                          <Badge variant="outline" className="text-[10px] rounded-full">
+                          <Badge variant="outline" className="text-xs rounded-full">
                             {uploadPreview.rateUnit.replace(/_/g, " ")}
                           </Badge>
                         )}
                         {uploadPreview.productType && (
-                          <Badge variant="outline" className="text-[10px] rounded-full text-purple-600 border-purple-200">
+                          <Badge variant="outline" className="text-xs rounded-full text-purple-600 border-purple-200">
                             {uploadPreview.productType}
                           </Badge>
                         )}
                         {uploadPreview.region && (
-                          <Badge variant="outline" className="text-[10px] rounded-full text-blue-600 border-blue-200">
+                          <Badge variant="outline" className="text-xs rounded-full text-blue-600 border-blue-200">
                             <MapPin className="w-3 h-3 mr-1" />{uploadPreview.region}
                           </Badge>
                         )}
@@ -1063,7 +1063,7 @@ export default function RateSheetReconciliation() {
 
                       {/* Surcharges preview */}
                       {uploadPreview.surcharges && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                           {[
                             { k: "fscEnabled", l: "Fuel Surcharge", fmt: (v: any) => v ? "Enabled" : "Disabled" },
                             { k: "fscBaselineDieselPrice", l: "FSC Baseline", fmt: (v: any) => `$${Number(v).toFixed(2)}/gal` },
@@ -1117,11 +1117,11 @@ export default function RateSheetReconciliation() {
                   </h4>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
                     <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Name *</label>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Name *</label>
                       <Input value={newSheetName} onChange={e => setNewSheetName(e.target.value)} placeholder="e.g., Permian Basin Regional" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
                     </div>
                     <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Operating Region</label>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Operating Region</label>
                       <select value={newSheetRegion} onChange={e => setNewSheetRegion(e.target.value)}
                         className="w-full h-9 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-sm px-3 text-slate-800 dark:text-white">
                         <option value="">Select region...</option>
@@ -1146,7 +1146,7 @@ export default function RateSheetReconciliation() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Trailer Type</label>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Trailer Type</label>
                       <select value={newSheetTrailer} onChange={e => {
                         setNewSheetTrailer(e.target.value);
                         const t = e.target.value;
@@ -1191,7 +1191,7 @@ export default function RateSheetReconciliation() {
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                     <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Product Type</label>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Product Type</label>
                       <select value={newSheetProduct} onChange={e => setNewSheetProduct(e.target.value)}
                         className="w-full h-9 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-sm px-3 text-slate-800 dark:text-white">
                         {(newSheetTrailer === "tanker" || newSheetTrailer === "gas_tank" || newSheetTrailer === "cryogenic"
@@ -1221,7 +1221,7 @@ export default function RateSheetReconciliation() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Rate Unit</label>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Rate Unit</label>
                       <select value={newSheetRateUnit} onChange={e => setNewSheetRateUnit(e.target.value)}
                         className="w-full h-9 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.06] text-sm px-3 text-slate-800 dark:text-white">
                         {[
@@ -1242,11 +1242,11 @@ export default function RateSheetReconciliation() {
                     <div className="p-3 rounded-xl bg-gradient-to-r from-[#1473FF]/5 to-[#BE01FF]/5 border border-[#1473FF]/10 mb-3">
                       <div className="flex items-center gap-2 mb-2">
                         <Sparkles className="w-3.5 h-3.5 text-[#BE01FF]" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Rate Intelligence — Auto-Calibrated</span>
+                        <span className="text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Rate Intelligence — Auto-Calibrated</span>
                       </div>
                       <div className="flex items-center gap-3 flex-wrap">
                         {smartMeta?.regionInfo && (
-                          <span className="text-[9px] font-semibold px-2 py-1 rounded-lg bg-[#1473FF]/10 text-[#1473FF] border border-[#1473FF]/15">
+                          <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-[#1473FF]/10 text-[#1473FF] border border-[#1473FF]/15">
                             <MapPin className="w-2.5 h-2.5 inline mr-0.5" />
                             {smartMeta.regionInfo.label}
                             {smartMeta.regionInfo.multiplier !== 1.0 && (
@@ -1257,7 +1257,7 @@ export default function RateSheetReconciliation() {
                           </span>
                         )}
                         {smartMeta?.productMultiplier && smartMeta.productMultiplier !== 1 && (
-                          <span className="text-[9px] font-semibold px-2 py-1 rounded-lg bg-purple-500/10 text-purple-500 border border-purple-500/15">
+                          <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-purple-500/10 text-purple-500 border border-purple-500/15">
                             <Droplets className="w-2.5 h-2.5 inline mr-0.5" />
                             {newSheetProduct}
                             <span className={cn("ml-1", smartMeta.productMultiplier > 1 ? "text-amber-500" : "text-emerald-500")}>
@@ -1266,16 +1266,16 @@ export default function RateSheetReconciliation() {
                           </span>
                         )}
                         {smartMeta?.trailerMultiplier && smartMeta.trailerMultiplier !== 1 && (
-                          <span className="text-[9px] font-semibold px-2 py-1 rounded-lg bg-slate-500/10 text-slate-500 border border-slate-500/15">
+                          <span className="text-xs font-semibold px-2 py-1 rounded-lg bg-slate-500/10 text-slate-500 border border-slate-500/15">
                             <Truck className="w-2.5 h-2.5 inline mr-0.5" />
                             {smartMeta.trailerMultiplier > 1 ? "+" : ""}{((smartMeta.trailerMultiplier - 1) * 100).toFixed(0)}% vs tanker
                           </span>
                         )}
                         {smartMeta?.regionInfo?.padd && (
-                          <span className="text-[9px] text-slate-400">PADD {smartMeta.regionInfo.padd.replace("PADD", "")}</span>
+                          <span className="text-xs text-slate-400">PADD {smartMeta.regionInfo.padd.replace("PADD", "")}</span>
                         )}
                       </div>
-                      <p className="text-[9px] text-slate-400 mt-1.5">
+                      <p className="text-xs text-slate-400 mt-1.5">
                         60 tiers pre-calibrated with regional + product multipliers. Editable after creation.
                       </p>
                     </div>
@@ -1335,14 +1335,14 @@ export default function RateSheetReconciliation() {
                             <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{sheet.name}</p>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               {sheet.region && (
-                                <span className="text-[9px] text-[#1473FF] bg-[#1473FF]/10 px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
+                                <span className="text-xs text-[#1473FF] bg-[#1473FF]/10 px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
                                   <MapPin className="w-2.5 h-2.5" />{sheet.region}
                                 </span>
                               )}
-                              <span className="text-[9px] text-purple-500 bg-purple-500/10 px-1.5 py-0.5 rounded font-medium">
+                              <span className="text-xs text-purple-500 bg-purple-500/10 px-1.5 py-0.5 rounded font-medium">
                                 <Truck className="w-2.5 h-2.5 inline mr-0.5" />{{ tanker: "Tanker", dry_van: "Dry Van", reefer: "Reefer", flatbed: "Flatbed", step_deck: "Step Deck", lowboy: "Lowboy", double_drop: "Double Drop", conestoga: "Conestoga", gas_tank: "Gas Tank", cryogenic: "Cryogenic", hazmat_van: "Hazmat Van", food_grade_tank: "Food Tank", water_tank: "Water Tank", auto_carrier: "Auto Carrier", livestock: "Livestock", log_trailer: "Log Trailer", grain_hopper: "Grain Hopper", hopper: "Hopper", pneumatic: "Pneumatic", dump_trailer: "End Dump", intermodal: "Intermodal", curtainside: "Curtainside" }[sheet.trailerType as string] || sheet.trailerType || "Tanker"}
                               </span>
-                              <span className="text-[9px] text-slate-400">{sheet.productType || "Crude Oil"}</span>
+                              <span className="text-xs text-slate-400">{sheet.productType || "Crude Oil"}</span>
                             </div>
                           </div>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1359,23 +1359,23 @@ export default function RateSheetReconciliation() {
                         <div className="grid grid-cols-3 gap-2 mb-3">
                           <div className="text-center p-2 rounded-lg bg-slate-50 dark:bg-white/[0.02]">
                             <p className="text-lg font-bold text-[#1473FF]">{sheet.tierCount}</p>
-                            <p className="text-[9px] text-slate-400">Tiers</p>
+                            <p className="text-xs text-slate-400">Tiers</p>
                           </div>
                           <div className="text-center p-2 rounded-lg bg-slate-50 dark:bg-white/[0.02]">
                             <p className="text-lg font-bold text-emerald-500">{sheet.maxMiles}</p>
-                            <p className="text-[9px] text-slate-400">Max Mi</p>
+                            <p className="text-xs text-slate-400">Max Mi</p>
                           </div>
                           <div className="text-center p-2 rounded-lg bg-slate-50 dark:bg-white/[0.02]">
                             <p className="text-lg font-bold text-amber-500">v{sheet.version}</p>
-                            <p className="text-[9px] text-slate-400">Version</p>
+                            <p className="text-xs text-slate-400">Version</p>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-xs text-slate-400">
                             {sheet.effectiveDate ? `Effective ${new Date(sheet.effectiveDate).toLocaleDateString()}` : `Created ${new Date(sheet.createdAt).toLocaleDateString()}`}
                           </p>
                           {sheet.agreementId && (
-                            <span className="text-[9px] text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
+                            <span className="text-xs text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
                               <Link2 className="w-2.5 h-2.5" />Linked
                             </span>
                           )}
@@ -1396,7 +1396,7 @@ export default function RateSheetReconciliation() {
                 <div className={cn("p-6 text-center", cell)}>
                   <BarChart3 className="w-8 h-8 text-[#BE01FF]/30 mx-auto mb-2" />
                   <p className="text-xs text-slate-500">Select {2 - compareSheetIds.length} more sheet{compareSheetIds.length === 0 ? "s" : ""} to compare</p>
-                  <p className="text-[10px] text-slate-400 mt-1">Click up to 3 rate sheets to see a side-by-side comparison</p>
+                  <p className="text-xs text-slate-400 mt-1">Click up to 3 rate sheets to see a side-by-side comparison</p>
                 </div>
               )}
             </>
@@ -1416,9 +1416,9 @@ export default function RateSheetReconciliation() {
                       {sheetData?.name || "Loading..."}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
-                      {sheetData?.region && <span className="text-[9px] text-[#1473FF] bg-[#1473FF]/10 px-1.5 py-0.5 rounded font-medium flex items-center gap-1"><MapPin className="w-2.5 h-2.5" />{sheetData.region}</span>}
-                      <span className="text-[9px] text-slate-400">{sheetData?.productType || "Crude Oil"}</span>
-                      {sheetData?.version && <span className="text-[9px] text-slate-400">v{sheetData.version}</span>}
+                      {sheetData?.region && <span className="text-xs text-[#1473FF] bg-[#1473FF]/10 px-1.5 py-0.5 rounded font-medium flex items-center gap-1"><MapPin className="w-2.5 h-2.5" />{sheetData.region}</span>}
+                      <span className="text-xs text-slate-400">{sheetData?.productType || "Crude Oil"}</span>
+                      {sheetData?.version && <span className="text-xs text-slate-400">v{sheetData.version}</span>}
                     </div>
                   </div>
                 </div>
@@ -1441,7 +1441,7 @@ export default function RateSheetReconciliation() {
               {/* Version History Panel */}
               {showHistory && (
                 <div className={cn("p-4 overflow-hidden transition-all", cell)}>
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
                     <Clock className="w-3.5 h-3.5 text-[#1473FF]" />Version History — {sheetData?.name}
                   </h4>
                   {versionHistoryQ.isLoading ? (
@@ -1453,11 +1453,11 @@ export default function RateSheetReconciliation() {
                       {/* Current version marker */}
                       <div className="shrink-0 w-36 p-3 rounded-xl bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10 border border-[#1473FF]/20">
                         <div className="flex items-center gap-1.5 mb-1.5">
-                          <span className="text-[9px] font-bold text-[#1473FF] bg-[#1473FF]/15 px-1.5 py-0.5 rounded">CURRENT</span>
-                          <span className="text-[9px] text-slate-400">v{sheetData?.version || 1}</span>
+                          <span className="text-xs font-bold text-[#1473FF] bg-[#1473FF]/15 px-1.5 py-0.5 rounded">CURRENT</span>
+                          <span className="text-xs text-slate-400">v{sheetData?.version || 1}</span>
                         </div>
-                        <p className="text-[10px] text-slate-500">{tiers.length} tiers</p>
-                        <p className="text-[9px] text-slate-400 mt-1 truncate">{sheetData?.region || "No region"}</p>
+                        <p className="text-xs text-slate-500">{tiers.length} tiers</p>
+                        <p className="text-xs text-slate-400 mt-1 truncate">{sheetData?.region || "No region"}</p>
                       </div>
                       {/* Previous versions */}
                       {versionHistory.map((v: any) => (
@@ -1471,12 +1471,12 @@ export default function RateSheetReconciliation() {
                           }}
                           className="shrink-0 w-36 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] cursor-pointer hover:border-[#1473FF]/30 hover:bg-[#1473FF]/5 transition-all group">
                           <div className="flex items-center gap-1.5 mb-1.5">
-                            <span className="text-[9px] font-semibold text-slate-500">v{v.version}</span>
-                            <span className="text-[9px] text-slate-400">{new Date(v.snapshotAt).toLocaleDateString()}</span>
+                            <span className="text-xs font-semibold text-slate-500">v{v.version}</span>
+                            <span className="text-xs text-slate-400">{new Date(v.snapshotAt).toLocaleDateString()}</span>
                           </div>
-                          <p className="text-[10px] text-slate-500">{v.tierCount} tiers</p>
-                          <p className="text-[9px] text-slate-400 mt-1 truncate">{v.region || "No region"}</p>
-                          <p className="text-[8px] text-[#1473FF] opacity-0 group-hover:opacity-100 transition-opacity mt-1">Click to restore</p>
+                          <p className="text-xs text-slate-500">{v.tierCount} tiers</p>
+                          <p className="text-xs text-slate-400 mt-1 truncate">{v.region || "No region"}</p>
+                          <p className="text-xs text-[#1473FF] opacity-0 group-hover:opacity-100 transition-opacity mt-1">Click to restore</p>
                         </div>
                       ))}
                     </div>
@@ -1492,7 +1492,7 @@ export default function RateSheetReconciliation() {
                     Schedule A -- Per-Barrel Rate by Mileage (5-mile increments)
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] text-slate-400 flex items-center gap-1"><Pencil className="w-2.5 h-2.5" />Click any cell to edit</span>
+                    <span className="text-xs text-slate-400 flex items-center gap-1"><Pencil className="w-2.5 h-2.5" />Click any cell to edit</span>
                     <Badge className="bg-blue-500/10 text-blue-400 border-0">
                       {tiers.length} tiers | 1-{tiers.length > 0 ? tiers[tiers.length - 1]?.maxMiles : 300} miles
                     </Badge>
@@ -1530,7 +1530,7 @@ export default function RateSheetReconciliation() {
                                 )
                           )}
                         >
-                          <p className="text-[9px] text-slate-400">{tier.minMiles}-{tier.maxMiles} mi</p>
+                          <p className="text-xs text-slate-400">{tier.minMiles}-{tier.maxMiles} mi</p>
                           {isEditing ? (
                             <input
                               autoFocus
@@ -1555,7 +1555,7 @@ export default function RateSheetReconciliation() {
                           {/* Market rate overlay badge */}
                           {matchBand && marketPct !== null && !isEditing && (
                             <div className={cn(
-                              "absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] font-bold px-1.5 py-px rounded-full whitespace-nowrap",
+                              "absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-xs font-bold px-1.5 py-px rounded-full whitespace-nowrap",
                               Math.abs(marketPct) < 5
                                 ? "bg-slate-100 dark:bg-white/[0.06] text-slate-400"
                                 : marketPct > 0
@@ -1580,18 +1580,18 @@ export default function RateSheetReconciliation() {
                     ESANG AI — Rate Sheet Intelligence
                   </h3>
                   <Button size="sm" onClick={handleAiSuggest} disabled={aiSuggesting}
-                    className="h-8 px-4 text-[10px] rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0">
+                    className="h-8 px-4 text-xs rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0">
                     {aiSuggesting ? <><RefreshCw className="w-3 h-3 mr-1.5 animate-spin" />Analyzing...</> : <><Sparkles className="w-3 h-3 mr-1.5" />Suggest Surcharges &amp; Rules</>}
                   </Button>
                 </div>
-                <p className="text-[10px] text-slate-500 mb-4">AI analyzes current diesel prices, market conditions, and hauling economics to suggest optimal FSC baselines, wait time rates, and fee structures</p>
+                <p className="text-xs text-slate-500 mb-4">AI analyzes current diesel prices, market conditions, and hauling economics to suggest optimal FSC baselines, wait time rates, and fee structures</p>
 
                 {aiSuggestions && (
                   <div className="space-y-3">
                     <div className="p-3 rounded-xl bg-[#BE01FF]/5 border border-[#BE01FF]/15">
-                      <p className="text-[10px] font-semibold text-[#BE01FF] uppercase tracking-wider mb-2">AI Analysis</p>
+                      <p className="text-xs font-semibold text-[#BE01FF] uppercase tracking-wider mb-2">AI Analysis</p>
                       {aiSuggestions.rationale?.map((r: string, i: number) => (
-                        <p key={i} className="text-[11px] text-slate-600 dark:text-slate-400 flex items-start gap-1.5 mb-1">
+                        <p key={i} className="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-1.5 mb-1">
                           <Sparkles className="w-3 h-3 text-[#BE01FF] mt-0.5 shrink-0" />{r}
                         </p>
                       ))}
@@ -1608,18 +1608,18 @@ export default function RateSheetReconciliation() {
                         { label: "Travel Surcharge", value: `$${aiSuggestions.travelSurchargePerMile}/mi`, color: "text-purple-500" },
                       ].map(s => (
                         <div key={s.label} className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] text-center">
-                          <p className="text-[9px] text-slate-400 uppercase tracking-wider">{s.label}</p>
+                          <p className="text-xs text-slate-400 uppercase tracking-wider">{s.label}</p>
                           <p className={cn("text-sm font-bold mt-0.5", s.color)}>{s.value}</p>
                         </div>
                       ))}
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" onClick={applyAiSurcharges}
-                        className="h-8 px-4 text-[10px] rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0">
+                        className="h-8 px-4 text-xs rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0">
                         <CheckCircle className="w-3 h-3 mr-1.5" />Apply All Suggestions
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setAiSuggestions(null)}
-                        className="h-8 px-3 text-[10px] rounded-xl text-slate-400">Dismiss</Button>
+                        className="h-8 px-3 text-xs rounded-xl text-slate-400">Dismiss</Button>
                     </div>
                   </div>
                 )}
@@ -1672,23 +1672,23 @@ export default function RateSheetReconciliation() {
             </h3>
             <div className="grid grid-cols-5 gap-3">
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period Start</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period Start</label>
                 <DatePicker value={reconForm.periodStart} onChange={(v) => setReconForm(p => ({ ...p, periodStart: v }))} />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period End</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period End</label>
                 <DatePicker value={reconForm.periodEnd} onChange={(v) => setReconForm(p => ({ ...p, periodEnd: v }))} />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Customer</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Customer</label>
                 <Input value={reconForm.customerName} onChange={e => setReconForm(p => ({ ...p, customerName: e.target.value }))} placeholder="Diego Enterprises, Inc" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Carrier</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Carrier</label>
                 <Input value={reconForm.carrierName} onChange={e => setReconForm(p => ({ ...p, carrierName: e.target.value }))} placeholder="Lessley Services, LLC" className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Diesel $/gal</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Diesel $/gal</label>
                 <Input type="number" step="0.01" value={reconForm.currentDieselPrice} onChange={e => setReconForm(p => ({ ...p, currentDieselPrice: e.target.value }))} className="rounded-xl bg-slate-50 dark:bg-white/[0.04] border-slate-200 dark:border-white/[0.06] h-9 text-sm" />
               </div>
             </div>
@@ -1712,7 +1712,7 @@ export default function RateSheetReconciliation() {
               <div className="space-y-2">
                 {/* Header */}
                 {/* Run Ticket Line Header */}
-                <div className="grid grid-cols-12 gap-2 text-[9px] font-semibold uppercase tracking-wider text-slate-400 px-2">
+                <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400 px-2">
                   <span className="col-span-2">Driver</span>
                   <span className="col-span-2">Origin</span>
                   <span className="col-span-2">Destination</span>
@@ -1742,16 +1742,16 @@ export default function RateSheetReconciliation() {
                     <div className="grid grid-cols-12 gap-2 items-center p-2 rounded-b-lg bg-blue-50/50 dark:bg-blue-500/[0.03] border border-blue-100 dark:border-blue-500/[0.08]">
                       <div className="col-span-3 flex items-center gap-1">
                         <FileText className="w-3 h-3 text-blue-400 flex-shrink-0" />
-                        <Input value={line.bolNumber || ""} onChange={e => updateReconLine(idx, "bolNumber", e.target.value)} placeholder="BOL #" className="rounded-lg h-6 text-[10px] bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/[0.15]" />
+                        <Input value={line.bolNumber || ""} onChange={e => updateReconLine(idx, "bolNumber", e.target.value)} placeholder="BOL #" className="rounded-lg h-6 text-xs bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/[0.15]" />
                       </div>
                       <div className="col-span-3">
-                        <Input value={line.bolProduct || ""} onChange={e => updateReconLine(idx, "bolProduct", e.target.value)} placeholder="BOL Product" className="rounded-lg h-6 text-[10px] bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/[0.15]" />
+                        <Input value={line.bolProduct || ""} onChange={e => updateReconLine(idx, "bolProduct", e.target.value)} placeholder="BOL Product" className="rounded-lg h-6 text-xs bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/[0.15]" />
                       </div>
                       <div className="col-span-3">
-                        <Input type="number" value={line.bolDeclaredVolume || ""} onChange={e => updateReconLine(idx, "bolDeclaredVolume", Number(e.target.value))} placeholder="BOL Vol (BBL)" className="rounded-lg h-6 text-[10px] bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/[0.15]" />
+                        <Input type="number" value={line.bolDeclaredVolume || ""} onChange={e => updateReconLine(idx, "bolDeclaredVolume", Number(e.target.value))} placeholder="BOL Vol (BBL)" className="rounded-lg h-6 text-xs bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/[0.15]" />
                       </div>
                       <div className="col-span-3">
-                        <Input type="number" step="0.01" value={line.agreedRate || ""} onChange={e => updateReconLine(idx, "agreedRate", Number(e.target.value))} placeholder="Agreed Rate $" className="rounded-lg h-6 text-[10px] bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/[0.15]" />
+                        <Input type="number" step="0.01" value={line.agreedRate || ""} onChange={e => updateReconLine(idx, "agreedRate", Number(e.target.value))} placeholder="Agreed Rate $" className="rounded-lg h-6 text-xs bg-white dark:bg-white/[0.04] border-blue-200 dark:border-blue-500/[0.15]" />
                       </div>
                     </div>
                   </div>
@@ -1798,23 +1798,23 @@ export default function RateSheetReconciliation() {
               {/* Totals Summary */}
               <div className="grid grid-cols-5 gap-3 mb-4">
                 <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-500/5 border border-blue-200 dark:border-blue-500/20 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-blue-500">Total Runs</p>
+                  <p className="text-xs uppercase tracking-wider text-blue-500">Total Runs</p>
                   <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{reconResult.totals.totalRuns}</p>
                 </div>
                 <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-amber-500">Gross BBL</p>
+                  <p className="text-xs uppercase tracking-wider text-amber-500">Gross BBL</p>
                   <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{reconResult.totals.totalGrossBarrels.toFixed(2)}</p>
                 </div>
                 <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-emerald-500">Net BBL</p>
+                  <p className="text-xs uppercase tracking-wider text-emerald-500">Net BBL</p>
                   <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{reconResult.totals.totalNetBarrels.toFixed(2)}</p>
                 </div>
                 <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-red-500">BS&W Deduction</p>
+                  <p className="text-xs uppercase tracking-wider text-red-500">BS&W Deduction</p>
                   <p className="text-xl font-bold text-red-600 dark:text-red-400">{reconResult.totals.totalBSWDeduction.toFixed(2)}</p>
                 </div>
                 <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-cyan-50 dark:from-emerald-500/10 dark:to-cyan-500/10 border border-emerald-200 dark:border-emerald-500/20 text-center">
-                  <p className="text-[9px] uppercase tracking-wider text-emerald-500">Grand Total</p>
+                  <p className="text-xs uppercase tracking-wider text-emerald-500">Grand Total</p>
                   <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">${reconResult.totals.grandTotal.toFixed(2)}</p>
                 </div>
               </div>
@@ -1823,7 +1823,7 @@ export default function RateSheetReconciliation() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="text-[9px] uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-white/[0.04]">
+                    <tr className="text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-white/[0.04]">
                       <th className="text-left py-2 px-2">Ref#</th>
                       <th className="text-left py-2 px-2">Driver</th>
                       <th className="text-left py-2 px-2">Route</th>
@@ -1871,7 +1871,7 @@ export default function RateSheetReconciliation() {
                   <h4 className="text-xs font-semibold text-cyan-700 dark:text-cyan-400 mb-3 flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4" />Reconciliation Verification Audit
                   </h4>
-                  <p className="text-[10px] text-slate-500 mb-3">Run ticket data verified against BOL declarations, agreed rates, and product requirements</p>
+                  <p className="text-xs text-slate-500 mb-3">Run ticket data verified against BOL declarations, agreed rates, and product requirements</p>
                   <div className="space-y-2">
                     {reconResult.lines.map((resultLine: any, i: number) => {
                       const inputLine = reconLines[i];
@@ -1889,10 +1889,10 @@ export default function RateSheetReconciliation() {
                             <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{resultLine.referenceNumber} -- {resultLine.driverName || "Driver"}</span>
                             <div className="flex items-center gap-1">
                               {allPass ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> : <AlertTriangle className="w-3.5 h-3.5 text-red-500" />}
-                              <span className={cn("text-[10px] font-bold", allPass ? "text-emerald-500" : "text-red-500")}>{allPass ? "VERIFIED" : "DISCREPANCY"}</span>
+                              <span className={cn("text-xs font-bold", allPass ? "text-emerald-500" : "text-red-500")}>{allPass ? "VERIFIED" : "DISCREPANCY"}</span>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                             {/* Volume Check */}
                             <div className="flex items-center gap-1">
                               {volMatch === null ? <Clock className="w-3 h-3 text-slate-400" /> : volMatch ? <CheckCircle className="w-3 h-3 text-emerald-500" /> : <XCircle className="w-3 h-3 text-red-500" />}
@@ -1939,7 +1939,7 @@ export default function RateSheetReconciliation() {
                     const audited = reconLines.filter((l: any) => l.bolNumber || l.bolDeclaredVolume > 0 || l.agreedRate > 0).length;
                     const totalLines = reconResult.lines.length;
                     return (
-                      <div className="mt-3 flex items-center justify-between text-[10px] text-slate-500">
+                      <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
                         <span>{audited} of {totalLines} lines cross-referenced against BOL</span>
                         <span>Volume tolerance: 2% | Rate tolerance: 5%</span>
                       </div>
@@ -1996,10 +1996,10 @@ export default function RateSheetReconciliation() {
                         <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
                         <div className="w-20 font-medium text-slate-600 dark:text-slate-400">Carrier</div>
                       </div>
-                      <div className="text-center text-[10px] text-slate-400">
+                      <div className="text-center text-xs text-slate-400">
                         Platform fee deducted at settlement. BOL, run ticket, and reconciliation included free.
                       </div>
-                      <div className="flex justify-center gap-4 text-[10px]">
+                      <div className="flex justify-center gap-4 text-xs">
                         <span className="px-2 py-1 rounded bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 font-medium">
                           EusoTrip Revenue: ${reconResult.platformFees?.totalPlatformRevenue?.toFixed(2) || "0.00"}
                         </span>
@@ -2022,18 +2022,18 @@ export default function RateSheetReconciliation() {
                 <ShieldCheck className="w-4 h-4 text-[#1473FF]" />Ticket Reconciliation
               </h3>
               <Button size="sm" onClick={() => ticketReconQ.refetch?.()} disabled={ticketReconQ.isLoading}
-                className="h-8 px-3 text-[10px] rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0">
+                className="h-8 px-3 text-xs rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0">
                 <RefreshCw className={cn("w-3 h-3 mr-1", ticketReconQ.isLoading && "animate-spin")} />Run Reconciliation
               </Button>
             </div>
-            <p className="text-[10px] text-slate-500 mb-3">Automatically matches internal run ticket records against external BOL declarations to verify volume, product, rate, and financial accuracy</p>
+            <p className="text-xs text-slate-500 mb-3">Automatically matches internal run ticket records against external BOL declarations to verify volume, product, rate, and financial accuracy</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period Start</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period Start</label>
                 <DatePicker value={reconPeriod.start} onChange={(v) => setReconPeriod(p => ({ ...p, start: v }))} />
               </div>
               <div>
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period End</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">Period End</label>
                 <DatePicker value={reconPeriod.end} onChange={(v) => setReconPeriod(p => ({ ...p, end: v }))} />
               </div>
             </div>
@@ -2046,23 +2046,23 @@ export default function RateSheetReconciliation() {
                 <div className={cn("text-2xl font-bold", reconData!.summary.reconciliationScore >= 80 ? "text-emerald-400" : reconData!.summary.reconciliationScore >= 50 ? "text-amber-400" : "text-red-400")}>
                   {reconData!.summary.reconciliationScore}%
                 </div>
-                <p className="text-[10px] text-slate-500 mt-0.5">Reconciliation Score</p>
+                <p className="text-xs text-slate-500 mt-0.5">Reconciliation Score</p>
               </div>
               <div className={cn("p-4 text-center", cell)}>
                 <div className="text-2xl font-bold text-emerald-400">{reconData!.summary.clean || 0}</div>
-                <p className="text-[10px] text-slate-500 mt-0.5">Matched (Clean)</p>
+                <p className="text-xs text-slate-500 mt-0.5">Matched (Clean)</p>
               </div>
               <div className={cn("p-4 text-center", cell)}>
                 <div className="text-2xl font-bold text-amber-400">{reconData!.summary.warnings || 0}</div>
-                <p className="text-[10px] text-slate-500 mt-0.5">Minor Variance</p>
+                <p className="text-xs text-slate-500 mt-0.5">Minor Variance</p>
               </div>
               <div className={cn("p-4 text-center", cell)}>
                 <div className="text-2xl font-bold text-red-400">{reconData!.summary.discrepancies || 0}</div>
-                <p className="text-[10px] text-slate-500 mt-0.5">Discrepancies</p>
+                <p className="text-xs text-slate-500 mt-0.5">Discrepancies</p>
               </div>
               <div className={cn("p-4 text-center", cell)}>
                 <div className="text-2xl font-bold text-slate-500">{reconData!.summary.unmatched || 0}</div>
-                <p className="text-[10px] text-slate-500 mt-0.5">Unmatched</p>
+                <p className="text-xs text-slate-500 mt-0.5">Unmatched</p>
               </div>
             </div>
           )}
@@ -2090,14 +2090,14 @@ export default function RateSheetReconciliation() {
                         <ArrowRight className="w-3 h-3 text-slate-400" />
                         <span className="text-xs font-medium text-blue-500">{m.bolNumber}</span>
                       </div>
-                      <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md",
+                      <span className={cn("text-xs font-bold px-2 py-0.5 rounded-md",
                         m.overallStatus === "green" ? "bg-emerald-500/10 text-emerald-500" :
                         m.overallStatus === "amber" ? "bg-amber-500/10 text-amber-500" :
                         "bg-red-500/10 text-red-500"
                       )}>{m.overallStatus === "green" ? "MATCHED" : m.overallStatus === "amber" ? "VARIANCE" : "DISCREPANCY"}</span>
                     </div>
                     {/* Comparison Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[10px]">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                       <div>
                         <span className="text-slate-500 block">Volume</span>
                         <div className="flex items-center gap-1 mt-0.5">
@@ -2130,7 +2130,7 @@ export default function RateSheetReconciliation() {
                     {m.flags?.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">
                         {m.flags.map((f: string, fi: number) => (
-                          <span key={fi} className={cn("text-[9px] px-2 py-0.5 rounded-md font-medium",
+                          <span key={fi} className={cn("text-xs px-2 py-0.5 rounded-md font-medium",
                             f.includes("discrepancy") || f.includes("mismatch") || f.includes("REJECT") ? "bg-red-500/10 text-red-400" : "bg-amber-500/10 text-amber-400"
                           )}>{f}</span>
                         ))}
@@ -2148,19 +2148,19 @@ export default function RateSheetReconciliation() {
               <h4 className="text-xs font-semibold text-slate-800 dark:text-white flex items-center gap-2 mb-3">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />Unmatched Records ({reconData!.unmatched.length})
               </h4>
-              <p className="text-[10px] text-slate-500 mb-3">These records could not be paired — investigate for missing documents, incorrect invoicing, or lost product</p>
+              <p className="text-xs text-slate-500 mb-3">These records could not be paired — investigate for missing documents, incorrect invoicing, or lost product</p>
               <div className="space-y-1.5">
                 {reconData!.unmatched.map((u: any, i: number) => (
                   <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.03]">
                     <div className="flex items-center gap-3">
-                      <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded",
+                      <span className={cn("text-xs font-bold px-1.5 py-0.5 rounded",
                         u.type === "run_ticket" ? "bg-amber-500/10 text-amber-400" : "bg-blue-500/10 text-blue-400"
                       )}>{u.type === "run_ticket" ? "TICKET" : "BOL"}</span>
                       <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{u.number}</span>
-                      <span className="text-[10px] text-slate-500">{u.product} · {u.volume} BBL</span>
-                      <span className="text-[10px] text-slate-400">{u.driver}</span>
+                      <span className="text-xs text-slate-500">{u.product} · {u.volume} BBL</span>
+                      <span className="text-xs text-slate-400">{u.driver}</span>
                     </div>
-                    <span className="text-[9px] text-red-400 italic">{u.reason}</span>
+                    <span className="text-xs text-red-400 italic">{u.reason}</span>
                   </div>
                 ))}
               </div>
@@ -2185,30 +2185,30 @@ export default function RateSheetReconciliation() {
 
           {/* Reconciliation Process Legend */}
           <div className={cn("p-4", cell)}>
-            <h4 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Reconciliation Process</h4>
-            <div className="grid grid-cols-4 gap-3 text-[10px]">
+            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Reconciliation Process</h4>
+            <div className="grid grid-cols-4 gap-3 text-xs">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center text-[8px] font-bold text-slate-500">1</div>
+                <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center text-xs font-bold text-slate-500">1</div>
                 <span className="text-slate-600 dark:text-slate-400">Record Retrieval — gather run tickets & BOLs</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center text-[8px] font-bold text-slate-500">2</div>
+                <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center text-xs font-bold text-slate-500">2</div>
                 <span className="text-slate-600 dark:text-slate-400">Matching — auto-pair by date, product, volume, carrier</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center text-[8px] font-bold text-slate-500">3</div>
+                <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center text-xs font-bold text-slate-500">3</div>
                 <span className="text-slate-600 dark:text-slate-400">Investigation — analyze discrepancies & flag issues</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center text-[8px] font-bold text-slate-500">4</div>
+                <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center text-xs font-bold text-slate-500">4</div>
                 <span className="text-slate-600 dark:text-slate-400">Adjustment — correct errors in general ledger</span>
               </div>
             </div>
             <div className="flex items-center gap-4 mt-3 pt-2 border-t border-slate-100 dark:border-white/[0.04]">
-              <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-emerald-400" /><span className="text-[10px] text-slate-500">Matched (≤2% vol)</span></div>
-              <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-amber-400" /><span className="text-[10px] text-slate-500">Variance (2-5%)</span></div>
-              <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-400" /><span className="text-[10px] text-slate-500">Discrepancy (&gt;5%)</span></div>
-              <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-slate-400" /><span className="text-[10px] text-slate-500">Unmatched</span></div>
+              <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-emerald-400" /><span className="text-xs text-slate-500">Matched (≤2% vol)</span></div>
+              <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-amber-400" /><span className="text-xs text-slate-500">Variance (2-5%)</span></div>
+              <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-400" /><span className="text-xs text-slate-500">Discrepancy (&gt;5%)</span></div>
+              <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-slate-400" /><span className="text-xs text-slate-500">Unmatched</span></div>
             </div>
           </div>
         </div>

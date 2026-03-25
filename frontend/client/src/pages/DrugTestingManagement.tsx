@@ -90,15 +90,15 @@ export default function DrugTestingManagement() {
               <div className="flex gap-6 text-center">
                 <div>
                   <p className="text-lg font-bold text-white">{compliance.testingMetrics?.totalTestsYTD || 0}</p>
-                  <p className="text-[9px] text-slate-400 uppercase">Tests YTD</p>
+                  <p className="text-xs text-slate-400 uppercase">Tests YTD</p>
                 </div>
                 <div>
                   <p className="text-lg font-bold text-green-400">{compliance.testingMetrics?.negativeResults || 0}</p>
-                  <p className="text-[9px] text-slate-400 uppercase">Negative</p>
+                  <p className="text-xs text-slate-400 uppercase">Negative</p>
                 </div>
                 <div>
                   <p className="text-lg font-bold text-red-400">{compliance.testingMetrics?.positiveResults || 0}</p>
-                  <p className="text-[9px] text-slate-400 uppercase">Positive</p>
+                  <p className="text-xs text-slate-400 uppercase">Positive</p>
                 </div>
               </div>
             </div>
@@ -113,28 +113,28 @@ export default function DrugTestingManagement() {
             <CardContent className="p-4 text-center">
               <Users className="w-5 h-5 text-blue-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-blue-400">{pool.poolSize}</p>
-              <p className="text-[9px] text-slate-400 uppercase">Pool Size</p>
+              <p className="text-xs text-slate-400 uppercase">Pool Size</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <Beaker className="w-5 h-5 text-cyan-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-cyan-400">{pool.drugTestsRequired}</p>
-              <p className="text-[9px] text-slate-400 uppercase">Drug Tests Req (50%)</p>
+              <p className="text-xs text-slate-400 uppercase">Drug Tests Req (50%)</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <Beaker className="w-5 h-5 text-purple-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-purple-400">{pool.alcoholTestsRequired}</p>
-              <p className="text-[9px] text-slate-400 uppercase">Alcohol Tests Req (10%)</p>
+              <p className="text-xs text-slate-400 uppercase">Alcohol Tests Req (10%)</p>
             </CardContent>
           </Card>
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4 text-center">
               <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-1" />
               <p className="text-xl font-bold text-green-400">{pool.drugTestsCompleted}</p>
-              <p className="text-[9px] text-slate-400 uppercase">Completed</p>
+              <p className="text-xs text-slate-400 uppercase">Completed</p>
             </CardContent>
           </Card>
         </div>
@@ -162,7 +162,7 @@ export default function DrugTestingManagement() {
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
             <FileText className="w-5 h-5 text-[#1473FF]" />Test Records
-            <Badge variant="outline" className="text-[10px] border-slate-600 ml-auto">{listQuery.data?.total || 0} total</Badge>
+            <Badge variant="outline" className="text-xs border-slate-600 ml-auto">{listQuery.data?.total || 0} total</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -177,12 +177,12 @@ export default function DrugTestingManagement() {
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-white font-medium text-sm">Test #{t.id}</span>
-                      <Badge variant="outline" className="text-[9px] border-slate-600">{TYPE_LABELS[t.testType] || t.testType}</Badge>
-                      <Badge className={cn("text-[9px]", RESULT_COLORS[t.result] || "bg-slate-500/20 text-slate-400")}>{t.result}</Badge>
+                      <Badge variant="outline" className="text-xs border-slate-600">{TYPE_LABELS[t.testType] || t.testType}</Badge>
+                      <Badge className={cn("text-xs", RESULT_COLORS[t.result] || "bg-slate-500/20 text-slate-400")}>{t.result}</Badge>
                     </div>
                     <p className="text-xs text-slate-500">Driver #{t.driverId} · {t.testDate}</p>
                   </div>
-                  <span className="text-[10px] text-slate-500">{t.createdAt ? new Date(t.createdAt).toLocaleDateString() : ""}</span>
+                  <span className="text-xs text-slate-500">{t.createdAt ? new Date(t.createdAt).toLocaleDateString() : ""}</span>
                 </div>
               ))}
             </div>

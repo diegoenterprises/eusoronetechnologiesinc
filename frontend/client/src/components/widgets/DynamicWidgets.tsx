@@ -727,7 +727,7 @@ export const FleetStatusWidget: React.FC = () => {
                 {statCards.map(s => (
                   <div key={s.label} className={`text-center p-2.5 rounded-xl ${s.bg} border ${s.border} transition-all hover:scale-[1.02]`}>
                     <p className={`text-xl font-bold ${s.text} tabular-nums`}>{s.value}</p>
-                    <p className="text-[10px] text-gray-500 font-medium tracking-wide mt-0.5">{s.label}</p>
+                    <p className="text-xs text-gray-500 font-medium tracking-wide mt-0.5">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -914,7 +914,7 @@ export const HOSTrackerWidget: React.FC = () => {
           <span className={`text-sm font-bold tabular-nums ${getTextColor(data.used, data.limit)}`}>
             {(data.limit - data.used).toFixed(1)}h
           </span>
-          <span className="text-[10px] text-gray-600">left</span>
+          <span className="text-xs text-gray-600">left</span>
         </div>
       </div>
       <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
@@ -2142,7 +2142,7 @@ export const EquipmentUtilizationWidget: React.FC = () => {
                   </div>
                 ))}
                 {!isExpanded && equipEntries.length > 3 && (
-                  <div className="text-[10px] text-gray-500 text-center">+{equipEntries.length - 3} more types</div>
+                  <div className="text-xs text-gray-500 text-center">+{equipEntries.length - 3} more types</div>
                 )}
               </div>
             </>

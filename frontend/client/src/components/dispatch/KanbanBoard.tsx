@@ -222,21 +222,21 @@ function LoadCard({
       {/* Row 1: load number + badges + rate */}
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
-          <span className="text-[11px] font-mono font-bold tracking-tight text-white/90 truncate">{load.loadNumber}</span>
+          <span className="text-xs font-mono font-bold tracking-tight text-white/90 truncate">{load.loadNumber}</span>
           {load.hazmatClass && (
             <span className="inline-flex items-center gap-0.5 px-1.5 py-px rounded-md bg-red-500/15 border border-red-500/20 shrink-0">
               <Flame className="w-2.5 h-2.5 text-red-400" />
-              <span className="text-[7px] font-extrabold text-red-400 uppercase tracking-widest">HM</span>
+              <span className="text-xs font-extrabold text-red-400 uppercase tracking-widest">HM</span>
             </span>
           )}
           {sub && (
-            <span className="text-[8px] font-medium px-1.5 py-px rounded-md bg-white/[0.06] text-slate-400 border border-white/[0.06] shrink-0 truncate max-w-[60px]">
+            <span className="text-xs font-medium px-1.5 py-px rounded-md bg-white/[0.06] text-slate-400 border border-white/[0.06] shrink-0 truncate max-w-[60px]">
               {sub}
             </span>
           )}
         </div>
         {load.rate !== undefined && load.rate > 0 && (
-          <span className="text-[11px] font-semibold text-emerald-400 tabular-nums shrink-0">${load.rate.toLocaleString()}</span>
+          <span className="text-xs font-semibold text-emerald-400 tabular-nums shrink-0">${load.rate.toLocaleString()}</span>
         )}
       </div>
 
@@ -248,21 +248,21 @@ function LoadCard({
           <div className="w-[7px] h-[7px] rounded-full bg-red-400/80 ring-[2.5px] ring-red-400/15" />
         </div>
         <div className="flex-1 min-w-0 space-y-0.5">
-          <p className="text-[10px] font-medium text-slate-200 truncate leading-snug">{load.origin}</p>
-          <p className="text-[10px] text-slate-400/80 truncate leading-snug">{load.destination}</p>
+          <p className="text-xs font-medium text-slate-200 truncate leading-snug">{load.origin}</p>
+          <p className="text-xs text-slate-400/80 truncate leading-snug">{load.destination}</p>
         </div>
       </div>
 
       {/* Row 3: meta pills */}
       <div className="flex items-center gap-1.5 flex-wrap">
         {load.commodity && (
-          <span className="inline-flex items-center gap-0.5 text-[9px] text-slate-500 bg-white/[0.04] px-1.5 py-0.5 rounded-md">
+          <span className="inline-flex items-center gap-0.5 text-xs text-slate-500 bg-white/[0.04] px-1.5 py-0.5 rounded-md">
             <Droplets className="w-2.5 h-2.5 opacity-60" />{load.commodity}
           </span>
         )}
         {load.pickupDate && (
           <span className={cn(
-            "inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-md",
+            "inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-md",
             urg === "overdue" ? "text-red-400 bg-red-500/10" :
             urg === "urgent" ? "text-amber-400 bg-amber-500/10" :
             "text-slate-500 bg-white/[0.04]",
@@ -271,7 +271,7 @@ function LoadCard({
           </span>
         )}
         {load.weight && load.weight > 0 && (
-          <span className="text-[9px] text-slate-500 bg-white/[0.04] px-1.5 py-0.5 rounded-md tabular-nums">
+          <span className="text-xs text-slate-500 bg-white/[0.04] px-1.5 py-0.5 rounded-md tabular-nums">
             {(load.weight / 2000).toFixed(1)}T
           </span>
         )}
@@ -281,16 +281,16 @@ function LoadCard({
       {load.driverName ? (
         <div className="mt-2.5 pt-2 border-t border-white/[0.06] flex items-center gap-2">
           <div className="relative">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[9px] font-bold text-white shadow-sm shadow-blue-500/30">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-sm shadow-blue-500/30">
               {load.driverName.charAt(0)}
             </div>
             <div className="absolute -bottom-px -right-px w-[7px] h-[7px] rounded-full bg-emerald-400 border-[1.5px] border-[#0d1424]" />
           </div>
-          <span className="text-[10px] font-medium text-blue-300/90">{load.driverName}</span>
+          <span className="text-xs font-medium text-blue-300/90">{load.driverName}</span>
         </div>
       ) : (
         <div className="mt-2.5 pt-2 border-t border-dashed border-white/[0.05]">
-          <div className="flex items-center gap-1.5 text-[9px] text-slate-600 italic">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 italic">
             <User className="w-3 h-3 opacity-50" />
             <span>Drop driver to assign</span>
           </div>
@@ -395,13 +395,13 @@ export default function KanbanBoard({ loads, loading, onAssignDriver, onMoveLoad
             <GripVertical className="w-3.5 h-3.5 text-cyan-400" />
           </div>
           Dispatch Board
-          <span className="text-[10px] font-normal text-slate-500 ml-0.5 tabular-nums">{loads.length} loads</span>
+          <span className="text-xs font-normal text-slate-500 ml-0.5 tabular-nums">{loads.length} loads</span>
         </h2>
         {onCreateLoad && (
           <Button
             size="sm"
             className={cn(
-              "h-7 px-3 text-[10px] font-medium rounded-lg",
+              "h-7 px-3 text-xs font-medium rounded-lg",
               "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500",
               "shadow-md shadow-cyan-500/20 border border-cyan-400/20",
               "transition-all duration-200",
@@ -443,9 +443,9 @@ export default function KanbanBoard({ loads, loading, onAssignDriver, onMoveLoad
                 <div className={cn("absolute inset-0 bg-gradient-to-r opacity-80", lane.grad)} />
                 <div className="relative flex items-center gap-2 w-full">
                   <span style={{ color: lane.accent }}>{lane.icon}</span>
-                  <span className="text-[11px] font-semibold tracking-tight" style={{ color: lane.accent }}>{lane.label}</span>
+                  <span className="text-xs font-semibold tracking-tight" style={{ color: lane.accent }}>{lane.label}</span>
                   <div
-                    className="ml-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-bold tabular-nums"
+                    className="ml-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold tabular-nums"
                     style={{ backgroundColor: `${lane.accent}18`, color: lane.accent, border: `1px solid ${lane.accent}25` }}
                   >
                     {lane.items.length}
@@ -475,7 +475,7 @@ export default function KanbanBoard({ loads, loading, onAssignDriver, onMoveLoad
                     style={{ borderColor: `${lane.accent}40`, backgroundColor: `${lane.accent}08` }}
                   >
                     <ArrowRight className="w-5 h-5 mb-1.5" style={{ color: `${lane.accent}80` }} />
-                    <span className="text-[10px] font-medium" style={{ color: `${lane.accent}99` }}>Drop here</span>
+                    <span className="text-xs font-medium" style={{ color: `${lane.accent}99` }}>Drop here</span>
                   </motion.div>
                 )}
 
@@ -483,11 +483,11 @@ export default function KanbanBoard({ loads, loading, onAssignDriver, onMoveLoad
                 {lane.items.length === 0 && !active && (
                   <div className="flex flex-col items-center justify-center py-10 text-center">
                     <div className="mb-2 opacity-60">{lane.emptyIcon}</div>
-                    <span className="text-[10px] text-slate-600">{lane.emptyText}</span>
+                    <span className="text-xs text-slate-600">{lane.emptyText}</span>
                     {lane.key === "unassigned" && onCreateLoad && (
                       <Button
                         size="sm" variant="ghost"
-                        className="h-6 px-2.5 text-[10px] text-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg mt-2"
+                        className="h-6 px-2.5 text-xs text-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg mt-2"
                         onClick={onCreateLoad}
                       >
                         <Plus className="w-3 h-3 mr-1" />Create Load

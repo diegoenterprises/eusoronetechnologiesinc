@@ -233,7 +233,7 @@ export function AppointmentScheduler({
                           >
                             <div className="flex items-center justify-between">
                               <span className="font-medium truncate">{apt.catalystName}</span>
-                              <Badge variant="outline" className="text-[10px]">
+                              <Badge variant="outline" className="text-xs">
                                 {apt.appointmentType === "loading" ? "L" : "U"}
                               </Badge>
                             </div>

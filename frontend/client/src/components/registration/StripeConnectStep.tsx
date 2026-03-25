@@ -130,10 +130,10 @@ export default function StripeConnectStep({ businessType, onBusinessTypeChange, 
             <h3 className="text-white font-bold text-lg mb-1">Payment Setup</h3>
             <p className="text-slate-300 text-sm">{ctx.headline}</p>
             <div className="flex items-center gap-2 mt-3">
-              <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 text-[10px] font-bold">
+              <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/30 text-xs font-bold">
                 <Lock className="w-3 h-3 mr-1" />EusoWallet Secured
               </Badge>
-              <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px] font-bold">
+              <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-xs font-bold">
                 <ShieldCheck className="w-3 h-3 mr-1" />Bank-Level Encryption
               </Badge>
             </div>
@@ -172,11 +172,11 @@ export default function StripeConnectStep({ businessType, onBusinessTypeChange, 
               </div>
               <div>
                 <p className={`font-bold text-sm ${businessType === "company" ? "text-blue-400" : "text-white"}`}>Business Account</p>
-                <p className="text-[11px] text-slate-400">LLC, Corp, Partnership</p>
+                <p className="text-xs text-slate-400">LLC, Corp, Partnership</p>
               </div>
               {businessType === "company" && <CheckCircle className="w-5 h-5 text-blue-500 ml-auto" />}
             </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               Payouts go to your company bank account. Requires EIN and business verification.
             </p>
           </button>
@@ -198,11 +198,11 @@ export default function StripeConnectStep({ businessType, onBusinessTypeChange, 
               </div>
               <div>
                 <p className={`font-bold text-sm ${businessType === "individual" ? "text-purple-400" : "text-white"}`}>Individual / Sole Prop</p>
-                <p className="text-[11px] text-slate-400">Owner-Operator, 1099</p>
+                <p className="text-xs text-slate-400">Owner-Operator, 1099</p>
               </div>
               {businessType === "individual" && <CheckCircle className="w-5 h-5 text-purple-500 ml-auto" />}
             </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               Payouts go to your personal bank account. Requires SSN and identity verification.
             </p>
           </button>
@@ -214,21 +214,21 @@ export default function StripeConnectStep({ businessType, onBusinessTypeChange, 
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">What Happens Next</p>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/40">
-            <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-[10px] font-bold text-blue-400">1</div>
+            <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400">1</div>
             <span className="text-xs text-slate-300">Complete registration</span>
           </div>
           <ArrowRight className="w-4 h-4 text-slate-500" />
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/40">
-            <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-[10px] font-bold text-purple-400">2</div>
+            <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-400">2</div>
             <span className="text-xs text-slate-300">Log in to your account</span>
           </div>
           <ArrowRight className="w-4 h-4 text-slate-500" />
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/40">
-            <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-[10px] font-bold text-emerald-400">3</div>
+            <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-400">3</div>
             <span className="text-xs text-slate-300">Verify &amp; connect bank via EusoConnect</span>
           </div>
         </div>
-        <p className="text-[10px] text-slate-500 mt-3 italic">
+        <p className="text-xs text-slate-500 mt-3 italic">
           After logging in, you'll be guided through EusoConnect's secure verification to confirm your identity and link your bank account. This typically takes 2-3 minutes.
         </p>
       </div>

@@ -182,49 +182,12 @@ export function generateTankReading(
   terminalName: string,
   tankNumber: number,
   productsHandled: string[] | null,
-  dispatchedGallons: number,
-  tankCount: number,
+  _dispatchedGallons: number,
+  _tankCount: number,
 ): TankReading {
+  // Requires SCADA integration — returns zero/empty readings until connected to real tank gauges
   const product = assignProduct(tankNumber, productsHandled);
   const capacity = PRODUCT_CAPACITIES[product] || 50000;
-
-  // Simulate level based on dispatches and time-based consumption
-  const hour = new Date().getHours();
-  const dayProgress = hour / 24;
-  // Simulate daily consumption pattern (higher during business hours)
-  const consumptionMultiplier = hour >= 6 && hour <= 18 ? 1.5 : 0.5;
-  const baseLevel = capacity * (0.40 + Math.sin(tankNumber * 1.7 + dayProgress * Math.PI) * 0.25);
-  const dispatchShare = dispatchedGallons / Math.max(tankCount, 1);
-  const currentLevel = Math.max(0, Math.min(capacity, Math.round(baseLevel - dispatchShare * 0.3)));
-  const percentFull = Math.round((currentLevel / capacity) * 100);
-
-  // Gauge reading (feet + inches from level)
-  const totalInches = (currentLevel / capacity) * 16 * 12; // 16-foot tank
-  const gaugeFeet = Math.floor(totalInches / 12);
-  const gaugeInches = Math.round(totalInches % 12);
-
-  // Temperature varies by product and time
-  const baseTemp = product === "propane" ? -40 : 65;
-  const tempVariation = Math.sin(hour / 24 * Math.PI * 2) * 10;
-  const temperatureF = Math.round(baseTemp + tempVariation + tankNumber * 0.5);
-
-  const apiGravity = PRODUCT_API_GRAVITY[product] || 35;
-  const bswPercent = Math.round((tankNumber * 0.07 % 0.5) * 100) / 100;
-  const waterBottomInches = Math.round(bswPercent * 3 * 10) / 10;
-
-  // Change rate simulation
-  const changeRateGPH = Math.round((-50 + (tankNumber % 10) * 3) * consumptionMultiplier);
-
-  const usableVolume = Math.max(0, currentLevel - (capacity * 0.02)); // 2% heel
-  const ullage = capacity - currentLevel;
-
-  const estimatedEmptyHours = changeRateGPH < 0 ? Math.round(currentLevel / Math.abs(changeRateGPH)) : null;
-  const estimatedFullHours = changeRateGPH > 0 ? Math.round(ullage / changeRateGPH) : null;
-
-  const avgDailyConsumption = Math.abs(changeRateGPH) * 12; // ~12 active hours
-  const daysSupply = avgDailyConsumption > 0 ? Math.round(currentLevel / avgDailyConsumption) : 99;
-
-  const status = determineTankStatus(percentFull / 100, changeRateGPH, bswPercent);
 
   return {
     tankId: `${terminalId}-T${String(tankNumber).padStart(2, "0")}`,
@@ -233,23 +196,23 @@ export function generateTankReading(
     tankNumber,
     product,
     capacityGallons: capacity,
-    currentLevelGallons: currentLevel,
-    percentFull,
-    gaugeFeet,
-    gaugeInches,
-    temperatureF,
-    apiGravity,
-    bswPercent,
-    waterBottomInches,
-    usableVolume: Math.round(usableVolume),
-    ullageGallons: ullage,
-    status,
-    changeRateGPH,
-    estimatedEmptyHours,
-    estimatedFullHours,
+    currentLevelGallons: 0,
+    percentFull: 0,
+    gaugeFeet: 0,
+    gaugeInches: 0,
+    temperatureF: 0,
+    apiGravity: PRODUCT_API_GRAVITY[product] || 35,
+    bswPercent: 0,
+    waterBottomInches: 0,
+    usableVolume: 0,
+    ullageGallons: capacity,
+    status: "offline",
+    changeRateGPH: 0,
+    estimatedEmptyHours: null,
+    estimatedFullHours: null,
     lastGaugedAt: new Date().toISOString(),
     lastDeliveryAt: null,
-    daysSupplyRemaining: daysSupply,
+    daysSupplyRemaining: 0,
   };
 }
 
@@ -361,76 +324,28 @@ export function generateTankAlerts(readings: TankReading[]): TankAlert[] {
 // ── Historical Trends ──
 
 export function generateTankTrend(
-  reading: TankReading,
-  hours: number = 24,
+  _reading: TankReading,
+  _hours: number = 24,
 ): TankTrendPoint[] {
-  const points: TankTrendPoint[] = [];
-  const now = Date.now();
-  const intervalMs = (hours * 3600000) / Math.min(hours * 2, 100);
-  const numPoints = Math.min(hours * 2, 100);
-
-  for (let i = numPoints; i >= 0; i--) {
-    const ts = new Date(now - i * intervalMs);
-    const h = ts.getHours();
-    const progress = i / numPoints;
-
-    // Simulate level trend: current level + historical variation
-    const variation = Math.sin(progress * Math.PI * 4 + reading.tankNumber) * reading.capacityGallons * 0.08;
-    const trendLevel = Math.max(0, Math.min(
-      reading.capacityGallons,
-      reading.currentLevelGallons + variation + (progress * reading.capacityGallons * 0.15),
-    ));
-
-    const tempVariation = Math.sin(h / 24 * Math.PI * 2) * 8;
-    let event: string | undefined;
-    if (i === Math.floor(numPoints * 0.3)) event = "Delivery received";
-    if (i === Math.floor(numPoints * 0.7)) event = "Dispatch started";
-
-    points.push({
-      timestamp: ts.toISOString(),
-      levelGallons: Math.round(trendLevel),
-      percentFull: Math.round((trendLevel / reading.capacityGallons) * 100),
-      temperatureF: Math.round(reading.temperatureF + tempVariation),
-      event,
-    });
-  }
-
-  return points;
+  // Requires SCADA integration — no historical trend data without real gauge readings
+  return [];
 }
 
 // ── Demand Forecast ──
 
 export function generateTankForecast(reading: TankReading): TankForecast {
-  const avgDailyConsumption = Math.abs(reading.changeRateGPH) * 12; // 12 active hours
-  const daysUntilEmpty = avgDailyConsumption > 0
-    ? Math.round(reading.currentLevelGallons / avgDailyConsumption)
-    : 99;
-
-  // Reorder when we hit 30% capacity
-  const reorderPoint = Math.round(reading.capacityGallons * 0.30);
-  const gallonsAboveReorder = reading.currentLevelGallons - reorderPoint;
-  const daysUntilReorder = avgDailyConsumption > 0 && gallonsAboveReorder > 0
-    ? Math.round(gallonsAboveReorder / avgDailyConsumption)
-    : 0;
-
-  // Suggest delivery to fill to 85%
-  const targetLevel = reading.capacityGallons * 0.85;
-  const suggestedQty = Math.max(0, Math.round(targetLevel - reading.currentLevelGallons));
-
-  const deliveryDate = new Date();
-  deliveryDate.setDate(deliveryDate.getDate() + Math.max(1, daysUntilReorder - 1));
-
+  // Requires SCADA integration — no forecast data without real consumption history
   return {
     tankId: reading.tankId,
     product: reading.product,
-    currentLevel: reading.currentLevelGallons,
-    avgDailyConsumption: Math.round(avgDailyConsumption),
-    daysUntilReorder,
-    daysUntilEmpty,
-    reorderPoint,
-    suggestedDeliveryDate: deliveryDate.toISOString().split("T")[0],
-    suggestedDeliveryQty: suggestedQty,
-    confidence: Math.min(95, 60 + reading.daysSupplyRemaining * 2),
+    currentLevel: 0,
+    avgDailyConsumption: 0,
+    daysUntilReorder: 0,
+    daysUntilEmpty: 0,
+    reorderPoint: 0,
+    suggestedDeliveryDate: new Date().toISOString().split("T")[0],
+    suggestedDeliveryQty: 0,
+    confidence: 0,
   };
 }
 

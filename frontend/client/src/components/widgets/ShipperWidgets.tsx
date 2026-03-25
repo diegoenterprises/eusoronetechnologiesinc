@@ -19,9 +19,9 @@ export const DeliveryTimelineWidget: React.FC = () => {
             <Clock className="w-3 h-3 text-cyan-400 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs text-white truncate">{d.loadNumber || `Load #${i+1}`}</p>
-              <p className="text-[10px] text-gray-500">{d.destination || "N/A"}</p>
+              <p className="text-xs text-gray-500">{d.destination || "N/A"}</p>
             </div>
-            <span className="text-[10px] text-cyan-400 whitespace-nowrap">{d.eta || "TBD"}</span>
+            <span className="text-xs text-cyan-400 whitespace-nowrap">{d.eta || "TBD"}</span>
           </div>
         )} empty="No upcoming deliveries" />
       </div>
@@ -74,9 +74,9 @@ export const ShippingCalendarWidget: React.FC = () => {
             <Calendar className="w-3 h-3 text-purple-400 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs text-white truncate">{e.title || `Event #${i+1}`}</p>
-              <p className="text-[10px] text-gray-500">{e.date || "TBD"}</p>
+              <p className="text-xs text-gray-500">{e.date || "TBD"}</p>
             </div>
-            <Badge className="bg-blue-500/20 text-blue-400 border-0 text-[10px]">{e.type || "Pickup"}</Badge>
+            <Badge className="bg-blue-500/20 text-blue-400 border-0 text-xs">{e.type || "Pickup"}</Badge>
           </div>
         )} empty="No scheduled events" />
       </div>
@@ -95,7 +95,7 @@ export const PODDocumentsWidget: React.FC = () => {
           <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
             <FileText className="w-3 h-3 text-green-400 flex-shrink-0" />
             <span className="text-xs text-white flex-1 truncate">{d.name || `POD-${i+1}`}</span>
-            <span className="text-[10px] text-gray-500">{d.date || ""}</span>
+            <span className="text-xs text-gray-500">{d.date || ""}</span>
           </div>
         )} empty="No POD documents" />
       </div>

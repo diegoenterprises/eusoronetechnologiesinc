@@ -137,11 +137,11 @@ export default function LocationIntelligence() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <Badge variant="outline" className="text-[10px] capitalize">
+                            <Badge variant="outline" className="text-xs capitalize">
                               {load.status?.replace(/_/g, " ")}
                             </Badge>
                             {load.driverName && (
-                              <p className="text-[10px] text-muted-foreground mt-0.5">{load.driverName}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{load.driverName}</p>
                             )}
                           </div>
                         </div>
@@ -243,7 +243,7 @@ export default function LocationIntelligence() {
                           >
                             <div className="flex items-center justify-between">
                               <span className="font-medium">Load {load.loadNumber}</span>
-                              <Badge variant="outline" className="text-[10px] capitalize">
+                              <Badge variant="outline" className="text-xs capitalize">
                                 {load.status?.replace(/_/g, " ")}
                               </Badge>
                             </div>

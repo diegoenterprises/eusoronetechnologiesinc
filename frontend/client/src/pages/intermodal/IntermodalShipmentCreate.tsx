@@ -215,7 +215,7 @@ export default function IntermodalShipmentCreate() {
                     <div className={cn("font-medium", isLight ? "text-slate-900" : "text-white")}>
                       {s.origin || "Origin"} → {s.destination || "Dest"}
                     </div>
-                    <Badge className={cn(MODE_COLOR[s.mode], "text-[9px] px-1 py-0")}>
+                    <Badge className={cn(MODE_COLOR[s.mode], "text-xs px-1 py-0")}>
                       {s.mode}
                     </Badge>
                   </div>

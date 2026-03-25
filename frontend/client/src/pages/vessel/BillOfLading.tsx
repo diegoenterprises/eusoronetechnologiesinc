@@ -73,7 +73,7 @@ export default function BillOfLading() {
         ].map((t) => (
           <div key={t.type} className={cn("rounded-xl border p-3", isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
             <Badge className={cn(bolTypeBadge(t.type), "mb-1.5 text-xs")}>{t.label}</Badge>
-            <p className={cn("text-[11px]", isLight ? "text-slate-500" : "text-slate-400")}>{t.desc}</p>
+            <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>{t.desc}</p>
           </div>
         ))}
       </div>

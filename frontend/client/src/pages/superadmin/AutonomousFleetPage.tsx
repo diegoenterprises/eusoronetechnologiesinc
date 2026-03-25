@@ -45,7 +45,7 @@ export default function AutonomousFleetPage() {
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
             <Bot className="w-5 h-5 text-amber-400" />Autonomous Vehicle Fleet
           </h1>
-          <p className="text-[10px] text-slate-400 mt-0.5">AV telemetry ingestion, monitoring, and emergency control</p>
+          <p className="text-xs text-slate-400 mt-0.5">AV telemetry ingestion, monitoring, and emergency control</p>
         </div>
         <Button size="sm" className="h-7 text-xs bg-amber-600 text-white" onClick={() => setShowRegister(true)}>
           <Plus className="w-3.5 h-3.5 mr-1" />Register AV
@@ -63,7 +63,7 @@ export default function AutonomousFleetPage() {
         ].map(s => (
           <div key={s.label} className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-center">
             <span className={cn("text-lg font-bold font-mono", s.color)}>{s.value}</span>
-            <p className="text-[9px] text-slate-500 mt-0.5">{s.label}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
@@ -86,20 +86,20 @@ export default function AutonomousFleetPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold text-white">AV #{av.id}</span>
-                      <Badge className={cn("text-[8px]", STATUS_COLORS[av.operationalStatus] || STATUS_COLORS.offline)}>{av.operationalStatus}</Badge>
-                      <Badge className="text-[8px] bg-white/[0.04] border-white/[0.06] text-slate-400">Level {av.avLevel}</Badge>
+                      <Badge className={cn("text-xs", STATUS_COLORS[av.operationalStatus] || STATUS_COLORS.offline)}>{av.operationalStatus}</Badge>
+                      <Badge className="text-xs bg-white/[0.04] border-white/[0.06] text-slate-400">Level {av.avLevel}</Badge>
                     </div>
-                    <p className="text-[9px] text-slate-500 mt-0.5 font-mono">VIN: {av.vin}</p>
-                    {av.telemetryLastUpdate && <p className="text-[8px] text-slate-600 mt-0.5">Last ping: {new Date(av.telemetryLastUpdate).toLocaleString()}</p>}
+                    <p className="text-xs text-slate-500 mt-0.5 font-mono">VIN: {av.vin}</p>
+                    {av.telemetryLastUpdate && <p className="text-xs text-slate-600 mt-0.5">Last ping: {new Date(av.telemetryLastUpdate).toLocaleString()}</p>}
                   </div>
                   <div className="flex gap-1">
                     {av.operationalStatus !== "emergency_control" ? (
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] text-red-400 hover:bg-red-500/10"
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-red-400 hover:bg-red-500/10"
                         onClick={(e) => { e.stopPropagation(); takeoverM.mutate({ avId: av.id }); }}>
                         <ShieldAlert className="w-3 h-3 mr-0.5" />Takeover
                       </Button>
                     ) : (
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] text-emerald-400 hover:bg-emerald-500/10"
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-emerald-400 hover:bg-emerald-500/10"
                         onClick={(e) => { e.stopPropagation(); releaseM.mutate({ avId: av.id }); }}>
                         Release
                       </Button>
@@ -118,7 +118,7 @@ export default function AutonomousFleetPage() {
           <CardHeader className="pb-2"><CardTitle className="text-xs text-white flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-amber-400" />Telemetry — AV #{selectedAvId}</CardTitle></CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full text-[10px]">
+              <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-white/[0.06] text-slate-500">
                     <th className="text-left py-1.5 px-2">Time</th>
@@ -159,15 +159,15 @@ export default function AutonomousFleetPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] text-slate-500 uppercase">Vehicle ID</label>
+                <label className="text-xs text-slate-500 uppercase">Vehicle ID</label>
                 <Input value={regForm.vehicleId} onChange={(e: any) => setRegForm({ ...regForm, vehicleId: e.target.value })} placeholder="Existing vehicle ID" className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 uppercase">VIN (17 characters)</label>
+                <label className="text-xs text-slate-500 uppercase">VIN (17 characters)</label>
                 <Input value={regForm.vin} onChange={(e: any) => setRegForm({ ...regForm, vin: e.target.value })} placeholder="1HGBH41JXMN109186" maxLength={17} className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1 font-mono" />
               </div>
               <div>
-                <label className="text-[10px] text-slate-500 uppercase">AV Level (1-5)</label>
+                <label className="text-xs text-slate-500 uppercase">AV Level (1-5)</label>
                 <select value={regForm.avLevel} onChange={(e) => setRegForm({ ...regForm, avLevel: e.target.value })} className="w-full h-7 text-xs bg-white/[0.04] border border-white/[0.08] text-white rounded-md px-2 mt-1">
                   <option value="1">Level 1 — Driver Assistance</option>
                   <option value="2">Level 2 — Partial Automation</option>

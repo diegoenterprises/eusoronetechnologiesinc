@@ -49,7 +49,7 @@ export function InviteButton({
         : "bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20"
     ),
     variant === "compact" && cn(
-      "px-2 py-1 rounded-md text-[10px]",
+      "px-2 py-1 rounded-md text-xs",
       isLight
         ? "bg-purple-50 text-purple-600 hover:bg-purple-100"
         : "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"

@@ -202,12 +202,12 @@ export default function ContainerTracking() {
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-2">
                             <span className={cn("font-medium text-sm", isLight ? "text-slate-900" : "text-white")}>{m.eventType?.replace(/_/g, " ") || "Event"}</span>
-                            {mode && <Badge className={cn("text-[10px] px-1.5 py-0", MODE_BADGE[mode] || "bg-slate-500/20 text-slate-400")}>{mode.toLowerCase()}</Badge>}
+                            {mode && <Badge className={cn("text-xs px-1.5 py-0", MODE_BADGE[mode] || "bg-slate-500/20 text-slate-400")}>{mode.toLowerCase()}</Badge>}
                           </div>
                         </div>
                         {m.location && <div className={cn("flex items-center gap-1 text-xs", isLight ? "text-slate-500" : "text-slate-400")}><MapPin className="w-3 h-3" />{typeof m.location === "object" ? m.location.description || `${m.location.lat}, ${m.location.lng}` : m.location}</div>}
                         {m.notes && <div className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>{m.notes}</div>}
-                        {m.timestamp && <div className={cn("text-[10px] mt-1", isLight ? "text-slate-400" : "text-slate-500")}>{new Date(m.timestamp).toLocaleString()}</div>}
+                        {m.timestamp && <div className={cn("text-xs mt-1", isLight ? "text-slate-400" : "text-slate-500")}>{new Date(m.timestamp).toLocaleString()}</div>}
                       </div>
                     </div>
                   );

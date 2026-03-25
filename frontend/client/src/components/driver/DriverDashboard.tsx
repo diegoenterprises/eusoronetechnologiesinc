@@ -357,7 +357,7 @@ export function DriverDashboard({ driverName, vehicleNumber }: DriverDashboardPr
                   {hint && (
                     <div className="flex items-start gap-2 p-2 rounded bg-amber-500/10 border border-amber-500/20">
                       <AlertTriangle className="w-3 h-3 text-amber-400 flex-shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-amber-300/90 leading-relaxed">{hint}</p>
+                      <p className="text-xs text-amber-300/90 leading-relaxed">{hint}</p>
                     </div>
                   )}
                   <div className="flex gap-2 flex-wrap">

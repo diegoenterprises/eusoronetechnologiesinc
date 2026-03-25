@@ -276,7 +276,7 @@ export default function MessagingCenter() {
                       "font-semibold truncate text-sm",
                       conv.unreadCount > 0 ? "text-white" : "text-slate-300"
                     )}>{conv.name}</p>
-                    <span className="text-[10px] text-slate-500 flex-shrink-0 ml-2">{formatTime(conv.lastMessageAt)}</span>
+                    <span className="text-xs text-slate-500 flex-shrink-0 ml-2">{formatTime(conv.lastMessageAt)}</span>
                   </div>
                   <div className="flex items-center justify-between mt-0.5">
                     <p className={cn(
@@ -284,7 +284,7 @@ export default function MessagingCenter() {
                       conv.unreadCount > 0 ? "text-slate-300 font-medium" : "text-slate-500"
                     )}>{conv.lastMessage || "No messages yet"}</p>
                     {conv.unreadCount > 0 && (
-                      <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[10px] h-5 min-w-5 flex items-center justify-center rounded-full border-0 ml-2 px-1.5">
+                      <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs h-5 min-w-5 flex items-center justify-center rounded-full border-0 ml-2 px-1.5">
                         {conv.unreadCount}
                       </Badge>
                     )}
@@ -332,12 +332,12 @@ export default function MessagingCenter() {
                   <p className="text-white font-semibold text-sm">{selectedConv?.name}</p>
                   <div className="flex items-center gap-2">
                     {selectedConv?.online ? (
-                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-[11px] font-medium">Online</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xs font-medium">Online</span>
                     ) : (
-                      <span className="text-slate-500 text-[11px]">Offline</span>
+                      <span className="text-slate-500 text-xs">Offline</span>
                     )}
                     {selectedConv?.role && selectedConv.role !== "user" && (
-                      <Badge variant="outline" className={cn("text-[9px] h-4 px-1.5 border", getRoleBadgeColor(selectedConv.role))}>
+                      <Badge variant="outline" className={cn("text-xs h-4 px-1.5 border", getRoleBadgeColor(selectedConv.role))}>
                         {getRoleIcon(selectedConv.role)}
                         <span className="ml-1">{selectedConv.role}</span>
                       </Badge>
@@ -382,7 +382,7 @@ export default function MessagingCenter() {
                             <img src={message.senderAvatar} alt={`${message.senderName || 'Sender'} avatar`} className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10" />
                           ) : (
                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center ring-1 ring-white/10">
-                              <span className="text-[11px] font-semibold text-slate-300">{(message.senderName || "?")[0]?.toUpperCase()}</span>
+                              <span className="text-xs font-semibold text-slate-300">{(message.senderName || "?")[0]?.toUpperCase()}</span>
                             </div>
                           )}
                         </div>
@@ -406,7 +406,7 @@ export default function MessagingCenter() {
 
                       <div className={cn("max-w-[70%]")}>
                         {showSenderName && !message.isOwn && (
-                          <p className="text-[10px] text-slate-500 mb-0.5 ml-1 font-medium">{message.senderName}</p>
+                          <p className="text-xs text-slate-500 mb-0.5 ml-1 font-medium">{message.senderName}</p>
                         )}
                         <div
                           className={cn(
@@ -451,7 +451,7 @@ export default function MessagingCenter() {
                           )}
                         </div>
                         <div className={cn("flex items-center gap-1.5 mt-1 px-1", message.isOwn ? "justify-end" : "justify-start")}>
-                          <span className="text-[10px] text-slate-500 font-medium">{formatTime(message.timestamp)}</span>
+                          <span className="text-xs text-slate-500 font-medium">{formatTime(message.timestamp)}</span>
                           {message.isOwn && (
                             message.read
                               ? <CheckCheck className="w-3 h-3 text-blue-400" />
@@ -593,7 +593,7 @@ export default function MessagingCenter() {
                         <div className="flex items-center gap-2 mt-0.5">
                           {user.email && <p className="text-slate-500 text-xs truncate">{user.email}</p>}
                           {user.role && (
-                            <Badge variant="outline" className={cn("text-[9px] h-4 px-1.5 border", getRoleBadgeColor(user.role))}>
+                            <Badge variant="outline" className={cn("text-xs h-4 px-1.5 border", getRoleBadgeColor(user.role))}>
                               {user.role}
                             </Badge>
                           )}

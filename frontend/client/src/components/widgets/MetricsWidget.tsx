@@ -37,7 +37,7 @@ const MetricsWidget: React.FC<MetricsWidgetProps> = ({ metrics, compact = false 
                   <span className="text-xs text-gray-400">{metric.trend}</span>
                 )}
               </div>
-              <p className={`text-xs text-gray-400 mb-1 ${compact ? 'text-[10px]' : ''}`}>{metric.label}</p>
+              <p className={`text-xs text-gray-400 mb-1 ${compact ? 'text-xs' : ''}`}>{metric.label}</p>
               <p className={`font-bold text-white ${compact ? 'text-lg' : 'text-2xl'}`}>{metric.value}</p>
             </div>
           </div>

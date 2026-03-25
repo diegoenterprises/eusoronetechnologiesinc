@@ -162,7 +162,7 @@ export default function ShipperAgreementWizard() {
       {step==="parties"&&(<div className="space-y-5">
         <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Users className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent"/>Party A ({roleConfig.partyALabel})</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <div><label className={lb}>Party A Name (as shown on agreement)</label><Input value={aDisplayName} onChange={(e:any)=>setADisplayName(e.target.value)} placeholder="e.g. Acme Logistics LLC" className={cn(ic,"font-semibold")}/><p className={cn("text-[10px] mt-1",mt)}>This name appears as "PARTY A" in the generated contract</p></div>
+            <div><label className={lb}>Party A Name (as shown on agreement)</label><Input value={aDisplayName} onChange={(e:any)=>setADisplayName(e.target.value)} placeholder="e.g. Acme Logistics LLC" className={cn(ic,"font-semibold")}/><p className={cn("text-xs mt-1",mt)}>This name appears as "PARTY A" in the generated contract</p></div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className={lb}>Signer Name</label><Input value={aName} onChange={(e:any)=>setAName(e.target.value)} placeholder="Authorized signatory" className={ic}/></div>
               <div><label className={lb}>Company Name</label><Input value={aComp} onChange={(e:any)=>setAComp(e.target.value)} placeholder="Your company name" className={ic}/></div>
@@ -174,7 +174,7 @@ export default function ShipperAgreementWizard() {
           </CardContent></Card>
         <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Building2 className="w-5 h-5 text-blue-500"/>Party B ({roleConfig.partyBLabel})</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <div><label className={lb}>Party B Name (as shown on agreement)</label><Input value={bDisplayName} onChange={(e:any)=>setBDisplayName(e.target.value)} placeholder="e.g. Swift Transport Inc" className={cn(ic,"font-semibold")}/><p className={cn("text-[10px] mt-1",mt)}>This name appears as "PARTY B" in the generated contract</p></div>
+            <div><label className={lb}>Party B Name (as shown on agreement)</label><Input value={bDisplayName} onChange={(e:any)=>setBDisplayName(e.target.value)} placeholder="e.g. Swift Transport Inc" className={cn(ic,"font-semibold")}/><p className={cn("text-xs mt-1",mt)}>This name appears as "PARTY B" in the generated contract</p></div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className={lb}>Signer Name</label><Input value={bName} onChange={(e:any)=>setBName(e.target.value)} placeholder="Authorized signatory" className={ic}/></div>
               <div><label className={lb}>Company Name</label><Input value={bComp} onChange={(e:any)=>setBComp(e.target.value)} placeholder="Company name" className={ic}/></div>
@@ -192,7 +192,7 @@ export default function ShipperAgreementWizard() {
               <div><label className={lb}>Non-Circumvention (months)</label><Input type="number" value={nonCircumventMonths} onChange={(e:any)=>setNonCircumventMonths(e.target.value)} placeholder="12" className={ic}/></div>
               <div><label className={lb}>Notice Effective (business days)</label><Input type="number" value={noticePeriodDays} onChange={(e:any)=>setNoticePeriodDays(e.target.value)} placeholder="3" className={ic}/></div>
             </div>
-            <p className={cn("text-[10px]",mt)}>These values populate the corresponding articles in the generated agreement (termination, non-circumvention, notices).</p>
+            <p className={cn("text-xs",mt)}>These values populate the corresponding articles in the generated agreement (termination, non-circumvention, notices).</p>
           </CardContent></Card>
         <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Truck className="w-5 h-5 text-purple-500"/>Equipment & Operations</CardTitle></CardHeader>
           <CardContent className="space-y-3">
@@ -291,7 +291,7 @@ export default function ShipperAgreementWizard() {
           <CardContent><pre className={cn("text-xs whitespace-pre-wrap leading-relaxed p-4 rounded-xl max-h-[400px] overflow-y-auto font-mono",cl)}>{genContent||"Agreement content will appear here after generation."}</pre></CardContent>
         </Card>
         <div className={cn("grid grid-cols-2 md:grid-cols-4 gap-3")}>
-          {[{l:"Base Rate",v:`$${parseFloat(baseRate||"0").toLocaleString()}`},{l:"Payment",v:`Net ${payDays} days`},{l:"Frequency",v:payFreq.replace(/_/g," ").replace(/\b\w/g,(c:string)=>c.toUpperCase())},{l:"Equipment",v:eqTypes.map(e=>e.replace(/_/g," ")).join(", ")}].map(x=>(<div key={x.l} className={cl}><p className="text-[10px] text-slate-400 uppercase">{x.l}</p><p className={vl}>{x.v}</p></div>))}
+          {[{l:"Base Rate",v:`$${parseFloat(baseRate||"0").toLocaleString()}`},{l:"Payment",v:`Net ${payDays} days`},{l:"Frequency",v:payFreq.replace(/_/g," ").replace(/\b\w/g,(c:string)=>c.toUpperCase())},{l:"Equipment",v:eqTypes.map(e=>e.replace(/_/g," ")).join(", ")}].map(x=>(<div key={x.l} className={cl}><p className="text-xs text-slate-400 uppercase">{x.l}</p><p className={vl}>{x.v}</p></div>))}
         </div>
         <div className="flex gap-3">
           <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setStep("lanes")}><ArrowLeft className="w-4 h-4 mr-2"/>Back</Button>
@@ -327,7 +327,7 @@ export default function ShipperAgreementWizard() {
               <div className="flex justify-between"><span className="text-xs text-slate-400">{roleConfig.partyBLabel}</span><span className={vl}>{bComp||bName||"TBD"}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-400">Rate</span><span className="font-bold text-sm bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${parseFloat(baseRate||"0").toLocaleString()}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-400">Payment</span><span className={vl}>Net {payDays} · {payFreq.replace(/_/g," ")}</span></div>
-              <div className="flex justify-between"><span className="text-xs text-slate-400">Status</span><Badge className="bg-yellow-500/15 text-yellow-500 border-yellow-500/30 border text-[10px]">Pending Counter-Signature</Badge></div>
+              <div className="flex justify-between"><span className="text-xs text-slate-400">Status</span><Badge className="bg-yellow-500/15 text-yellow-500 border-yellow-500/30 border text-xs">Pending Counter-Signature</Badge></div>
             </div>
           </div>
           <div className="mt-8 flex justify-center gap-3">

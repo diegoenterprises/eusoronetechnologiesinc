@@ -140,7 +140,7 @@ export default function FactoringAging() {
             {riskConfig.icon}
             <span className="ml-1">{riskConfig.label}</span>
           </Badge>
-          <Badge className={cn("border-0 text-[10px] px-2 py-0.5", isLight ? "bg-slate-100 text-slate-500" : "bg-slate-800 text-slate-400")}>
+          <Badge className={cn("border-0 text-xs px-2 py-0.5", isLight ? "bg-slate-100 text-slate-500" : "bg-slate-800 text-slate-400")}>
             <RefreshCw className="w-3 h-3 mr-1" />Auto-refresh 60s
           </Badge>
         </div>
@@ -208,10 +208,10 @@ export default function FactoringAging() {
                 </div>
                 <div>
                   <p className={cn("text-sm font-medium", isLight ? "text-slate-800" : "text-white")}>{bucket.label}</p>
-                  <p className={cn("text-[10px]", isLight ? "text-slate-400" : "text-slate-500")}>{bucket.range} · {bucket.count} invoices</p>
+                  <p className={cn("text-xs", isLight ? "text-slate-400" : "text-slate-500")}>{bucket.range} · {bucket.count} invoices</p>
                 </div>
                 {bucket.severity !== "low" && (
-                  <Badge className={cn("ml-auto border-0 text-[9px]", RISK_CONFIG[bucket.severity].bg, RISK_CONFIG[bucket.severity].text)}>
+                  <Badge className={cn("ml-auto border-0 text-xs", RISK_CONFIG[bucket.severity].bg, RISK_CONFIG[bucket.severity].text)}>
                     {RISK_CONFIG[bucket.severity].icon}
                   </Badge>
                 )}
@@ -273,7 +273,7 @@ export default function FactoringAging() {
                       <span className={cn("text-sm font-bold", isOverdue ? "text-red-400" : (isLight ? "text-slate-800" : "text-white"))}>
                         ${inv.amount?.toLocaleString() || "0"}
                       </span>
-                      <Badge className={cn("border-0 text-[9px]",
+                      <Badge className={cn("border-0 text-xs",
                         isOverdue ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"
                       )}>
                         {isOverdue ? "Overdue" : "Outstanding"}

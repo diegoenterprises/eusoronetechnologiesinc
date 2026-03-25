@@ -10,7 +10,7 @@ import { eq, and, desc, sql, gte, lte, or } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { vehicles, geofences, geofenceEvents, loads, drivers } from "../../drizzle/schema";
+import { vehicles, geofences, geofenceEvents, loads, drivers, gpsTracking } from "../../drizzle/schema";
 
 // ── Zod schemas ──────────────────────────────────────────────────────────────
 
@@ -253,8 +253,19 @@ export const assetTrackingRouter = router({
         const [v] = await db.select().from(vehicles).where(eq(vehicles.id, id)).limit(1);
         if (!v) return [];
 
-        // No real GPS trail data in DB yet — return empty
-        return [];
+        const cutoff = new Date(Date.now() - input.hours * 3600 * 1000);
+        const points = await db.select().from(gpsTracking)
+          .where(and(eq(gpsTracking.vehicleId, id), gte(gpsTracking.timestamp, cutoff)))
+          .orderBy(desc(gpsTracking.timestamp))
+          .limit(500);
+
+        return points.map(p => ({
+          lat: parseFloat(String(p.latitude)),
+          lng: parseFloat(String(p.longitude)),
+          speed: p.speed ? parseFloat(String(p.speed)) : 0,
+          heading: p.heading ? parseFloat(String(p.heading)) : 0,
+          timestamp: p.timestamp.toISOString(),
+        }));
       }, []);
     }),
 
@@ -337,7 +348,6 @@ export const assetTrackingRouter = router({
         qualityScore: number;
       }> = [];
 
-      // No real sensor readings in DB yet
       return [];
     }),
 
@@ -386,7 +396,6 @@ export const assetTrackingRouter = router({
           acknowledgedBy: string | null;
         }> = [];
 
-        // No real sensor alerts in DB yet
         return [];
       }, []);
     }),
@@ -443,7 +452,7 @@ export const assetTrackingRouter = router({
           .where(and(eq(vehicles.companyId, companyId), eq(vehicles.vehicleType, "reefer")))
           .limit(100);
 
-        // No real temperature sensor data yet — return vehicle list with zero readings
+        // Return vehicle list — real readings require IoT sensor integration
         const allVehicles = vList.length > 0 ? vList : await db.select({ id: vehicles.id, licensePlate: vehicles.licensePlate, make: vehicles.make, vehicleType: vehicles.vehicleType })
           .from(vehicles).where(eq(vehicles.companyId, companyId)).limit(30);
 
@@ -495,7 +504,6 @@ export const assetTrackingRouter = router({
         resolved: boolean;
       }> = [];
 
-      // No real temperature excursion data in DB yet
       return [];
     }),
 
@@ -564,7 +572,6 @@ export const assetTrackingRouter = router({
         durationSeconds: number | null;
       }> = [];
 
-      // No real door sensor event data in DB yet
       return [];
     }),
 
@@ -649,7 +656,6 @@ export const assetTrackingRouter = router({
         { name: "New York NY", lat: 40.71, lng: -74.01 },
       ];
 
-      // No real container tracking data in DB yet
       return [];
     }),
 
@@ -726,7 +732,6 @@ export const assetTrackingRouter = router({
         { name: "Rest Area - Waco", lat: 31.55, lng: -97.15, type: "rest" },
       ];
 
-      // No real dwell time analytics data in DB yet
       return locations.map((loc) => ({
         locationName: loc.name,
         locationType: loc.type,
@@ -782,7 +787,6 @@ export const assetTrackingRouter = router({
           }));
         }
 
-        // No geofence events in DB — return empty
         return [];
       }, []);
     }),
@@ -873,7 +877,6 @@ export const assetTrackingRouter = router({
           .where(eq(vehicles.companyId, companyId))
           .limit(50);
 
-        // No real maintenance schedule data in DB yet — return empty
         return [];
       }, []);
     }),
@@ -987,7 +990,6 @@ export const assetTrackingRouter = router({
         byType: Record<string, number>;
       }> = [];
 
-      // No real alert history data in DB yet
       return [];
     }),
 

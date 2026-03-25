@@ -257,12 +257,12 @@ export default function FacilityPage() {
           </div>
           {editing ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
-              <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Name</label><Input value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} className={inp} /></div>
-              <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Code</label><Input value={form.code} onChange={(e: any) => setForm({ ...form, code: e.target.value })} placeholder="HTN-01" className={inp} /></div>
-              <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Type</label>
+              <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Name</label><Input value={form.name} onChange={(e: any) => setForm({ ...form, name: e.target.value })} className={inp} /></div>
+              <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Code</label><Input value={form.code} onChange={(e: any) => setForm({ ...form, code: e.target.value })} placeholder="HTN-01" className={inp} /></div>
+              <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Type</label>
                 <select value={form.terminalType} onChange={(e: any) => setForm({ ...form, terminalType: e.target.value })} className={cn("w-full px-3 py-2 text-sm h-10", inp)}>{Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
               </div>
-              <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Status</label><div className="h-10 flex items-center"><span className="text-emerald-400 text-sm font-medium">{t?.status || "active"}</span></div></div>
+              <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Status</label><div className="h-10 flex items-center"><span className="text-emerald-400 text-sm font-medium">{t?.status || "active"}</span></div></div>
             </div>
           ) : (
             <div className="flex-1 min-w-0">
@@ -270,7 +270,7 @@ export default function FacilityPage() {
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 {t?.code && <span className="text-xs text-slate-400 font-mono bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 rounded-md">{t.code}</span>}
                 {t?.terminalType && <span className="text-xs text-slate-500">{TYPE_LABELS[t.terminalType] || t.terminalType}</span>}
-                <span className="text-[10px] text-slate-600">|</span>
+                <span className="text-xs text-slate-600">|</span>
                 <span className={cn("text-xs font-medium", t?.status === "active" ? "text-emerald-400" : "text-red-400")}>{(t?.status || "active").charAt(0).toUpperCase() + (t?.status || "active").slice(1)}</span>
               </div>
             </div>
@@ -299,14 +299,14 @@ export default function FacilityPage() {
               <div className="flex items-center gap-2 mb-1"><MapPin className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-slate-800 dark:text-white">Location</span></div>
               {editing ? (
                 <div className="space-y-3">
-                  <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Address</label><AddressAutocomplete value={form.address} onChange={(v) => setForm({ ...form, address: v })} onSelect={(parsed: ParsedAddress) => setForm({ ...form, address: parsed.address, city: parsed.city, state: parsed.state, latitude: String(parsed.lat), longitude: String(parsed.lng) })} placeholder="Start typing an address..." className={inp} /></div>
+                  <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Address</label><AddressAutocomplete value={form.address} onChange={(v) => setForm({ ...form, address: v })} onSelect={(parsed: ParsedAddress) => setForm({ ...form, address: parsed.address, city: parsed.city, state: parsed.state, latitude: String(parsed.lat), longitude: String(parsed.lng) })} placeholder="Start typing an address..." className={inp} /></div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">City</label><Input value={form.city} onChange={(e: any) => setForm({ ...form, city: e.target.value })} className={inp} /></div>
-                    <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">State</label><Input value={form.state} onChange={(e: any) => setForm({ ...form, state: e.target.value })} className={inp} /></div>
+                    <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">City</label><Input value={form.city} onChange={(e: any) => setForm({ ...form, city: e.target.value })} className={inp} /></div>
+                    <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">State</label><Input value={form.state} onChange={(e: any) => setForm({ ...form, state: e.target.value })} className={inp} /></div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Lat</label><Input type="number" step="any" value={form.latitude} onChange={(e: any) => setForm({ ...form, latitude: e.target.value })} className={inp} /></div>
-                    <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Lng</label><Input type="number" step="any" value={form.longitude} onChange={(e: any) => setForm({ ...form, longitude: e.target.value })} className={inp} /></div>
+                    <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Lat</label><Input type="number" step="any" value={form.latitude} onChange={(e: any) => setForm({ ...form, latitude: e.target.value })} className={inp} /></div>
+                    <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Lng</label><Input type="number" step="any" value={form.longitude} onChange={(e: any) => setForm({ ...form, longitude: e.target.value })} className={inp} /></div>
                   </div>
                 </div>
               ) : (
@@ -321,10 +321,10 @@ export default function FacilityPage() {
               )}
               {/* Products */}
               <div>
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider">Products Handled</span>
+                <span className="text-xs text-slate-500 uppercase tracking-wider">Products Handled</span>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {products.length > 0 ? products.map((p: string) => (
-                    <span key={p} className="text-[11px] text-[#1473FF] bg-[#1473FF]/10 px-2.5 py-1 rounded-lg font-medium">{p}</span>
+                    <span key={p} className="text-xs text-[#1473FF] bg-[#1473FF]/10 px-2.5 py-1 rounded-lg font-medium">{p}</span>
                   )) : <span className="text-xs text-slate-600">No products configured</span>}
                 </div>
               </div>
@@ -353,7 +353,7 @@ export default function FacilityPage() {
             <div className="flex items-center gap-2 mb-4 pl-1">
               <Handshake className="w-4 h-4 text-[#1473FF]" />
               <span className="text-sm font-medium text-slate-800 dark:text-white">Service Capabilities</span>
-              <span className="text-[10px] text-slate-600 ml-auto">Agreement-backed terminal services</span>
+              <span className="text-xs text-slate-600 ml-auto">Agreement-backed terminal services</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
@@ -365,7 +365,7 @@ export default function FacilityPage() {
                   </div>
                   <div>
                     <p className="text-[13px] font-semibold text-slate-800 dark:text-white">Terminal Access</p>
-                    <p className="text-[10px] text-slate-500">Facility access agreements</p>
+                    <p className="text-xs text-slate-500">Facility access agreements</p>
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -376,7 +376,7 @@ export default function FacilityPage() {
                   <CapRow label="Driver Check-In" desc="CDL, docs, and appointment validation" />
                 </div>
                 <div className="pt-2 border-t border-slate-200/60 dark:border-white/[0.04]">
-                  <span className="text-[10px] text-[#1473FF] font-medium group-hover:underline">Create Terminal Access Agreement</span>
+                  <span className="text-xs text-[#1473FF] font-medium group-hover:underline">Create Terminal Access Agreement</span>
                 </div>
               </div>
 
@@ -388,7 +388,7 @@ export default function FacilityPage() {
                   </div>
                   <div>
                     <p className="text-[13px] font-semibold text-slate-800 dark:text-white">Throughput</p>
-                    <p className="text-[10px] text-slate-500">Volume commitment agreements</p>
+                    <p className="text-xs text-slate-500">Volume commitment agreements</p>
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -399,7 +399,7 @@ export default function FacilityPage() {
                   <CapRow label="Product Quality / ASTM" desc="Incoming spec testing + SPECTRA-MATCH" />
                 </div>
                 <div className="pt-2 border-t border-slate-200/60 dark:border-white/[0.04]">
-                  <span className="text-[10px] text-purple-400 font-medium group-hover:underline">Create Throughput Agreement</span>
+                  <span className="text-xs text-purple-400 font-medium group-hover:underline">Create Throughput Agreement</span>
                 </div>
               </div>
 
@@ -411,7 +411,7 @@ export default function FacilityPage() {
                   </div>
                   <div>
                     <p className="text-[13px] font-semibold text-slate-800 dark:text-white">Storage & Service</p>
-                    <p className="text-[10px] text-slate-500">Tank storage & blending agreements</p>
+                    <p className="text-xs text-slate-500">Tank storage & blending agreements</p>
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -422,7 +422,7 @@ export default function FacilityPage() {
                   <CapRow label="Title & Risk Allocation" desc="Custody transfer at interconnection" />
                 </div>
                 <div className="pt-2 border-t border-slate-200/60 dark:border-white/[0.04]">
-                  <span className="text-[10px] text-emerald-400 font-medium group-hover:underline">Create Storage & Service Agreement</span>
+                  <span className="text-xs text-emerald-400 font-medium group-hover:underline">Create Storage & Service Agreement</span>
                 </div>
               </div>
 
@@ -434,13 +434,13 @@ export default function FacilityPage() {
             <div className="flex items-center gap-2 mb-4 pl-1">
               <Plug2 className="w-4 h-4 text-[#1473FF]" />
               <span className="text-sm font-medium text-slate-800 dark:text-white">Integration Ecosystem</span>
-              <span className={cn("ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full",
+              <span className={cn("ml-2 text-xs font-semibold px-2 py-0.5 rounded-full",
                 connectedCount >= 4 ? "text-emerald-400 bg-emerald-400/10" :
                 connectedCount >= 2 ? "text-amber-400 bg-amber-400/10" :
                 connectedCount >= 1 ? "text-[#1473FF] bg-[#1473FF]/10" :
                 "text-slate-500 bg-slate-50 dark:bg-white/[0.04]"
               )}>{connectedCount}/6 Connected</span>
-              <button onClick={() => setTab("intelligence")} className="text-[10px] text-[#1473FF] hover:underline ml-auto">View Details →</button>
+              <button onClick={() => setTab("intelligence")} className="text-xs text-[#1473FF] hover:underline ml-auto">View Details →</button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {INT_CATALOG.map(intg => {
@@ -460,15 +460,15 @@ export default function FacilityPage() {
                         {intg.icon}
                       </span>
                     </div>
-                    <p className={cn("text-[11px] font-semibold", live ? "text-slate-800 dark:text-white" : "text-slate-400 dark:text-white/30")}>{intg.name}</p>
-                    <p className={cn("text-[9px] mt-0.5", live ? "text-slate-500" : "text-slate-400 dark:text-white/15")}>{intg.category}</p>
+                    <p className={cn("text-xs font-semibold", live ? "text-slate-800 dark:text-white" : "text-slate-400 dark:text-white/30")}>{intg.name}</p>
+                    <p className={cn("text-xs mt-0.5", live ? "text-slate-500" : "text-slate-400 dark:text-white/15")}>{intg.category}</p>
                     {live ? (
                       <div className="flex items-center justify-center gap-1 mt-2">
                         <Wifi className="w-2.5 h-2.5 text-emerald-400" />
-                        <span className="text-[9px] text-emerald-400 font-medium">Live</span>
+                        <span className="text-xs text-emerald-400 font-medium">Live</span>
                       </div>
                     ) : (
-                      <p className="text-[9px] text-slate-400 dark:text-white/15 mt-2">Not connected</p>
+                      <p className="text-xs text-slate-400 dark:text-white/15 mt-2">Not connected</p>
                     )}
                   </div>
                 );
@@ -497,10 +497,10 @@ export default function FacilityPage() {
                    "Full spectrum intelligence. Your terminal is operating with maximum market visibility."}
                 </p>
                 <div className="flex flex-wrap gap-2 mt-3">
-                  <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
+                  <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md",
                     activeTAS.length > 0 ? "text-emerald-400 bg-emerald-400/10" : "text-slate-500 bg-slate-50 dark:bg-white/[0.04]"
                   )}>{activeTAS.length > 0 ? `TAS: ${activeTAS.map(t => t.name).join(", ")}` : "No TAS Connected"}</span>
-                  <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
+                  <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md",
                     activeMarket.length > 0 ? "text-[#1473FF] bg-[#1473FF]/10" : "text-slate-500 bg-slate-50 dark:bg-white/[0.04]"
                   )}>{activeMarket.length > 0 ? `Market: ${activeMarket.map(t => t.name).join(", ")}` : "No Market Data"}</span>
                 </div>
@@ -516,7 +516,7 @@ export default function FacilityPage() {
             <div className="flex items-center gap-2 mb-4 pl-1">
               <Radio className="w-4 h-4 text-cyan-400" />
               <span className="text-sm font-medium text-slate-800 dark:text-white">Terminal Automation</span>
-              <span className="text-[10px] text-slate-500 ml-1">Real-time rack, gate, and loading operations</span>
+              <span className="text-xs text-slate-500 ml-1">Real-time rack, gate, and loading operations</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {INT_CATALOG.filter(c => ["dtn", "buckeye_tas", "dearman"].includes(c.id)).map(intg => {
@@ -536,27 +536,27 @@ export default function FacilityPage() {
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-semibold text-slate-800 dark:text-white">{intg.name}</p>
                             {live ? (
-                              <span className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full font-medium"><Wifi className="w-2.5 h-2.5" />Connected</span>
+                              <span className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full font-medium"><Wifi className="w-2.5 h-2.5" />Connected</span>
                             ) : (
-                              <span className="flex items-center gap-1 text-[9px] text-slate-400 bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 rounded-full"><WifiOff className="w-2.5 h-2.5" />Offline</span>
+                              <span className="flex items-center gap-1 text-xs text-slate-400 bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 rounded-full"><WifiOff className="w-2.5 h-2.5" />Offline</span>
                             )}
                           </div>
-                          <p className="text-[10px] text-slate-500">{intg.category}</p>
+                          <p className="text-xs text-slate-500">{intg.category}</p>
                         </div>
                       </div>
                       <IntgPowerList powers={intg.powers} live={live} />
                       {live && (
                         <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-white/[0.04]">
-                          <p className="text-[9px] text-slate-400 uppercase tracking-wider mb-1.5">Enhances</p>
+                          <p className="text-xs text-slate-400 uppercase tracking-wider mb-1.5">Enhances</p>
                           <div className="flex flex-wrap gap-1">
                             {intg.feeds.map(f => (
-                              <span key={f} className="text-[9px] font-medium px-1.5 py-0.5 rounded" style={{ color: intg.brandFrom, backgroundColor: `${intg.brandFrom}10` }}>{f}</span>
+                              <span key={f} className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ color: intg.brandFrom, backgroundColor: `${intg.brandFrom}10` }}>{f}</span>
                             ))}
                           </div>
                         </div>
                       )}
                       {!live && (
-                        <button onClick={() => openKeyModal(intg.id)} className="mt-4 w-full text-[11px] font-medium text-[#1473FF] hover:text-[#1473FF]/80 py-2 rounded-xl border border-dashed border-[#1473FF]/20 hover:border-[#1473FF]/40 transition-colors">
+                        <button onClick={() => openKeyModal(intg.id)} className="mt-4 w-full text-xs font-medium text-[#1473FF] hover:text-[#1473FF]/80 py-2 rounded-xl border border-dashed border-[#1473FF]/20 hover:border-[#1473FF]/40 transition-colors">
                           Connect {intg.name}
                         </button>
                       )}
@@ -572,7 +572,7 @@ export default function FacilityPage() {
             <div className="flex items-center gap-2 mb-4 pl-1">
               <BarChart3 className="w-4 h-4 text-amber-400" />
               <span className="text-sm font-medium text-slate-800 dark:text-white">Market Intelligence</span>
-              <span className="text-[10px] text-slate-500 ml-1">Pricing, crude benchmarks, and supply chain analytics</span>
+              <span className="text-xs text-slate-500 ml-1">Pricing, crude benchmarks, and supply chain analytics</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {INT_CATALOG.filter(c => ["opis", "enverus", "genscape"].includes(c.id)).map(intg => {
@@ -592,27 +592,27 @@ export default function FacilityPage() {
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-semibold text-slate-800 dark:text-white">{intg.name}</p>
                             {live ? (
-                              <span className="flex items-center gap-1 text-[9px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full font-medium"><Wifi className="w-2.5 h-2.5" />Connected</span>
+                              <span className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full font-medium"><Wifi className="w-2.5 h-2.5" />Connected</span>
                             ) : (
-                              <span className="flex items-center gap-1 text-[9px] text-slate-400 bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 rounded-full"><WifiOff className="w-2.5 h-2.5" />Offline</span>
+                              <span className="flex items-center gap-1 text-xs text-slate-400 bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 rounded-full"><WifiOff className="w-2.5 h-2.5" />Offline</span>
                             )}
                           </div>
-                          <p className="text-[10px] text-slate-500">{intg.category}</p>
+                          <p className="text-xs text-slate-500">{intg.category}</p>
                         </div>
                       </div>
                       <IntgPowerList powers={intg.powers} live={live} />
                       {live && (
                         <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-white/[0.04]">
-                          <p className="text-[9px] text-slate-400 uppercase tracking-wider mb-1.5">Enhances</p>
+                          <p className="text-xs text-slate-400 uppercase tracking-wider mb-1.5">Enhances</p>
                           <div className="flex flex-wrap gap-1">
                             {intg.feeds.map(f => (
-                              <span key={f} className="text-[9px] font-medium px-1.5 py-0.5 rounded" style={{ color: intg.brandFrom, backgroundColor: `${intg.brandFrom}10` }}>{f}</span>
+                              <span key={f} className="text-xs font-medium px-1.5 py-0.5 rounded" style={{ color: intg.brandFrom, backgroundColor: `${intg.brandFrom}10` }}>{f}</span>
                             ))}
                           </div>
                         </div>
                       )}
                       {!live && (
-                        <button onClick={() => openKeyModal(intg.id)} className="mt-4 w-full text-[11px] font-medium text-[#1473FF] hover:text-[#1473FF]/80 py-2 rounded-xl border border-dashed border-[#1473FF]/20 hover:border-[#1473FF]/40 transition-colors">
+                        <button onClick={() => openKeyModal(intg.id)} className="mt-4 w-full text-xs font-medium text-[#1473FF] hover:text-[#1473FF]/80 py-2 rounded-xl border border-dashed border-[#1473FF]/20 hover:border-[#1473FF]/40 transition-colors">
                           Connect {intg.name}
                         </button>
                       )}
@@ -633,7 +633,7 @@ export default function FacilityPage() {
               {/* Sources */}
               <div className="space-y-2 shrink-0">
                 {INT_CATALOG.map(intg => (
-                  <div key={intg.id} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all",
+                  <div key={intg.id} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
                     isConnected(intg.id) ? "bg-white dark:bg-white/[0.04] shadow-sm border border-slate-200/60 dark:border-white/[0.06]" : "bg-slate-50 dark:bg-white/[0.01] text-slate-400 dark:text-white/20"
                   )}>
                     <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: isConnected(intg.id) ? intg.brandFrom : "#94a3b8" }} />
@@ -653,8 +653,8 @@ export default function FacilityPage() {
                   <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-7 h-7 brightness-0 invert" />
                 </div>
                 <p className="text-sm font-bold text-slate-800 dark:text-white">{t?.name || "EusoTrip"}</p>
-                <p className="text-[10px] text-slate-500">Terminal Hub</p>
-                <p className="text-[9px] text-[#1473FF] mt-1 font-medium">{connectedCount * 5}+ data points/min</p>
+                <p className="text-xs text-slate-500">Terminal Hub</p>
+                <p className="text-xs text-[#1473FF] mt-1 font-medium">{connectedCount * 5}+ data points/min</p>
               </div>
               {/* Output arrows */}
               <div className="flex flex-col items-center gap-1 px-3">
@@ -670,14 +670,14 @@ export default function FacilityPage() {
                   { label: "Market Intelligence", icon: <TrendingUp className="w-3 h-3" /> },
                   { label: "Hot Zones", icon: <Globe className="w-3 h-3" /> },
                 ].map(d => (
-                  <div key={d.label} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-medium bg-white dark:bg-white/[0.04] shadow-sm border border-slate-200/60 dark:border-white/[0.06] text-slate-700 dark:text-white/70">
+                  <div key={d.label} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-white/[0.04] shadow-sm border border-slate-200/60 dark:border-white/[0.06] text-slate-700 dark:text-white/70">
                     <span className="text-[#BE01FF]">{d.icon}</span>
                     {d.label}
                   </div>
                 ))}
               </div>
             </div>
-            <p className="text-center text-[10px] text-slate-400 mt-2">Every connected integration enriches all downstream screens in real time</p>
+            <p className="text-center text-xs text-slate-400 mt-2">Every connected integration enriches all downstream screens in real time</p>
           </div>
         </TabsContent>
 
@@ -695,17 +695,17 @@ export default function FacilityPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-slate-800 dark:text-white font-medium">Company Compliance</p>
-                  {!canOperate && <span className="text-[9px] text-red-400 bg-red-400/10 px-2 py-0.5 rounded-md font-semibold">BLOCKED</span>}
+                  {!canOperate && <span className="text-xs text-red-400 bg-red-400/10 px-2 py-0.5 rounded-md font-semibold">BLOCKED</span>}
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {compReqs.length} requirements resolved based on your company profile, state, and operations.
                 </p>
                 <div className="flex flex-wrap gap-2 mt-3">
-                  <span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md">{compStatus.totalVerified || 0} Verified</span>
-                  <span className="text-[10px] text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-md">{compStatus.totalPending || 0} Pending</span>
-                  <span className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md">{compStatus.totalExpiring || 0} Expiring</span>
-                  {(compStatus.totalExpired || 0) > 0 && <span className="text-[10px] text-red-400 bg-red-400/10 px-2 py-0.5 rounded-md">{compStatus.totalExpired} Expired</span>}
-                  <span className="text-[10px] text-slate-400 bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 rounded-md">{compStatus.totalMissing || 0} Missing</span>
+                  <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md">{compStatus.totalVerified || 0} Verified</span>
+                  <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-md">{compStatus.totalPending || 0} Pending</span>
+                  <span className="text-xs text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md">{compStatus.totalExpiring || 0} Expiring</span>
+                  {(compStatus.totalExpired || 0) > 0 && <span className="text-xs text-red-400 bg-red-400/10 px-2 py-0.5 rounded-md">{compStatus.totalExpired} Expired</span>}
+                  <span className="text-xs text-slate-400 bg-slate-50 dark:bg-white/[0.04] px-2 py-0.5 rounded-md">{compStatus.totalMissing || 0} Missing</span>
                 </div>
               </div>
               <Button size="sm" onClick={() => navigate("/documents")} className="rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-white/[0.1] text-slate-800 dark:text-white border border-slate-200 dark:border-white/[0.08] shadow-none h-9 px-4 text-xs font-medium shrink-0">
@@ -723,7 +723,7 @@ export default function FacilityPage() {
               { key: "VERIFIED", label: `Verified ${compStatus.totalVerified || 0}` },
             ].map(f => (
               <button key={f.key} onClick={() => setCompFilter(f.key)} className={cn(
-                "text-[10px] px-3 py-1.5 rounded-lg font-medium transition-colors",
+                "text-xs px-3 py-1.5 rounded-lg font-medium transition-colors",
                 compFilter === f.key ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-slate-50 dark:bg-white/[0.03] text-slate-500 hover:text-slate-300"
               )}>{f.label}</button>
             ))}
@@ -738,8 +738,8 @@ export default function FacilityPage() {
           ) : Object.entries(filteredGroups).map(([group, items]: any) => (
             <div key={group}>
               <div className="flex items-center justify-between mb-2 pl-1">
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{group}</p>
-                <span className="text-[10px] text-slate-600">{items.length}</span>
+                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">{group}</p>
+                <span className="text-xs text-slate-600">{items.length}</span>
               </div>
               <div className={cn("divide-y divide-slate-200/60 dark:divide-white/[0.03]", cell)}>
                 {items.map((r: any) => {
@@ -751,13 +751,13 @@ export default function FacilityPage() {
                         <Icon className={cn("w-4 h-4 shrink-0", st.cls.split(" ")[0])} />
                         <div className="min-w-0">
                           <p className="text-[13px] text-slate-800 dark:text-white truncate">{r.name}</p>
-                          {r.reason && <p className="text-[10px] text-slate-600 truncate mt-0.5">{r.reason}</p>}
+                          {r.reason && <p className="text-xs text-slate-600 truncate mt-0.5">{r.reason}</p>}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        {r.priority === "CRITICAL" && r.docStatus === "MISSING" && <span className="text-[9px] text-red-400 font-semibold">CRITICAL</span>}
-                        {r.stateCode && <span className="text-[9px] text-slate-500 bg-slate-50 dark:bg-white/[0.04] px-1.5 py-0.5 rounded font-mono">{r.stateCode}</span>}
-                        <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md", st.cls)}>{st.label}</span>
+                        {r.priority === "CRITICAL" && r.docStatus === "MISSING" && <span className="text-xs text-red-400 font-semibold">CRITICAL</span>}
+                        {r.stateCode && <span className="text-xs text-slate-500 bg-slate-50 dark:bg-white/[0.04] px-1.5 py-0.5 rounded font-mono">{r.stateCode}</span>}
+                        <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md", st.cls)}>{st.label}</span>
                       </div>
                     </div>
                   );
@@ -794,40 +794,40 @@ export default function FacilityPage() {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2"><Gauge className="w-4 h-4 text-[#1473FF]" /><span className="text-sm font-medium text-slate-800 dark:text-white">Infrastructure</span></div>
               {!editing && !infraNotConfigured && (
-                <button onClick={startEdit} className="text-[10px] text-slate-500 hover:text-slate-800 dark:text-white transition-colors">Edit</button>
+                <button onClick={startEdit} className="text-xs text-slate-500 hover:text-slate-800 dark:text-white transition-colors">Edit</button>
               )}
             </div>
             {editing ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Capacity</label><Input type="number" value={form.throughputCapacity} onChange={(e: any) => setForm({ ...form, throughputCapacity: e.target.value })} className={inp} /></div>
-                <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Unit</label>
+                <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Capacity</label><Input type="number" value={form.throughputCapacity} onChange={(e: any) => setForm({ ...form, throughputCapacity: e.target.value })} className={inp} /></div>
+                <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Unit</label>
                   <select value={form.throughputUnit} onChange={(e: any) => setForm({ ...form, throughputUnit: e.target.value })} className={cn("w-full px-3 py-2 text-sm h-10", inp)}>
                     <option value="bbl/day">bbl/day</option><option value="gal/day">gal/day</option><option value="tons/day">tons/day</option>
                   </select>
                 </div>
-                <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Docks / Racks</label><Input type="number" value={form.dockCount} onChange={(e: any) => setForm({ ...form, dockCount: e.target.value })} className={inp} /></div>
-                <div><label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider">Tanks</label><Input type="number" value={form.tankCount} onChange={(e: any) => setForm({ ...form, tankCount: e.target.value })} className={inp} /></div>
+                <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Docks / Racks</label><Input type="number" value={form.dockCount} onChange={(e: any) => setForm({ ...form, dockCount: e.target.value })} className={inp} /></div>
+                <div><label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider">Tanks</label><Input type="number" value={form.tankCount} onChange={(e: any) => setForm({ ...form, tankCount: e.target.value })} className={inp} /></div>
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{capacity > 0 ? capacity.toLocaleString() : "---"}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">{unit}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{unit}</p>
                 </div>
                 <div className="text-center">
                   <Container className="w-5 h-5 text-[#1473FF] mx-auto mb-1" />
                   <p className="text-xl font-bold text-slate-800 dark:text-white">{docks}</p>
-                  <p className="text-[10px] text-slate-500">Docks / Racks</p>
+                  <p className="text-xs text-slate-500">Docks / Racks</p>
                 </div>
                 <div className="text-center">
                   <Layers className="w-5 h-5 text-purple-400 mx-auto mb-1" />
                   <p className="text-xl font-bold text-slate-800 dark:text-white">{tanks}</p>
-                  <p className="text-[10px] text-slate-500">Storage Tanks</p>
+                  <p className="text-xs text-slate-500">Storage Tanks</p>
                 </div>
                 <div className="text-center">
                   <Users className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
                   <p className="text-xl font-bold text-slate-800 dark:text-white">{d?.staffCount || 0}</p>
-                  <p className="text-[10px] text-slate-500">Active Staff</p>
+                  <p className="text-xs text-slate-500">Active Staff</p>
                 </div>
               </div>
             )}
@@ -844,14 +844,14 @@ export default function FacilityPage() {
               </div>
               {shipments.length > 0 ? (
                 <div className="space-y-2 pt-3 border-t border-slate-200/60 dark:border-white/[0.04]">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider">Recent</p>
+                  <p className="text-xs text-slate-500 uppercase tracking-wider">Recent</p>
                   {shipments.slice(0, 5).map((s: any) => (
                     <div key={s.id} className="flex items-center justify-between py-1.5">
                       <div className="flex items-center gap-2">
                         {s.type === "incoming" ? <Truck className="w-3.5 h-3.5 text-emerald-400" /> : <Package className="w-3.5 h-3.5 text-purple-400" />}
                         <span className="text-xs text-slate-300">{s.type === "incoming" ? "Inbound" : "Outbound"}</span>
                       </div>
-                      <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
+                      <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md",
                         s.status === "completed" ? "text-emerald-400 bg-emerald-400/10" :
                         s.status === "loading" ? "text-blue-400 bg-blue-400/10" :
                         "text-slate-400 bg-slate-50 dark:bg-white/[0.04]"
@@ -904,7 +904,7 @@ export default function FacilityPage() {
                 <Beaker className="w-4 h-4 text-purple-400" />
                 <span className="text-sm font-medium text-slate-800 dark:text-white">Product Verification</span>
               </div>
-              <Badge className="bg-gradient-to-r from-[#BE01FF]/15 to-[#1473FF]/15 text-purple-300 border-0 text-[10px]">
+              <Badge className="bg-gradient-to-r from-[#BE01FF]/15 to-[#1473FF]/15 text-purple-300 border-0 text-xs">
                 <EsangIcon className="w-3 h-3 mr-1" />ESANG AI
               </Badge>
             </div>
@@ -926,7 +926,7 @@ export default function FacilityPage() {
               </div>
               {learningQ.data?.topProducts?.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-white/[0.04]">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Most Identified</p>
+                  <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Most Identified</p>
                   {learningQ.data.topProducts.slice(0, 3).map((p: any) => (
                     <div key={p.product} className="flex items-center justify-between py-1.5">
                       <span className="text-xs text-slate-300">{p.product}</span>
@@ -946,7 +946,7 @@ export default function FacilityPage() {
                     <div key={item.id} className="flex items-center justify-between py-2 border-b border-white/[0.03] last:border-0">
                       <div>
                         <p className="text-sm text-slate-800 dark:text-white">{item.crudeType}</p>
-                        <p className="text-[10px] text-slate-600">API {item.apiGravity} | BS&W {item.bsw}%</p>
+                        <p className="text-xs text-slate-600">API {item.apiGravity} | BS&W {item.bsw}%</p>
                       </div>
                       <span className={cn("text-xs font-semibold", item.confidence >= 90 ? "text-emerald-400" : item.confidence >= 75 ? "text-amber-400" : "text-orange-400")}>{item.confidence}%</span>
                     </div>
@@ -975,7 +975,7 @@ export default function FacilityPage() {
               <ArrowRight className="w-4 h-4 text-slate-600 shrink-0" />
               <div className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 border border-[#1473FF]/20 text-center">
                 <p className="text-xs font-semibold text-slate-800 dark:text-white">{t?.name || "Your Terminal"}</p>
-                <p className="text-[10px] text-slate-400">{TYPE_LABELS[t?.terminalType || "storage"]}</p>
+                <p className="text-xs text-slate-400">{TYPE_LABELS[t?.terminalType || "storage"]}</p>
               </div>
               <ArrowRight className="w-4 h-4 text-slate-600 shrink-0" />
               <ChainNode label="Transporters" count={byType.transporter || 0} color="#10b981" sub="Movement" />
@@ -988,19 +988,19 @@ export default function FacilityPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className={cn("p-5 text-center", cell)}>
               <p className="text-2xl font-bold text-slate-800 dark:text-white">{partners.length}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Total Partners</p>
+              <p className="text-xs text-slate-500 mt-0.5">Total Partners</p>
             </div>
             <div className={cn("p-5 text-center", cell)}>
               <p className="text-2xl font-bold text-emerald-400">{activePartners.length}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Active</p>
+              <p className="text-xs text-slate-500 mt-0.5">Active</p>
             </div>
             <div className={cn("p-5 text-center", cell)}>
               <p className="text-2xl font-bold text-[#1473FF]">{totalVolume > 0 ? totalVolume.toLocaleString() : "---"}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">bbl/mo Committed</p>
+              <p className="text-xs text-slate-500 mt-0.5">bbl/mo Committed</p>
             </div>
             <div className={cn("p-5 text-center", cell)}>
               <p className="text-2xl font-bold text-purple-400">{byAccess.full || 0}</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">Full Access</p>
+              <p className="text-xs text-slate-500 mt-0.5">Full Access</p>
             </div>
           </div>
 
@@ -1025,17 +1025,17 @@ export default function FacilityPage() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-800 dark:text-white truncate">{p.companyName || `Company #${p.companyId}`}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-slate-500 capitalize">{p.partnerType}</span>
+                      <span className="text-xs text-slate-500 capitalize">{p.partnerType}</span>
                       <CircleDot className={cn("w-2.5 h-2.5", p.status === "active" ? "text-emerald-400" : "text-amber-400")} />
                     </div>
                   </div>
                 </div>
                 <div className="text-right shrink-0 pl-4">
-                  <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-md",
+                  <span className={cn("text-xs font-medium px-2 py-0.5 rounded-md",
                     p.rackAccessLevel === "full" ? "text-emerald-400 bg-emerald-400/10" : p.rackAccessLevel === "limited" ? "text-amber-400 bg-amber-400/10" : "text-slate-400 bg-slate-50 dark:bg-white/[0.04]"
                   )}>{(p.rackAccessLevel || "scheduled").charAt(0).toUpperCase() + (p.rackAccessLevel || "scheduled").slice(1)}</span>
                   {p.monthlyVolumeCommitment > 0 && (
-                    <p className="text-[10px] text-slate-600 mt-1">{Number(p.monthlyVolumeCommitment).toLocaleString()} bbl/mo</p>
+                    <p className="text-xs text-slate-600 mt-1">{Number(p.monthlyVolumeCommitment).toLocaleString()} bbl/mo</p>
                   )}
                 </div>
               </div>
@@ -1064,7 +1064,7 @@ export default function FacilityPage() {
                     )}
                     <div>
                       <p className="text-white text-lg font-semibold">Connect {intg?.name || keyModal}</p>
-                      <p className="text-slate-500 text-[10px]">{intg?.category || "Integration"}</p>
+                      <p className="text-slate-500 text-xs">{intg?.category || "Integration"}</p>
                     </div>
                   </div>
                   <button onClick={() => setKeyModal(null)} className="text-slate-400 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
@@ -1073,7 +1073,7 @@ export default function FacilityPage() {
               <div className="px-6 pb-6 space-y-4">
                 {fields.map(f => (
                   <div key={f.key}>
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">{f.label}</label>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">{f.label}</label>
                     <div className="relative">
                       <Input
                         type={f.secret && !showSecrets[f.key] ? "password" : "text"}
@@ -1096,7 +1096,7 @@ export default function FacilityPage() {
                 ))}
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-800/30 border border-slate-700/30">
                   <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <p className="text-[10px] text-slate-500">Credentials are encrypted at rest with AES-256 and never logged</p>
+                  <p className="text-xs text-slate-500">Credentials are encrypted at rest with AES-256 and never logged</p>
                 </div>
                 <div className="flex justify-end gap-3 pt-2">
                   <Button variant="outline" onClick={() => setKeyModal(null)} className="bg-slate-800/50 border-slate-700/50 rounded-xl text-sm">Cancel</Button>
@@ -1121,7 +1121,7 @@ export default function FacilityPage() {
 function Row({ label, value, mono, bold }: { label: string; value: string; mono?: boolean; bold?: boolean }) {
   return (
     <div>
-      <span className="text-[10px] text-slate-500 uppercase tracking-wider">{label}</span>
+      <span className="text-xs text-slate-500 uppercase tracking-wider">{label}</span>
       <p className={cn("text-sm mt-0.5", bold ? "text-slate-800 dark:text-white font-semibold" : "text-slate-300", mono && "font-mono")}>{value}</p>
     </div>
   );
@@ -1131,7 +1131,7 @@ function Stat({ value, label, color }: { value: string | number; label: string; 
   return (
     <div className="text-center">
       <p className={cn("text-xl font-bold", color)}>{value}</p>
-      <p className="text-[10px] text-slate-500 mt-0.5">{label}</p>
+      <p className="text-xs text-slate-500 mt-0.5">{label}</p>
     </div>
   );
 }
@@ -1142,7 +1142,7 @@ function InfraCard({ icon, value, label, sub }: { icon: React.ReactNode; value: 
       <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-white/[0.04] flex items-center justify-center mx-auto mb-3">{icon}</div>
       <p className="text-2xl font-bold text-slate-800 dark:text-white">{value}</p>
       <p className="text-xs text-slate-400 mt-0.5">{label}</p>
-      <p className="text-[10px] text-slate-600">{sub}</p>
+      <p className="text-xs text-slate-600">{sub}</p>
     </div>
   );
 }
@@ -1166,8 +1166,8 @@ function CapRow({ label, desc }: { label: string; desc: string }) {
     <div className="flex items-start gap-2">
       <div className="w-1 h-1 rounded-full bg-slate-600 mt-[7px] shrink-0" />
       <div className="min-w-0">
-        <span className="text-[11px] text-slate-300 font-medium">{label}</span>
-        <span className="text-[11px] text-slate-600 ml-1">{desc}</span>
+        <span className="text-xs text-slate-300 font-medium">{label}</span>
+        <span className="text-xs text-slate-600 ml-1">{desc}</span>
       </div>
     </div>
   );
@@ -1179,7 +1179,7 @@ function IntgPowerList({ powers, live }: { powers: string[]; live: boolean }) {
       {powers.map(p => (
         <div key={p} className="flex items-center gap-2">
           <CheckCircle className={cn("w-3 h-3 shrink-0", live ? "text-emerald-400" : "text-slate-300 dark:text-white/10")} />
-          <span className={cn("text-[11px]", live ? "text-slate-600 dark:text-white/50" : "text-slate-400 dark:text-white/20")}>{p}</span>
+          <span className={cn("text-xs", live ? "text-slate-600 dark:text-white/50" : "text-slate-400 dark:text-white/20")}>{p}</span>
         </div>
       ))}
     </div>
@@ -1192,8 +1192,8 @@ function ChainNode({ label, count, color, sub }: { label: string; count: number;
       <div className="w-10 h-10 rounded-xl mx-auto mb-1 flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
         <span className="text-sm font-bold" style={{ color }}>{count}</span>
       </div>
-      <p className="text-[11px] text-slate-800 dark:text-white font-medium">{label}</p>
-      <p className="text-[9px] text-slate-600">{sub}</p>
+      <p className="text-xs text-slate-800 dark:text-white font-medium">{label}</p>
+      <p className="text-xs text-slate-600">{sub}</p>
     </div>
   );
 }

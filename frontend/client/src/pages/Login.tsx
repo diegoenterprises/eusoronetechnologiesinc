@@ -224,29 +224,29 @@ export default function Login() {
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-3">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 border border-green-500/20">
               <Lock className="w-3 h-3 text-green-400" />
-              <span className="text-[10px] sm:text-xs font-medium text-green-400">TLS 1.3</span>
+              <span className="text-xs sm:text-xs font-medium text-green-400">TLS 1.3</span>
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
               <Shield className="w-3 h-3 text-blue-400" />
-              <span className="text-[10px] sm:text-xs font-medium text-blue-400">AES-256</span>
+              <span className="text-xs sm:text-xs font-medium text-blue-400">AES-256</span>
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-500/10 border border-purple-500/20">
               <ShieldCheck className="w-3 h-3 text-purple-400" />
-              <span className="text-[10px] sm:text-xs font-medium text-purple-400">RBAC</span>
+              <span className="text-xs sm:text-xs font-medium text-purple-400">RBAC</span>
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20">
               <CheckCircle className="w-3 h-3 text-cyan-400" />
-              <span className="text-[10px] sm:text-xs font-medium text-cyan-400">SOC 2</span>
+              <span className="text-xs sm:text-xs font-medium text-cyan-400">SOC 2</span>
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20">
               <CreditCard className="w-3 h-3 text-amber-400" />
-              <span className="text-[10px] sm:text-xs font-medium text-amber-400">PCI-DSS</span>
+              <span className="text-xs sm:text-xs font-medium text-amber-400">PCI-DSS</span>
             </div>
           </div>
           <div className="flex justify-center mb-3">
             <LanguageSwitcher />
           </div>
-          <p className={`text-center text-[10px] sm:text-xs ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`text-center text-xs sm:text-xs ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
             © 2026 EusoTrip - Eusorone Technologies, Inc. All rights reserved.
           </p>
         </div>

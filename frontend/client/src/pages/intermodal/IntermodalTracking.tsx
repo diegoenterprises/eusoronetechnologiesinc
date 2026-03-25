@@ -164,12 +164,12 @@ export default function IntermodalTracking() {
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center gap-2">
                                 <span className={cn("font-medium text-sm", isLight ? "text-slate-900" : "text-white")}>Leg {seg.legNumber || i + 1}: {seg.mode}</span>
-                                <Badge className={cn(MODE_BADGE[seg.mode] || "bg-slate-500/20 text-slate-400", "text-[10px] px-1.5 py-0")}>{seg.mode}</Badge>
+                                <Badge className={cn(MODE_BADGE[seg.mode] || "bg-slate-500/20 text-slate-400", "text-xs px-1.5 py-0")}>{seg.mode}</Badge>
                               </div>
                               <Badge className={
-                                seg.status === "completed" || seg.status === "delivered" ? "bg-emerald-500/20 text-emerald-400 text-[10px]" :
-                                seg.status === "in_progress" || seg.status === "in_transit" ? "bg-violet-500/20 text-violet-400 text-[10px]" :
-                                "bg-slate-500/20 text-slate-400 text-[10px]"
+                                seg.status === "completed" || seg.status === "delivered" ? "bg-emerald-500/20 text-emerald-400 text-xs" :
+                                seg.status === "in_progress" || seg.status === "in_transit" ? "bg-violet-500/20 text-violet-400 text-xs" :
+                                "bg-slate-500/20 text-slate-400 text-xs"
                               }>
                                 {seg.status === "in_progress" || seg.status === "in_transit" ? "● Active" : seg.status?.replace(/_/g, " ") || "pending"}
                               </Badge>
@@ -178,7 +178,7 @@ export default function IntermodalTracking() {
                               <MapPin className="w-3 h-3" />{seg.originDescription || "Origin"}<ArrowRight className="w-3 h-3" />{seg.destinationDescription || "Destination"}
                             </div>
                             {seg.rate && <div className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Rate: ${parseFloat(seg.rate).toLocaleString()}</div>}
-                            {seg.actualArrival && <div className={cn("flex items-center gap-1 text-[10px] mt-1", isLight ? "text-slate-400" : "text-slate-500")}><Clock className="w-2.5 h-2.5" />{new Date(seg.actualArrival).toLocaleString()}</div>}
+                            {seg.actualArrival && <div className={cn("flex items-center gap-1 text-xs mt-1", isLight ? "text-slate-400" : "text-slate-500")}><Clock className="w-2.5 h-2.5" />{new Date(seg.actualArrival).toLocaleString()}</div>}
                           </div>
                         </div>
                       ))}

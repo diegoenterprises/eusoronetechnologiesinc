@@ -121,7 +121,7 @@ export default function HazmatEndorsement() {
                   )}>
                     H
                   </div>
-                  <p className={cn("text-[10px] font-medium", hasEndorsement ? "text-green-500" : "text-red-400")}>
+                  <p className={cn("text-xs font-medium", hasEndorsement ? "text-green-500" : "text-red-400")}>
                     {hasEndorsement ? "ENDORSED" : "NOT ENDORSED"}
                   </p>
                 </div>
@@ -171,7 +171,7 @@ export default function HazmatEndorsement() {
                     <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
                     <div>
                       <p className={cn("text-sm font-bold", s.color)}>{s.value}</p>
-                      <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                      <p className="text-xs text-slate-500 font-medium">{s.label}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -196,7 +196,7 @@ export default function HazmatEndorsement() {
                       "absolute -left-6 w-[22px] h-[22px] rounded-full flex items-center justify-center border-2 z-10",
                       isLight ? "bg-white border-slate-300 text-slate-400" : "bg-slate-800 border-slate-600 text-slate-500"
                     )}>
-                      <span className="text-[10px] font-bold">{i + 1}</span>
+                      <span className="text-xs font-bold">{i + 1}</span>
                     </div>
                     <div className={cn(
                       "flex-1 p-4 rounded-xl border transition-colors",

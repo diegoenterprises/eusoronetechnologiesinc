@@ -78,7 +78,7 @@ export default function ComplianceRulesPage() {
           { id: "rules" as Tab, icon: <FileCheck className="w-3.5 h-3.5 mr-1" />, label: "Rule Details", color: "bg-blue-600" },
           { id: "deadlines" as Tab, icon: <Calendar className="w-3.5 h-3.5 mr-1" />, label: "Deadlines", color: "bg-purple-600" },
         ].map(t => (
-          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-[11px]", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
+          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-xs", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
             {t.icon}{t.label}
           </Button>
         ))}
@@ -100,7 +100,7 @@ export default function ComplianceRulesPage() {
               <Card key={a.label} className={cn("rounded-xl border-slate-700/50", a.bg)}>
                 <CardContent className="p-3 text-center">
                   <p className={cn("text-2xl font-bold font-mono", a.color)}>{a.count}</p>
-                  <p className="text-[9px] text-slate-500">{a.label}</p>
+                  <p className="text-xs text-slate-500">{a.label}</p>
                 </CardContent>
               </Card>
             ))}
@@ -121,12 +121,12 @@ export default function ComplianceRulesPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-[12px] font-semibold text-white">{result.ruleName}</span>
-                          <Badge variant="outline" className={cn("text-[7px]", cfg.color)}>{cfg.label}</Badge>
+                          <Badge variant="outline" className={cn("text-xs", cfg.color)}>{cfg.label}</Badge>
                           {result.findings.length > 0 && (
-                            <Badge variant="outline" className="text-[7px] text-slate-400">{result.findings.length} findings</Badge>
+                            <Badge variant="outline" className="text-xs text-slate-400">{result.findings.length} findings</Badge>
                           )}
                         </div>
-                        <p className="text-[9px] text-slate-500 mt-0.5">
+                        <p className="text-xs text-slate-500 mt-0.5">
                           {result.affectedDrivers > 0 ? `${result.affectedDrivers} drivers affected` : ""}
                           {result.affectedDrivers > 0 && result.affectedVehicles > 0 ? " • " : ""}
                           {result.affectedVehicles > 0 ? `${result.affectedVehicles} vehicles affected` : ""}
@@ -136,7 +136,7 @@ export default function ComplianceRulesPage() {
                       <div className="flex items-center gap-3">
                         <div className="text-right">
                           <p className={cn("text-xl font-bold font-mono", result.score >= 90 ? "text-emerald-400" : result.score >= 70 ? "text-amber-400" : "text-red-400")}>{result.score}</p>
-                          <p className="text-[7px] text-slate-500">score</p>
+                          <p className="text-xs text-slate-500">score</p>
                         </div>
                         <ChevronRight className={cn("w-4 h-4 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
                       </div>
@@ -150,12 +150,12 @@ export default function ComplianceRulesPage() {
                             <div className="flex items-start gap-2">
                               <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                               <div className="flex-1">
-                                <p className="text-[10px] text-white font-semibold">{f.description}</p>
-                                <p className="text-[8px] text-slate-400 mt-0.5">{f.regulation}</p>
+                                <p className="text-xs text-white font-semibold">{f.description}</p>
+                                <p className="text-xs text-slate-400 mt-0.5">{f.regulation}</p>
                                 {f.autoRemediation && (
                                   <div className="mt-1.5 flex items-start gap-1.5 p-1.5 rounded bg-slate-900/30">
                                     <Zap className="w-3 h-3 text-amber-400 flex-shrink-0 mt-0.5" />
-                                    <p className="text-[9px] text-amber-300">{f.autoRemediation}</p>
+                                    <p className="text-xs text-amber-300">{f.autoRemediation}</p>
                                   </div>
                                 )}
                               </div>
@@ -164,9 +164,9 @@ export default function ComplianceRulesPage() {
                         ))}
                         {result.recommendations.length > 0 && (
                           <div className="p-2 rounded-lg bg-slate-900/30">
-                            <p className="text-[8px] text-slate-500 uppercase tracking-wide mb-1">Recommendations</p>
+                            <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Recommendations</p>
                             {result.recommendations.map((r: string, i: number) => (
-                              <p key={i} className="text-[9px] text-slate-300">• {r}</p>
+                              <p key={i} className="text-xs text-slate-300">• {r}</p>
                             ))}
                           </div>
                         )}
@@ -191,7 +191,7 @@ export default function ComplianceRulesPage() {
                   );
                 })}
               </div>
-              <div className="flex justify-between text-[7px] text-slate-500 mt-1">
+              <div className="flex justify-between text-xs text-slate-500 mt-1">
                 <span>30 days ago</span><span>Today</span>
               </div>
             </CardContent>
@@ -211,22 +211,22 @@ export default function ComplianceRulesPage() {
                   </div>
                   <div>
                     <p className="text-[12px] font-semibold text-white">{rule.name}</p>
-                    <Badge variant="outline" className="text-[7px] text-blue-400 border-blue-500/30">{rule.regulation}</Badge>
+                    <Badge variant="outline" className="text-xs text-blue-400 border-blue-500/30">{rule.regulation}</Badge>
                   </div>
                 </div>
-                <p className="text-[10px] text-slate-400 mb-2">{rule.description}</p>
+                <p className="text-xs text-slate-400 mb-2">{rule.description}</p>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="p-1.5 rounded-lg bg-slate-900/30 text-center">
-                    <p className="text-[8px] text-slate-500">Max Fine</p>
-                    <p className="text-[11px] font-mono font-bold text-red-400">${rule.maxFine.toLocaleString()}</p>
+                    <p className="text-xs text-slate-500">Max Fine</p>
+                    <p className="text-xs font-mono font-bold text-red-400">${rule.maxFine.toLocaleString()}</p>
                   </div>
                   <div className="p-1.5 rounded-lg bg-slate-900/30 text-center">
-                    <p className="text-[8px] text-slate-500">CSA BASIC</p>
-                    <p className="text-[9px] font-semibold text-white">{rule.csa_basic}</p>
+                    <p className="text-xs text-slate-500">CSA BASIC</p>
+                    <p className="text-xs font-semibold text-white">{rule.csa_basic}</p>
                   </div>
                   <div className="p-1.5 rounded-lg bg-slate-900/30 text-center">
-                    <p className="text-[8px] text-slate-500">Penalty</p>
-                    <p className="text-[9px] text-amber-400">{rule.penalty}</p>
+                    <p className="text-xs text-slate-500">Penalty</p>
+                    <p className="text-xs text-amber-400">{rule.penalty}</p>
                   </div>
                 </div>
               </CardContent>
@@ -248,13 +248,13 @@ export default function ComplianceRulesPage() {
                     <div className="flex items-center gap-3">
                       <Calendar className={cn("w-4 h-4", urgent ? "text-red-400" : soon ? "text-amber-400" : "text-slate-400")} />
                       <div>
-                        <p className="text-[11px] font-semibold text-white">{dl.description}</p>
-                        <p className="text-[9px] text-slate-500">Due: {dl.dueDate}</p>
+                        <p className="text-xs font-semibold text-white">{dl.description}</p>
+                        <p className="text-xs text-slate-500">Due: {dl.dueDate}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className={cn("text-lg font-bold font-mono", urgent ? "text-red-400" : soon ? "text-amber-400" : "text-slate-300")}>{dl.daysLeft}d</p>
-                      <Badge variant="outline" className={cn("text-[7px]", dl.priority === "high" ? "text-red-400 border-red-500/30" : dl.priority === "medium" ? "text-amber-400 border-amber-500/30" : "text-slate-400 border-slate-500/30")}>{dl.priority}</Badge>
+                      <Badge variant="outline" className={cn("text-xs", dl.priority === "high" ? "text-red-400 border-red-500/30" : dl.priority === "medium" ? "text-amber-400 border-amber-500/30" : "text-slate-400 border-slate-500/30")}>{dl.priority}</Badge>
                     </div>
                   </div>
                 </CardContent>

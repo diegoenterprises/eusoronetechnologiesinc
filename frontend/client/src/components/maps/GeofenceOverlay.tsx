@@ -40,7 +40,7 @@ export default function GeofenceOverlay({ loadId }: GeofenceOverlayProps) {
             <Shield className="h-4 w-4 text-blue-500" />
             Geofences
           </CardTitle>
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-xs">
             {geofences.length} active
           </Badge>
         </div>
@@ -64,20 +64,20 @@ export default function GeofenceOverlay({ loadId }: GeofenceOverlayProps) {
                       </div>
                       <div>
                         <p className="text-xs font-medium">{gf.name}</p>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-xs text-muted-foreground">
                           {gf.radiusMeters ? `${gf.radiusMeters}m radius` : "Polygon"} | {gf.shape}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      {gf.alertOnEnter && <Badge variant="outline" className="text-[8px]">Enter</Badge>}
-                      {gf.alertOnExit && <Badge variant="outline" className="text-[8px]">Exit</Badge>}
-                      {gf.alertOnDwell && <Badge variant="outline" className="text-[8px]">Dwell</Badge>}
+                      {gf.alertOnEnter && <Badge variant="outline" className="text-xs">Enter</Badge>}
+                      {gf.alertOnExit && <Badge variant="outline" className="text-xs">Exit</Badge>}
+                      {gf.alertOnDwell && <Badge variant="outline" className="text-xs">Dwell</Badge>}
                     </div>
                   </div>
 
                   {center && (
-                    <p className="text-[9px] text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {center.lat?.toFixed(4)}, {center.lng?.toFixed(4)}
                     </p>
                   )}
@@ -88,7 +88,7 @@ export default function GeofenceOverlay({ loadId }: GeofenceOverlayProps) {
                       {gfEvents.slice(0, 3).map((e: any) => {
                         const Icon = EVENT_ICONS[e.eventType] || Circle;
                         return (
-                          <div key={e.id} className="flex items-center gap-1.5 text-[10px]">
+                          <div key={e.id} className="flex items-center gap-1.5 text-xs">
                             <Icon className="h-3 w-3 text-muted-foreground" />
                             <span className="capitalize font-medium">{e.eventType}</span>
                             <span className="text-muted-foreground">

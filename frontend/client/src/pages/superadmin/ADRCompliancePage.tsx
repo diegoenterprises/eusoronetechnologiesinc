@@ -35,7 +35,7 @@ export default function ADRCompliancePage() {
         <h1 className="text-xl font-bold text-white flex items-center gap-2">
           <Globe className="w-5 h-5 text-emerald-400" />EU ADR Compliance Engine
         </h1>
-        <p className="text-[10px] text-slate-400 mt-0.5">European Agreement on Dangerous Goods by Road — Class mapping, tunnel restrictions, driver certifications</p>
+        <p className="text-xs text-slate-400 mt-0.5">European Agreement on Dangerous Goods by Road — Class mapping, tunnel restrictions, driver certifications</p>
       </div>
 
       {/* Create Compliance */}
@@ -44,15 +44,15 @@ export default function ADRCompliancePage() {
         <CardContent className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">Load ID</label>
+              <label className="text-xs text-slate-500 uppercase">Load ID</label>
               <Input value={loadId} onChange={(e: any) => setLoadId(e.target.value)} placeholder="e.g., 42" className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">DOT Hazmat Class</label>
+              <label className="text-xs text-slate-500 uppercase">DOT Hazmat Class</label>
               <Input value={dotClass} onChange={(e: any) => setDotClass(e.target.value)} placeholder="e.g., 3" className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">UN Number</label>
+              <label className="text-xs text-slate-500 uppercase">UN Number</label>
               <Input value={unNumber} onChange={(e: any) => setUnNumber(e.target.value)} placeholder="e.g., UN1267" className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
             </div>
           </div>
@@ -72,11 +72,11 @@ export default function ADRCompliancePage() {
         <Card className="bg-emerald-500/5 border-emerald-500/20 rounded-xl">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center gap-3">
-              <Badge className="text-[9px] bg-emerald-500/10 border-emerald-500/20 text-emerald-400">ADR Class {compliance.adrClass}</Badge>
-              <Badge className="text-[9px] bg-blue-500/10 border-blue-500/20 text-blue-400">{compliance.adrUnNumber}</Badge>
-              <Badge className="text-[9px] bg-amber-500/10 border-amber-500/20 text-amber-400">Tunnel {compliance.tunnelRestrictionCode}</Badge>
+              <Badge className="text-xs bg-emerald-500/10 border-emerald-500/20 text-emerald-400">ADR Class {compliance.adrClass}</Badge>
+              <Badge className="text-xs bg-blue-500/10 border-blue-500/20 text-blue-400">{compliance.adrUnNumber}</Badge>
+              <Badge className="text-xs bg-amber-500/10 border-amber-500/20 text-amber-400">Tunnel {compliance.tunnelRestrictionCode}</Badge>
             </div>
-            <p className="text-[10px] text-slate-400">{compliance.tunnelDescription}</p>
+            <p className="text-xs text-slate-400">{compliance.tunnelDescription}</p>
           </CardContent>
         </Card>
       )}
@@ -87,11 +87,11 @@ export default function ADRCompliancePage() {
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">Driver ID</label>
+              <label className="text-xs text-slate-500 uppercase">Driver ID</label>
               <Input value={driverId} onChange={(e: any) => setDriverId(e.target.value)} placeholder="e.g., 7" className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase">ADR Class</label>
+              <label className="text-xs text-slate-500 uppercase">ADR Class</label>
               <Input value={dotClass} onChange={(e: any) => setDotClass(e.target.value)} placeholder="e.g., 3" className="h-7 text-xs bg-white/[0.04] border-white/[0.08] text-white mt-1" />
             </div>
           </div>
@@ -110,11 +110,11 @@ export default function ADRCompliancePage() {
       {/* Reference Tables */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardHeader className="pb-2"><CardTitle className="text-[10px] text-slate-500 uppercase tracking-wider">DOT → ADR Class Map</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-slate-500 uppercase tracking-wider">DOT → ADR Class Map</CardTitle></CardHeader>
           <CardContent className="max-h-48 overflow-y-auto">
             <div className="space-y-0.5">
               {mappings.map((m: any) => (
-                <div key={m.dotClass} className="flex items-center gap-2 text-[10px] py-0.5">
+                <div key={m.dotClass} className="flex items-center gap-2 text-xs py-0.5">
                   <span className="text-white font-mono w-10">{m.dotClass}</span>
                   <ArrowRight className="w-3 h-3 text-slate-600" />
                   <span className="text-emerald-400 font-mono">{m.adrClass}</span>
@@ -124,12 +124,12 @@ export default function ADRCompliancePage() {
           </CardContent>
         </Card>
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardHeader className="pb-2"><CardTitle className="text-[10px] text-slate-500 uppercase tracking-wider">Tunnel Restriction Codes</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-slate-500 uppercase tracking-wider">Tunnel Restriction Codes</CardTitle></CardHeader>
           <CardContent className="max-h-48 overflow-y-auto">
             <div className="space-y-1">
               {tunnelCodes.map((t: any) => (
-                <div key={t.code} className="flex items-start gap-2 text-[10px] py-0.5">
-                  <Badge className="text-[8px] bg-amber-500/10 border-amber-500/20 text-amber-400 shrink-0">{t.code}</Badge>
+                <div key={t.code} className="flex items-start gap-2 text-xs py-0.5">
+                  <Badge className="text-xs bg-amber-500/10 border-amber-500/20 text-amber-400 shrink-0">{t.code}</Badge>
                   <span className="text-slate-400">{t.description}</span>
                 </div>
               ))}

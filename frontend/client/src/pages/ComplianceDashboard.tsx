@@ -222,7 +222,7 @@ export default function ComplianceDashboard() {
               <div className={cn("p-2 rounded-lg", s.bg, s.color)}>{s.icon}</div>
               <div>
                 {loading ? <Skeleton className="h-6 w-8" /> : <p className={cn("text-xl font-bold tabular-nums", s.color)}>{s.count ?? 0}</p>}
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{s.label}</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wider">{s.label}</p>
               </div>
             </CardContent>
           </Card>
@@ -288,10 +288,10 @@ export default function ComplianceDashboard() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-white text-sm font-medium truncate">{req.shortName || req.name}</span>
-                              {req.stateCode && <Badge className="border-0 bg-cyan-500/20 text-cyan-400 text-[10px] px-1.5 py-0">{req.stateCode}</Badge>}
-                              <Badge className={cn("border-0 text-[10px] px-1.5 py-0", pr.bg, pr.color)}>{pr.label}</Badge>
+                              {req.stateCode && <Badge className="border-0 bg-cyan-500/20 text-cyan-400 text-xs px-1.5 py-0">{req.stateCode}</Badge>}
+                              <Badge className={cn("border-0 text-xs px-1.5 py-0", pr.bg, pr.color)}>{pr.label}</Badge>
                             </div>
-                            <p className="text-[11px] text-slate-500 truncate mt-0.5">{req.reason}</p>
+                            <p className="text-xs text-slate-500 truncate mt-0.5">{req.reason}</p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             {req.statePortalUrl && (
@@ -309,7 +309,7 @@ export default function ComplianceDashboard() {
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                             )}
-                            <Badge className={cn("border-0 text-[10px] min-w-[60px] justify-center", st.bg, st.color)}>{st.label}</Badge>
+                            <Badge className={cn("border-0 text-xs min-w-[60px] justify-center", st.bg, st.color)}>{st.label}</Badge>
                           </div>
                         </div>
                       );
@@ -364,7 +364,7 @@ export default function ComplianceDashboard() {
                 const ok = ver === tot;
                 return (
                   <button key={sg} onClick={() => toggleGroup(sg)} className={cn("px-3 py-2 rounded-lg text-xs font-medium transition-colors border", ok ? "border-green-500/30 bg-green-500/10 text-green-400" : "border-yellow-500/30 bg-yellow-500/10 text-yellow-400")}>
-                    <span className="font-bold">{stCode}</span> <span className="text-[10px] opacity-70">{ver}/{tot}</span>
+                    <span className="font-bold">{stCode}</span> <span className="text-xs opacity-70">{ver}/{tot}</span>
                   </button>
                 );
               })}

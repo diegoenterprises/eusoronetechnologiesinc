@@ -113,7 +113,7 @@ export default function AllocationDashboard() {
               { label: "Expiration Date", key: "expirationDate", type: "date" },
             ].map(f => (
               <div key={f.key}>
-                <label className="text-[10px] text-slate-500 uppercase mb-1 block">{f.label}</label>
+                <label className="text-xs text-slate-500 uppercase mb-1 block">{f.label}</label>
                 <Input
                   type={f.type}
                   value={(form as any)[f.key] || ""}
@@ -140,7 +140,7 @@ export default function AllocationDashboard() {
           <div key={s.label} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
             <s.icon className={cn("w-5 h-5", s.color)} />
             <div>
-              <div className="text-[10px] text-slate-500 uppercase">{s.label}</div>
+              <div className="text-xs text-slate-500 uppercase">{s.label}</div>
               <div className={cn("text-lg font-bold", s.color)}>{s.value}</div>
             </div>
           </div>
@@ -171,38 +171,38 @@ export default function AllocationDashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-semibold text-white">{c.contractName}</div>
-                      {c.buyerName && <div className="text-[10px] text-slate-500">{c.buyerName}</div>}
+                      {c.buyerName && <div className="text-xs text-slate-500">{c.buyerName}</div>}
                     </div>
-                    <Badge className={cn("text-[10px] border-0 gap-1", sc.color)}>
+                    <Badge className={cn("text-xs border-0 gap-1", sc.color)}>
                       <StatusIcon className="w-3 h-3" />{sc.label}
                     </Badge>
                   </div>
 
                   {/* Product + Terminals */}
                   <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <Badge className="bg-amber-500/10 text-amber-400 border-0 text-[10px]">{c.product}</Badge>
+                    <Badge className="bg-amber-500/10 text-amber-400 border-0 text-xs">{c.product}</Badge>
                     <span>Terminal #{c.originTerminalId} → #{c.destinationTerminalId}</span>
                   </div>
 
                   {/* Volume stats */}
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="rounded bg-blue-500/5 border border-blue-500/10 py-1">
-                      <div className="text-[10px] text-slate-500">Nominated</div>
+                      <div className="text-xs text-slate-500">Nominated</div>
                       <div className="text-sm font-bold text-blue-400">{c.nominatedBbl}</div>
                     </div>
                     <div className="rounded bg-green-500/5 border border-green-500/10 py-1">
-                      <div className="text-[10px] text-slate-500">Loaded</div>
+                      <div className="text-xs text-slate-500">Loaded</div>
                       <div className="text-sm font-bold text-green-400">{c.loadedBbl}</div>
                     </div>
                     <div className="rounded bg-orange-500/5 border border-orange-500/10 py-1">
-                      <div className="text-[10px] text-slate-500">Delivered</div>
+                      <div className="text-xs text-slate-500">Delivered</div>
                       <div className="text-sm font-bold text-orange-400">{c.deliveredBbl}</div>
                     </div>
                   </div>
 
                   {/* Progress bar */}
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[10px]">
+                    <div className="flex justify-between text-xs">
                       <span className="text-slate-500">Fulfillment</span>
                       <span className={pct >= 100 ? "text-emerald-400" : pct >= 80 ? "text-green-400" : "text-red-400"}>{pct}%</span>
                     </div>
@@ -214,13 +214,13 @@ export default function AllocationDashboard() {
 
                   {/* Footer */}
                   <div className="flex items-center justify-between pt-1 border-t border-white/[0.04]">
-                    <div className="text-[10px] text-slate-500">
+                    <div className="text-xs text-slate-500">
                       <span className="text-white font-medium">{c.remainingBbl}</span> BBL remaining · <span className="text-white font-medium">{c.loadsNeeded}</span> loads needed
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 text-[10px] text-cyan-400 hover:text-cyan-300"
+                      className="h-6 px-2 text-xs text-cyan-400 hover:text-cyan-300"
                       onClick={() => setCreateLoadsContract(c.contractId)}
                     >
                       <Zap className="w-3 h-3 mr-0.5" />Create Loads
@@ -239,7 +239,7 @@ export default function AllocationDashboard() {
           <div className="bg-slate-900 border border-white/[0.08] rounded-xl p-6 w-80 space-y-4" onClick={e => e.stopPropagation()}>
             <h3 className="text-sm font-semibold text-white">Create Loads from Allocation</h3>
             <div>
-              <label className="text-[10px] text-slate-500 uppercase mb-1 block">Number of Loads</label>
+              <label className="text-xs text-slate-500 uppercase mb-1 block">Number of Loads</label>
               <Input
                 type="number"
                 min={1}

@@ -15,7 +15,7 @@ export const OutboundShipmentsWidget: React.FC = () => {
           <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
             <Truck className="w-3 h-3 text-blue-400 flex-shrink-0" />
             <span className="text-xs text-white flex-1 truncate">{s.catalyst || `Shipment ${i+1}`}</span>
-            <span className="text-[10px] text-cyan-400">{s.status || "Loading"}</span>
+            <span className="text-xs text-cyan-400">{s.status || "Loading"}</span>
           </div>
         )} empty="No outbound shipments" />
       </div>
@@ -78,9 +78,9 @@ export const DamageReportsWidget: React.FC = () => {
           <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-white truncate">{r.description || `Report ${i+1}`}</p>
-            <p className="text-[10px] text-gray-500">{r.date || ""}</p>
+            <p className="text-xs text-gray-500">{r.date || ""}</p>
           </div>
-          <span className="text-[10px] text-red-400">${r.cost || 0}</span>
+          <span className="text-xs text-red-400">${r.cost || 0}</span>
         </div>
       )} />
     )}</ResponsiveWidget>

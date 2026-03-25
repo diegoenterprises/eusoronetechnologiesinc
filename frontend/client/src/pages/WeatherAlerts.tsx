@@ -432,7 +432,7 @@ export default function WeatherAlerts() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{alert.event}</p>
                         {getSeverityBadge(alert.severity)}
-                        {alert.urgency === "Immediate" && <Badge className="bg-red-500/20 text-red-400 border-0 text-[10px]">Immediate</Badge>}
+                        {alert.urgency === "Immediate" && <Badge className="bg-red-500/20 text-red-400 border-0 text-xs">Immediate</Badge>}
                       </div>
                     </div>
                     <p className="text-sm text-slate-400 mb-2 line-clamp-2">{alert.headline}</p>
@@ -504,8 +504,8 @@ export default function WeatherAlerts() {
                     <span className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>{day.high}°</span>
                     <span className="text-slate-500">{day.low}°</span>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">{day.condition}</p>
-                  {day.windSpeed && <p className="text-[10px] text-slate-500 mt-0.5 flex items-center justify-center gap-1"><Wind className="w-2.5 h-2.5" />{day.windSpeed}</p>}
+                  <p className="text-xs text-slate-500 mt-1 line-clamp-1">{day.condition}</p>
+                  {day.windSpeed && <p className="text-xs text-slate-500 mt-0.5 flex items-center justify-center gap-1"><Wind className="w-2.5 h-2.5" />{day.windSpeed}</p>}
                 </div>
               ))}
             </div>

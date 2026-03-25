@@ -85,8 +85,9 @@ const aceAciRouter = router({
       return { success: true, entryNumber, manifestId: `MAN-${Date.now()}`, status: "SUBMITTED", submittedAt: new Date().toISOString(), portOfEntry: input.portOfEntry || "AUTO_ASSIGNED", estimatedProcessingTime: hasHazmat ? "4-8 hours" : "1-4 hours", hazmatNotification: hasHazmat ? { required: true, advanceNoticeDays: 15, notificationId: `HAZN-${Date.now()}` } : { required: false }, isfRequired: true, isfStatus: "PENDING" };
     }),
   getACEStatus: protectedProcedure.input(z.object({ entryNumber: z.string() })).query(({ input }) => ({
-    entryNumber: input.entryNumber, status: "ACCEPTED", lastUpdated: new Date().toISOString(), clearanceStatus: "CLEARED", inspectionRequired: false,
-    documents: [{ type: "ACE_MANIFEST", status: "FILED", filedAt: new Date().toISOString() }, { type: "ISF_10+2", status: "FILED", filedAt: new Date().toISOString() }],
+    entryNumber: input.entryNumber, status: "unknown", lastUpdated: new Date().toISOString(), clearanceStatus: "unknown", inspectionRequired: false,
+    documents: [],
+    _note: "No CBP API integration — status cannot be determined",
   })),
   submitACINotification: protectedProcedure
     .input(z.object({
@@ -98,7 +99,7 @@ const aceAciRouter = router({
     .mutation(({ input }) => {
       const aciNumber = `ACI-${new Date().getFullYear()}-${randomBytes(5).toString('hex').toUpperCase()}`;
       const hasHazmat = input.commodities.some(c => c.unNumber || c.hazmatClass);
-      return { success: true, aciNumber, status: "ADVANCE_FILED", submittedAt: new Date().toISOString(), advanceNoticeCompliant: hasHazmat ? new Date(input.estimatedArrival).getTime() - Date.now() >= 15 * 86400000 : true, cbsaReferenceNumber: `CBSA-${Date.now()}` };
+      return { success: false, aciNumber, status: "not_submitted", submittedAt: new Date().toISOString(), advanceNoticeCompliant: hasHazmat ? new Date(input.estimatedArrival).getTime() - Date.now() >= 15 * 86400000 : true, cbsaReferenceNumber: null, _note: "No CBSA API integration — submission recorded locally only" };
     }),
 });
 
@@ -117,7 +118,7 @@ const nomRouter = router({
     const errors: string[] = []; const warnings: string[] = [];
     if (input.hazmatClass && !input.carrierRPA) errors.push("Carrier must have valid RPA for hazmat in Mexico");
     if (input.hazmatClass && !input.driverLicenseType?.includes("E")) warnings.push("Driver should hold Type E license for hazmat in Mexico");
-    return { valid: errors.length === 0, errors, warnings, spanishDocRequired: true, ctpatRequired: true };
+    return { valid: errors.length === 0, compliant: false, errors, warnings, spanishDocRequired: true, ctpatRequired: true, _note: "NOM compliance cannot be verified — no SEMARNAT/SCT integration" };
   }),
   generateDocument: protectedProcedure.input(z.object({ loadId: z.string().optional(), unNumber: z.string(), hazmatClass: z.string(), packagingGroup: z.string().optional(), origin: z.object({ name: z.string(), city: z.string(), state: z.string(), country: z.string() }), destination: z.object({ name: z.string(), city: z.string(), state: z.string(), country: z.string() }) }))
     .mutation(({ input }) => ({
@@ -132,21 +133,23 @@ const nomRouter = router({
 
 const ctpatRouter = router({
   getStatus: protectedProcedure.input(z.object({ carrierId: z.string().optional(), dotNumber: z.string().optional() })).query(() => ({
-    certified: true, certificationNumber: `CTPAT-${randomBytes(5).toString('hex').toUpperCase()}`, tier: "Tier II",
-    expiryDate: new Date(Date.now() + 365 * 86400000).toISOString(), lastAuditDate: new Date(Date.now() - 90 * 86400000).toISOString(),
-    complianceScore: 94, renewalDueDate: new Date(Date.now() + 275 * 86400000).toISOString(),
-    benefits: ["Reduced border inspections", "Priority processing at ports of entry", "FAST lane access", "Front-of-line at land borders"],
+    certified: false, certificationNumber: null, tier: null,
+    expiryDate: null, lastAuditDate: null,
+    complianceScore: 0, renewalDueDate: null,
+    benefits: [],
+    _note: "No C-TPAT integration — certification status unknown",
   })),
 });
 
 const fxRouter = router({
   getRates: protectedProcedure.query(() => ({
-    updatedAt: new Date().toISOString(), rates: { USD_CAD: 1.3645, CAD_USD: 0.7328, USD_MXN: 17.12, MXN_USD: 0.0584, CAD_MXN: 12.55, MXN_CAD: 0.0797 },
+    updatedAt: new Date().toISOString(), lastUpdated: "2025-01-01T00:00:00.000Z", source: "static_fallback", rates: { USD_CAD: 1.3645, CAD_USD: 0.7328, USD_MXN: 17.12, MXN_USD: 0.0584, CAD_MXN: 12.55, MXN_CAD: 0.0797 },
+    _note: "Static fallback rates — no live FX feed connected",
   })),
   convert: protectedProcedure.input(z.object({ amount: z.number(), from: z.enum(["USD", "CAD", "MXN"]), to: z.enum(["USD", "CAD", "MXN"]) })).query(({ input }) => {
     const rates: Record<string, number> = { USD_CAD: 1.3645, CAD_USD: 0.7328, USD_MXN: 17.12, MXN_USD: 0.0584, CAD_MXN: 12.55, MXN_CAD: 0.0797, USD_USD: 1, CAD_CAD: 1, MXN_MXN: 1 };
     const rate = rates[`${input.from}_${input.to}`] || 1;
-    return { originalAmount: input.amount, from: input.from, to: input.to, rate, convertedAmount: Math.round(input.amount * rate * 100) / 100, timestamp: new Date().toISOString() };
+    return { originalAmount: input.amount, from: input.from, to: input.to, rate, convertedAmount: Math.round(input.amount * rate * 100) / 100, timestamp: new Date().toISOString(), source: "static_fallback", lastUpdated: "2025-01-01T00:00:00.000Z" };
   }),
 });
 

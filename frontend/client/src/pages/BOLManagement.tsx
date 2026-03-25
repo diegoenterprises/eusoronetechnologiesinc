@@ -173,7 +173,7 @@ export default function BOLManagement() {
                         <p className="text-white font-medium">{bol.number}</p>
                         {getStatusBadge(bol.status)}
                         {bol.bolType && bol.bolType !== "standard" && (
-                          <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]">{bol.bolType}</Badge>
+                          <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs">{bol.bolType}</Badge>
                         )}
                       </div>
                       <p className="text-sm text-slate-400">Load: {bol.loadNumber}</p>

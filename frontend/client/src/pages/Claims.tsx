@@ -51,7 +51,7 @@ export default function Claims() {
 
   const statusBadge = (s: string) => {
     const m: Record<string, string> = { submitted: "bg-blue-500/15 text-blue-500", under_review: "bg-yellow-500/15 text-yellow-500", investigating: "bg-purple-500/15 text-purple-500", approved: "bg-green-500/15 text-green-500", denied: "bg-red-500/15 text-red-500", settled: "bg-emerald-500/15 text-emerald-500", closed: "bg-slate-500/15 text-slate-400" };
-    return <Badge className={cn("border-0 text-[10px] font-bold uppercase", m[s] || "bg-slate-500/15 text-slate-400")}>{s?.replace(/_/g, " ") || "Unknown"}</Badge>;
+    return <Badge className={cn("border-0 text-xs font-bold uppercase", m[s] || "bg-slate-500/15 text-slate-400")}>{s?.replace(/_/g, " ") || "Unknown"}</Badge>;
   };
 
   return (
@@ -64,7 +64,7 @@ export default function Claims() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Claims</h1>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20">
               <Shield className="w-3 h-3 text-orange-500" />
-              <span className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">Disputes</span>
+              <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">Disputes</span>
             </div>
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>File and manage cargo claims & disputes</p>
@@ -85,7 +85,7 @@ export default function Claims() {
           <div key={s.l} className={cn("rounded-2xl p-3.5 bg-gradient-to-br border", L ? `${s.b} border-slate-200/60` : `${s.b} border-slate-700/30`)}>
             <s.I className={cn("w-4 h-4 mb-1.5", s.c)} />
             {ld ? <Skeleton className="h-7 w-10 rounded-lg" /> : <p className={cn("text-2xl font-bold tracking-tight", s.c)}>{s.v}</p>}
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{s.l}</p>
+            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-0.5">{s.l}</p>
           </div>
         ))}
       </div>
@@ -105,7 +105,7 @@ export default function Claims() {
           <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
             <FileText className="w-4 h-4 text-blue-500" />
             <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Claims History</span>
-            <span className="text-[10px] text-slate-400 ml-auto">{claims.length} total</span>
+            <span className="text-xs text-slate-400 ml-auto">{claims.length} total</span>
           </div>
           <CardContent className="p-0">
             {listQ.isLoading ? <div className="p-4 space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>

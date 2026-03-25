@@ -1712,20 +1712,20 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                 <div className={`w-2 h-2 rounded-full ${tip.z.demandLevel === "CRITICAL" ? "bg-red-500" : tip.z.demandLevel === "HIGH" ? "bg-orange-500" : "bg-amber-500"}`} />
                 <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.zoneName}</span>
               </div>
-              <div className={`grid grid-cols-3 gap-x-3 gap-y-1 text-[10px] ${isLight ? "text-slate-500" : "text-white/50"}`}>
+              <div className={`grid grid-cols-3 gap-x-3 gap-y-1 text-xs ${isLight ? "text-slate-500" : "text-white/50"}`}>
                 {(tip.z.roleMetrics || []).map((m: any, mi: number) => (
                   <div key={mi}>
-                    <span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">{m.label}</span>
+                    <span className="block font-semibold text-xs uppercase tracking-wider opacity-60">{m.label}</span>
                     <span className={`font-bold ${m.color === "red" ? "text-red-400" : m.color === "amber" ? "text-amber-400" : m.color === "green" ? "text-emerald-400" : isLight ? "text-slate-800" : "text-white"}`}>{m.value}</span>
                   </div>
                 ))}
-                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Rate</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>${Number(tip.z.liveRate || 0).toFixed(2)}/mi</span></div>
-                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Surge</span><span className={`font-bold ${(tip.z.liveSurge || 1) > 1.2 ? "text-red-400" : isLight ? "text-slate-800" : "text-white"}`}>{Number(tip.z.liveSurge || 1).toFixed(2)}x</span></div>
-                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Demand</span><span className={`font-bold ${tip.z.demandLevel === "CRITICAL" ? "text-red-400" : tip.z.demandLevel === "HIGH" ? "text-orange-400" : "text-amber-400"}`}>{tip.z.demandLevel}</span></div>
+                <div><span className="block font-semibold text-xs uppercase tracking-wider opacity-60">Rate</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>${Number(tip.z.liveRate || 0).toFixed(2)}/mi</span></div>
+                <div><span className="block font-semibold text-xs uppercase tracking-wider opacity-60">Surge</span><span className={`font-bold ${(tip.z.liveSurge || 1) > 1.2 ? "text-red-400" : isLight ? "text-slate-800" : "text-white"}`}>{Number(tip.z.liveSurge || 1).toFixed(2)}x</span></div>
+                <div><span className="block font-semibold text-xs uppercase tracking-wider opacity-60">Demand</span><span className={`font-bold ${tip.z.demandLevel === "CRITICAL" ? "text-red-400" : tip.z.demandLevel === "HIGH" ? "text-orange-400" : "text-amber-400"}`}>{tip.z.demandLevel}</span></div>
               </div>
               {/* Layer-specific tooltip rows */}
               {activeLayers.length > 0 && (
-                <div className={`mt-1.5 pt-1.5 border-t space-y-0.5 text-[10px] ${isLight ? "border-slate-100" : "border-white/5"}`}>
+                <div className={`mt-1.5 pt-1.5 border-t space-y-0.5 text-xs ${isLight ? "border-slate-100" : "border-white/5"}`}>
                   {activeLayers.includes("fuel_prices") && tip.z.fuelPrice != null && (
                     <div className="flex justify-between"><span className="text-amber-500">Fuel</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>${Number(tip.z.fuelPrice).toFixed(2)}/gal</span></div>
                   )}
@@ -1752,7 +1752,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                 const ml = cf.crowdTotalMiles || 0;
                 if (d === 0 && ln === 0 && rr === 0) return null;
                 return (
-                  <div className={`mt-1.5 pt-1.5 border-t space-y-0.5 text-[10px] ${isLight ? "border-slate-100" : "border-white/5"}`}>
+                  <div className={`mt-1.5 pt-1.5 border-t space-y-0.5 text-xs ${isLight ? "border-slate-100" : "border-white/5"}`}>
                     <div className="flex justify-between"><span style={{ color: "#1473FF" }}>Euso Pings</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{d.toLocaleString()}</span></div>
                     {sp > 0 && <div className="flex justify-between"><span style={{ color: "#A855F7" }}>Avg Speed</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{sp.toFixed(0)} mph</span></div>}
                     <div className="flex justify-between"><span style={{ color: "#A855F7" }}>Lanes Learned</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{ln}</span></div>
@@ -1763,14 +1763,14 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
               })()}
               {/* FMCSA zone data in tooltip */}
               {tip.z.fmcsa && tip.z.fmcsa.carriers > 0 && (
-                <div className={`mt-1.5 pt-1.5 border-t space-y-0.5 text-[10px] ${isLight ? "border-slate-100" : "border-white/5"}`}>
+                <div className={`mt-1.5 pt-1.5 border-t space-y-0.5 text-xs ${isLight ? "border-slate-100" : "border-white/5"}`}>
                   <div className="flex justify-between"><span className="text-rose-400">Carriers</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.fmcsa.carriers.toLocaleString()}</span></div>
                   {tip.z.fmcsa.powerUnits > 0 && <div className="flex justify-between"><span className="text-rose-400">Power Units</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.fmcsa.powerUnits.toLocaleString()}</span></div>}
                   {tip.z.fmcsa.crashes90d > 0 && <div className="flex justify-between"><span className="text-red-400">Crashes (90d)</span><span className="font-bold text-red-400">{tip.z.fmcsa.crashes90d.toLocaleString()}</span></div>}
                   {tip.z.fmcsa.oosRate > 0 && <div className="flex justify-between"><span className="text-amber-400">OOS Rate</span><span className={`font-bold ${tip.z.fmcsa.oosRate > 25 ? "text-red-400" : "text-amber-400"}`}>{tip.z.fmcsa.oosRate}%</span></div>}
                 </div>
               )}
-              {tip.z.peakHours && <div className={`mt-1.5 pt-1 border-t text-[9px] ${isLight ? "border-slate-100 text-slate-400" : "border-white/5 text-white/30"}`}>Peak: {tip.z.peakHours}</div>}
+              {tip.z.peakHours && <div className={`mt-1.5 pt-1 border-t text-xs ${isLight ? "border-slate-100 text-slate-400" : "border-white/5 text-white/30"}`}>Peak: {tip.z.peakHours}</div>}
             </motion.div>
           )}
         </AnimatePresence>
@@ -1791,7 +1791,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                     <div className="w-2 h-2 rounded-full bg-cyan-400" />
                     <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>M{intelTip.data.mag?.toFixed(1)} Earthquake</span>
                   </div>
-                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                  <div className={`text-xs space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
                     <div>{intelTip.data.place}</div>
                     <div>Depth: {intelTip.data.depth?.toFixed(1)} km</div>
                     {intelTip.data.alert && <div className="font-semibold text-amber-400">Alert: {intelTip.data.alert}</div>}
@@ -1804,7 +1804,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                     <div className="w-2 h-2 rounded-full bg-orange-500" />
                     <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{intelTip.data.name}</span>
                   </div>
-                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                  <div className={`text-xs space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
                     <div>{intelTip.data.state} · {intelTip.data.status}</div>
                     <div>{(intelTip.data.acres || 0).toLocaleString()} acres · {intelTip.data.contained || 0}% contained</div>
                     {intelTip.data.personnel && <div>{intelTip.data.personnel} personnel</div>}
@@ -1818,7 +1818,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                     <div className="w-2 h-2 rounded-full bg-purple-500" />
                     <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>Hazmat Incident</span>
                   </div>
-                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                  <div className={`text-xs space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
                     <div>{intelTip.data.city}, {intelTip.data.state} · {intelTip.data.mode}</div>
                     {intelTip.data.name && <div>Material: {intelTip.data.name}</div>}
                     {intelTip.data.class && <div>Class: {intelTip.data.class}</div>}
@@ -1835,7 +1835,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                     <div className={`w-2 h-2 rounded-full ${intelTip.data.compliance === "Violation" ? "bg-red-500" : "bg-emerald-500"}`} />
                     <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{intelTip.data.name?.slice(0, 30)}</span>
                   </div>
-                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                  <div className={`text-xs space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
                     <div>{intelTip.data.state} · {intelTip.data.sector?.slice(0, 25)}</div>
                     <div>Status: <span className={intelTip.data.compliance === "Violation" ? "text-red-400 font-semibold" : "text-emerald-400"}>{intelTip.data.compliance}</span></div>
                     {intelTip.data.releases > 0 && <div>Releases: {intelTip.data.releases.toLocaleString()} lbs</div>}
@@ -1849,7 +1849,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                     <div className={`w-2 h-2 rounded-full ${intelTip.data.status === "Closed" ? "bg-red-500" : intelTip.data.status === "Restricted" ? "bg-amber-500" : "bg-sky-500"}`} />
                     <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{intelTip.data.name}</span>
                   </div>
-                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                  <div className={`text-xs space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
                     <div>{intelTip.data.river} · {intelTip.data.state}</div>
                     <div>Status: <span className={intelTip.data.status === "Closed" ? "text-red-400 font-semibold" : ""}>{intelTip.data.status}</span></div>
                     {intelTip.data.reason && <div>{intelTip.data.reason}</div>}
@@ -1863,7 +1863,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                     <div className="w-2 h-2 rounded-full bg-red-500" />
                     <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>FMCSA Crash Data — {intelTip.data.state}</span>
                   </div>
-                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                  <div className={`text-xs space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
                     <div>{intelTip.data.crashes?.toLocaleString()} crashes (90 days)</div>
                     {intelTip.data.fatalities > 0 && <div className="font-semibold text-red-400">{intelTip.data.fatalities} fatalities</div>}
                     {intelTip.data.injuries > 0 && <div>{intelTip.data.injuries.toLocaleString()} injuries</div>}
@@ -1876,7 +1876,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                     <div className="w-2 h-2 rounded-full bg-amber-500" />
                     <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{intelTip.data.name?.slice(0, 30)}</span>
                   </div>
-                  <div className={`text-[10px] space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                  <div className={`text-xs space-y-0.5 ${isLight ? "text-slate-500" : "text-white/50"}`}>
                     <div>{intelTip.data.state} · {intelTip.data.category?.slice(0, 25)}</div>
                     {intelTip.data.co2 > 0 && <div>CO2: {(intelTip.data.co2 / 1000).toFixed(0)}k tons</div>}
                     {intelTip.data.nox > 0 && <div>NOx: {intelTip.data.nox.toFixed(0)} tons</div>}
@@ -1905,7 +1905,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
         </div>
 
         {/* ── ZOOM LEVEL ── */}
-        <div className={`absolute top-3 right-14 px-2 py-1 rounded-lg text-[10px] font-bold tabular-nums ${
+        <div className={`absolute top-3 right-14 px-2 py-1 rounded-lg text-xs font-bold tabular-nums ${
           isLight ? "bg-white/90 text-slate-600 border border-slate-200/60" : "bg-white/[0.08] text-white/50 border border-white/[0.06]"
         }`}>
           {zoomPct}%
@@ -1930,7 +1930,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
               { label: "FMCSA", on: showFmcsa, toggle: () => setShowFmcsa(p => !p), color: "#F43F5E" },
             ].map(({ label, on, toggle, color }) => (
               <button key={label} onClick={toggle}
-                className={`px-1.5 py-0.5 rounded text-[9px] font-semibold transition-all leading-tight ${
+                className={`px-1.5 py-0.5 rounded text-xs font-semibold transition-all leading-tight ${
                   on ? "" : isLight ? "text-slate-400 hover:text-slate-600" : "text-white/25 hover:text-white/50"
                 }`}
                 style={on ? { backgroundColor: color + "22", color, border: `1px solid ${color}55` } : {}}>
@@ -1950,7 +1950,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
               { label: "Euso Roads", on: showLidar, toggle: () => setShowLidar(p => !p), color: "#1473FF" },
             ].map(({ label, on, toggle, color }) => (
               <button key={label} onClick={toggle}
-                className={`px-1.5 py-0.5 rounded text-[9px] font-semibold transition-all leading-tight ${on
+                className={`px-1.5 py-0.5 rounded text-xs font-semibold transition-all leading-tight ${on
                   ? color ? "" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
                   : isLight ? "text-slate-400 hover:text-slate-600" : "text-white/25 hover:text-white/50"
                 }`}
@@ -1965,16 +1965,16 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
         <div className={`absolute top-3 left-3 px-2.5 py-1.5 rounded-lg backdrop-blur-md ${
           isLight ? "bg-white/90 border border-slate-200/60" : "bg-white/[0.08] border border-white/[0.06]"
         }`}>
-          <div className={`text-[10px] font-semibold ${isLight ? "text-slate-600" : "text-white/50"}`}>
+          <div className={`text-xs font-semibold ${isLight ? "text-slate-600" : "text-white/50"}`}>
             {roleCtx?.perspective?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Demand View"}
           </div>
-          <div className={`text-[8px] mt-0.5 ${isLight ? "text-slate-400" : "text-white/25"}`}>
+          <div className={`text-xs mt-0.5 ${isLight ? "text-slate-400" : "text-white/25"}`}>
             {rv.subtitle}
           </div>
         </div>
 
         {/* ── LEGEND ── */}
-        <div className={`absolute bottom-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-lg backdrop-blur-md text-[8px] font-medium ${
+        <div className={`absolute bottom-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-lg backdrop-blur-md text-xs font-medium ${
           isLight ? "bg-white/90 text-slate-500 border border-slate-200/60" : "bg-white/[0.08] text-white/40 border border-white/[0.06]"
         }`}>
           <div className="flex items-center gap-0.5"><div className="w-1.5 h-1.5 rounded-full" style={{ background: rv.critColor }} />Crit</div>
@@ -1999,7 +1999,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
         )}
 
         {/* ── INSTRUCTIONS (top-right below zoom controls) ── */}
-        <div className={`absolute top-[120px] right-3 text-[8px] text-right ${isLight ? "text-slate-400" : "text-white/15"}`}>
+        <div className={`absolute top-[120px] right-3 text-xs text-right ${isLight ? "text-slate-400" : "text-white/15"}`}>
           Scroll to zoom<br/>Drag to pan<br/>Click zone to focus
         </div>
       </div>

@@ -242,7 +242,7 @@ export default function CatalystBidSubmission() {
                     : isLight ? "bg-slate-100 text-slate-400 border border-slate-200" : "bg-slate-800 text-slate-500 border border-slate-700/50"
               )}
             >
-              {i < step ? <CheckCircle className="w-3.5 h-3.5" /> : <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">{i + 1}</span>}
+              {i < step ? <CheckCircle className="w-3.5 h-3.5" /> : <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold">{i + 1}</span>}
               <span className="hidden md:inline">{s}</span>
             </button>
             {i < STEPS.length - 1 && <div className={cn("flex-1 h-0.5 rounded-full", i < step ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" : isLight ? "bg-slate-200" : "bg-slate-700")} />}
@@ -317,7 +317,7 @@ export default function CatalystBidSubmission() {
                     )}>
                       {stat.icon}
                     </div>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">{stat.label}</p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wider">{stat.label}</p>
                     <p className={cn("text-sm font-bold mt-0.5", isLight ? "text-slate-800" : "text-white")}>{stat.value}</p>
                   </div>
                 ))}
@@ -333,7 +333,7 @@ export default function CatalystBidSubmission() {
                   <div className="space-y-1 text-sm">
                     {load.minSafetyScore && <p className="text-slate-500">Min Safety Score: <span className={cn("font-medium", isLight ? "text-slate-700" : "text-white")}>{load.minSafetyScore}%</span></p>}
                     {load.endorsements && <p className="text-slate-500">Endorsements: <span className={cn("font-medium", isLight ? "text-slate-700" : "text-white")}>{load.endorsements}</span></p>}
-                    {hazmat && <p className="text-slate-500">Hazmat CDL endorsement required <Badge className="bg-red-500/15 text-red-500 border-0 text-[10px] ml-1">HM</Badge></p>}
+                    {hazmat && <p className="text-slate-500">Hazmat CDL endorsement required <Badge className="bg-red-500/15 text-red-500 border-0 text-xs ml-1">HM</Badge></p>}
                   </div>
                 </div>
               )}
@@ -361,38 +361,38 @@ export default function CatalystBidSubmission() {
                   <div className="flex items-center gap-2 mb-3">
                     <Shield className="w-4 h-4 text-purple-400" />
                     <span className={cn("text-xs font-bold uppercase tracking-wider", isLight ? "text-purple-600" : "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent")}>ML Bid Optimizer</span>
-                    <span className={cn("ml-auto text-[10px]", isLight ? "text-slate-500" : "text-slate-500")}>{mlBidOptimizer.data.winProbability}% win probability</span>
+                    <span className={cn("ml-auto text-xs", isLight ? "text-slate-500" : "text-slate-500")}>{mlBidOptimizer.data.winProbability}% win probability</span>
                   </div>
                   <div className="flex items-center gap-1 mb-3">
                     {(["AGGRESSIVE", "COMPETITIVE", "PREMIUM"] as const).map(s => (
                       <button key={s} onClick={() => setBidStrategy(s)}
-                        className={cn("px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all", bidStrategy === s ? "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white shadow" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50")}>
+                        className={cn("px-3 py-1.5 rounded-lg text-xs font-bold transition-all", bidStrategy === s ? "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white shadow" : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800/50 text-slate-400 hover:bg-slate-700/50")}>
                         {s}
                       </button>
                     ))}
                   </div>
                   <div className="grid grid-cols-3 gap-3 mb-3">
                     <div className="text-center">
-                      <p className={cn("text-[10px] uppercase", isLight ? "text-slate-500" : "text-slate-500")}>Suggested Bid</p>
+                      <p className={cn("text-xs uppercase", isLight ? "text-slate-500" : "text-slate-500")}>Suggested Bid</p>
                       <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${mlBidOptimizer.data.suggestedBid.toLocaleString()}</p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-500" : "text-slate-500")}>${mlBidOptimizer.data.bidPerMile}/mi</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-500")}>${mlBidOptimizer.data.bidPerMile}/mi</p>
                     </div>
                     <div className="text-center">
-                      <p className={cn("text-[10px] uppercase", isLight ? "text-slate-500" : "text-slate-500")}>Market Avg</p>
+                      <p className={cn("text-xs uppercase", isLight ? "text-slate-500" : "text-slate-500")}>Market Avg</p>
                       <p className={cn("text-lg font-bold", isLight ? "text-slate-600" : "text-slate-300")}>${mlBidOptimizer.data.marketAvg.toLocaleString()}</p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-500" : "text-slate-500")}>${(mlBidOptimizer.data.marketAvg / Math.max(distance, 1)).toFixed(2)}/mi</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-500")}>${(mlBidOptimizer.data.marketAvg / Math.max(distance, 1)).toFixed(2)}/mi</p>
                     </div>
                     <div className="text-center">
-                      <p className={cn("text-[10px] uppercase", isLight ? "text-slate-500" : "text-slate-500")}>Win Prob</p>
+                      <p className={cn("text-xs uppercase", isLight ? "text-slate-500" : "text-slate-500")}>Win Prob</p>
                       <p className={`text-lg font-bold ${mlBidOptimizer.data.winProbability >= 60 ? "text-green-400" : mlBidOptimizer.data.winProbability >= 35 ? "text-yellow-400" : "text-red-400"}`}>{mlBidOptimizer.data.winProbability}%</p>
-                      <p className={cn("text-[10px]", isLight ? "text-slate-500" : "text-slate-500")}>{mlBidOptimizer.data.strategy}</p>
+                      <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-500")}>{mlBidOptimizer.data.strategy}</p>
                     </div>
                   </div>
                   <button onClick={() => { setBidAmount(String(mlBidOptimizer.data.suggestedBid)); setRatePerMileInput(String(mlBidOptimizer.data.bidPerMile)); }}
                     className="w-full px-3 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white hover:opacity-90 transition-opacity">
                     Use Suggested Bid: ${mlBidOptimizer.data.suggestedBid.toLocaleString()}
                   </button>
-                  <p className={cn("text-[10px] mt-2 italic", isLight ? "text-slate-500" : "text-slate-500")}>{mlBidOptimizer.data.reasoning}</p>
+                  <p className={cn("text-xs mt-2 italic", isLight ? "text-slate-500" : "text-slate-500")}>{mlBidOptimizer.data.reasoning}</p>
                 </div>
               )}
 
@@ -404,7 +404,7 @@ export default function CatalystBidSubmission() {
                     <p className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>ML Transit Estimate</p>
                     <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{mlETA.data.estimatedDays} days ({mlETA.data.estimatedHours}h)</p>
                   </div>
-                  <div className={cn("px-2 py-1 rounded text-[10px] font-bold", mlETA.data.riskLevel === "HIGH" ? "bg-red-500/20 text-red-400" : mlETA.data.riskLevel === "MODERATE" ? "bg-amber-500/20 text-amber-400" : "bg-green-500/20 text-green-400")}>
+                  <div className={cn("px-2 py-1 rounded text-xs font-bold", mlETA.data.riskLevel === "HIGH" ? "bg-red-500/20 text-red-400" : mlETA.data.riskLevel === "MODERATE" ? "bg-amber-500/20 text-amber-400" : "bg-green-500/20 text-green-400")}>
                     {mlETA.data.riskLevel}
                   </div>
                 </div>
@@ -459,23 +459,23 @@ export default function CatalystBidSubmission() {
                   <div className="flex items-center gap-2 mb-3">
                     <Scale className="w-4 h-4 text-amber-500" />
                     <span className={cn("text-xs font-bold uppercase tracking-wider", isLight ? "text-amber-700" : "text-amber-300")}>Schedule A Rate Sheet</span>
-                    <span className="ml-auto text-[10px] text-slate-500">{distance} mi one-way</span>
+                    <span className="ml-auto text-xs text-slate-500">{distance} mi one-way</span>
                   </div>
                   <div className="grid grid-cols-4 gap-3 mb-3">
                     <div className="text-center">
-                      <p className="text-[10px] text-slate-400 uppercase">Rate/BBL</p>
+                      <p className="text-xs text-slate-400 uppercase">Rate/BBL</p>
                       <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${scheduleARateQuery.data.ratePerBarrel?.toFixed(2)}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[10px] text-slate-400 uppercase">Base</p>
+                      <p className="text-xs text-slate-400 uppercase">Base</p>
                       <p className={cn("text-lg font-bold", isLight ? "text-amber-600" : "text-amber-300")}>${scheduleARateQuery.data.baseAmount?.toFixed(2)}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[10px] text-slate-400 uppercase">FSC</p>
+                      <p className="text-xs text-slate-400 uppercase">FSC</p>
                       <p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{scheduleARateQuery.data.fsc > 0 ? `$${scheduleARateQuery.data.fsc.toFixed(2)}` : "$0"}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[10px] text-slate-400 uppercase">Total</p>
+                      <p className="text-xs text-slate-400 uppercase">Total</p>
                       <p className="text-lg font-bold text-emerald-500">${scheduleARateQuery.data.totalAmount?.toFixed(2)}</p>
                     </div>
                   </div>
@@ -487,7 +487,7 @@ export default function CatalystBidSubmission() {
                     className={cn("w-full px-3 py-2 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90", isLight ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white" : "bg-gradient-to-r from-amber-500 to-orange-500 text-white")}>
                     Use Schedule A Rate: ${scheduleARateQuery.data.totalAmount?.toFixed(2)}
                   </button>
-                  <p className={cn("text-[10px] mt-2 italic", isLight ? "text-slate-500" : "text-slate-500")}>
+                  <p className={cn("text-xs mt-2 italic", isLight ? "text-slate-500" : "text-slate-500")}>
                     Based on Schedule A mileage tiers. {Number(load?.quantity) || 180} BBL at {distance} miles.
                   </p>
                 </div>
@@ -497,27 +497,27 @@ export default function CatalystBidSubmission() {
               {bidAmount && distance > 0 && (
                 <div className={cn("p-4 rounded-xl border", isLight ? "bg-gradient-to-r from-emerald-50 to-cyan-50 border-emerald-200" : "bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border-emerald-500/20")}>
                   <div className="grid grid-cols-3 gap-4 text-center">
-                    <div><p className="text-[10px] text-slate-400 uppercase">Your Bid</p><p className={cn("text-xl font-bold", isLight ? "text-slate-800" : "text-white")}>${Number(bidAmount).toLocaleString()}</p></div>
-                    <div><p className="text-[10px] text-slate-400 uppercase">Distance</p><p className={cn("text-xl font-bold", isLight ? "text-slate-800" : "text-white")}>{distance} mi</p></div>
-                    <div><p className="text-[10px] text-slate-400 uppercase">Rate/Mile</p><p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${ratePerMile}</p></div>
+                    <div><p className="text-xs text-slate-400 uppercase">Your Bid</p><p className={cn("text-xl font-bold", isLight ? "text-slate-800" : "text-white")}>${Number(bidAmount).toLocaleString()}</p></div>
+                    <div><p className="text-xs text-slate-400 uppercase">Distance</p><p className={cn("text-xl font-bold", isLight ? "text-slate-800" : "text-white")}>{distance} mi</p></div>
+                    <div><p className="text-xs text-slate-400 uppercase">Rate/Mile</p><p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${ratePerMile}</p></div>
                   </div>
                   {/* Platform fee preview */}
                   {platformFeePreview.data && (
                     <div className={cn("mt-3 pt-3 border-t grid grid-cols-3 gap-3 text-center", isLight ? "border-emerald-200" : "border-emerald-500/20")}>
                       <div>
-                        <p className="text-[10px] text-slate-400 uppercase">Platform Fee</p>
+                        <p className="text-xs text-slate-400 uppercase">Platform Fee</p>
                         <p className={cn("text-sm font-semibold", isLight ? "text-purple-600" : "text-purple-400")}>${platformFeePreview.data.platformFeeAmount?.toFixed(2)}</p>
-                        <p className="text-[9px] text-slate-500">{platformFeePreview.data.platformFeePercent}%</p>
+                        <p className="text-xs text-slate-500">{platformFeePreview.data.platformFeePercent}%</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-400 uppercase">You Receive</p>
+                        <p className="text-xs text-slate-400 uppercase">You Receive</p>
                         <p className="text-sm font-bold text-emerald-500">${platformFeePreview.data.carrierReceives?.toFixed(2)}</p>
-                        <p className="text-[9px] text-slate-500">After fee</p>
+                        <p className="text-xs text-slate-500">After fee</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-400 uppercase">Shipper Pays</p>
+                        <p className="text-xs text-slate-400 uppercase">Shipper Pays</p>
                         <p className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-slate-300")}>${platformFeePreview.data.shipperPays?.toFixed(2)}</p>
-                        <p className="text-[9px] text-slate-500">Total w/ fees</p>
+                        <p className="text-xs text-slate-500">Total w/ fees</p>
                       </div>
                     </div>
                   )}
@@ -558,7 +558,7 @@ export default function CatalystBidSubmission() {
                   </div>
                   <div className="flex justify-between mt-4 px-2">
                     {["Below Market", "Sweet Spot", "Premium"].map((label) => (
-                      <span key={label} className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
+                      <span key={label} className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
                         rateIntel.ratingLabel === label
                           ? label === "Sweet Spot" ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-purple-400"
                             : "border-amber-300 dark:border-amber-500/50 bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
@@ -571,14 +571,14 @@ export default function CatalystBidSubmission() {
                   <div className={cn("mt-4 p-3 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                     <div className="flex items-center gap-2 mb-2">
                       <EsangIcon className="w-3 h-3 text-purple-500" />
-                      <span className={cn("text-[11px] font-bold", isLight ? "text-purple-600" : "text-purple-300")}>ESANG Recommendation</span>
+                      <span className={cn("text-xs font-bold", isLight ? "text-purple-600" : "text-purple-300")}>ESANG Recommendation</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
-                      <div><p className="text-[10px] text-slate-400">Market Low</p><p className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-slate-300")}>${rateIntel.marketLow}/mi</p></div>
-                      <div><p className="text-[10px] text-slate-400">Market Avg</p><p className="text-xs font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${rateIntel.marketRPM}/mi</p></div>
-                      <div><p className="text-[10px] text-slate-400">Market High</p><p className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-slate-300")}>${rateIntel.marketHigh}/mi</p></div>
+                      <div><p className="text-xs text-slate-400">Market Low</p><p className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-slate-300")}>${rateIntel.marketLow}/mi</p></div>
+                      <div><p className="text-xs text-slate-400">Market Avg</p><p className="text-xs font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${rateIntel.marketRPM}/mi</p></div>
+                      <div><p className="text-xs text-slate-400">Market High</p><p className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-slate-300")}>${rateIntel.marketHigh}/mi</p></div>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-2 text-center">Suggested total: <span className="text-purple-500 font-bold">${rateIntel.marketTotal.toLocaleString()}</span> for {distance} mi</p>
+                    <p className="text-xs text-slate-400 mt-2 text-center">Suggested total: <span className="text-purple-500 font-bold">${rateIntel.marketTotal.toLocaleString()}</span> for {distance} mi</p>
                   </div>
                 </div>
               )}
@@ -718,15 +718,15 @@ export default function CatalystBidSubmission() {
               <div className={cn("p-5 rounded-xl border", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-[#BE01FF]/20")}>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-[10px] text-slate-400 uppercase">Your Bid</p>
+                    <p className="text-xs text-slate-400 uppercase">Your Bid</p>
                     <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${Number(bidAmount).toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 uppercase">Rate/Mile</p>
+                    <p className="text-xs text-slate-400 uppercase">Rate/Mile</p>
                     <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${ratePerMile}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-slate-400 uppercase">Distance</p>
+                    <p className="text-xs text-slate-400 uppercase">Distance</p>
                     <p className={cn("text-2xl font-bold", isLight ? "text-slate-800" : "text-white")}>{distance} mi</p>
                   </div>
                 </div>
@@ -746,7 +746,7 @@ export default function CatalystBidSubmission() {
                   ...(estimatedDelivery ? [{ label: "Est. Delivery", value: estimatedDelivery }] : []),
                 ].map((item) => (
                   <div key={item.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                    <p className="text-[10px] text-slate-400 uppercase">{item.label}</p>
+                    <p className="text-xs text-slate-400 uppercase">{item.label}</p>
                     <p className={cn("text-sm font-medium mt-0.5", isLight ? "text-slate-800" : "text-white")}>{item.value}</p>
                   </div>
                 ))}
@@ -754,7 +754,7 @@ export default function CatalystBidSubmission() {
 
               {notes && (
                 <div className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
-                  <p className="text-[10px] text-slate-400 uppercase">Notes</p>
+                  <p className="text-xs text-slate-400 uppercase">Notes</p>
                   <p className={cn("text-sm mt-0.5", isLight ? "text-slate-700" : "text-slate-300")}>{notes}</p>
                 </div>
               )}

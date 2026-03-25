@@ -726,7 +726,7 @@ export default function RegisterDriver() {
             <div className="flex items-center gap-2">
               <Truck className="w-4 h-4 text-blue-400" />
               <span className="text-white font-semibold text-sm">Equipment Experience</span>
-              <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400">Optional</Badge>
+              <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400">Optional</Badge>
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300 text-xs">Trailer Types Operated</Label>

@@ -95,7 +95,7 @@ export default function HazmatZoneLayer({ loadId, hazmatClass }: HazmatZoneLayer
                 return (
                   <div key={tc.category} className={`flex items-center justify-between p-1.5 rounded text-xs ${isRestricted ? "bg-red-50 dark:bg-red-950/20" : "bg-muted/30"}`}>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={`text-[10px] ${isRestricted ? "border-red-300 text-red-600" : ""}`}>
+                      <Badge variant="outline" className={`text-xs ${isRestricted ? "border-red-300 text-red-600" : ""}`}>
                         Cat {tc.category}
                       </Badge>
                       <span className="text-muted-foreground">{tc.description}</span>
@@ -139,7 +139,7 @@ export default function HazmatZoneLayer({ loadId, hazmatClass }: HazmatZoneLayer
         {hazmatClass && (
           <div className="border-t pt-3">
             <p className="text-xs font-medium mb-1">49 CFR 397 Routing Requirements</p>
-            <ul className="text-[10px] text-muted-foreground space-y-0.5">
+            <ul className="text-xs text-muted-foreground space-y-0.5">
               <li className="flex items-center gap-1">
                 <Shield className="h-3 w-3 text-blue-400 flex-shrink-0" />
                 Prefer designated hazmat routes when available

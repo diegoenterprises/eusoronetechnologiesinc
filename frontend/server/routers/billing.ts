@@ -9,7 +9,7 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedApprovedProcedure, isolatedApprovedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions, auditLogs, notifications, railShipments, vesselShipments } from "../../drizzle/schema";
+import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions, auditLogs, notifications, railShipments, vesselShipments, platformFeeConfigs, userFeeOverrides } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
 import { requireAccess } from "../services/security/rbac/access-check";
 import { unsafeCast } from "../_core/types/unsafe";
@@ -27,6 +27,63 @@ async function safeStripe<T>(fn: () => Promise<T>): Promise<T | null> {
   }
 }
 
+/**
+ * Query a fee config from platformFeeConfigs by feeCode, with user override support.
+ */
+async function getBillingConfig(
+  db: any,
+  feeCode: string,
+  defaults: { baseRate?: number; flatAmount?: number },
+  userId?: number
+): Promise<{ baseRate: number; flatAmount: number }> {
+  try {
+    const now = new Date();
+    const [cfg] = await db.select({
+      id: platformFeeConfigs.id,
+      baseRate: platformFeeConfigs.baseRate,
+      flatAmount: platformFeeConfigs.flatAmount,
+    }).from(platformFeeConfigs)
+      .where(and(
+        eq(platformFeeConfigs.feeCode, feeCode),
+        eq(platformFeeConfigs.isActive, true),
+        sql`${platformFeeConfigs.effectiveFrom} <= ${now}`,
+        sql`(${platformFeeConfigs.effectiveTo} IS NULL OR ${platformFeeConfigs.effectiveTo} > ${now})`,
+      ))
+      .limit(1);
+
+    let rate = cfg ? parseFloat(String(cfg.baseRate)) || (defaults.baseRate ?? 0) : (defaults.baseRate ?? 0);
+    const flat = cfg ? parseFloat(String(cfg.flatAmount)) || (defaults.flatAmount ?? 0) : (defaults.flatAmount ?? 0);
+
+    // Check user override
+    if (userId && cfg) {
+      try {
+        const [override] = await db.select({
+          overrideType: userFeeOverrides.overrideType,
+          overrideValue: userFeeOverrides.overrideValue,
+        }).from(userFeeOverrides)
+          .where(and(
+            eq(userFeeOverrides.userId, userId),
+            eq(userFeeOverrides.feeConfigId, cfg.id),
+            eq(userFeeOverrides.isActive, true),
+            sql`${userFeeOverrides.effectiveFrom} <= ${now}`,
+            sql`(${userFeeOverrides.effectiveTo} IS NULL OR ${userFeeOverrides.effectiveTo} > ${now})`,
+          ))
+          .limit(1);
+        if (override) {
+          const ov = parseFloat(String(override.overrideValue)) || 0;
+          if (override.overrideType === 'flat_override') rate = ov;
+          else if (override.overrideType === 'rate_adjustment') rate += ov;
+          else if (override.overrideType === 'percentage_off') rate *= (1 - ov / 100);
+          else if (override.overrideType === 'waived') rate = 0;
+        }
+      } catch { /* skip */ }
+    }
+    return { baseRate: rate, flatAmount: flat };
+  } catch {
+    return { baseRate: defaults.baseRate ?? 0, flatAmount: defaults.flatAmount ?? 0 };
+  }
+}
+
 export const billingRouter = router({
   // ════════════════════════════════════════════════════════════════
   // SUBSCRIPTION — real company data
@@ -40,10 +97,20 @@ export const billingRouter = router({
       const companyId = ctx.user?.companyId || 0;
       const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
       const planType = "starter";
+      // Query subscription prices from platformFeeConfigs, fallback to defaults
+      let starterPrice = 99, proPrice = 299, entPrice = 599;
+      try {
+        const sCfg = await getBillingConfig(db, 'SUBSCRIPTION_STARTER', { flatAmount: 99 });
+        const pCfg = await getBillingConfig(db, 'SUBSCRIPTION_PROFESSIONAL', { flatAmount: 299 });
+        const eCfg = await getBillingConfig(db, 'SUBSCRIPTION_ENTERPRISE', { flatAmount: 599 });
+        starterPrice = sCfg.flatAmount || 99;
+        proPrice = pCfg.flatAmount || 299;
+        entPrice = eCfg.flatAmount || 599;
+      } catch { /* use defaults */ }
       const plans: Record<string, { name: string; price: number }> = {
-        starter: { name: "Starter", price: 99 },
-        professional: { name: "Professional", price: 299 },
-        enterprise: { name: "Enterprise", price: 599 },
+        starter: { name: "Starter", price: starterPrice },
+        professional: { name: "Professional", price: proPrice },
+        enterprise: { name: "Enterprise", price: entPrice },
       };
       const plan = plans[planType] || plans.starter;
       const nextBilling = new Date(); nextBilling.setMonth(nextBilling.getMonth() + 1); nextBilling.setDate(1);
@@ -58,11 +125,25 @@ export const billingRouter = router({
     } catch { return fallback; }
   }),
 
-  getPlans: protectedProcedure.query(async () => [
-    { id: "starter", name: "Starter", price: 99, features: ["Up to 10 loads/month", "Basic tracking", "Email support"] },
-    { id: "professional", name: "Professional", price: 299, features: ["Unlimited loads", "Advanced tracking", "Priority support", "API access"] },
-    { id: "enterprise", name: "Enterprise", price: 599, features: ["Everything in Pro", "Dedicated support", "Custom integrations", "SLA guarantee"] },
-  ]),
+  getPlans: protectedProcedure.query(async () => {
+    const db = await getDb();
+    let starterPrice = 99, proPrice = 299, entPrice = 599;
+    if (db) {
+      try {
+        const sCfg = await getBillingConfig(db, 'SUBSCRIPTION_STARTER', { flatAmount: 99 });
+        const pCfg = await getBillingConfig(db, 'SUBSCRIPTION_PROFESSIONAL', { flatAmount: 299 });
+        const eCfg = await getBillingConfig(db, 'SUBSCRIPTION_ENTERPRISE', { flatAmount: 599 });
+        starterPrice = sCfg.flatAmount || 99;
+        proPrice = pCfg.flatAmount || 299;
+        entPrice = eCfg.flatAmount || 599;
+      } catch { /* use defaults */ }
+    }
+    return [
+      { id: "starter", name: "Starter", price: starterPrice, features: ["Up to 10 loads/month", "Basic tracking", "Email support"] },
+      { id: "professional", name: "Professional", price: proPrice, features: ["Unlimited loads", "Advanced tracking", "Priority support", "API access"] },
+      { id: "enterprise", name: "Enterprise", price: entPrice, features: ["Everything in Pro", "Dedicated support", "Custom integrations", "SLA guarantee"] },
+    ];
+  }),
 
   // ════════════════════════════════════════════════════════════════
   // USAGE — real DB counts
@@ -466,9 +547,57 @@ export const billingRouter = router({
       return { success: !!result, paymentMethodId: result?.id || null };
     }),
 
-  // Accessorial charges — real DB (return empty if no data)
-  getAccessorialCharges: protectedProcedure.input(z.object({ loadId: z.string().optional(), search: z.string().optional() })).query(async () => []),
-  getAccessorialStats: protectedProcedure.query(async () => ({ total: 0, pending: 0, approved: 0, denied: 0, totalTypes: 0, totalCollected: 0, loadsWithCharges: 0, avgCharge: 0 })),
+  // Accessorial charges — query from detentionClaims (accessorial-type charges)
+  getAccessorialCharges: protectedProcedure.input(z.object({ loadId: z.string().optional(), search: z.string().optional() })).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const userId = Number(ctx.user?.id) || 0;
+      const conds: any[] = [eq(detentionClaims.claimedByUserId, userId)];
+      if (input.loadId) conds.push(eq(detentionClaims.loadId, parseInt(input.loadId, 10)));
+      const rows = await db.select().from(detentionClaims)
+        .where(and(...conds))
+        .orderBy(desc(detentionClaims.createdAt))
+        .limit(100);
+      return rows.map((r: any) => ({
+        id: String(r.id),
+        loadId: String(r.loadId),
+        type: r.locationType === 'pickup' ? 'detention_pickup' : 'detention_delivery',
+        description: `Detention at ${r.facilityName || r.locationType} — ${r.billableMinutes || 0} billable min`,
+        amount: r.totalAmount ? parseFloat(String(r.totalAmount)) : 0,
+        status: r.status || 'pending_review',
+        createdAt: r.createdAt?.toISOString() || '',
+      }));
+    } catch { return []; }
+  }),
+  getAccessorialStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const empty = { total: 0, pending: 0, approved: 0, denied: 0, totalTypes: 0, totalCollected: 0, loadsWithCharges: 0, avgCharge: 0 };
+    if (!db) return empty;
+    try {
+      const userId = Number(ctx.user?.id) || 0;
+      const [stats] = await db.select({
+        total: sql<number>`COUNT(*)`,
+        pending: sql<number>`SUM(CASE WHEN ${detentionClaims.status} IN ('accruing','pending_review') THEN 1 ELSE 0 END)`,
+        approved: sql<number>`SUM(CASE WHEN ${detentionClaims.status} = 'approved' THEN 1 ELSE 0 END)`,
+        denied: sql<number>`SUM(CASE WHEN ${detentionClaims.status} = 'denied' THEN 1 ELSE 0 END)`,
+        totalCollected: sql<number>`COALESCE(SUM(CASE WHEN ${detentionClaims.status} = 'paid' THEN CAST(${detentionClaims.totalAmount} AS DECIMAL) ELSE 0 END), 0)`,
+        loadsWithCharges: sql<number>`COUNT(DISTINCT ${detentionClaims.loadId})`,
+        avgCharge: sql<number>`COALESCE(AVG(CAST(${detentionClaims.totalAmount} AS DECIMAL)), 0)`,
+      }).from(detentionClaims)
+        .where(eq(detentionClaims.claimedByUserId, userId));
+      return {
+        total: stats?.total || 0,
+        pending: stats?.pending || 0,
+        approved: stats?.approved || 0,
+        denied: stats?.denied || 0,
+        totalTypes: (stats?.total || 0) > 0 ? 1 : 0, // detention is the only type currently
+        totalCollected: Math.round((stats?.totalCollected || 0) * 100) / 100,
+        loadsWithCharges: stats?.loadsWithCharges || 0,
+        avgCharge: Math.round((stats?.avgCharge || 0) * 100) / 100,
+      };
+    } catch { return empty; }
+  }),
   deleteAccessorialCharge: protectedProcedure.input(z.object({ chargeId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, chargeId: input.chargeId })),
 
   // ════════════════════════════════════════════════════════════════
@@ -876,10 +1005,17 @@ export const billingRouter = router({
       const pendingPayments = invoices.filter(i => i.status === "collection").reduce((s, i) => s + (parseFloat(String(i.invoiceAmount)) || 0), 0);
       const totalFactored = invoices.reduce((s, i) => s + (parseFloat(String(i.invoiceAmount)) || 0), 0);
 
+      // Query credit limit from config
+      let creditLimit = 50000;
+      try {
+        const clCfg = await getBillingConfig(db, 'FACTORING_CREDIT_LIMIT', { flatAmount: 50000 }, userId);
+        creditLimit = clCfg.flatAmount || 50000;
+      } catch { /* use default */ }
+
       return {
         totalFactored,
         pendingPayments,
-        availableCredit: Math.max(0, 50000 - pendingPayments),
+        availableCredit: Math.max(0, creditLimit - pendingPayments),
         totalFunded,
         pending,
         submitted,
@@ -890,13 +1026,29 @@ export const billingRouter = router({
     } catch { return empty; }
   }),
 
-  getFactoringRates: protectedProcedure.query(async () => ({
-    standard: 3.0,
-    quickPay: 4.5,
-    sameDay: 6.0,
-    currentRate: 3.0,
-    advanceRate: 97,
-  })),
+  getFactoringRates: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const userId = Number(ctx.user?.id) || 0;
+    // Defaults (percentage values, e.g. 3.0 = 3%)
+    let standard = 3.0, quickPay = 4.5, sameDay = 6.0;
+    if (db) {
+      try {
+        const stdCfg = await getBillingConfig(db, 'FACTORING_STANDARD', { baseRate: 0.03 }, userId);
+        const qpCfg = await getBillingConfig(db, 'FACTORING_QUICKPAY', { baseRate: 0.045 }, userId);
+        const sdCfg = await getBillingConfig(db, 'FACTORING_SAMEDAY', { baseRate: 0.06 }, userId);
+        standard = stdCfg.baseRate * 100; // convert decimal to percentage
+        quickPay = qpCfg.baseRate * 100;
+        sameDay = sdCfg.baseRate * 100;
+      } catch { /* use defaults */ }
+    }
+    return {
+      standard,
+      quickPay,
+      sameDay,
+      currentRate: standard,
+      advanceRate: 100 - standard,
+    };
+  }),
 
   submitToFactoring: protectedProcedure
     .input(z.object({

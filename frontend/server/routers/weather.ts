@@ -237,8 +237,74 @@ export const weatherRouter = router({
    */
   getImpactedLoads: protectedProcedure
     .query(async () => {
-      // Returns empty until load-to-weather correlation is implemented
-      return [];
+      try {
+        const db = await getDb();
+        if (!db) return [];
+        const { loads, hzWeatherAlerts } = await import("../../drizzle/schema");
+
+        // Get states with active weather alerts
+        const activeAlerts = await db.select({
+          stateCodes: hzWeatherAlerts.stateCodes,
+          eventType: hzWeatherAlerts.eventType,
+          severity: hzWeatherAlerts.severity,
+          headline: hzWeatherAlerts.headline,
+        })
+          .from(hzWeatherAlerts)
+          .where(sql`${hzWeatherAlerts.expiresAt} > NOW()`)
+          .orderBy(desc(hzWeatherAlerts.fetchedAt))
+          .limit(50);
+
+        if (activeAlerts.length === 0) return [];
+
+        // Collect unique affected state codes
+        const affectedStates = new Set<string>();
+        for (const alert of activeAlerts) {
+          const codes = alert.stateCodes as string[] | null;
+          if (Array.isArray(codes)) codes.forEach(s => affectedStates.add(s));
+        }
+        if (affectedStates.size === 0) return [];
+
+        // Find in-transit loads whose pickup or delivery state is in an alerted area
+        const inTransitLoads = await db.select({
+          id: loads.id,
+          loadNumber: loads.loadNumber,
+          status: loads.status,
+          pickupLocation: loads.pickupLocation,
+          deliveryLocation: loads.deliveryLocation,
+        })
+          .from(loads)
+          .where(sql`${loads.status} IN ('in_transit', 'en_route_pickup', 'at_pickup', 'at_delivery')`)
+          .limit(200);
+
+        const stateArr = Array.from(affectedStates);
+        const impacted = inTransitLoads.filter(l => {
+          const pState = (l.pickupLocation as any)?.state;
+          const dState = (l.deliveryLocation as any)?.state;
+          return stateArr.includes(pState) || stateArr.includes(dState);
+        });
+
+        return impacted.map(l => {
+          const p = l.pickupLocation as any;
+          const d = l.deliveryLocation as any;
+          const matchState = stateArr.find(s => s === p?.state || s === d?.state) || "";
+          const matchingAlert = activeAlerts.find(a => {
+            const codes = a.stateCodes as string[] | null;
+            return Array.isArray(codes) && codes.includes(matchState);
+          });
+          return {
+            loadId: l.id,
+            loadNumber: l.loadNumber,
+            status: l.status,
+            origin: p ? `${p.city || ""}, ${p.state || ""}` : "Unknown",
+            destination: d ? `${d.city || ""}, ${d.state || ""}` : "Unknown",
+            alertSeverity: matchingAlert?.severity || null,
+            alertHeadline: matchingAlert?.headline || null,
+          };
+        });
+      } catch (e) {
+        logger.warn("[Weather] getImpactedLoads error:", e);
+        return [];
+      }
     }),
 
   /**
@@ -287,15 +353,8 @@ export const weatherRouter = router({
   getTerminalWeather: protectedProcedure
     .input(z.object({ terminalId: z.string() }))
     .query(async ({ input }) => {
-      // Returns null until terminal GPS coordinates are mapped to NWS observation stations
-      return {
-        terminalId: input.terminalId,
-        current: null,
-        operationalImpact: null,
-        recommendations: [],
-        lightningRisk: null,
-        lastUpdated: new Date().toISOString(),
-      };
+      // Requires terminal GPS coordinates mapped to NWS observation stations
+      return null;
     }),
 
   /**
@@ -304,17 +363,8 @@ export const weatherRouter = router({
   getDriverRouteWeather: protectedProcedure
     .input(z.object({ loadId: z.string() }))
     .query(async ({ input }) => {
-      // Returns null — requires load origin/destination geocoding + NWS lookup
-      return {
-        loadId: input.loadId,
-        currentCondition: null,
-        temperature: null,
-        visibility: null,
-        roadConditions: null,
-        alerts: [],
-        nextHazard: null,
-        recommendation: null,
-      };
+      // Requires load origin/destination geocoding + NWS weather API integration
+      return null;
     }),
 
   /**

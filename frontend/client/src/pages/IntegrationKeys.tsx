@@ -184,7 +184,7 @@ export default function IntegrationKeys() {
       <div className="flex gap-1 flex-wrap">
         {CATEGORIES.map(c => (
           <button key={c.key} onClick={() => setCategory(c.key)} className={cn(
-            "text-[11px] px-3 py-1.5 rounded-lg font-medium transition-colors",
+            "text-xs px-3 py-1.5 rounded-lg font-medium transition-colors",
             category === c.key ? "bg-[#1473FF]/15 text-[#1473FF]" : "bg-slate-50 dark:bg-white/[0.03] text-slate-500 hover:text-slate-300"
           )}>{c.label}</button>
         ))}
@@ -209,16 +209,16 @@ export default function IntegrationKeys() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-slate-800 dark:text-white">{provider.name}</p>
                       {status?.configured ? (
-                        <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
+                        <span className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
                           <CheckCircle className="w-3 h-3" />Connected
                         </span>
                       ) : (
-                        <span className="text-[10px] text-slate-400 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full">Not connected</span>
+                        <span className="text-xs text-slate-400 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full">Not connected</span>
                       )}
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">{provider.description}</p>
                     {status?.lastSync && (
-                      <p className="text-[10px] text-slate-400 mt-1">Last sync: {new Date(status.lastSync).toLocaleString()}</p>
+                      <p className="text-xs text-slate-400 mt-1">Last sync: {new Date(status.lastSync).toLocaleString()}</p>
                     )}
                   </div>
                 </div>
@@ -226,12 +226,12 @@ export default function IntegrationKeys() {
                 <div className="flex items-center gap-2 shrink-0">
                   {status?.configured && (
                     <Button size="sm" variant="ghost" onClick={() => removeMut.mutate({ provider: provider.slug })}
-                      className="h-8 px-2 text-red-400 hover:bg-red-400/10 text-[11px]">
+                      className="h-8 px-2 text-red-400 hover:bg-red-400/10 text-xs">
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   )}
                   <Button size="sm" onClick={() => { setConfiguring(isConfiguring ? null : provider.slug); setFormData({}); }}
-                    className={cn("h-8 px-4 rounded-xl text-[11px] font-medium shadow-none border",
+                    className={cn("h-8 px-4 rounded-xl text-xs font-medium shadow-none border",
                       isConfiguring ? "bg-slate-100 dark:bg-white/[0.06] text-slate-500 border-slate-200 dark:border-white/[0.08]"
                       : status?.configured ? "bg-slate-100 dark:bg-white/[0.06] text-slate-800 dark:text-white border-slate-200 dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/[0.1]"
                       : "bg-gradient-to-r from-[#1473FF] to-[#1473FF] text-white border-0 hover:shadow-md hover:shadow-[#1473FF]/20"
@@ -248,7 +248,7 @@ export default function IntegrationKeys() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {provider.fields.map(field => (
                       <div key={field.key}>
-                        <label className="text-[10px] text-slate-500 mb-1 block uppercase tracking-wider font-semibold">{field.label}</label>
+                        <label className="text-xs text-slate-500 mb-1 block uppercase tracking-wider font-semibold">{field.label}</label>
                         <div className="relative">
                           <Input
                             type={field.secret && !showSecrets[field.key] ? "password" : "text"}
@@ -271,7 +271,7 @@ export default function IntegrationKeys() {
                     ))}
                   </div>
                   <div className="flex items-center justify-between mt-4">
-                    <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                    <p className="text-xs text-slate-400 flex items-center gap-1">
                       <Lock className="w-3 h-3" /> Keys are encrypted at rest (AES-256)
                     </p>
                     <Button
@@ -292,7 +292,7 @@ export default function IntegrationKeys() {
 
       {/* Footer note */}
       <div className="text-center pt-4">
-        <p className="text-[10px] text-slate-500">
+        <p className="text-xs text-slate-500">
           API keys are stored encrypted per-company. They are never shared with other users or companies on the platform.
         </p>
       </div>

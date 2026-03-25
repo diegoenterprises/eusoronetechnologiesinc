@@ -85,7 +85,7 @@ export default function NewsfeedPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <Newspaper className="w-5 h-5 text-[#1473FF]" />Latest Articles
-                <Badge variant="outline" className="text-[10px] border-slate-600 ml-auto">{feedQuery.data?.total || 0}</Badge>
+                <Badge variant="outline" className="text-xs border-slate-600 ml-auto">{feedQuery.data?.total || 0}</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -104,10 +104,10 @@ export default function NewsfeedPage() {
                           <div className="flex-1 min-w-0">
                             <p className="text-white font-medium text-sm">{a.title}</p>
                             {a.summary && <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{a.summary}</p>}
-                            <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500">
+                            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
                               {a.source && <span>{a.source}</span>}
                               {a.publishedAt && <span>{new Date(a.publishedAt).toLocaleDateString()}</span>}
-                              <Badge variant="outline" className="text-[8px] border-slate-600 capitalize">{a.category}</Badge>
+                              <Badge variant="outline" className="text-xs border-slate-600 capitalize">{a.category}</Badge>
                             </div>
                           </div>
                         </div>
@@ -133,7 +133,7 @@ export default function NewsfeedPage() {
                 <div className="divide-y divide-slate-700/50">
                   {trending.slice(0, 8).map((t: any, i: number) => (
                     <div key={i} className="px-4 py-2 flex items-center gap-2">
-                      <span className="text-[10px] text-slate-500 font-bold w-4">{i + 1}</span>
+                      <span className="text-xs text-slate-500 font-bold w-4">{i + 1}</span>
                       <span className="text-xs text-white">{t.title || t.topic}</span>
                     </div>
                   ))}

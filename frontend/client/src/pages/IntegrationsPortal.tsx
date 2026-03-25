@@ -383,11 +383,11 @@ export default function IntegrationsPortal() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className={cn("text-sm font-semibold", isLight ? "text-slate-900" : "text-white")}>{integration.name}</p>
-                          <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
+                          <span className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
                             <Wifi className="w-2.5 h-2.5" />Live
                           </span>
                         </div>
-                        <p className={cn("text-[11px] mt-0.5", isLight ? "text-slate-500" : "text-white/40")}>{integration.provider}</p>
+                        <p className={cn("text-xs mt-0.5", isLight ? "text-slate-500" : "text-white/40")}>{integration.provider}</p>
                       </div>
                     </div>
 
@@ -395,7 +395,7 @@ export default function IntegrationsPortal() {
                     <div className="flex flex-wrap gap-1.5 mt-3">
                       {integration.feeds.map(f => (
                         <span key={f.label} className={cn(
-                          "flex items-center gap-1 text-[9px] font-medium px-2 py-0.5 rounded-md",
+                          "flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md",
                           isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.04] text-white/40"
                         )}>
                           {f.icon}{f.label}
@@ -404,7 +404,7 @@ export default function IntegrationsPortal() {
                     </div>
 
                     {status?.lastSync && (
-                      <p className="text-[10px] text-slate-400 mt-2.5">Synced {new Date(status.lastSync).toLocaleString()}</p>
+                      <p className="text-xs text-slate-400 mt-2.5">Synced {new Date(status.lastSync).toLocaleString()}</p>
                     )}
                   </div>
 
@@ -414,7 +414,7 @@ export default function IntegrationsPortal() {
                   )}>
                     <button
                       onClick={() => { setSelectedIntegration(integration); }}
-                      className={cn("flex-1 flex items-center justify-center gap-1.5 text-[11px] font-medium py-1.5 rounded-lg transition-colors",
+                      className={cn("flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg transition-colors",
                         isLight ? "text-slate-500 hover:bg-white hover:shadow-sm" : "text-white/40 hover:bg-white/[0.06]"
                       )}
                     >
@@ -422,7 +422,7 @@ export default function IntegrationsPortal() {
                     </button>
                     <button
                       onClick={() => removeMut.mutate({ provider: integration.id })}
-                      className="text-[11px] font-medium py-1.5 px-3 rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                      className="text-xs font-medium py-1.5 px-3 rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-400/10 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -576,18 +576,18 @@ export default function IntegrationsPortal() {
                               <p className={cn("text-sm font-semibold", isLight ? "text-slate-900" : "text-white")}>
                                 {integration.name}
                               </p>
-                              <span className={cn("text-[9px] px-2 py-0.5 rounded-md font-medium border",
+                              <span className={cn("text-xs px-2 py-0.5 rounded-md font-medium border",
                                 isLight ? "bg-slate-50 border-slate-200 text-slate-400" : "bg-white/[0.03] border-white/[0.06] text-white/30"
                               )}>
                                 {CATEGORY_LABELS[integration.category]}
                               </span>
                               {isAlreadyConfigured && (
-                                <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
+                                <span className="flex items-center gap-1 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
                                   <CheckCircle className="w-3 h-3" />Connected
                                 </span>
                               )}
                             </div>
-                            <p className={cn("text-[11px] leading-relaxed mt-1 line-clamp-2", isLight ? "text-slate-500" : "text-white/40")}>
+                            <p className={cn("text-xs leading-relaxed mt-1 line-clamp-2", isLight ? "text-slate-500" : "text-white/40")}>
                               {integration.description}
                             </p>
 
@@ -595,14 +595,14 @@ export default function IntegrationsPortal() {
                             <div className="flex flex-wrap gap-1 mt-2">
                               {integration.features.slice(0, 4).map(f => (
                                 <span key={f} className={cn(
-                                  "text-[8px] font-medium px-1.5 py-0.5 rounded",
+                                  "text-xs font-medium px-1.5 py-0.5 rounded",
                                   isLight ? "bg-slate-100 text-slate-400" : "bg-white/[0.04] text-white/30"
                                 )}>
                                   {f}
                                 </span>
                               ))}
                               {integration.features.length > 4 && (
-                                <span className={cn("text-[8px] px-1.5 py-0.5 rounded", isLight ? "text-slate-400" : "text-white/20")}>
+                                <span className={cn("text-xs px-1.5 py-0.5 rounded", isLight ? "text-slate-400" : "text-white/20")}>
                                   +{integration.features.length - 4}
                                 </span>
                               )}
@@ -611,11 +611,11 @@ export default function IntegrationsPortal() {
                             {/* Data flow */}
                             {!isAlreadyConfigured && (
                               <div className="flex items-center gap-1.5 mt-2">
-                                <span className={cn("text-[8px] font-semibold uppercase tracking-wider", isLight ? "text-slate-300" : "text-white/15")}>
+                                <span className={cn("text-xs font-semibold uppercase tracking-wider", isLight ? "text-slate-300" : "text-white/15")}>
                                   Feeds
                                 </span>
                                 {integration.feeds.map(f => (
-                                  <span key={f.label} className="flex items-center gap-0.5 text-[9px]" style={{ color: `${integration.brandFrom}99` }}>
+                                  <span key={f.label} className="flex items-center gap-0.5 text-xs" style={{ color: `${integration.brandFrom}99` }}>
                                     {f.icon}{f.label}
                                   </span>
                                 ))}
@@ -697,7 +697,7 @@ export default function IntegrationsPortal() {
                 {/* Feature badges in header */}
                 <div className="flex flex-wrap gap-1.5 mt-4">
                   {selectedIntegration.features.map(f => (
-                    <span key={f} className="text-[9px] font-semibold px-2 py-0.5 rounded-md bg-white/30 text-white backdrop-blur-sm border border-white/20">
+                    <span key={f} className="text-xs font-semibold px-2 py-0.5 rounded-md bg-white/30 text-white backdrop-blur-sm border border-white/20">
                       {f}
                     </span>
                   ))}
@@ -711,7 +711,7 @@ export default function IntegrationsPortal() {
                 </p>
 
                 {/* Data flow indicator */}
-                <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl text-[10px]",
+                <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl text-xs",
                   isLight ? "bg-slate-50 border border-slate-100" : "bg-white/[0.02] border border-white/[0.04]"
                 )}>
                   <span className={cn("font-semibold uppercase tracking-wider", isLight ? "text-slate-500" : "text-white/30")}>Enhances</span>
@@ -726,7 +726,7 @@ export default function IntegrationsPortal() {
                 <div className="space-y-3">
                   {selectedIntegration.fields.map(field => (
                     <div key={field.key}>
-                      <label className={cn("text-[10px] font-semibold uppercase tracking-wider block mb-1.5", isLight ? "text-slate-700" : "text-white/50")}>
+                      <label className={cn("text-xs font-semibold uppercase tracking-wider block mb-1.5", isLight ? "text-slate-700" : "text-white/50")}>
                         {field.label} <span className="text-red-400">*</span>
                       </label>
                       <div className="relative">
@@ -758,7 +758,7 @@ export default function IntegrationsPortal() {
 
                 {/* Security note + Save */}
                 <div className="flex items-center justify-between pt-2">
-                  <p className={cn("text-[10px] flex items-center gap-1", isLight ? "text-slate-500" : "text-white/30")}>
+                  <p className={cn("text-xs flex items-center gap-1", isLight ? "text-slate-500" : "text-white/30")}>
                     <Lock className="w-3 h-3" /> Keys encrypted at rest (AES-256)
                   </p>
                   <button

@@ -183,8 +183,8 @@ const HazmatDecal: React.FC<HazmatDecalProps> = ({
   };
 
   const fontSizes = {
-    sm: "text-[6px]",
-    md: "text-[8px]",
+    sm: "text-xs",
+    md: "text-xs",
     lg: "text-xs",
   };
 
