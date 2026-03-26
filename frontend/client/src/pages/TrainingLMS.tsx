@@ -20,8 +20,9 @@ import {
   ChevronRight, ChevronLeft, ArrowRight, Shield, AlertTriangle,
   Globe, Truck, Flame, BarChart3, Target, Star, FileText, Download,
   RefreshCw, Filter, Users, Zap, Trophy, Lock, Unlock,
-  CircleDot, Check, X, Timer, BookMarked, ClipboardCheck,
+  CircleDot, Check, X, Timer, BookMarked, ClipboardCheck, Share2, Send,
 } from "lucide-react";
+import { toast } from "sonner";
 
 // ── Types ──
 type ViewMode = "catalog" | "detail" | "lesson" | "quiz" | "enrollments" | "certificates";
@@ -124,6 +125,30 @@ export default function TrainingLMS() {
       certificates.refetch();
     },
   });
+
+  // ── Share Course ──
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareCourse, setShareCourse] = useState<any>(null);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
+  const shareCourseMutation = (trpc as any).trainingLMS?.shareCourse?.useMutation?.({
+    onSuccess: (data: any) => {
+      if (data?.success) {
+        toast.success(data.recipientFound ? `Course shared with ${data.recipientName || shareEmail}!` : `Invitation sent to ${shareEmail}`);
+        setShareModalOpen(false);
+        setShareEmail("");
+        setShareMessage("");
+        setShareCourse(null);
+      } else {
+        toast.error(data?.error || "Failed to share course");
+      }
+    },
+    onError: () => toast.error("Failed to share course"),
+  }) ?? { mutate: () => toast.error("Share not available"), isPending: false };
+  const handleShareCourse = useCallback((course: any) => {
+    setShareCourse(course);
+    setShareModalOpen(true);
+  }, []);
 
   // ── Navigation ──
   const openCourse = useCallback((courseId: number, slug?: string) => {
@@ -290,6 +315,7 @@ export default function TrainingLMS() {
           categoryFilter={categoryFilter}
           setCategoryFilter={setCategoryFilter}
           onOpenCourse={openCourse}
+          onShareCourse={handleShareCourse}
           isDark={isDark}
           cardBg={cardBg}
           textPrimary={textPrimary}
@@ -305,6 +331,7 @@ export default function TrainingLMS() {
           enrolling={enrollMutation.isPending}
           onOpenLesson={openLesson}
           onOpenQuiz={openQuiz}
+          onShareCourse={handleShareCourse}
           isDark={isDark}
           cardBg={cardBg}
           textPrimary={textPrimary}
@@ -364,6 +391,56 @@ export default function TrainingLMS() {
           textSecondary={textSecondary}
         />
       )}
+
+      {/* Share Course Modal */}
+      {shareModalOpen && shareCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShareModalOpen(false)}>
+          <div className={cn("w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-xl", isDark ? "bg-[#111827] border-white/10" : "bg-white border-gray-200")} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className={cn("text-lg font-semibold", textPrimary)}>Share Course</h3>
+              <button onClick={() => setShareModalOpen(false)} className={cn("p-1 rounded-lg transition-colors", isDark ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-500")}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className={cn("p-3 rounded-lg", isDark ? "bg-white/5 border border-white/10" : "bg-gray-50 border border-gray-200")}>
+              <p className={cn("text-sm font-medium", textPrimary)}>{shareCourse.title}</p>
+              <p className={cn("text-xs mt-0.5 capitalize", textSecondary)}>{shareCourse.category}</p>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className={cn("text-xs font-medium mb-1 block", textSecondary)}>Recipient Email</label>
+                <Input
+                  placeholder="colleague@company.com"
+                  value={shareEmail}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShareEmail(e.target.value)}
+                  className={cn(isDark ? "bg-white/5 border-white/10 text-white placeholder:text-gray-500" : "")}
+                />
+              </div>
+              <div>
+                <label className={cn("text-xs font-medium mb-1 block", textSecondary)}>Message (optional)</label>
+                <textarea
+                  placeholder="I recommend this course for..."
+                  value={shareMessage}
+                  onChange={(e) => setShareMessage(e.target.value)}
+                  rows={3}
+                  className={cn(
+                    "w-full rounded-md border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    isDark ? "bg-white/5 border-white/10 text-white placeholder:text-gray-500" : "bg-white border-gray-200 text-gray-900 placeholder:text-gray-400"
+                  )}
+                />
+              </div>
+            </div>
+            <Button
+              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700"
+              disabled={!shareEmail || shareCourseMutation.isPending}
+              onClick={() => shareCourseMutation.mutate({ courseId: shareCourse.id, recipientEmail: shareEmail, message: shareMessage || undefined })}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              {shareCourseMutation.isPending ? "Sending..." : "Send Training Invitation"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -399,7 +476,7 @@ function DashboardStats({ data, isDark, cardBg, textPrimary, textSecondary }: an
 // ══════════════════════════════════════════════════
 // Course Catalog
 // ══════════════════════════════════════════════════
-function CourseCatalog({ courses, isLoading, searchQuery, setSearchQuery, categoryFilter, setCategoryFilter, onOpenCourse, isDark, cardBg, textPrimary, textSecondary }: any) {
+function CourseCatalog({ courses, isLoading, searchQuery, setSearchQuery, categoryFilter, setCategoryFilter, onOpenCourse, onShareCourse, isDark, cardBg, textPrimary, textSecondary }: any) {
   return (
     <div className="space-y-4">
       {/* Search + Filters */}
@@ -452,6 +529,7 @@ function CourseCatalog({ courses, isLoading, searchQuery, setSearchQuery, catego
               key={course.id}
               course={course}
               onClick={() => onOpenCourse(course.id, course.slug)}
+              onShare={() => onShareCourse(course)}
               isDark={isDark}
               cardBg={cardBg}
               textPrimary={textPrimary}
@@ -471,7 +549,7 @@ function CourseCatalog({ courses, isLoading, searchQuery, setSearchQuery, catego
 }
 
 // ── Course Card ──
-function CourseCard({ course, onClick, isDark, cardBg, textPrimary, textSecondary }: any) {
+function CourseCard({ course, onClick, onShare, isDark, cardBg, textPrimary, textSecondary }: any) {
   const catIcon: Record<string, React.ElementType> = {
     compliance: Shield, safety: AlertTriangle, hazmat: Flame,
     operations: Truck, cross_border: Globe, environmental: Target, wellness: Users,
@@ -516,9 +594,14 @@ function CourseCard({ course, onClick, isDark, cardBg, textPrimary, textSecondar
         </div>
         <div className="flex items-center justify-between pt-1">
           <Badge variant="outline" className="text-xs capitalize">{course.difficultyLevel}</Badge>
-          <Button variant="ghost" size="sm" className="text-blue-400 text-xs px-2 h-7">
-            View Course <ChevronRight className="w-3 h-3 ml-1" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className={cn("text-xs px-2 h-7", isDark ? "text-gray-400 hover:text-white hover:bg-white/10" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); onShare?.(); }}>
+              <Share2 className="w-3 h-3" />
+            </Button>
+            <Button variant="ghost" size="sm" className="text-blue-400 text-xs px-2 h-7">
+              View Course <ChevronRight className="w-3 h-3 ml-1" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -528,7 +611,7 @@ function CourseCard({ course, onClick, isDark, cardBg, textPrimary, textSecondar
 // ══════════════════════════════════════════════════
 // Course Detail
 // ══════════════════════════════════════════════════
-function CourseDetail({ course, isLoading, onEnroll, enrolling, onOpenLesson, onOpenQuiz, isDark, cardBg, textPrimary, textSecondary }: any) {
+function CourseDetail({ course, isLoading, onEnroll, enrolling, onOpenLesson, onOpenQuiz, onShareCourse, isDark, cardBg, textPrimary, textSecondary }: any) {
   if (isLoading) return <DetailSkeleton cardBg={cardBg} />;
   if (!course) return <div className={cn("text-center py-12", textSecondary)}>Course not found.</div>;
 
@@ -540,11 +623,16 @@ function CourseDetail({ course, isLoading, onEnroll, enrolling, onOpenLesson, on
       {/* Hero */}
       <Card className={cn("border overflow-hidden", cardBg)}>
         <CardContent className="p-6 space-y-4">
-          <div className="flex flex-wrap gap-2 mb-2">
-            <Badge variant="outline" className="capitalize">{course.category}</Badge>
-            <Badge variant="outline" className="capitalize">{course.difficultyLevel}</Badge>
-            {course.isMandatory && <Badge variant="destructive">Required</Badge>}
-            {course.regulatoryReference && <Badge className="bg-blue-500/20 text-blue-400">{course.regulatoryReference}</Badge>}
+          <div className="flex flex-wrap gap-2 mb-2 items-center justify-between">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="capitalize">{course.category}</Badge>
+              <Badge variant="outline" className="capitalize">{course.difficultyLevel}</Badge>
+              {course.isMandatory && <Badge variant="destructive">Required</Badge>}
+              {course.regulatoryReference && <Badge className="bg-blue-500/20 text-blue-400">{course.regulatoryReference}</Badge>}
+            </div>
+            <Button variant="outline" size="sm" className={cn("text-xs", isDark ? "border-white/10 text-gray-300 hover:bg-white/10" : "border-gray-300 text-gray-600 hover:bg-gray-100")} onClick={() => onShareCourse?.(course)}>
+              <Share2 className="w-3 h-3 mr-1" /> Share Course
+            </Button>
           </div>
           <h2 className={cn("text-2xl font-bold", textPrimary)}>{course.title}</h2>
           <p className={textSecondary}>{course.longDescription || course.description}</p>

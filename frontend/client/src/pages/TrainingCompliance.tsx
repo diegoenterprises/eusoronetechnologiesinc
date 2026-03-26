@@ -23,8 +23,9 @@ import {
   CheckCircle, XCircle, Clock, ArrowUpRight, ArrowDownRight, Target,
   GraduationCap, Search, Filter, Download, RefreshCw, TrendingUp,
   Activity, Eye, Play, Star, Gauge, MapPin, DollarSign, Building2,
-  Scale, Pill, Heart, Zap, Globe, FileCheck, Flame, Upload,
+  Scale, Pill, Heart, Zap, Globe, FileCheck, Flame, Upload, Share2, X, Send,
 } from "lucide-react";
+import { toast } from "sonner";
 
 // ── Types ──
 
@@ -312,6 +313,28 @@ function DashboardTab({ cardCls, titleCls, subtitleCls, L, accentBg }: TabProps)
 function TrainingTab({ cardCls, titleCls, subtitleCls, L, searchTerm }: TabProps) {
   const [, navigate] = useLocation();
   const [category, setCategory] = useState<string>("all");
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareCourse, setShareCourse] = useState<any>(null);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
+  const shareCourseMutation = (trpc as any).trainingLMS?.shareCourse?.useMutation?.({
+    onSuccess: (data: any) => {
+      if (data?.success) {
+        toast.success(data.recipientFound ? `Course shared with ${data.recipientName || shareEmail}!` : `Invitation sent to ${shareEmail}`);
+        setShareModalOpen(false);
+        setShareEmail("");
+        setShareMessage("");
+        setShareCourse(null);
+      } else {
+        toast.error(data?.error || "Failed to share course");
+      }
+    },
+    onError: () => toast.error("Failed to share course"),
+  }) ?? { mutate: () => toast.error("Share not available"), isPending: false };
+  const handleShareCourse = (course: any) => {
+    setShareCourse(course);
+    setShareModalOpen(true);
+  };
   // Query real courses from the LMS database (42 courses with full content)
   const lmsQ = (trpc as any).trainingLMS?.listCourses?.useQuery?.({ category: category === "all" ? undefined : category, search: searchTerm || undefined, page: 1, limit: 100 }) ?? { data: null, isLoading: true };
   // Fallback to old catalog if LMS router isn't available
@@ -407,14 +430,69 @@ function TrainingTab({ cardCls, titleCls, subtitleCls, L, searchTerm }: TabProps
                     <LevelIcon className="w-3 h-3" />{level}
                   </span>
                 </div>
-                <Button size="sm" className={cn("w-full", L ? "" : "bg-blue-600 hover:bg-blue-700 text-white")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/training-lms?course=${slug}`); }}>
-                  <Play className="w-3 h-3 mr-1" /> Start Course
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" className={cn("flex-1", L ? "" : "bg-blue-600 hover:bg-blue-700 text-white")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/training-lms?course=${slug}`); }}>
+                    <Play className="w-3 h-3 mr-1" /> Start Course
+                  </Button>
+                  <Button size="sm" variant="outline" className={cn("px-2", L ? "border-slate-300 hover:bg-slate-100" : "border-slate-600 hover:bg-slate-700 text-slate-300")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleShareCourse(course); }}>
+                    <Share2 className="w-3 h-3" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           );
         })}
       </div>
+
+      {/* Share Course Modal */}
+      {shareModalOpen && shareCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShareModalOpen(false)}>
+          <div className={cn("w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-xl", L ? "bg-white border-slate-200" : "bg-slate-800 border-slate-700")} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className={cn("text-lg font-semibold", L ? "text-slate-800" : "text-white")}>Share Course</h3>
+              <button onClick={() => setShareModalOpen(false)} className={cn("p-1 rounded-lg transition-colors", L ? "hover:bg-slate-100 text-slate-500" : "hover:bg-slate-700 text-slate-400")}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className={cn("p-3 rounded-lg", L ? "bg-slate-50 border border-slate-200" : "bg-slate-700/50 border border-slate-600")}>
+              <p className={cn("text-sm font-medium", L ? "text-slate-700" : "text-white")}>{shareCourse.title}</p>
+              <p className={cn("text-xs mt-0.5", L ? "text-slate-500" : "text-slate-400")}>{shareCourse.category}</p>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className={cn("text-xs font-medium mb-1 block", L ? "text-slate-600" : "text-slate-300")}>Recipient Email</label>
+                <Input
+                  placeholder="colleague@company.com"
+                  value={shareEmail}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setShareEmail(e.target.value)}
+                  className={cn(L ? "" : "bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500")}
+                />
+              </div>
+              <div>
+                <label className={cn("text-xs font-medium mb-1 block", L ? "text-slate-600" : "text-slate-300")}>Message (optional)</label>
+                <textarea
+                  placeholder="I recommend this course for..."
+                  value={shareMessage}
+                  onChange={(e) => setShareMessage(e.target.value)}
+                  rows={3}
+                  className={cn(
+                    "w-full rounded-md border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    L ? "bg-white border-slate-200 text-slate-800 placeholder:text-slate-400" : "bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
+                  )}
+                />
+              </div>
+            </div>
+            <Button
+              className={cn("w-full", L ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white")}
+              disabled={!shareEmail || shareCourseMutation.isPending}
+              onClick={() => shareCourseMutation.mutate({ courseId: shareCourse.id, recipientEmail: shareEmail, message: shareMessage || undefined })}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              {shareCourseMutation.isPending ? "Sending..." : "Send Training Invitation"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

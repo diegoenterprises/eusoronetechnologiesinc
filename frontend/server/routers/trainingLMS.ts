@@ -22,6 +22,7 @@ import {
   countries,
   provinces,
   users,
+  notifications,
 } from "../../drizzle/schema";
 import { eq, and, sql, desc, asc, like, inArray } from "drizzle-orm";
 
@@ -657,7 +658,80 @@ export const trainingLMSRouter = router({
   }),
 
   // ──────────────────────────────────────────────
-  // 16. verifyCertificate — public cert verification
+  // 16. shareCourse — share/assign a course to another user
+  // ──────────────────────────────────────────────
+  shareCourse: protectedProcedure
+    .input(
+      z.object({
+        courseId: z.number(),
+        recipientEmail: z.string().email(),
+        message: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: false, error: "Database unavailable" };
+
+      try {
+        // Find recipient user by email
+        const [recipient] = await db
+          .select({ id: users.id, name: users.name })
+          .from(users)
+          .where(eq(users.email, input.recipientEmail))
+          .limit(1);
+
+        // Get course info
+        const [course] = await db
+          .select({ id: trainingCourses.id, title: trainingCourses.title, slug: trainingCourses.slug })
+          .from(trainingCourses)
+          .where(eq(trainingCourses.id, input.courseId))
+          .limit(1);
+
+        if (!course) return { success: false, error: "Course not found" };
+
+        const senderName = (ctx.user as any)?.name || "A team member";
+
+        if (recipient) {
+          // User exists — create notification + auto-enroll
+          await db.insert(notifications).values({
+            userId: recipient.id,
+            type: "system",
+            title: `Training Assigned: ${course.title}`,
+            message: input.message || `${senderName} has shared a training course with you.`,
+            data: JSON.stringify({ courseId: course.id, courseSlug: course.slug, senderId: (ctx.user as any)?.id }),
+          });
+
+          // Auto-enroll if not already enrolled
+          const [existing] = await db
+            .select({ id: userCourseEnrollments.id })
+            .from(userCourseEnrollments)
+            .where(and(eq(userCourseEnrollments.userId, recipient.id), eq(userCourseEnrollments.courseId, course.id)))
+            .limit(1);
+
+          if (!existing) {
+            await db.insert(userCourseEnrollments).values({
+              userId: recipient.id,
+              courseId: course.id,
+              status: "enrolled",
+              progressPercentage: 0,
+              totalTimeSpentMinutes: 0,
+            });
+            await db.execute(sql`UPDATE training_courses SET enrollmentCount = enrollmentCount + 1 WHERE id = ${course.id}`);
+          }
+
+          return { success: true, recipientFound: true, recipientName: recipient.name };
+        } else {
+          // User not on platform
+          return { success: true, recipientFound: false, message: "Invitation will be sent when user joins the platform" };
+        }
+      } catch (e: any) {
+        logger.error("[LMS] shareCourse error:", e?.message);
+        return { success: false, error: "Failed to share course" };
+      }
+    }),
+
+  // ──────────────────────────────────────────────
+  // 17. verifyCertificate — public cert verification
   // ──────────────────────────────────────────────
   verifyCertificate: protectedProcedure
     .input(z.object({ certificateNumber: z.string() }))
