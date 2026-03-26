@@ -21,7 +21,7 @@ import {
   RefreshCw, AlertTriangle, Wifi, WifiOff, LayoutDashboard,
   ChevronLeft, ChevronRight, ChevronDown, List, Columns3,
   Package, MapPin, Clock, Truck, User, Search, Eye,
-  Activity, Moon, Coffee, Shield, Timer, Zap,
+  Activity, Moon, Coffee, Shield, Timer, Zap, Upload, FileSpreadsheet, X, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -78,6 +78,59 @@ export default function DispatchCommandCenter() {
   const [showSmartAssign, setShowSmartAssign] = useState(false);
   const [smartSuggestions, setSmartSuggestions] = useState<any[]>([]);
   const [selectedAssignments, setSelectedAssignments] = useState<Map<number, number>>(new Map());
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [bulkCsvText, setBulkCsvText] = useState("");
+  const [bulkFile, setBulkFile] = useState<File | null>(null);
+  const [bulkStep, setBulkStep] = useState<"upload" | "preview" | "importing" | "done">("upload");
+  const [bulkPreview, setBulkPreview] = useState<any>(null);
+  const [bulkResult, setBulkResult] = useState<any>(null);
+  const bulkFileRef = useRef<HTMLInputElement>(null);
+
+  // Bulk import mutations
+  const bulkUploadMutation = (trpc as any).bulkImport?.uploadCSV?.useMutation?.() || { mutateAsync: async () => null, isPending: false };
+  const bulkValidateMutation = (trpc as any).bulkImport?.validateImport?.useMutation?.() || { mutateAsync: async () => null, isPending: false };
+  const bulkExecuteMutation = (trpc as any).bulkImport?.executeImport?.useMutation?.() || { mutateAsync: async () => null, isPending: false };
+
+  const handleBulkFileSelect = async (file: File) => {
+    setBulkFile(file);
+    const text = await file.text();
+    setBulkCsvText(text);
+  };
+
+  const handleBulkUpload = async () => {
+    if (!bulkCsvText.trim()) { toast.error("Please upload a CSV file or paste CSV data"); return; }
+    try {
+      const result = await bulkUploadMutation.mutateAsync({ csvText: bulkCsvText, fileName: bulkFile?.name || "paste.csv" });
+      if (result) {
+        setBulkPreview(result);
+        setBulkStep("preview");
+        // Auto-validate
+        const validation = await bulkValidateMutation.mutateAsync({ jobId: result.jobId });
+        setBulkPreview((prev: any) => ({ ...prev, ...validation }));
+      }
+    } catch (e: any) { toast.error(e.message || "Upload failed"); }
+  };
+
+  const handleBulkExecute = async () => {
+    if (!bulkPreview?.jobId) return;
+    setBulkStep("importing");
+    try {
+      const result = await bulkExecuteMutation.mutateAsync({ jobId: bulkPreview.jobId });
+      setBulkResult(result);
+      setBulkStep("done");
+      toast.success(`${result?.createdCount || 0} loads imported successfully!`);
+      boardQuery.refetch();
+    } catch (e: any) { toast.error(e.message || "Import failed"); setBulkStep("preview"); }
+  };
+
+  const resetBulkImport = () => {
+    setShowBulkImport(false);
+    setBulkStep("upload");
+    setBulkCsvText("");
+    setBulkFile(null);
+    setBulkPreview(null);
+    setBulkResult(null);
+  };
 
   // ── Data Queries ──
   const boardQuery = (trpc as any).dispatch.getBoard.useQuery(
@@ -408,6 +461,9 @@ export default function DispatchCommandCenter() {
           <button onClick={() => setShowELDBar(!showELDBar)} className={cn("px-2 py-1 rounded text-xs font-medium border border-white/[0.08] transition-colors", showELDBar ? "bg-purple-500/20 text-purple-400" : "text-slate-500 hover:text-slate-300")} title="Toggle ELD bar">
             <Activity className="w-3.5 h-3.5" />
           </button>
+          <Button variant="outline" size="sm" className="h-7 px-2.5 text-xs bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-400/50 text-emerald-400" onClick={() => setShowBulkImport(true)}>
+            <Upload className="w-3.5 h-3.5 mr-1" />Bulk Import
+          </Button>
           <Button variant="outline" size="sm" className="h-7 px-2 text-xs bg-white/[0.02] border-white/[0.08] hover:bg-white/[0.06]" onClick={handleRefresh}>
             <RefreshCw className={cn("w-3.5 h-3.5 mr-1", isLoading && "animate-spin")} />Refresh
           </Button>
@@ -730,6 +786,161 @@ export default function DispatchCommandCenter() {
       {/* ═══ DIALOGS ═══ */}
       <QuickLoadDialog open={showQuickLoad} onClose={() => setShowQuickLoad(false)} onSubmit={handleQuickLoadSubmit} />
       <BroadcastDialog open={showBroadcast} onClose={() => setShowBroadcast(false)} />
+
+      {/* ═══ BULK IMPORT MODAL ═══ */}
+      {showBulkImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-500/15"><FileSpreadsheet className="w-5 h-5 text-emerald-400" /></div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">Bulk Import Loads</h2>
+                  <p className="text-xs text-slate-400">Upload a CSV or spreadsheet to import multiple loads at once</p>
+                </div>
+              </div>
+              <button onClick={resetBulkImport} className="p-1 rounded hover:bg-white/10"><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+
+            <div className="p-6">
+              {/* STEP: UPLOAD */}
+              {bulkStep === "upload" && (
+                <div className="space-y-4">
+                  {/* Drag & Drop Zone */}
+                  <div
+                    className="border-2 border-dashed border-white/15 rounded-xl p-8 text-center hover:border-emerald-500/40 transition-colors cursor-pointer"
+                    onClick={() => bulkFileRef.current?.click()}
+                    onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add("border-emerald-500/60"); }}
+                    onDragLeave={e => { e.currentTarget.classList.remove("border-emerald-500/60"); }}
+                    onDrop={e => { e.preventDefault(); e.currentTarget.classList.remove("border-emerald-500/60"); const f = e.dataTransfer.files[0]; if (f) handleBulkFileSelect(f); }}
+                  >
+                    <Upload className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+                    <p className="text-sm text-white font-medium">{bulkFile ? bulkFile.name : "Drop CSV/XLSX file here or click to browse"}</p>
+                    <p className="text-xs text-slate-500 mt-1">Supports .csv, .xlsx, .tsv — up to 5,000 rows</p>
+                    <input ref={bulkFileRef} type="file" accept=".csv,.xlsx,.tsv,.txt" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleBulkFileSelect(f); }} />
+                  </div>
+
+                  {/* Or Paste */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-400 mb-1 block">Or paste CSV data directly:</label>
+                    <textarea
+                      className="w-full h-32 p-3 text-xs font-mono bg-slate-800 border border-white/10 rounded-lg text-white placeholder:text-slate-600 resize-none"
+                      placeholder={`pickupLocation,deliveryLocation,pickupDate,deliveryDate,cargoType,weight,rate\n"Houston, TX","Dallas, TX",2026-04-01,2026-04-02,crude_oil,42000,4500\n"Midland, TX","Houston, TX",2026-04-01,2026-04-03,refined_products,38000,3800`}
+                      value={bulkCsvText}
+                      onChange={e => setBulkCsvText(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Template Download */}
+                  <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-white/5">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="w-4 h-4 text-blue-400" />
+                      <span className="text-xs text-slate-300">Need a template? Download our CSV template with all supported columns</span>
+                    </div>
+                    <Button size="sm" variant="outline" className="h-6 text-xs border-blue-500/30 text-blue-400" onClick={() => {
+                      const headers = "pickupLocation,deliveryLocation,pickupDate,deliveryDate,cargoType,hazmatClass,weight,weightUnit,volume,volumeUnit,rate,currency,specialInstructions,commodityName,unNumber";
+                      const example = '"Houston, TX","Dallas, TX",2026-04-01,2026-04-02,crude_oil,3,42000,lbs,200,bbl,4500,USD,Temperature sensitive,WTI Crude,UN1267';
+                      const blob = new Blob([headers + "\n" + example], { type: "text/csv" });
+                      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "load_import_template.csv"; a.click();
+                    }}>Download Template</Button>
+                  </div>
+
+                  {/* Required Fields */}
+                  <div className="p-3 bg-blue-500/5 border border-blue-500/10 rounded-lg">
+                    <p className="text-xs font-semibold text-blue-400 mb-1">Required columns:</p>
+                    <p className="text-xs text-slate-400">pickupLocation, deliveryLocation, pickupDate, deliveryDate, cargoType</p>
+                    <p className="text-xs font-semibold text-blue-400 mt-2 mb-1">Optional columns:</p>
+                    <p className="text-xs text-slate-400">weight, weightUnit, volume, volumeUnit, rate, currency, hazmatClass, unNumber, specialInstructions, commodityName</p>
+                  </div>
+
+                  <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleBulkUpload} disabled={!bulkCsvText.trim() || bulkUploadMutation.isPending || bulkValidateMutation.isPending}>
+                    {bulkUploadMutation.isPending || bulkValidateMutation.isPending ? "Processing..." : "Upload & Validate"}
+                  </Button>
+                </div>
+              )}
+
+              {/* STEP: PREVIEW & VALIDATE */}
+              {bulkStep === "preview" && bulkPreview && (
+                <div className="space-y-4">
+                  {/* Summary */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 bg-slate-800 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-white">{bulkPreview.totalRows || 0}</p>
+                      <p className="text-xs text-slate-400">Total Rows</p>
+                    </div>
+                    <div className="p-3 bg-emerald-500/10 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-emerald-400">{bulkPreview.validRows || 0}</p>
+                      <p className="text-xs text-slate-400">Valid</p>
+                    </div>
+                    <div className="p-3 bg-red-500/10 rounded-lg text-center">
+                      <p className="text-2xl font-bold text-red-400">{bulkPreview.invalidRows || 0}</p>
+                      <p className="text-xs text-slate-400">Invalid</p>
+                    </div>
+                  </div>
+
+                  {/* AI Mapping Info */}
+                  {bulkPreview.aiMapping && (
+                    <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Zap className="w-3.5 h-3.5 text-purple-400" />
+                        <p className="text-xs font-semibold text-purple-400">AI Column Mapping ({bulkPreview.aiMapping.confidence}% confidence)</p>
+                      </div>
+                      <p className="text-xs text-slate-400">{bulkPreview.aiMapping.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Error Details */}
+                  {bulkPreview.invalidRows > 0 && bulkPreview.errors && (
+                    <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-lg max-h-32 overflow-y-auto">
+                      <p className="text-xs font-semibold text-red-400 mb-2">Validation Errors:</p>
+                      {Object.entries(bulkPreview.errors || {}).slice(0, 10).map(([row, errs]: [string, any]) => (
+                        <p key={row} className="text-xs text-slate-400 mb-1">
+                          <span className="text-red-400">Row {row}:</span> {Array.isArray(errs) ? errs.join(", ") : String(errs)}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <Button variant="outline" className="flex-1 text-xs" onClick={() => setBulkStep("upload")}>Back</Button>
+                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs" onClick={handleBulkExecute} disabled={!bulkPreview.validRows || bulkExecuteMutation.isPending}>
+                      {bulkExecuteMutation.isPending ? "Importing..." : `Import ${bulkPreview.validRows} Loads`}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP: IMPORTING */}
+              {bulkStep === "importing" && (
+                <div className="text-center py-8">
+                  <RefreshCw className="w-10 h-10 text-emerald-400 animate-spin mx-auto mb-4" />
+                  <p className="text-sm text-white font-medium">Importing loads into dispatch board...</p>
+                  <p className="text-xs text-slate-400 mt-1">This may take a moment for large files</p>
+                </div>
+              )}
+
+              {/* STEP: DONE */}
+              {bulkStep === "done" && bulkResult && (
+                <div className="text-center py-6 space-y-4">
+                  <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+                  <div>
+                    <p className="text-lg font-bold text-white">{bulkResult.createdCount} Loads Imported</p>
+                    {bulkResult.failedCount > 0 && <p className="text-xs text-red-400 mt-1">{bulkResult.failedCount} failed — check errors for details</p>}
+                  </div>
+                  <p className="text-xs text-slate-400">Loads are now visible on your Kanban board under "Unassigned"</p>
+                  <div className="flex gap-3">
+                    <Button variant="outline" className="flex-1 text-xs" onClick={() => { resetBulkImport(); }}>Close</Button>
+                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs" onClick={() => { resetBulkImport(); }}>
+                      <Upload className="w-3.5 h-3.5 mr-1" />Import More
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

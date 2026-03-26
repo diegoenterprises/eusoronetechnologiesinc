@@ -154,6 +154,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "FileText", label: "RFP Manager", path: "/rfp-manager", badge: 0, description: "Create, distribute & award carrier RFPs" },
         { icon: "Trophy", label: "Bid Review", path: "/bid-review", badge: 0, description: "Compare bids, negotiate counter-offers, and award lanes" },
         { icon: "Combine", label: "Load Consolidation", path: "/load-consolidation", badge: 0, description: "Multi-shipper shipment consolidation for cost savings" },
+        { icon: "Upload", label: "Bulk Upload", path: "/bulk-upload", badge: 0, description: "Upload drivers, vehicles, loads, rates & more in bulk" },
       ],
     },
     {
@@ -312,6 +313,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Route", label: "Route Optimization", path: "/route-optimization", badge: 0, description: "AI-powered route planning, fuel optimization & multi-stop routing" },
         { icon: "LayoutGrid", label: "Capacity Planning", path: "/capacity-planning", badge: 0, description: "Fleet capacity forecasting, demand planning & resource allocation" },
         { icon: "Radio", label: "Asset Tracking", path: "/asset-tracking", badge: 0, description: "Real-time asset tracking, IoT sensor data & geofence alerts" },
+        { icon: "Upload", label: "Bulk Upload", path: "/bulk-upload", badge: 0, description: "Upload drivers, vehicles, loads, rates & more in bulk" },
       ],
     },
     {
@@ -457,6 +459,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "FileText", label: "RFP Manager", path: "/rfp-manager", badge: 0, description: "Create, distribute & award carrier RFPs" },
         { icon: "Trophy", label: "Bid Review", path: "/bid-review", badge: 0, description: "Compare bids, negotiate counter-offers, and award lanes" },
         { icon: "Combine", label: "Load Consolidation", path: "/load-consolidation", badge: 0, description: "Multi-shipper shipment consolidation for cost savings" },
+        { icon: "Upload", label: "Bulk Upload", path: "/bulk-upload", badge: 0, description: "Upload drivers, vehicles, loads, rates & more in bulk" },
       ],
     },
     {
@@ -729,6 +732,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Search", label: "Find Loads", path: "/marketplace", badge: 0, description: "Available loads & AI-matched opportunities" },
         { icon: "Plus", label: "Create Load", path: "/dispatch/create", badge: 0, description: "Quick 3-field load creation" },
         { icon: "Upload", label: "Bulk Import", path: "/dispatch/bulk-import", badge: 0, description: "CSV bulk load import with validation" },
+        { icon: "Upload", label: "Bulk Upload", path: "/bulk-upload", badge: 0, description: "Upload drivers, vehicles, loads, rates & more in bulk" },
         { icon: "CheckCircle", label: "Assigned Loads", path: "/dispatch/assigned", badge: 0, description: "All dispatched & assigned loads — status, tracking & POD" },
         { icon: "ArrowRightLeft", label: "Relay Mode", path: "/relay", badge: 0, description: "Multi-driver load handoff & relay leg management" },
         { icon: "Target", label: "Mission Balancer", path: "/mission-balancer", badge: 0, description: "AI-optimized load distribution & fleet workload balancing" },
@@ -1072,6 +1076,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Container", label: "Dock Hub", path: "/terminal/dock-hub", badge: 0, description: "Dock management, bay assignment, loading & gate ops" },
         { icon: "Gauge", label: "Tank Monitor", path: "/tank-monitor", badge: 0, description: "Real-time tank levels, alerts & demand forecasting" },
         { icon: "Warehouse", label: "Yard Management", path: "/yard-management", badge: 0, description: "Yard operations, trailer tracking & dock scheduling" },
+        { icon: "Upload", label: "Bulk Upload", path: "/bulk-upload", badge: 0, description: "Upload drivers, vehicles, loads, rates & more in bulk" },
       ],
     },
     {
@@ -1506,6 +1511,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Package", label: "Loads", path: "/admin/loads", badge: 0, description: "Load management" },
         { icon: "Activity", label: "Telemetry", path: "/admin/telemetry", badge: 0, description: "GPS tracking and telemetry" },
         { icon: "Wrench", label: "ZEUN Mechanics", path: "/admin/zeun", badge: 0, description: "Breakdown and repair management" },
+        { icon: "Upload", label: "Bulk Upload", path: "/bulk-upload", badge: 0, description: "Upload drivers, vehicles, loads, rates & more in bulk" },
       ],
     },
     {
@@ -1666,6 +1672,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
         { icon: "Handshake", label: "Vendor & Supplier", path: "/vendor-supplier", badge: 0, description: "Vendor management, procurement & SLA tracking" },
         { icon: "HardDrive", label: "Data Migration", path: "/data-migration", badge: 0, description: "System migration, imports & data validation" },
         { icon: "Store", label: "Vendor Management", path: "/vendor-management", badge: 0, description: "Vendor relationships, contracts & procurement management" },
+        { icon: "Upload", label: "Bulk Upload", path: "/bulk-upload", badge: 0, description: "Upload drivers, vehicles, loads, rates & more in bulk" },
       ],
     },
     {

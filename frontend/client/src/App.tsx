@@ -71,6 +71,7 @@ const SettlementHistory = lazy(() => import("./pages/SettlementHistory"));
 const SettlementBatching = lazy(() => import("./pages/settlements/SettlementBatching"));
 const AllocationDashboard = lazy(() => import("./pages/allocations/AllocationDashboard"));
 const BulkImport = lazy(() => import("./pages/bulkImport/BulkImport"));
+const BulkUploadCenter = lazy(() => import("./pages/BulkUploadCenter"));
 const Pricebook = lazy(() => import("./pages/pricebook/Pricebook"));
 const FSCEngine = lazy(() => import("./pages/fsc/FSCEngine"));
 const CustomerPortal = lazy(() => import("./pages/portal/CustomerPortal"));
@@ -749,6 +750,7 @@ function Router() {
       <Route path={"/dispatch/planner"} component={guard(DISP, <DispatchPlanner />)} />
       <Route path={"/dispatch/allocations"} component={guard([...DISP, ...SHIP, "TERMINAL_MANAGER", "ADMIN"], <AllocationDashboard />)} />
       <Route path={"/dispatch/bulk-import"} component={guard([...DISP, ...SHIP, "BROKER", "ADMIN"], <BulkImport />)} />
+      <Route path={"/bulk-upload"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...TERM, ...ADMN], <BulkUploadCenter />)} />
       <Route path={"/dispatch/pricebook"} component={guard([...DISP, ...SHIP, "BROKER", "ADMIN"], <Pricebook />)} />
       <Route path={"/dispatch/fsc-engine"} component={guard([...DISP, ...SHIP, "BROKER", "ADMIN"], <FSCEngine />)} />
       <Route path={"/admin/portal"} component={guard(ADMN, <PortalManagement />)} />

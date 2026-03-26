@@ -25,7 +25,7 @@ import {
   Package, Plus, Search, MapPin, Truck, ChevronLeft, ChevronRight,
   AlertTriangle, Navigation, Building2, Droplets, FlaskConical,
   Eye, MessageSquare, Phone, ExternalLink, ArrowRight, Clock,
-  DollarSign, Weight, Route, RefreshCw, User, X, History, CalendarDays
+  DollarSign, Weight, Route, RefreshCw, User, X, History, CalendarDays, Upload
 } from "lucide-react";
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
@@ -217,6 +217,9 @@ export default function MyLoads() {
               <Plus className="w-4 h-4 mr-2" /> Create New Load
             </Button>
           )}
+          <Button variant="outline" size="sm" className={cn("rounded-lg gap-1.5", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => setLocation("/bulk-upload?type=loads")}>
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
           <Button variant="outline" size="sm" className={cn("rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => loadsQuery.refetch()}>
             <RefreshCw className={cn("w-4 h-4", loadsQuery.isRefetching && "animate-spin")} />
           </Button>

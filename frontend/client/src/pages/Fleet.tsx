@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Truck, Search, Plus, Eye, MapPin, CheckCircle,
-  Wrench, AlertTriangle
+  Wrench, AlertTriangle, Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
@@ -53,9 +53,14 @@ export default function Fleet() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Manage your vehicles and equipment</p>
         </div>
-        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/fleet-management")}>
-          <Plus className="w-4 h-4 mr-2" />Add Vehicle
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5 rounded-lg" onClick={() => setLocation("/bulk-upload?type=vehicles")}>
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
+          <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/fleet-management")}>
+            <Plus className="w-4 h-4 mr-2" />Add Vehicle
+          </Button>
+        </div>
       </div>
 
       {/* Stats Row */}

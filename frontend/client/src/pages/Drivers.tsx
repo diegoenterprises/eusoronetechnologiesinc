@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Users, Search, Plus, Eye, Phone, Clock, CheckCircle,
-  AlertTriangle
+  AlertTriangle, Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
@@ -60,9 +60,14 @@ export default function Drivers() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Drivers</h1>
           <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Manage your driver roster and assignments</p>
         </div>
-        <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm" onClick={() => setLocation("/driver/management")}>
-          <Plus className="w-4 h-4 mr-2" />Add Driver
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className={cn("gap-1.5 rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-600 hover:bg-slate-700")} onClick={() => setLocation("/bulk-upload?type=drivers")}>
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
+          <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm" onClick={() => setLocation("/driver/management")}>
+            <Plus className="w-4 h-4 mr-2" />Add Driver
+          </Button>
+        </div>
       </div>
 
       {/* ── Stat Cards ── */}

@@ -26,6 +26,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocale } from "@/hooks/useLocale";
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
+import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { Portal } from "@/components/ui/portal";
 import {
@@ -34,7 +35,7 @@ import {
   AlertTriangle, XCircle, BadgeCheck, Send, Mail, Phone,
   Loader2, ArrowUpRight, ArrowDownLeft, MoreHorizontal,
   Handshake, Activity, Filter, PenTool, FileWarning,
-  Star, Globe, TrendingUp, Sparkles, Eye, ThumbsUp,
+  Star, Globe, TrendingUp, Sparkles, Eye, ThumbsUp, Upload,
 } from "lucide-react";
 
 const AgreementsLibrary = lazy(() => import("./AgreementsLibrary"));
@@ -69,6 +70,7 @@ export default function MyPartners() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const userRole = (user?.role || "SHIPPER").toUpperCase();
 
   // State
@@ -255,7 +257,10 @@ export default function MyPartners() {
         </TabsList>
 
         <TabsContent value="partners" className="space-y-6">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" className={cn("gap-1.5 rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-600 hover:bg-slate-700")} onClick={() => setLocation("/bulk-upload?type=contacts")}>
+              <Upload className="w-4 h-4" /> Bulk Import
+            </Button>
             <Button onClick={() => setShowAddModal(true)} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm">
               <Plus className="w-4 h-4 mr-2" />Add Partner
             </Button>

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Truck, Search, Star, Shield, Eye, Phone, CheckCircle, Users, UserPlus,
+  Truck, Search, Star, Shield, Eye, Phone, CheckCircle, Users, UserPlus, Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
@@ -59,8 +59,17 @@ export default function Catalysts() {
           <p className="text-slate-400 text-sm mt-1">Manage catalyst bids and select the best options for your loads</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLocation("/bulk-upload?type=contacts")}
+            className="gap-1.5 border-slate-500/30 hover:bg-slate-500/10"
+          >
+            <Upload className="w-4 h-4" />
+            Bulk Import
+          </Button>
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => setShowInvite(true)}
             className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"

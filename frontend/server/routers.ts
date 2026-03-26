@@ -188,6 +188,7 @@ import { dispatchPlannerRouter } from "./routers/dispatchPlanner";
 import { settlementBatchingRouter } from "./routers/settlementBatching";
 import { allocationTrackerRouter } from "./routers/allocationTracker";
 import { bulkImportRouter } from "./routers/bulkImport";
+import { bulkUploadRouter } from "./routers/bulkUpload";
 import { pricebookRouter } from "./routers/pricebook";
 import { fscEngineRouter } from "./routers/fscEngine";
 import { customerPortalRouter } from "./routers/customerPortal";
@@ -1015,6 +1016,9 @@ export const appRouter = router({
 
   // Bulk Load Import — WS-DC-006 CSV Import
   bulkImport: bulkImportRouter,
+
+  // Bulk Upload Center — multi-entity bulk uploads
+  bulkUpload: bulkUploadRouter,
 
   // Pricebook — WS-DC-004 Rate Sheets
   pricebook: pricebookRouter,

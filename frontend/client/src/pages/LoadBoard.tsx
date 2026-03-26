@@ -21,7 +21,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import {
   Search, MapPin, Package, DollarSign, Truck, RefreshCw, Plus,
   Eye, Clock, Navigation, Building2, Droplets, FlaskConical,
-  AlertTriangle, Gavel, TrendingUp, ChevronLeft, ChevronRight
+  AlertTriangle, Gavel, TrendingUp, ChevronLeft, ChevronRight, Upload
 } from "lucide-react";
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
@@ -238,13 +238,23 @@ export default function LoadBoard() {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
           {t('loads.title')}
         </h1>
-        <Button
-          variant="outline"
-          className={cn("rounded-xl", isLight ? "border-slate-200" : "border-slate-600 hover:bg-slate-700")}
-          onClick={() => loadsQuery.refetch()}
-        >
-          <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn("rounded-xl gap-1.5", isLight ? "border-slate-200" : "border-slate-600 hover:bg-slate-700")}
+            onClick={() => setLocation("/bulk-upload?type=loads")}
+          >
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
+          <Button
+            variant="outline"
+            className={cn("rounded-xl", isLight ? "border-slate-200" : "border-slate-600 hover:bg-slate-700")}
+            onClick={() => loadsQuery.refetch()}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+          </Button>
+        </div>
       </div>
 
       {/* ── Role-Specific Context Panel ── */}

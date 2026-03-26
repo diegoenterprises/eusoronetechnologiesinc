@@ -15,7 +15,7 @@ import { trpc } from "@/lib/trpc";
 import {
   Package, MapPin, Calendar, Clock, DollarSign, Truck,
   Search, Plus, Eye, Edit, AlertTriangle, CheckCircle,
-  ChevronRight, Loader2
+  ChevronRight, Loader2, Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -75,9 +75,14 @@ export default function ShipperLoads() {
           <h1 className="text-2xl font-bold text-white">My Loads</h1>
           <p className="text-slate-400 text-sm">Manage your shipments</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setLocation("/load/wizard")}>
-          <Plus className="w-4 h-4 mr-2" />Create Load
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setLocation("/bulk-upload?type=loads")}>
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
+          <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setLocation("/load/wizard")}>
+            <Plus className="w-4 h-4 mr-2" />Create Load
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
