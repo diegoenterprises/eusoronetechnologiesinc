@@ -16,7 +16,7 @@ import {
   FileText, CheckCircle, Plus, Shield, DollarSign,
   Clock, Building2, Search, Filter,
   AlertTriangle, Eye, PenTool, Truck, Users, Repeat,
-  ChevronRight, ArrowUpRight, Calendar, Download
+  ChevronRight, ArrowUpRight, Calendar, Download, Upload
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { downloadAgreementPdf } from "@/lib/agreementPdf";
@@ -128,6 +128,9 @@ export default function AgreementsLibrary() {
           <p className={mt}>{isTerminal ? "Terminal access, throughput & service agreements" : isBroker ? "Manage shipper & catalyst contracts" : isCatalyst ? "View & sign shipper agreements" : isEscort ? "Escort service agreements & rate schedules" : "Manage catalyst agreements & contracts"}</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setLocation("/bulk-upload?type=contacts")} className="gap-1.5">
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
           {!isCatalyst && (
             <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold h-10" onClick={() => setLocation(isEscort ? "/agreements/create?type=escort_service" : "/agreements/create")}>
               <Plus className="w-4 h-4 mr-2" />New Agreement

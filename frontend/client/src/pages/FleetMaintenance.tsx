@@ -7,6 +7,7 @@
  */
 
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,7 @@ import {
   BarChart3, Gauge, Settings, ClipboardCheck,
   ShoppingCart, Star, TriangleAlert, CircleAlert,
   Timer, Cog, Eye, ArrowUpRight, ArrowDownRight,
-  XCircle, RotateCcw,
+  XCircle, RotateCcw, Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -1225,6 +1226,7 @@ function UtilizationTab() {
 // ---------------------------------------------------------------------------
 
 export default function FleetMaintenance() {
+  const [, navigate] = useLocation();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -1244,6 +1246,9 @@ export default function FleetMaintenance() {
             Preventive maintenance, work orders, parts, tires, DOT prep, and fleet lifecycle management
           </p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => navigate("/bulk-upload?type=vehicles")} className="gap-1.5">
+          <Upload className="w-4 h-4" /> Bulk Import
+        </Button>
       </div>
 
       {/* Tabs */}

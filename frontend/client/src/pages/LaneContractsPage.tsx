@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ import {
   Route, DollarSign, Clock, CheckCircle, AlertTriangle,
   MapPin, Package, TrendingUp, Calendar, ChevronRight, Flame,
   BarChart3, Target, Shield, Truck, ArrowRight, ArrowUpRight,
-  ArrowDownRight, Gauge, Handshake, X, Activity, Zap, Award
+  ArrowDownRight, Gauge, Handshake, X, Activity, Zap, Award, Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -29,6 +30,7 @@ const STATUS_MAP: Record<string, { bg: string; text: string; label: string }> = 
 };
 
 export default function LaneContractsPage() {
+  const [, navigate] = useLocation();
   const { theme } = useTheme();
   const L = theme === "light";
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -89,6 +91,9 @@ export default function LaneContractsPage() {
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>Lane procurement, rate commitments, and performance tracking</p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => navigate("/bulk-upload?type=rates")} className="gap-1.5">
+          <Upload className="w-4 h-4" /> Bulk Import
+        </Button>
       </div>
 
       {/* ── Premium KPI Row ── */}

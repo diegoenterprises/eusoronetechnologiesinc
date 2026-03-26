@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   AlertTriangle, Package, Truck, Search, Plus, Eye,
-  Flame, Skull, Droplets, MapPin
+  Flame, Skull, Droplets, MapPin, Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
@@ -66,9 +66,14 @@ export default function HazmatShipments() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Track and manage hazardous material shipments</p>
         </div>
-        <Button className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-lg">
-          <Plus className="w-4 h-4 mr-2" />New Hazmat Load
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setLocation("/bulk-upload?type=loads")} className="gap-1.5">
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
+          <Button className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 rounded-lg">
+            <Plus className="w-4 h-4 mr-2" />New Hazmat Load
+          </Button>
+        </div>
       </div>
 
       {/* Stats Row */}

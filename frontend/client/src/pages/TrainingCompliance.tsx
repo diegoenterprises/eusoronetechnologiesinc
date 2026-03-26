@@ -23,7 +23,7 @@ import {
   CheckCircle, XCircle, Clock, ArrowUpRight, ArrowDownRight, Target,
   GraduationCap, Search, Filter, Download, RefreshCw, TrendingUp,
   Activity, Eye, Play, Star, Gauge, MapPin, DollarSign, Building2,
-  Scale, Pill, Heart, Zap, Globe, FileCheck, Flame,
+  Scale, Pill, Heart, Zap, Globe, FileCheck, Flame, Upload,
 } from "lucide-react";
 
 // ── Types ──
@@ -67,6 +67,7 @@ const TABS: TabDef[] = [
 // ── Main Component ──
 
 export default function TrainingCompliance() {
+  const [, navigate] = useLocation();
   const { t } = useLocale();
   const { theme } = useTheme();
   const L = theme === "light";
@@ -106,6 +107,9 @@ export default function TrainingCompliance() {
                 )}
               />
             </div>
+            <Button variant="outline" size="sm" onClick={() => navigate("/bulk-upload?type=drivers")} className={L ? "gap-1.5" : "gap-1.5 border-slate-700 text-slate-300 hover:bg-slate-800"}>
+              <Upload className="w-4 h-4" /> Bulk Import
+            </Button>
             <Button variant="outline" size="sm" className={L ? "" : "border-slate-700 text-slate-300 hover:bg-slate-800"}>
               <Download className="w-4 h-4 mr-1" /> Export
             </Button>

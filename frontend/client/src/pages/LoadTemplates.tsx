@@ -16,7 +16,7 @@ import {
   Package, Truck, Shield, DollarSign, Clock, ChevronDown,
   ChevronUp, ArrowRight, Loader2, AlertTriangle, Archive,
   MoreHorizontal, Zap, Calendar, CheckCircle, Scale,
-  Building2, Edit3, X,
+  Building2, Edit3, X, Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -150,12 +150,17 @@ export default function LoadTemplates() {
           </h1>
           <p className="text-sm text-slate-400 mt-1">Save and reuse your most common load configurations</p>
         </div>
-        <Button
-          className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-semibold h-10"
-          onClick={() => setShowCreateForm(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />New Template
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setLocation("/bulk-upload?type=loads")} className="gap-1.5">
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
+          <Button
+            className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-semibold h-10"
+            onClick={() => setShowCreateForm(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />New Template
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

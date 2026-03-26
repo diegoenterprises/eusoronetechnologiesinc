@@ -8,13 +8,14 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import {
   Calendar, Plus, Clock, CheckCircle, XCircle, AlertTriangle,
   ChevronLeft, ChevronRight, Search, Truck, User,
   Package, CalendarDays, Shield, ShieldCheck,
   Wifi, WifiOff, Fuel, Loader2, ChevronDown,
-  CreditCard, Database, UserCheck,
+  CreditCard, Database, UserCheck, Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ const STATUS_STYLE: Record<string, { cls: string; label: string; icon: any }> = 
 const TIME_SLOTS = ["06:00","07:00","08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00"];
 
 export default function TerminalAppointments() {
+  const [, navigate] = useLocation();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const cell = isLight ? "rounded-2xl border border-slate-200/80 bg-white" : "rounded-2xl border border-white/[0.04] bg-white/[0.02]";
@@ -189,6 +191,9 @@ export default function TerminalAppointments() {
           <p className="text-sm text-slate-500 mt-0.5">Schedule, manage, and track facility appointments</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate("/bulk-upload?type=loads")} className="gap-1.5">
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
           <Button onClick={() => setShowCreate(true)} size="sm" className="rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 text-white border-0 shadow-none h-9 px-4 text-xs font-medium">
             <Plus className="w-3.5 h-3.5 mr-1.5" />New Appointment
           </Button>

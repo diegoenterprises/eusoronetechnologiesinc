@@ -55,6 +55,9 @@ export default function BOLManagement() {
           <p className="text-slate-400 text-sm mt-1">Manage Bills of Lading</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/bulk-upload?type=bols")}>
+            <Upload className="w-4 h-4 mr-2" />Bulk Import BOLs
+          </Button>
           <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
             <Upload className="w-4 h-4 mr-2" />Upload BOL
           </Button>

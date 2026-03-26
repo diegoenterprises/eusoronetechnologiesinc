@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,7 @@ import {
   Search, Truck, Calendar, CreditCard, AlertTriangle,
   Shield, BarChart3, Droplets, Clock, Leaf, FileText,
   Calculator, Award, Package, Eye,
-  ArrowUpRight, ArrowDownRight, Target, Zap, Receipt,
+  ArrowUpRight, ArrowDownRight, Target, Zap, Receipt, Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -1027,6 +1028,7 @@ function EmissionsPanel() {
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function FuelManagement() {
+  const [, navigate] = useLocation();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -1044,6 +1046,9 @@ export default function FuelManagement() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate("/bulk-upload?type=vehicles")} className="gap-1.5">
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
           <Fuel className="w-8 h-8 text-amber-400" />
         </div>
       </div>

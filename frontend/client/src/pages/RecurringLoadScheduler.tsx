@@ -24,7 +24,7 @@ import {
   FileText, CheckCircle, ArrowLeft, Shield, DollarSign,
   ChevronRight, Clock, Building2, MapPin,
   Plus, Trash2, AlertTriangle, Truck, Users, Repeat,
-  Calendar, Scale, Timer, Route, Zap
+  Calendar, Scale, Timer, Route, Zap, Upload
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
@@ -337,14 +337,19 @@ export default function RecurringLoadScheduler() {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[960px] mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")} onClick={() => setLocation("/agreements")}>
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Recurring Load Scheduler</h1>
-          <p className={mt}>Set up scheduled lanes, dedicated routes & volume commitments</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")} onClick={() => setLocation("/agreements")}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Recurring Load Scheduler</h1>
+            <p className={mt}>Set up scheduled lanes, dedicated routes & volume commitments</p>
+          </div>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setLocation("/bulk-upload?type=loads")} className="gap-1.5">
+          <Upload className="w-4 h-4" /> Bulk Import
+        </Button>
       </div>
 
       {/* Step Indicator */}

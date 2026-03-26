@@ -31,6 +31,7 @@ import {
   facilities,
   notifications,
   pricebookEntries,
+  documents,
 } from "../../drizzle/schema";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { unsafeCast } from "../_core/types/unsafe";
@@ -111,6 +112,14 @@ const ENTITY_TYPES: EntityTypeDefinition[] = [
     optionalFields: ["zip", "facilityType", "latitude", "longitude", "loadingBays", "unloadingBays", "operatingHours", "contactName", "contactPhone", "contactEmail"],
     templateUrl: "/api/bulk/template/facilities",
     maxRows: 500,
+  },
+  {
+    type: "bols",
+    label: "Bills of Lading (BOL)",
+    requiredFields: ["shipperName", "carrierName", "originAddress", "destinationAddress", "commodity"],
+    optionalFields: ["bolNumber", "loadNumber", "weight", "weightUnit", "pieces", "hazmatClass", "unNumber", "sealNumber", "trailerNumber", "pickupDate", "deliveryDate", "specialInstructions", "emergencyContact", "emergencyPhone", "driverName", "driverPhone"],
+    templateUrl: "/api/bulk/template/bols",
+    maxRows: 2000,
   },
 ];
 
@@ -469,6 +478,32 @@ function validateFacilityRow(raw: Record<string, any>): { isValid: boolean; erro
   return { isValid: errors.length === 0, errors };
 }
 
+function validateBOLRow(raw: Record<string, any>): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const required = ["shipperName", "carrierName", "originAddress", "destinationAddress", "commodity"];
+  for (const field of required) {
+    if (!raw[field] || String(raw[field]).trim() === "") {
+      errors.push(`Missing required field: ${field}`);
+    }
+  }
+  if (raw.pickupDate && raw.pickupDate !== "" && !DATE_REGEX.test(String(raw.pickupDate))) {
+    errors.push("pickupDate must be YYYY-MM-DD format");
+  }
+  if (raw.deliveryDate && raw.deliveryDate !== "" && !DATE_REGEX.test(String(raw.deliveryDate))) {
+    errors.push("deliveryDate must be YYYY-MM-DD format");
+  }
+  if (raw.pickupDate && raw.deliveryDate && raw.pickupDate !== "" && raw.deliveryDate !== "" && raw.deliveryDate < raw.pickupDate) {
+    errors.push("deliveryDate must be on or after pickupDate");
+  }
+  if (raw.weight && raw.weight !== "" && (isNaN(Number(raw.weight)) || Number(raw.weight) < 0)) {
+    errors.push("weight must be a non-negative number");
+  }
+  if (raw.pieces && raw.pieces !== "" && (isNaN(Number(raw.pieces)) || Number(raw.pieces) < 0)) {
+    errors.push("pieces must be a non-negative number");
+  }
+  return { isValid: errors.length === 0, errors };
+}
+
 function validateRowByEntityType(entityType: string, raw: Record<string, any>): { isValid: boolean; errors: string[] } {
   switch (entityType) {
     case "drivers": return validateDriverRow(raw);
@@ -477,6 +512,7 @@ function validateRowByEntityType(entityType: string, raw: Record<string, any>): 
     case "contacts": return validateContactRow(raw);
     case "rates": return validateRateRow(raw);
     case "facilities": return validateFacilityRow(raw);
+    case "bols": return validateBOLRow(raw);
     default: return { isValid: false, errors: [`Unsupported entity type: ${entityType}`] };
   }
 }
@@ -516,6 +552,11 @@ function getTemplate(entityType: string): { csv: string; fileName: string } {
       const headers = ["facilityName", "address", "city", "state", "zip", "facilityType", "latitude", "longitude", "loadingBays", "unloadingBays", "operatingHours", "contactName", "contactPhone", "contactEmail"];
       const example = ['"Enterprise Products Terminal"', '"1100 Louisiana St"', "Houston", "TX", "77002", "TERMINAL", "29.7604", "-95.3698", "8", "6", '"Mon-Fri 6AM-6PM"', '"Bob Johnson"', "5551112233", "bob@enterprise.com"];
       return { csv: headers.join(",") + "\n" + example.join(","), fileName: "bulk_facilities_template.csv" };
+    }
+    case "bols": {
+      const headers = ["shipperName", "carrierName", "originAddress", "destinationAddress", "commodity", "bolNumber", "loadNumber", "weight", "weightUnit", "pieces", "hazmatClass", "unNumber", "sealNumber", "trailerNumber", "pickupDate", "deliveryDate", "specialInstructions", "emergencyContact", "emergencyPhone", "driverName", "driverPhone"];
+      const example = ['"Acme Oil Co"', '"Swift Transport LLC"', '"1200 Main St, Houston, TX 77002"', '"456 Refinery Rd, Cushing, OK 74023"', '"WTI Crude Oil"', "BOL-2026-001", "LD-10042", "52000", "lbs", "1", "3", "UN1267", "SEAL-9001", "TRL-5582", "2026-04-01", "2026-04-02", '"Temperature sensitive — keep below 100F"', '"CHEMTREC"', "1-800-424-9300", '"John Doe"', "5551234567"];
+      return { csv: headers.join(",") + "\n" + example.join(","), fileName: "bulk_bols_template.csv" };
     }
     default:
       return { csv: "", fileName: "template.csv" };
@@ -1116,6 +1157,80 @@ export const bulkUploadRouter = router({
                 .orderBy(sql`${facilities.id} DESC`)
                 .limit(1);
               entityId = createdFacility?.id || null;
+              break;
+            }
+
+            // ---------------------------------------------------------------
+            // BOLS (Bills of Lading)
+            // ---------------------------------------------------------------
+            case "bols": {
+              const bolNumber = raw.bolNumber && String(raw.bolNumber).trim()
+                ? String(raw.bolNumber).trim()
+                : `BOL-${Date.now()}-${row.rowNumber}`;
+              const docName = `BOL ${bolNumber}`;
+
+              // Build metadata JSON with all BOL fields
+              const bolMetadata: Record<string, any> = {
+                bolNumber,
+                shipperName: String(raw.shipperName || "").trim(),
+                carrierName: String(raw.carrierName || "").trim(),
+                originAddress: String(raw.originAddress || "").trim(),
+                destinationAddress: String(raw.destinationAddress || "").trim(),
+                commodity: String(raw.commodity || "").trim(),
+                weight: raw.weight ? Number(raw.weight) : null,
+                weightUnit: raw.weightUnit ? String(raw.weightUnit).trim() : null,
+                pieces: raw.pieces ? Number(raw.pieces) : null,
+                hazmatClass: raw.hazmatClass ? String(raw.hazmatClass).trim() : null,
+                unNumber: raw.unNumber ? String(raw.unNumber).trim() : null,
+                sealNumber: raw.sealNumber ? String(raw.sealNumber).trim() : null,
+                trailerNumber: raw.trailerNumber ? String(raw.trailerNumber).trim() : null,
+                pickupDate: raw.pickupDate && DATE_REGEX.test(String(raw.pickupDate)) ? String(raw.pickupDate) : null,
+                deliveryDate: raw.deliveryDate && DATE_REGEX.test(String(raw.deliveryDate)) ? String(raw.deliveryDate) : null,
+                specialInstructions: raw.specialInstructions ? String(raw.specialInstructions).trim() : null,
+                emergencyContact: raw.emergencyContact ? String(raw.emergencyContact).trim() : null,
+                emergencyPhone: raw.emergencyPhone ? String(raw.emergencyPhone).trim() : null,
+                driverName: raw.driverName ? String(raw.driverName).trim() : null,
+                driverPhone: raw.driverPhone ? String(raw.driverPhone).trim() : null,
+                bulkImported: true,
+                importJobId: input.jobId,
+              };
+
+              // Try to link to an existing load if loadNumber is provided
+              let linkedLoadId: number | null = null;
+              if (raw.loadNumber && String(raw.loadNumber).trim()) {
+                try {
+                  const [existingLoad] = await db.select({ id: loads.id }).from(loads)
+                    .where(eq(loads.loadNumber, String(raw.loadNumber).trim()))
+                    .limit(1);
+                  if (existingLoad) {
+                    linkedLoadId = existingLoad.id;
+                    bolMetadata.loadNumber = String(raw.loadNumber).trim();
+                  }
+                } catch (loadErr) {
+                  logger.warn(`[BulkUpload] Could not link BOL to load "${raw.loadNumber}":`, loadErr);
+                }
+              }
+
+              // Create document record with type "bol"
+              await unsafeCast(db).execute(
+                sql`INSERT INTO documents (userId, companyId, loadId, type, name, fileUrl, status, createdAt)
+                VALUES (
+                  ${userId},
+                  ${companyId},
+                  ${linkedLoadId},
+                  'bol',
+                  ${docName},
+                  ${JSON.stringify(bolMetadata)},
+                  'active',
+                  NOW()
+                )`
+              );
+
+              const [createdDoc] = await db.select({ id: documents.id }).from(documents)
+                .where(and(eq(documents.companyId, companyId), eq(documents.name, docName)))
+                .orderBy(sql`${documents.id} DESC`)
+                .limit(1);
+              entityId = createdDoc?.id || null;
               break;
             }
 

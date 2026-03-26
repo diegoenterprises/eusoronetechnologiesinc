@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,11 +15,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   GraduationCap, Search, User, CheckCircle, Clock,
-  AlertTriangle, Plus
+  AlertTriangle, Plus, Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function TrainingManagement() {
+  const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
 
   const trainingsQuery = (trpc as any).training.getAll.useQuery({ search });
@@ -43,9 +45,14 @@ export default function TrainingManagement() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Training Management</h1>
           <p className="text-slate-400 text-sm mt-1">Manage driver training</p>
         </div>
-        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
-          <Plus className="w-4 h-4 mr-2" />Assign Training
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate("/bulk-upload?type=drivers")} className="gap-1.5">
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
+          <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
+            <Plus className="w-4 h-4 mr-2" />Assign Training
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

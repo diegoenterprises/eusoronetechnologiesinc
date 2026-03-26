@@ -8,6 +8,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -217,6 +218,7 @@ function ComparisonDashboard({ sheetIds, allSheets }: { sheetIds: number[]; allS
 }
 
 export default function RateSheetReconciliation() {
+  const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<"calculator" | "tiers" | "reconciliation" | "ticket_recon">("calculator");
 
   // Rate calculator form
@@ -671,6 +673,10 @@ export default function RateSheetReconciliation() {
             Rate calculation, schedule management, surcharges, and billing reconciliation
           </p>
         </div>
+        <Button size="sm" className="h-8 px-4 text-xs rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0"
+          onClick={() => navigate("/bulk-upload?type=rates")}>
+          <Upload className="w-3.5 h-3.5 mr-1.5" />Bulk Import Rates
+        </Button>
       </div>
 
       {/* Stats Strip */}

@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import {
   Beaker, Shield, Clock, CheckCircle, XCircle, AlertTriangle,
-  Users, Calendar, FileText, Search, Filter, Shuffle, BarChart3
+  Users, Calendar, FileText, Search, Filter, Shuffle, BarChart3, Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -37,6 +38,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function DrugTestingManagement() {
+  const [, navigate] = useLocation();
   const [typeFilter, setTypeFilter] = useState<string>("");
   const [resultFilter, setResultFilter] = useState<string>("");
 
@@ -67,10 +69,15 @@ export default function DrugTestingManagement() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Drug & Alcohol Testing</h1>
           <p className="text-slate-400 text-sm mt-1">DOT compliance management per 49 CFR Part 40</p>
         </div>
-        <Button onClick={() => randomSelectionMutation.mutate({ testType: "drug", count: 5 })} disabled={randomSelectionMutation.isPending}
-          className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF]">
-          <Shuffle className="w-4 h-4 mr-2" />Random Selection
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate("/bulk-upload?type=drivers")} className="gap-1.5">
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
+          <Button onClick={() => randomSelectionMutation.mutate({ testType: "drug", count: 5 })} disabled={randomSelectionMutation.isPending}
+            className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF]">
+            <Shuffle className="w-4 h-4 mr-2" />Random Selection
+          </Button>
+        </div>
       </div>
 
       {/* Compliance Status Banner */}

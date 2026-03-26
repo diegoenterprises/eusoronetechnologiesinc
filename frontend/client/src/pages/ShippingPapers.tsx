@@ -24,11 +24,12 @@ import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
 import {
-  FileText, AlertTriangle, Phone, Download, Printer,
+  FileText, AlertTriangle, Phone, Download, Printer, Upload,
   Shield, CheckCircle, Clock, MapPin, Truck,
   Package, RefreshCw, Info, Eye, ChevronRight,
   Globe, Flag, DollarSign, Languages
 } from "lucide-react";
+import { useLocation } from "wouter";
 
 type PaperSection = "shipping" | "emergency" | "handling";
 type Jurisdiction = "us" | "ca" | "mx" | "cross_border";
@@ -36,6 +37,7 @@ type Jurisdiction = "us" | "ca" | "mx" | "cross_border";
 export default function ShippingPapers() {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState<PaperSection>("shipping");
   const [jurisdiction, setJurisdiction] = useState<Jurisdiction>("us");
 
@@ -82,6 +84,15 @@ export default function ShippingPapers() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
+            onClick={() => setLocation("/bulk-upload?type=bols")}
+          >
+            <Upload className="w-4 h-4 mr-1.5" />
+            Bulk Import BOLs
+          </Button>
           <Button
             variant="outline"
             size="sm"

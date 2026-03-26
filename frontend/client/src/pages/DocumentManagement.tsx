@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocation } from "wouter";
 
 // ============================================================================
 // TYPES
@@ -161,6 +162,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 export default function DocumentManagement() {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -338,6 +340,15 @@ export default function DocumentManagement() {
             >
               <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
               Refresh
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className={cn(isLight ? "border-slate-200 text-slate-600 hover:bg-slate-100" : "border-white/10 text-slate-300 hover:bg-white/5")}
+              onClick={() => setLocation("/bulk-upload?type=bols")}
+            >
+              <Upload className="w-3.5 h-3.5 mr-1.5" />
+              Bulk Import BOLs
             </Button>
             <Button
               size="sm"

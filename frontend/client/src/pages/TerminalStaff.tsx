@@ -8,6 +8,7 @@
  */
 
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import AddressAutocomplete, { ParsedAddress } from "@/components/AddressAutocomplete";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Users, Search, CheckCircle, Clock, Plus, Phone, Mail,
   Link2, Copy, Shield, ShieldCheck, X, Trash2, ChevronDown,
-  MapPin, KeyRound, Fuel, Building2, Warehouse, Pencil, Send
+  MapPin, KeyRound, Fuel, Building2, Warehouse, Pencil, Send, Upload
 } from "lucide-react";
 import { toast } from "sonner";
 import { Portal } from "@/components/ui/portal";
@@ -61,6 +62,7 @@ const LOCATION_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function TerminalStaff() {
+  const [, navigate] = useLocation();
   const { user: authUser } = useAuth();
   const userRole = (authUser?.role || "").toUpperCase();
   const isShipper = ["SHIPPER", "BROKER"].includes(userRole);
@@ -236,9 +238,14 @@ export default function TerminalStaff() {
             {isShipper ? "Dock, warehouse, and yard staff who validate arriving drivers at your locations" : "Gate, rack, and bay staff who validate arriving drivers"}
           </p>
         </div>
-        <Button onClick={() => setShowAdd(true)} className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
-          <Plus className="w-4 h-4 mr-2" />Add Staff
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate("/bulk-upload?type=contacts")} className="gap-1.5">
+            <Upload className="w-4 h-4" /> Bulk Import
+          </Button>
+          <Button onClick={() => setShowAdd(true)} className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
+            <Plus className="w-4 h-4 mr-2" />Add Staff
+          </Button>
+        </div>
       </div>
 
       {/* Stat Cards */}

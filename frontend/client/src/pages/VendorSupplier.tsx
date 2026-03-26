@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ import {
   ChevronRight, Clock, AlertTriangle, CheckCircle2, XCircle,
   BarChart3, Users, Truck, Wrench, Fuel, Scale, Cpu,
   ClipboardList, ArrowUpDown, Eye, ThumbsUp, ThumbsDown,
-  Send, Award, Receipt, CircleDollarSign
+  Send, Award, Receipt, CircleDollarSign, Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -135,6 +136,7 @@ function EmptyState({ title, description, icon }: { title: string; description: 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function VendorSupplier() {
+  const [, navigate] = useLocation();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
@@ -1060,13 +1062,18 @@ export default function VendorSupplier() {
   return (
     <div className={`p-4 md:p-6 space-y-6 ${isLight ? "bg-slate-50 text-slate-900" : ""}`}>
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
-          Vendor & Supplier Management
-        </h1>
-        <p className={`${isLight ? "text-slate-500" : "text-slate-400"} text-sm mt-1`}>
-          Vendor scorecards, procurement workflows, compliance tracking, and spend analytics
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
+            Vendor & Supplier Management
+          </h1>
+          <p className={`${isLight ? "text-slate-500" : "text-slate-400"} text-sm mt-1`}>
+            Vendor scorecards, procurement workflows, compliance tracking, and spend analytics
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => navigate("/bulk-upload?type=contacts")} className="gap-1.5">
+          <Upload className="w-4 h-4" /> Bulk Import
+        </Button>
       </div>
 
       {/* Tabs */}

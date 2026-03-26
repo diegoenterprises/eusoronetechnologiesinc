@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +34,7 @@ import {
   FileText, Truck, Package, Search, RefreshCw, BarChart3,
   Scale, ShieldAlert, Receipt, Fuel, HandMetal, BedDouble,
   CalendarDays, Ban, ChevronRight, ArrowUpRight, ArrowDownRight,
-  CheckCircle2, XCircle, AlertCircle, Loader2, Send,
+  CheckCircle2, XCircle, AlertCircle, Loader2, Send, Upload,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -194,6 +195,7 @@ function StatCard({
 // ════════════════════════════════════════════════════════════════════════════
 
 export default function DetentionAccessorials() {
+  const [, navigate] = useLocation();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -279,6 +281,14 @@ export default function DetentionAccessorials() {
               {dash.activeDetentions} Active
             </Badge>
           )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => navigate("/bulk-upload?type=rates")}
+          >
+            <Upload className="h-3.5 w-3.5 mr-1" />
+            Bulk Import Accessorials
+          </Button>
           <Button
             size="sm"
             variant="outline"

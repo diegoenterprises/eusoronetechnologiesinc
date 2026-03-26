@@ -6,6 +6,7 @@
  */
 
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,7 @@ import {
   ShieldAlert,
   Receipt,
   RefreshCw,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -1485,6 +1487,7 @@ function AnalyticsTab() {
 // ---------------------------------------------------------------------------
 
 export default function FreightClaims() {
+  const [, navigate] = useLocation();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -1502,6 +1505,9 @@ export default function FreightClaims() {
             Claims, disputes, freight audit, and loss prevention management
           </p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => navigate("/bulk-upload?type=loads")} className="gap-1.5">
+          <Upload className="w-4 h-4" /> Bulk Import
+        </Button>
       </div>
 
       {/* Tabs */}

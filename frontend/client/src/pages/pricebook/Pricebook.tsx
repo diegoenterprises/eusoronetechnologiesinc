@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ const RATE_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function Pricebook() {
+  const [, navigate] = useLocation();
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
   const [activeOnly, setActiveOnly] = useState(true);
@@ -127,6 +129,9 @@ export default function Pricebook() {
           </Button>
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-400" onClick={() => setShowImport(!showImport)}>
             <Upload className="w-3.5 h-3.5 mr-1" />Import
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-purple-400" onClick={() => navigate("/bulk-upload?type=rates")}>
+            <Upload className="w-3.5 h-3.5 mr-1" />Bulk Import Rates
           </Button>
           <Button size="sm" className="h-7 px-3 text-xs bg-amber-600 hover:bg-amber-700" onClick={() => setShowCreate(!showCreate)}>
             <Plus className="w-3.5 h-3.5 mr-1" />New Rate
