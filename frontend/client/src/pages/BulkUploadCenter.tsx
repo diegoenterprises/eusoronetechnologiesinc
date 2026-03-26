@@ -10,6 +10,7 @@ import {
   Building2, ClipboardList, MapPin, FileText, Mail, ToggleLeft,
   ToggleRight, Trash2, ArrowRight, BarChart3, Shield, Brain,
   Table, X, Info, Check, Columns, Search, Wand2, FileImage, Zap,
+  Anchor, Train, Ship, Container, UserCog, Boxes,
 } from "lucide-react";
 
 const trpc = (window as any).__trpc || {};
@@ -18,7 +19,7 @@ const trpc = (window as any).__trpc || {};
 // Types
 // ---------------------------------------------------------------------------
 
-type EntityType = "loads" | "drivers" | "vehicles" | "contacts" | "rates" | "facilities" | "bols";
+type EntityType = "loads" | "drivers" | "vehicles" | "contacts" | "rates" | "facilities" | "bols" | "rail_shipments" | "railcars" | "rail_crew" | "vessel_bookings" | "containers" | "vessel_crew";
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
 interface EntityConfig {
@@ -30,12 +31,13 @@ interface EntityConfig {
   optionalFields: string[];
   maxRows: number;
   color: string;
-  roles: string[]; // Which roles can see this entity type
+  roles: string[];
+  mode?: "TRUCK" | "RAIL" | "VESSEL"; // Transport mode filter
 }
 
-// Role → entity type access mapping
-// Each role only sees the upload types relevant to their business
+// Role → entity type access mapping — EVERY role type across ALL modes + ALL countries
 const ROLE_ENTITY_MAP: Record<string, EntityType[]> = {
+  // ── TRUCK MODE ROLES ──
   SHIPPER:            ["loads", "contacts", "rates", "facilities", "bols"],
   CATALYST:           ["drivers", "vehicles", "contacts", "bols"],
   BROKER:             ["loads", "contacts", "rates", "bols"],
@@ -46,8 +48,22 @@ const ROLE_ENTITY_MAP: Record<string, EntityType[]> = {
   FACTORING:          ["contacts"],
   COMPLIANCE_OFFICER: ["drivers", "vehicles"],
   SAFETY_MANAGER:     ["drivers", "vehicles"],
-  ADMIN:              ["loads", "drivers", "vehicles", "contacts", "rates", "facilities", "bols"],
-  SUPER_ADMIN:        ["loads", "drivers", "vehicles", "contacts", "rates", "facilities", "bols"],
+  ADMIN:              ["loads", "drivers", "vehicles", "contacts", "rates", "facilities", "bols", "rail_shipments", "railcars", "rail_crew", "vessel_bookings", "containers", "vessel_crew"],
+  SUPER_ADMIN:        ["loads", "drivers", "vehicles", "contacts", "rates", "facilities", "bols", "rail_shipments", "railcars", "rail_crew", "vessel_bookings", "containers", "vessel_crew"],
+  // ── RAIL MODE ROLES ──
+  RAIL_SHIPPER:       ["rail_shipments", "contacts", "rates", "bols"],
+  RAIL_CATALYST:      ["rail_shipments", "railcars", "rail_crew", "contacts", "bols"],
+  RAIL_DISPATCHER:    ["rail_shipments", "railcars", "rail_crew", "bols"],
+  RAIL_ENGINEER:      ["bols"],
+  RAIL_CONDUCTOR:     ["bols"],
+  RAIL_BROKER:        ["rail_shipments", "contacts", "rates", "bols"],
+  // ── VESSEL/MARITIME MODE ROLES ──
+  VESSEL_SHIPPER:     ["vessel_bookings", "containers", "contacts", "rates", "bols"],
+  VESSEL_OPERATOR:    ["vessel_bookings", "containers", "vessel_crew", "contacts", "bols"],
+  PORT_MASTER:        ["vessel_bookings", "containers", "facilities", "contacts", "bols"],
+  SHIP_CAPTAIN:       ["vessel_crew", "bols"],
+  VESSEL_BROKER:      ["vessel_bookings", "containers", "contacts", "rates", "bols"],
+  CUSTOMS_BROKER:     ["vessel_bookings", "containers", "contacts", "bols"],
 };
 
 interface ColumnMapping {
@@ -152,7 +168,81 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     optionalFields: ["bol_number", "load_number", "weight", "pieces", "hazmat_class", "un_number", "seal_number", "trailer_number", "pickup_date", "delivery_date", "special_instructions"],
     maxRows: 2000,
     color: "rose",
-    roles: ["SHIPPER", "CATALYST", "BROKER", "DISPATCH", "TERMINAL_MANAGER", "DRIVER", "ADMIN", "SUPER_ADMIN"],
+    roles: ["SHIPPER", "CATALYST", "BROKER", "DISPATCH", "TERMINAL_MANAGER", "DRIVER", "ADMIN", "SUPER_ADMIN", "RAIL_SHIPPER", "RAIL_CATALYST", "RAIL_DISPATCHER", "RAIL_ENGINEER", "RAIL_CONDUCTOR", "RAIL_BROKER", "VESSEL_SHIPPER", "VESSEL_OPERATOR", "PORT_MASTER", "SHIP_CAPTAIN", "VESSEL_BROKER", "CUSTOMS_BROKER"],
+  },
+  // ── RAIL MODE ENTITIES ──
+  {
+    key: "rail_shipments",
+    title: "Rail Shipments",
+    description: "Import rail freight shipments, intermodal moves, and carload orders. Supports Class I-III railroads (US/CA/MX).",
+    icon: <Train className="w-5 h-5" />,
+    requiredFields: ["origin_yard", "destination_yard", "railroad", "commodity", "car_count"],
+    optionalFields: ["stcc_code", "weight", "hazmat_class", "un_number", "equipment_type", "ship_date", "delivery_date", "rate", "shipper_name", "consignee_name", "waybill_number", "routing"],
+    maxRows: 5000,
+    color: "amber",
+    roles: ["RAIL_SHIPPER", "RAIL_CATALYST", "RAIL_DISPATCHER", "RAIL_BROKER", "ADMIN", "SUPER_ADMIN"],
+    mode: "RAIL",
+  },
+  {
+    key: "railcars",
+    title: "Railcars",
+    description: "Register railcar fleet — tank cars, hoppers, gondolas, boxcars. Track AAR specs, inspections, and certifications.",
+    icon: <Boxes className="w-5 h-5" />,
+    requiredFields: ["car_number", "car_type", "owner_mark", "capacity"],
+    optionalFields: ["aar_type", "build_date", "last_inspection", "next_inspection", "dot_spec", "lining_type", "max_gross_weight", "tare_weight", "length", "gauge", "lease_company", "home_railroad"],
+    maxRows: 5000,
+    color: "amber",
+    roles: ["RAIL_CATALYST", "RAIL_DISPATCHER", "ADMIN", "SUPER_ADMIN"],
+    mode: "RAIL",
+  },
+  {
+    key: "rail_crew",
+    title: "Rail Crew",
+    description: "Onboard engineers, conductors, and yard workers. Includes FRA certifications, HOS, and drug testing compliance.",
+    icon: <UserCog className="w-5 h-5" />,
+    requiredFields: ["first_name", "last_name", "email", "role", "employee_id"],
+    optionalFields: ["phone", "certification_number", "certification_expiry", "fra_part_240", "fra_part_242", "medical_expiry", "hire_date", "home_terminal", "seniority_date", "union_membership"],
+    maxRows: 2000,
+    color: "amber",
+    roles: ["RAIL_CATALYST", "RAIL_DISPATCHER", "ADMIN", "SUPER_ADMIN"],
+    mode: "RAIL",
+  },
+  // ── VESSEL/MARITIME MODE ENTITIES ──
+  {
+    key: "vessel_bookings",
+    title: "Vessel Bookings",
+    description: "Import ocean freight bookings, charter parties, and port calls. Supports VOCC/NVOCC operations worldwide.",
+    icon: <Ship className="w-5 h-5" />,
+    requiredFields: ["vessel_name", "port_of_loading", "port_of_discharge", "commodity", "booking_number"],
+    optionalFields: ["voyage_number", "shipping_line", "container_count", "teu", "weight", "hazmat_class", "imdg_class", "un_number", "shipper_name", "consignee_name", "notify_party", "eta", "etd", "rate", "incoterm", "hs_code"],
+    maxRows: 5000,
+    color: "sky",
+    roles: ["VESSEL_SHIPPER", "VESSEL_OPERATOR", "PORT_MASTER", "VESSEL_BROKER", "CUSTOMS_BROKER", "ADMIN", "SUPER_ADMIN"],
+    mode: "VESSEL",
+  },
+  {
+    key: "containers",
+    title: "Containers",
+    description: "Register shipping containers — track size, type, condition, and locations across ports worldwide (ISO 6346 compliant).",
+    icon: <Container className="w-5 h-5" />,
+    requiredFields: ["container_number", "size", "type", "owner"],
+    optionalFields: ["iso_code", "tare_weight", "max_gross_weight", "manufacture_date", "last_inspection", "condition", "current_location", "shipping_line", "lease_company", "reefer_unit", "temperature_setting"],
+    maxRows: 10000,
+    color: "sky",
+    roles: ["VESSEL_OPERATOR", "PORT_MASTER", "VESSEL_BROKER", "CUSTOMS_BROKER", "ADMIN", "SUPER_ADMIN"],
+    mode: "VESSEL",
+  },
+  {
+    key: "vessel_crew",
+    title: "Vessel Crew",
+    description: "Onboard maritime crew — officers, engineers, ratings. Includes STCW certifications, endorsements, and flag state compliance.",
+    icon: <Anchor className="w-5 h-5" />,
+    requiredFields: ["first_name", "last_name", "rank", "nationality", "passport_number"],
+    optionalFields: ["email", "phone", "seaman_book_number", "stcw_certificate", "stcw_expiry", "medical_expiry", "gmdss_cert", "flag_state", "endorsements", "hire_date", "vessel_assignment", "next_of_kin"],
+    maxRows: 2000,
+    color: "sky",
+    roles: ["VESSEL_OPERATOR", "SHIP_CAPTAIN", "ADMIN", "SUPER_ADMIN"],
+    mode: "VESSEL",
   },
 ];
 
@@ -657,6 +747,8 @@ export default function BulkUploadCenter() {
       emerald: { bg: isLight ? "bg-emerald-50" : "bg-emerald-900/20", border: isLight ? "border-emerald-200" : "border-emerald-800",text: isLight ? "text-emerald-700" : "text-emerald-400", icon: isLight ? "text-emerald-600" : "text-emerald-400" },
       cyan:    { bg: isLight ? "bg-cyan-50" : "bg-cyan-900/20",       border: isLight ? "border-cyan-200" : "border-cyan-800",    text: isLight ? "text-cyan-700" : "text-cyan-400",       icon: isLight ? "text-cyan-600" : "text-cyan-400" },
       rose:    { bg: isLight ? "bg-rose-50" : "bg-rose-900/20",       border: isLight ? "border-rose-200" : "border-rose-800",    text: isLight ? "text-rose-700" : "text-rose-400",       icon: isLight ? "text-rose-600" : "text-rose-400" },
+      amber:   { bg: isLight ? "bg-amber-50" : "bg-amber-900/20",     border: isLight ? "border-amber-200" : "border-amber-800",  text: isLight ? "text-amber-700" : "text-amber-400",     icon: isLight ? "text-amber-600" : "text-amber-400" },
+      sky:     { bg: isLight ? "bg-sky-50" : "bg-sky-900/20",         border: isLight ? "border-sky-200" : "border-sky-800",      text: isLight ? "text-sky-700" : "text-sky-400",         icon: isLight ? "text-sky-600" : "text-sky-400" },
     };
 
     return (

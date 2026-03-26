@@ -750,7 +750,7 @@ function Router() {
       <Route path={"/dispatch/planner"} component={guard(DISP, <DispatchPlanner />)} />
       <Route path={"/dispatch/allocations"} component={guard([...DISP, ...SHIP, "TERMINAL_MANAGER", "ADMIN"], <AllocationDashboard />)} />
       <Route path={"/dispatch/bulk-import"} component={guard([...DISP, ...SHIP, "BROKER", "ADMIN"], <BulkImport />)} />
-      <Route path={"/bulk-upload"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...TERM, ...ADMN], <BulkUploadCenter />)} />
+      <Route path={"/bulk-upload"} component={guard([...SHIP, ...CARR, ...BROK, ...DRIV, ...DISP, ...ESCT, ...TERM, ...FACT, ...COMP, ...SAFE, ...ADMN, ...RAIL, ...VESL], <BulkUploadCenter />)} />
       <Route path={"/dispatch/pricebook"} component={guard([...DISP, ...SHIP, "BROKER", "ADMIN"], <Pricebook />)} />
       <Route path={"/dispatch/fsc-engine"} component={guard([...DISP, ...SHIP, "BROKER", "ADMIN"], <FSCEngine />)} />
       <Route path={"/admin/portal"} component={guard(ADMN, <PortalManagement />)} />
