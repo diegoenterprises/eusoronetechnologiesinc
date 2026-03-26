@@ -381,7 +381,7 @@ function TrainingTab({ cardCls, titleCls, subtitleCls, L, searchTerm }: TabProps
                     <LevelIcon className="w-3 h-3" />{course.level}
                   </span>
                 </div>
-                <Button size="sm" className={cn("w-full", L ? "" : "bg-blue-600 hover:bg-blue-700 text-white")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate("/training-lms"); }}>
+                <Button size="sm" className={cn("w-full", L ? "" : "bg-blue-600 hover:bg-blue-700 text-white")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/training-lms?course=${course.id}`); }}>
                   <Play className="w-3 h-3 mr-1" /> Start Course
                 </Button>
               </CardContent>

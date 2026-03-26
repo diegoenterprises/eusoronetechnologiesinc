@@ -866,8 +866,8 @@ function Router() {
       <Route path={"/safety/meetings"} component={guard(SAFE, <SafetyMeetingsPage />)} />
       <Route path={"/safety/programs"} component={guard(SAFE, <SafetyDashboard />)} />
       <Route path={"/safety/training"} component={guard(SAFE, <TrainingManagement />)} />
-      <Route path="/training-compliance" component={guard([...SHIP, ...DRIV, ...CARR, ...BROK, ...DISP, ...SAFE, ...COMP, ...ADMN], <TrainingCompliance />)} />
-      <Route path="/training-lms" component={guard([...DRIV, ...CARR, ...DISP, ...SAFE, ...COMP, ...ADMN], <TrainingLMS />)} />
+      <Route path="/training-compliance" component={guard([...SHIP, ...DRIV, ...CARR, ...BROK, ...DISP, ...ESCR, ...TERM, ...FACT, ...SAFE, ...COMP, ...ADMN], <TrainingCompliance />)} />
+      <Route path="/training-lms" component={guard([...SHIP, ...DRIV, ...CARR, ...BROK, ...DISP, ...ESCR, ...TERM, ...FACT, ...SAFE, ...COMP, ...ADMN], <TrainingLMS />)} />
       <Route path={"/safety/inspections"} component={guard([...SAFE, ...COMP, ...CARR], <VehicleInspectionsPage />)} />
       <Route path={"/safety/scores"} component={guard(SAFE, <CSAScoresDashboard />)} />
       <Route path={"/safety/drug-testing"} component={guard([...SAFE, ...COMP, ...CARR], <DrugAlcoholTestingPage />)} />
@@ -1022,7 +1022,7 @@ function Router() {
       {/* NEW MODULE ROUTES */}
       {/* ============================================ */}
       <Route path="/advanced-financials" component={guard([...SHIP, ...CARR, ...BROK, ...FACT, ...DISP, ...ADMN], <AdvancedFinancials />)} />
-      <Route path="/advanced-gamification" component={guard([...DRIV, ...CARR, ...DISP, ...ADMN], <AdvancedGamification />)} />
+      <Route path="/advanced-gamification" component={guard([...SHIP, ...DRIV, ...CARR, ...BROK, ...DISP, ...ESCR, ...TERM, ...FACT, ...COMP, ...SAFE, ...ADMN], <AdvancedGamification />)} />
       <Route path="/advanced-integrations" component={guard(ADMN, <AdvancedIntegrations />)} />
       <Route path="/competitive-intelligence" component={guard([...CARR, ...BROK, ...SHIP, ...ADMN], <CompetitiveIntelligence />)} />
       <Route path="/driver-wellness" component={guard([...DRIV, ...CARR, ...DISP, ...SAFE, ...ADMN], <DriverWellness />)} />

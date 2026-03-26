@@ -50,9 +50,13 @@ export default function TrainingLMS() {
   const isDark = theme === "dark";
   const { user } = useAuth();
 
-  const [view, setView] = useState<ViewMode>("catalog");
-  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
-  const [selectedCourseSlug, setSelectedCourseSlug] = useState<string>("");
+  // Auto-open course from ?course= query param
+  const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const courseFromUrl = urlParams?.get("course") || null;
+
+  const [view, setView] = useState<ViewMode>(courseFromUrl ? "detail" : "catalog");
+  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(courseFromUrl ? parseInt(courseFromUrl.replace(/\D/g, ""), 10) || null : null);
+  const [selectedCourseSlug, setSelectedCourseSlug] = useState<string>(courseFromUrl || "");
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
