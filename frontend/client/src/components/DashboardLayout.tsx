@@ -148,6 +148,149 @@ import EmergencyFAB from "./driver/EmergencyFAB";
 import { ModeProvider, ModeSelector, ModeBadge } from "./ModeSelector";
 import useLocale from "@/hooks/useLocale";
 
+// Icon-specific hover animations — each icon gets a unique micro-animation
+const iconHoverAnimations: Record<string, { whileHover: any; transition?: any }> = {
+  // Dashboard — gentle pulse
+  LayoutDashboard: { whileHover: { scale: [1, 1.15, 1.05], rotate: [0, -5, 0] }, transition: { duration: 0.5 } },
+  // Loads — bounce like a package dropping
+  Package: { whileHover: { y: [0, -4, 0], scale: [1, 1.1, 1] }, transition: { duration: 0.4 } },
+  // Fleet/Truck — drive forward and back
+  Truck: { whileHover: { x: [0, 5, 0], scale: 1.05 }, transition: { duration: 0.6, ease: "easeInOut" } },
+  // Wallet — coin flip
+  Wallet: { whileHover: { rotateY: [0, 180, 360], scale: 1.1 }, transition: { duration: 0.6 } },
+  // Messages — wiggle like notification
+  MessageSquare: { whileHover: { rotate: [0, -10, 10, -5, 0], scale: 1.1 }, transition: { duration: 0.5 } },
+  // Settings — gear spin
+  Settings: { whileHover: { rotate: 90, scale: 1.1 }, transition: { duration: 0.4 } },
+  // Users/Drivers — wave
+  Users: { whileHover: { y: [0, -3, 0], x: [0, 2, 0] }, transition: { duration: 0.4 } },
+  User: { whileHover: { scale: [1, 1.15, 1.05] }, transition: { duration: 0.3 } },
+  // Building — grow up
+  Building2: { whileHover: { scaleY: [1, 1.15, 1.05], y: [0, -2, 0] }, transition: { duration: 0.4 } },
+  // Shield/Compliance — fortify
+  Shield: { whileHover: { scale: [1, 1.2, 1.1], y: [0, -2, 0] }, transition: { duration: 0.3 } },
+  ShieldCheck: { whileHover: { scale: [1, 1.2, 1.1] }, transition: { duration: 0.3 } },
+  ShieldAlert: { whileHover: { rotate: [0, -5, 5, 0], scale: 1.1 }, transition: { duration: 0.4 } },
+  // Map/Navigation — compass spin
+  MapPin: { whileHover: { y: [0, -5, -2], scale: 1.1 }, transition: { duration: 0.3, type: "spring" } },
+  Navigation: { whileHover: { rotate: [0, 15, -15, 0], scale: 1.1 }, transition: { duration: 0.5 } },
+  Route: { whileHover: { x: [0, 3, 0], scale: 1.05 }, transition: { duration: 0.4 } },
+  // Wrench/Maintenance — tighten
+  Wrench: { whileHover: { rotate: [0, -20, 20, 0], scale: 1.1 }, transition: { duration: 0.5 } },
+  // Money — cha-ching
+  DollarSign: { whileHover: { y: [0, -4, 0], scale: [1, 1.2, 1] }, transition: { duration: 0.3, type: "spring" } },
+  Banknote: { whileHover: { x: [0, 3, 0], rotateZ: [0, 3, 0] }, transition: { duration: 0.4 } },
+  CreditCard: { whileHover: { rotateY: [0, 15, 0] }, transition: { duration: 0.4 } },
+  // Documents — page flip
+  FileText: { whileHover: { rotateY: [0, 20, 0], scale: 1.05 }, transition: { duration: 0.4 } },
+  FileCheck: { whileHover: { scale: [1, 1.15, 1.05] }, transition: { duration: 0.3 } },
+  ClipboardCheck: { whileHover: { y: [0, -3, 0] }, transition: { duration: 0.3 } },
+  FolderOpen: { whileHover: { scaleX: [1, 1.1, 1], scale: 1.05 }, transition: { duration: 0.3 } },
+  // Charts/Analytics — grow
+  BarChart3: { whileHover: { scaleY: [1, 1.15, 1.05] }, transition: { duration: 0.4 } },
+  TrendingUp: { whileHover: { y: [0, -4, -2], rotate: [0, -5, 0] }, transition: { duration: 0.4 } },
+  PieChart: { whileHover: { rotate: 45, scale: 1.1 }, transition: { duration: 0.4 } },
+  // AI/Brain — thinking pulse
+  Brain: { whileHover: { scale: [1, 1.15, 1.05, 1.12, 1.05] }, transition: { duration: 0.6 } },
+  Sparkles: { whileHover: { rotate: [0, 10, -10, 0], scale: [1, 1.2, 1.1] }, transition: { duration: 0.5 } },
+  Zap: { whileHover: { scale: [1, 1.3, 1], y: [0, -3, 0] }, transition: { duration: 0.25 } },
+  // Bell — ring
+  Bell: { whileHover: { rotate: [0, 15, -15, 10, -10, 0], scale: 1.1 }, transition: { duration: 0.5 } },
+  // Trophy/Awards — shine
+  Trophy: { whileHover: { y: [0, -4, 0], scale: [1, 1.15, 1.05] }, transition: { duration: 0.4, type: "spring" } },
+  Award: { whileHover: { rotate: [0, -10, 10, 0], scale: 1.1 }, transition: { duration: 0.4 } },
+  Crown: { whileHover: { y: [0, -3, 0], scale: 1.15 }, transition: { duration: 0.3 } },
+  // Fuel — flame flicker
+  Fuel: { whileHover: { scale: [1, 1.1, 1.05, 1.1, 1.05] }, transition: { duration: 0.5 } },
+  Flame: { whileHover: { y: [0, -2, 0, -1, 0], scale: [1, 1.1, 1.05] }, transition: { duration: 0.5 } },
+  // Ship/Vessel — rock on waves
+  Ship: { whileHover: { rotate: [0, -5, 5, -3, 0], y: [0, -2, 0] }, transition: { duration: 0.6 } },
+  // Gauge — meter sweep
+  Gauge: { whileHover: { rotate: [0, 20, 0], scale: 1.1 }, transition: { duration: 0.5 } },
+  // Target — lock on
+  Target: { whileHover: { scale: [1, 1.2, 0.95, 1.1], rotate: [0, 0, 0, 5] }, transition: { duration: 0.5 } },
+  // Gift — unwrap
+  Gift: { whileHover: { y: [0, -5, 0], rotate: [0, -5, 5, 0] }, transition: { duration: 0.4, type: "spring" } },
+  // Rocket — launch
+  Rocket: { whileHover: { y: [0, -6, -3], rotate: [0, -10, -5] }, transition: { duration: 0.4 } },
+  // Calendar — page turn
+  Calendar: { whileHover: { rotateX: [0, 10, 0] }, transition: { duration: 0.3 } },
+  CalendarDays: { whileHover: { rotateX: [0, 10, 0] }, transition: { duration: 0.3 } },
+  // Eye — blink
+  Eye: { whileHover: { scaleY: [1, 0.3, 1], scale: 1.05 }, transition: { duration: 0.4 } },
+  // Search — zoom
+  Search: { whileHover: { scale: [1, 1.2, 1.1], rotate: [0, 10, 0] }, transition: { duration: 0.3 } },
+  // Handshake — reach out
+  Handshake: { whileHover: { scale: 1.15, rotate: [0, -5, 0] }, transition: { duration: 0.3 } },
+  // Inbox — drop in
+  Inbox: { whileHover: { y: [0, 3, 0] }, transition: { duration: 0.3 } },
+  // Upload — rise up
+  Upload: { whileHover: { y: [0, -5, -2] }, transition: { duration: 0.3 } },
+  // Gamepad
+  Gamepad2: { whileHover: { rotate: [0, -8, 8, 0], scale: 1.1 }, transition: { duration: 0.4 } },
+  // Radio — broadcast waves
+  Radio: { whileHover: { scale: [1, 1.15, 1.05, 1.12, 1.05] }, transition: { duration: 0.5 } },
+  // Repeat/Recurring — spin
+  Repeat: { whileHover: { rotate: 180 }, transition: { duration: 0.5 } },
+  // Globe — spin
+  Globe: { whileHover: { rotateY: 180 }, transition: { duration: 0.6 } },
+  // Flag — wave
+  Flag: { whileHover: { rotate: [0, -8, 8, -4, 0] }, transition: { duration: 0.5 } },
+  // GraduationCap — toss
+  GraduationCap: { whileHover: { y: [0, -6, -2], rotate: [0, 10, 0] }, transition: { duration: 0.4 } },
+  // Warehouse — stack effect
+  Warehouse: { whileHover: { scaleY: [1, 1.08, 1.03] }, transition: { duration: 0.3 } },
+  // Layers — fan out
+  Layers: { whileHover: { y: [0, -3, 0], scale: [1, 1.1, 1.05] }, transition: { duration: 0.3 } },
+  LayoutGrid: { whileHover: { rotate: [0, 5, -5, 0], scale: 1.1 }, transition: { duration: 0.4 } },
+  // Combine — merge
+  Combine: { whileHover: { scale: [1, 0.9, 1.1, 1.05] }, transition: { duration: 0.4 } },
+  // Plug — connect
+  Plug: { whileHover: { x: [0, 3, 0] }, transition: { duration: 0.3 } },
+  Plug2: { whileHover: { x: [0, 3, 0] }, transition: { duration: 0.3 } },
+  // Monitor — flicker
+  Monitor: { whileHover: { scale: [1, 1.05, 1, 1.05, 1] }, transition: { duration: 0.5 } },
+  // Activity — heartbeat
+  Activity: { whileHover: { scaleX: [1, 1.2, 0.95, 1.1, 1] }, transition: { duration: 0.5 } },
+  // Container — stack
+  Container: { whileHover: { y: [0, -3, 0], scaleX: [1, 1.05, 1] }, transition: { duration: 0.3 } },
+  // Scale — balance
+  Scale: { whileHover: { rotate: [0, -8, 8, 0] }, transition: { duration: 0.5 } },
+  // Receipt — slide out
+  Receipt: { whileHover: { y: [0, -4, -2] }, transition: { duration: 0.3 } },
+  // Siren — flash
+  Siren: { whileHover: { scale: [1, 1.2, 1, 1.15, 1] }, transition: { duration: 0.4 } },
+  // Camera — shutter
+  Camera: { whileHover: { scale: [1, 0.9, 1.1, 1] }, transition: { duration: 0.3 } },
+  // Mic — pulse
+  Mic: { whileHover: { scaleY: [1, 1.15, 1.05] }, transition: { duration: 0.3 } },
+  // Car — drive
+  Car: { whileHover: { x: [0, 4, 0] }, transition: { duration: 0.5 } },
+  // Factory — smoke stack
+  Factory: { whileHover: { scaleY: [1, 1.08, 1.03], y: [0, -2, 0] }, transition: { duration: 0.4 } },
+  // Smartphone — vibrate
+  Smartphone: { whileHover: { x: [0, -2, 2, -1, 1, 0] }, transition: { duration: 0.4 } },
+  // Store — welcome
+  Store: { whileHover: { scale: [1, 1.1, 1.05] }, transition: { duration: 0.3 } },
+  // Radar — scan
+  Radar: { whileHover: { rotate: 360 }, transition: { duration: 0.8, ease: "linear" } },
+  // Snowflake — shimmer
+  Snowflake: { whileHover: { rotate: 60, scale: 1.1 }, transition: { duration: 0.5 } },
+  // Droplet — drip
+  Droplet: { whileHover: { y: [0, 3, 0], scale: [1, 1.1, 1] }, transition: { duration: 0.3 } },
+  // Heart — beat
+  Heart: { whileHover: { scale: [1, 1.25, 1, 1.2, 1] }, transition: { duration: 0.5 } },
+  // Newspaper — unfold
+  Newspaper: { whileHover: { rotateY: [0, 15, 0], scale: 1.05 }, transition: { duration: 0.4 } },
+  // Timer — tick
+  Timer: { whileHover: { rotate: [0, 30, 0] }, transition: { duration: 0.4 } },
+  // Construction — hammer
+  Construction: { whileHover: { rotate: [0, -15, 15, -10, 0] }, transition: { duration: 0.5 } },
+};
+
+// Default hover for any icon not in the map
+const defaultIconHover = { whileHover: { scale: 1.15, y: -1 }, transition: { duration: 0.2 } };
+
 // Icon map for rendering icons from string names
 const iconMap: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard size={20} />,
@@ -734,6 +877,8 @@ export default function DashboardLayout({
                   className="flex-shrink-0 relative"
                   animate={(isActive || isChildActive) && !isLocked ? { scale: [1, 1.15, 1] } : {}}
                   transition={{ duration: 0.3 }}
+                  whileHover={!isLocked ? (iconHoverAnimations[item.icon]?.whileHover || defaultIconHover.whileHover) : {}}
+                  {...(!isLocked && iconHoverAnimations[item.icon]?.transition ? { transition: iconHoverAnimations[item.icon].transition } : {})}
                 >
                   {iconMap[item.icon] || item.icon}
                   {isLocked && (
@@ -804,7 +949,10 @@ export default function DashboardLayout({
                               childLocked ? "text-gray-600 cursor-default pointer-events-none" : childActive ? "text-white font-medium" : "text-gray-500 hover:text-gray-300"
                             }`}
                           >
-                            <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center [&>svg]:w-[15px] [&>svg]:h-[15px]">{iconMap[child.icon] || null}</span>
+                            <motion.span
+                              className="flex-shrink-0 w-4 h-4 flex items-center justify-center [&>svg]:w-[15px] [&>svg]:h-[15px]"
+                              whileHover={iconHoverAnimations[child.icon]?.whileHover || defaultIconHover.whileHover}
+                            >{iconMap[child.icon] || null}</motion.span>
                             <span className="truncate">{tl(child.label)}</span>
                           </Link>
                         );
