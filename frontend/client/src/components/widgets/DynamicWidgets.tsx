@@ -57,7 +57,7 @@ export const LoadBoardWidget: React.FC = () => {
     { refetchInterval: 60000 }
   );
 
-  const loads = loadsData || [];
+  const loads = Array.isArray(loadsData) ? loadsData : [];
 
   return (
     <ResponsiveWidget>
@@ -767,7 +767,7 @@ export const AvailableLoadsWidget: React.FC = () => {
     { refetchInterval: 120000 } // Refresh every 2 minutes
   );
 
-  const loads = loadsData || [];
+  const loads = Array.isArray(loadsData) ? loadsData : [];
 
   return (
     <ResponsiveWidget>
@@ -1642,7 +1642,7 @@ export const DocumentExpirationWidget: React.FC = () => {
     refetchInterval: 300000,
   });
 
-  const docs = docsData || [];
+  const docs = Array.isArray(docsData) ? docsData : [];
 
   return (
     <ResponsiveWidget>
@@ -1734,7 +1734,7 @@ export const InboundShipmentsWidget: React.FC = () => {
     refetchInterval: 120000,
   });
 
-  const shipments = shipmentsData || [];
+  const shipments = Array.isArray(shipmentsData) ? shipmentsData : [];
 
   return (
     <ResponsiveWidget>
@@ -1821,7 +1821,7 @@ export const GateActivityWidget: React.FC = () => {
     refetchInterval: 60000,
   });
 
-  const activity = activityData || [];
+  const activity = Array.isArray(activityData) ? activityData : [];
 
   return (
     <ResponsiveWidget>
@@ -1978,7 +1978,7 @@ export const MarketRatesWidget: React.FC = () => {
     refetchInterval: 300000,
   });
 
-  const rates = ratesData || [];
+  const rates = Array.isArray(ratesData) ? ratesData : [];
 
   return (
     <ResponsiveWidget>
@@ -2199,7 +2199,7 @@ export const LoadMatchingWidget: React.FC = () => {
     refetchInterval: 120000,
   });
 
-  const matches = matchesData || [];
+  const matches = Array.isArray(matchesData) ? matchesData : [];
 
   return (
     <ResponsiveWidget>
