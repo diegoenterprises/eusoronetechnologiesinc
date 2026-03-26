@@ -77,7 +77,7 @@ function parseCSV(csvText: string): { headers: string[]; rows: Record<string, an
 // ---------------------------------------------------------------------------
 // ESANG AI — Intelligent CSV Column Mapping
 // ---------------------------------------------------------------------------
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 const TARGET_FIELDS = [
   "pickupLocation", "deliveryLocation", "pickupDate", "deliveryDate",

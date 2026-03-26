@@ -105,7 +105,7 @@ async function runPaddleOCR(base64Data: string): Promise<OCRResult | null> {
 // 2. ESANG AI Vision OCR (fallback — always available)
 // ---------------------------------------------------------------------------
 const GEMINI_VISION_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 async function runGeminiVisionOCR(base64Data: string): Promise<OCRResult | null> {
   const apiKey = ENV.geminiApiKey;

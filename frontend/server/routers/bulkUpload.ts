@@ -215,7 +215,7 @@ function parseCSV(csvText: string): { headers: string[]; rows: Record<string, st
 // ESANG AI — Intelligent CSV Column Mapping (Gemini 2.0 Flash)
 // ---------------------------------------------------------------------------
 
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const GEMINI_VISION_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const VISION_TIMEOUT_MS = 60_000;
 const VISION_MAX_RETRIES = 2;
