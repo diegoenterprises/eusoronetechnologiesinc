@@ -311,13 +311,25 @@ function DashboardTab({ cardCls, titleCls, subtitleCls, L, accentBg }: TabProps)
 
 function TrainingTab({ cardCls, titleCls, subtitleCls, L, searchTerm }: TabProps) {
   const [, navigate] = useLocation();
-  const [category, setCategory] = useState<"all" | "safety" | "compliance" | "hazmat">("all");
-  const q = (trpc as any).trainingCompliance?.getTrainingCatalog?.useQuery?.({ category, search: searchTerm }) ?? { data: null, isLoading: true };
+  const [category, setCategory] = useState<string>("all");
+  // Query real courses from the LMS database (42 courses with full content)
+  const lmsQ = (trpc as any).trainingLMS?.listCourses?.useQuery?.({ category: category === "all" ? undefined : category, search: searchTerm || undefined, page: 1, limit: 100 }) ?? { data: null, isLoading: true };
+  // Fallback to old catalog if LMS router isn't available
+  const catalogQ = (trpc as any).trainingCompliance?.getTrainingCatalog?.useQuery?.({ category: category === "all" ? undefined : category, search: searchTerm }) ?? { data: null, isLoading: false };
   const statusQ = (trpc as any).trainingCompliance?.getDriverTrainingStatus?.useQuery?.({}) ?? { data: null, isLoading: false };
-  const d = q.data;
+
+  // Use LMS courses if available, fall back to old catalog
+  const lmsCourses = lmsQ.data?.courses || [];
+  const catalogCourses = catalogQ.data?.courses || [];
+  const courses = lmsCourses.length > 0 ? lmsCourses : catalogCourses;
+  const isLoading = lmsQ.isLoading && catalogQ.isLoading;
   const st = statusQ.data;
 
-  if (q.isLoading) return <LoadingGrid count={6} />;
+  // Build categories from real data
+  const allCategories = [...new Set(courses.map((c: any) => c.category))].filter(Boolean).sort();
+  const displayCategories = allCategories.length > 0 ? ["all", ...allCategories] : ["all", "safety", "compliance", "hazmat"];
+
+  if (isLoading) return <LoadingGrid count={6} />;
 
   const catColors: Record<string, string> = {
     safety: L ? "bg-green-100 text-green-700" : "bg-green-900/30 text-green-400",
@@ -343,8 +355,8 @@ function TrainingTab({ cardCls, titleCls, subtitleCls, L, searchTerm }: TabProps
       )}
 
       {/* Category Filter */}
-      <div className="flex items-center gap-2">
-        {(["all", "safety", "compliance", "hazmat"] as const).map(cat => (
+      <div className="flex items-center gap-2 flex-wrap">
+        {displayCategories.map((cat: string) => (
           <Button
             key={cat}
             variant={category === cat ? "default" : "outline"}
@@ -355,37 +367,47 @@ function TrainingTab({ cardCls, titleCls, subtitleCls, L, searchTerm }: TabProps
               category === cat && !L && "bg-blue-600 hover:bg-blue-700"
             )}
           >
-            {cat.charAt(0).toUpperCase() + cat.slice(1)}
+            {cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, " ")}
           </Button>
         ))}
-        <span className={subtitleCls}>{d?.courses?.length ?? 0} courses</span>
+        <span className={subtitleCls}>{courses.length} courses</span>
       </div>
 
       {/* Course Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {(d?.courses || []).map((course: any) => {
-          const LevelIcon = levelIcons[course.level] || BookOpen;
+        {courses.map((course: any) => {
+          const level = course.level || course.difficultyLevel || "beginner";
+          const LevelIcon = levelIcons[level] || BookOpen;
+          const durationMin = course.duration || course.durationMinutes || 0;
+          const moduleCount = course.modules || course.moduleCount || 0;
+          const slug = course.slug || course.id;
+          const isRequired = course.required || course.isRequired;
+          const desc = course.description || course.shortDescription || "";
           return (
-            <Card key={course.id} className={cn(cardCls, "hover:border-blue-500/40 transition-all cursor-pointer group")}>
+            <Card key={course.id || course.slug} className={cn(cardCls, "hover:border-blue-500/40 transition-all cursor-pointer group")}>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <Badge className={cn("text-xs", catColors[course.category] || catColors.safety)}>{course.category}</Badge>
-                  {course.required && <Badge variant="outline" className="text-xs border-red-500/30 text-red-500">Required</Badge>}
+                  {isRequired && <Badge variant="outline" className="text-xs border-red-500/30 text-red-500">Required</Badge>}
                 </div>
                 <h4 className={cn("text-sm font-semibold leading-tight", L ? "text-slate-800" : "text-white")}>{course.title}</h4>
-                <p className={cn("text-xs line-clamp-2", L ? "text-slate-500" : "text-slate-400")}>{course.description}</p>
+                <p className={cn("text-xs line-clamp-2", L ? "text-slate-500" : "text-slate-400")}>{desc}</p>
                 <div className="flex items-center gap-3 text-xs">
+                  {durationMin > 0 && (
+                    <span className={cn("flex items-center gap-1", L ? "text-slate-500" : "text-slate-400")}>
+                      <Clock className="w-3 h-3" />{Math.floor(durationMin / 60)}h {durationMin % 60}m
+                    </span>
+                  )}
+                  {moduleCount > 0 && (
+                    <span className={cn("flex items-center gap-1", L ? "text-slate-500" : "text-slate-400")}>
+                      <BookOpen className="w-3 h-3" />{moduleCount} modules
+                    </span>
+                  )}
                   <span className={cn("flex items-center gap-1", L ? "text-slate-500" : "text-slate-400")}>
-                    <Clock className="w-3 h-3" />{Math.floor(course.duration / 60)}h {course.duration % 60}m
-                  </span>
-                  <span className={cn("flex items-center gap-1", L ? "text-slate-500" : "text-slate-400")}>
-                    <BookOpen className="w-3 h-3" />{course.modules} modules
-                  </span>
-                  <span className={cn("flex items-center gap-1", L ? "text-slate-500" : "text-slate-400")}>
-                    <LevelIcon className="w-3 h-3" />{course.level}
+                    <LevelIcon className="w-3 h-3" />{level}
                   </span>
                 </div>
-                <Button size="sm" className={cn("w-full", L ? "" : "bg-blue-600 hover:bg-blue-700 text-white")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/training-lms?course=${course.id}`); }}>
+                <Button size="sm" className={cn("w-full", L ? "" : "bg-blue-600 hover:bg-blue-700 text-white")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/training-lms?course=${slug}`); }}>
                   <Play className="w-3 h-3 mr-1" /> Start Course
                 </Button>
               </CardContent>
