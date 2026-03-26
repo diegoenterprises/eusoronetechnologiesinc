@@ -1666,14 +1666,43 @@ US STATE CODES: AL,AK,AZ,AR,CA,CO,CT,DE,FL,GA,HI,ID,IL,IN,IA,KS,KY,LA,ME,MD,MA,M
       const extractionPrompt = `You are ESANG, an AI document processor for EusoTrip logistics platform.
 Powered by VIGA (Vision-as-Inverse-Graphics Agent) multi-pass visual analysis.
 
-TASK: Extract structured data from this ${entityDef.label} document (${input.fileName}).
+The user CLAIMS this is a "${entityDef.label}" document (${input.fileName}), but YOU must verify.
 
 ${PLATFORM_CODES}
 
+ALL DOCUMENT TYPES YOU CAN DETECT:
+- BOL (Bill of Lading) — shipper, carrier, origin, destination, commodity, weight, seal
+- RUN_TICKET / LOADING_TICKET — carrier, lease plant, tank number, barrels, gauge readings, product, API gravity, BS&W
+- INVOICE / FREIGHT_BILL — carrier, invoice number, amounts, line items, payment terms
+- RATE_SHEET / RATE_CONFIRMATION — lanes, rates per mile, equipment, effective dates
+- DRIVER_LIST / ROSTER — names, CDL numbers, emails, phone numbers, endorsements
+- VEHICLE_LIST / FLEET_ROSTER — VINs, make, model, year, plate numbers, unit numbers
+- CONTACT_LIST / DIRECTORY — company names, contacts, emails, phones, DOT/MC numbers
+- INSPECTION_REPORT — vehicle ID, inspector, defects, pass/fail, date
+- CUSTOMS_FORM / MANIFEST — entries, HS codes, duties, country of origin
+- PURCHASE_ORDER — items, quantities, prices, vendor
+- INSURANCE_CERTIFICATE — policy number, coverage, provider, expiration
+- PERMIT — permit type, state, expiration, conditions
+- FUEL_RECEIPT — gallons, price, station, date
+- SCALE_TICKET — gross, tare, net weight, commodity
+- UNKNOWN — if you cannot confidently classify it
+
 ANALYSIS PROTOCOL (VIGA Multi-Pass):
-Pass 1 — CAPTURE: Identify document type, orientation, quality. Is this a BOL, invoice, rate sheet, driver list, manifest, inspection form, facility directory, or something else?
-Pass 2 — EXTRACT: Read ALL text, numbers, dates, names, addresses, phone numbers, emails, IDs, codes, UN numbers, hazmat placards, seal numbers, trailer numbers. Use OCR-level precision. Read every cell if it is a table/spreadsheet photo.
-Pass 3 — STRUCTURE: Map extracted data to these target fields: ${allFields.join(", ")}
+Pass 1 — DETECT & VERIFY: What type of document is this ACTUALLY? Ignore what the user claimed. Look at:
+  - Document headers, titles, form labels
+  - Field names on the form
+  - Company logos, letterheads
+  - Standard form structures (DOT forms, BOL formats, run ticket layouts)
+  - If the detected type DIFFERS from "${entityDef.label}", set detectedTypeMismatch=true
+  - THIS CAN BE ANYTHING: a formal printed document, a handwritten note, a scribble on a napkin, a whiteboard photo, a screenshot, a text message screenshot, or even hand-drawn information. ALWAYS try to extract meaningful data regardless of format.
+  - If it's handwritten: Read the handwriting carefully. Logistics workers often write load info, driver info, or addresses on napkins, sticky notes, or scratch paper. Extract whatever you can.
+  - If it's a photo of a screen/monitor: Read the displayed data as if it were a document.
+  - If you truly cannot identify ANY logistics-relevant content, set documentType to "UNKNOWN" and confidence to 0.
+Pass 2 — EXTRACT: Read ALL text, numbers, dates, names, addresses, phone numbers, emails, IDs, codes, UN numbers, hazmat placards, seal numbers, trailer numbers, gauge readings, API gravity, BS&W percentages, barrel counts, tank numbers, meter readings. Use OCR-level precision. Read EVERY field including HANDWRITTEN text, cursive, print, or mixed. Read text at any angle or orientation. Decode abbreviations common in logistics (BBL=barrels, MC=motor carrier, DOT=Department of Transportation, BOL=Bill of Lading, POD=Proof of Delivery, TONU=Truck Ordered Not Used, FSC=Fuel Surcharge, OSD=Over Short Damaged).
+Pass 3 — STRUCTURE: Map extracted data to the CORRECT fields based on what the document ACTUALLY is.
+  If it's a RUN TICKET: extract carrier, lease plant, destination, product, UN number, hazmat class, truck number, tank number, total barrels, net barrels, gauge readings, API gravity, temperature, BS&W, driver name, time, date, emergency contact, seal numbers.
+  If it's a BOL: extract shipper, carrier, origin, destination, commodity, weight, pieces, seal, trailer.
+  Map to these target fields where applicable: ${allFields.join(", ")}
   CRITICAL: Use the PLATFORM CODE REFERENCE above to normalize values:
   - Cargo descriptions → map to exact cargoType enum (e.g., "Electrical Appliances" → general, "Crude Oil" → petroleum)
   - Hazmat info → map to exact hazmatClass code (e.g., "Flammable Liquid" → 3) + resolve UN number
@@ -1698,8 +1727,10 @@ Optional fields: ${entityDef.optionalFields.join(", ")}
 
 Return STRICT JSON:
 {
-  "documentType": "string (detected type)",
-  "confidence": number (0-100),
+  "documentType": "string — what this document ACTUALLY is (BOL, RUN_TICKET, INVOICE, RATE_SHEET, DRIVER_LIST, etc.)",
+  "userClaimedType": "${input.entityType}",
+  "detectedTypeMismatch": boolean (true if document is NOT what user claimed),
+  "confidence": number (0-100 — how confident you are in the DETECTION + EXTRACTION),
   "recordCount": number,
   "records": [
     { ${allFields.map(f => `"${f}": "value or null"`).join(", ")} }
@@ -1729,6 +1760,8 @@ Extract ALL possible fields. Use null for unreadable/missing values. Be precise.
       // ── Step 3: Parse and validate the AI response ──
       let parsed: {
         documentType: string;
+        userClaimedType?: string;
+        detectedTypeMismatch?: boolean;
         confidence: number;
         recordCount: number;
         records: Record<string, any>[];
@@ -1750,7 +1783,15 @@ Extract ALL possible fields. Use null for unreadable/missing values. Be precise.
       }
 
       const elapsed = Date.now() - startTime;
-      logger.info(`[BulkUpload/VIGA] Document processed in ${elapsed}ms — type: ${parsed.documentType}, confidence: ${parsed.confidence}%, records: ${parsed.recordCount}`);
+
+      // ── Mismatch detection: AI knows what the document REALLY is ──
+      if (parsed.detectedTypeMismatch) {
+        logger.warn(`[BulkUpload/VIGA] TYPE MISMATCH: User claimed "${input.entityType}" but AI detected "${parsed.documentType}"`);
+        if (!parsed.warnings) parsed.warnings = [];
+        parsed.warnings.unshift(`This appears to be a ${parsed.documentType}, not a ${entityDef.label}. Data was extracted based on what was actually detected.`);
+      }
+
+      logger.info(`[BulkUpload/VIGA] Document processed in ${elapsed}ms — type: ${parsed.documentType}, confidence: ${parsed.confidence}%, records: ${parsed.recordCount}, mismatch: ${!!parsed.detectedTypeMismatch}`);
 
       // Ensure records array exists and has content
       if (!Array.isArray(parsed.records) || parsed.records.length === 0) {
