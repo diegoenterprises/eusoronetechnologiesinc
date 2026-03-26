@@ -1,5 +1,6 @@
-import { useState, useCallback, useRef, useEffect, DragEvent, ChangeEvent } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, DragEvent, ChangeEvent } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import {
@@ -17,7 +18,7 @@ const trpc = (window as any).__trpc || {};
 // Types
 // ---------------------------------------------------------------------------
 
-type EntityType = "loads" | "drivers" | "vehicles" | "contacts" | "rates" | "facilities";
+type EntityType = "loads" | "drivers" | "vehicles" | "contacts" | "rates" | "facilities" | "bols";
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
 interface EntityConfig {
@@ -29,7 +30,25 @@ interface EntityConfig {
   optionalFields: string[];
   maxRows: number;
   color: string;
+  roles: string[]; // Which roles can see this entity type
 }
+
+// Role → entity type access mapping
+// Each role only sees the upload types relevant to their business
+const ROLE_ENTITY_MAP: Record<string, EntityType[]> = {
+  SHIPPER:            ["loads", "contacts", "rates", "facilities", "bols"],
+  CATALYST:           ["drivers", "vehicles", "contacts", "bols"],
+  BROKER:             ["loads", "contacts", "rates", "bols"],
+  DRIVER:             ["bols"],
+  DISPATCH:           ["loads", "drivers", "vehicles", "bols"],
+  ESCORT:             ["contacts"],
+  TERMINAL_MANAGER:   ["loads", "contacts", "facilities", "bols"],
+  FACTORING:          ["contacts"],
+  COMPLIANCE_OFFICER: ["drivers", "vehicles"],
+  SAFETY_MANAGER:     ["drivers", "vehicles"],
+  ADMIN:              ["loads", "drivers", "vehicles", "contacts", "rates", "facilities", "bols"],
+  SUPER_ADMIN:        ["loads", "drivers", "vehicles", "contacts", "rates", "facilities", "bols"],
+};
 
 interface ColumnMapping {
   source: string;
@@ -67,6 +86,7 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     optionalFields: ["commodity", "equipment_type", "pickup_date", "delivery_date", "special_instructions", "hazmat_class"],
     maxRows: 10000,
     color: "blue",
+    roles: ["SHIPPER", "BROKER", "DISPATCH", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
   },
   {
     key: "drivers",
@@ -77,6 +97,7 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     optionalFields: ["cdl_expiry", "endorsements", "hire_date", "home_terminal", "hazmat_endorsed"],
     maxRows: 5000,
     color: "green",
+    roles: ["CATALYST", "DISPATCH", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   },
   {
     key: "vehicles",
@@ -87,6 +108,7 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     optionalFields: ["license_plate", "plate_state", "last_inspection", "next_inspection", "gvwr", "axle_count"],
     maxRows: 5000,
     color: "purple",
+    roles: ["CATALYST", "DISPATCH", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   },
   {
     key: "contacts",
@@ -97,6 +119,7 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     optionalFields: ["role", "mc_number", "dot_number", "address", "city", "state", "notes"],
     maxRows: 10000,
     color: "orange",
+    roles: ["SHIPPER", "CATALYST", "BROKER", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
   },
   {
     key: "rates",
@@ -107,6 +130,7 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     optionalFields: ["min_rate", "max_rate", "effective_date", "expiry_date", "fuel_surcharge", "contract_id"],
     maxRows: 50000,
     color: "emerald",
+    roles: ["SHIPPER", "BROKER", "ADMIN", "SUPER_ADMIN"],
   },
   {
     key: "facilities",
@@ -117,6 +141,18 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     optionalFields: ["phone", "contact_name", "operating_hours", "dock_count", "appointment_required", "notes"],
     maxRows: 5000,
     color: "cyan",
+    roles: ["SHIPPER", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  },
+  {
+    key: "bols",
+    title: "Bills of Lading",
+    description: "Import BOLs from scanned documents, photos, or spreadsheets. AI reads and maps every field.",
+    icon: <FileText className="w-5 h-5" />,
+    requiredFields: ["shipper_name", "carrier_name", "origin_address", "destination_address", "commodity"],
+    optionalFields: ["bol_number", "load_number", "weight", "pieces", "hazmat_class", "un_number", "seal_number", "trailer_number", "pickup_date", "delivery_date", "special_instructions"],
+    maxRows: 2000,
+    color: "rose",
+    roles: ["SHIPPER", "CATALYST", "BROKER", "DISPATCH", "TERMINAL_MANAGER", "DRIVER", "ADMIN", "SUPER_ADMIN"],
   },
 ];
 
@@ -152,10 +188,22 @@ export default function BulkUploadCenter() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const userRole = (user as any)?.role || "SHIPPER";
+
+  // Filter entity types by user role
+  const availableEntities = useMemo(() => {
+    const allowed = ROLE_ENTITY_MAP[userRole] || ROLE_ENTITY_MAP.SHIPPER;
+    return ENTITY_CONFIGS.filter(e => allowed.includes(e.key));
+  }, [userRole]);
+
+  // Auto-select from URL query param (e.g., /bulk-upload?type=loads)
+  const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const typeFromUrl = urlParams?.get("type") as EntityType | null;
 
   // Wizard state
-  const [step, setStep] = useState<WizardStep>(1);
-  const [entityType, setEntityType] = useState<EntityType | null>(null);
+  const [step, setStep] = useState<WizardStep>(typeFromUrl && availableEntities.some(e => e.key === typeFromUrl) ? 2 : 1);
+  const [entityType, setEntityType] = useState<EntityType | null>(typeFromUrl && availableEntities.some(e => e.key === typeFromUrl) ? typeFromUrl : null);
 
   // Step 2 state
   const [dragOver, setDragOver] = useState(false);
@@ -608,6 +656,7 @@ export default function BulkUploadCenter() {
       orange:  { bg: isLight ? "bg-orange-50" : "bg-orange-900/20",   border: isLight ? "border-orange-200" : "border-orange-800",text: isLight ? "text-orange-700" : "text-orange-400",   icon: isLight ? "text-orange-600" : "text-orange-400" },
       emerald: { bg: isLight ? "bg-emerald-50" : "bg-emerald-900/20", border: isLight ? "border-emerald-200" : "border-emerald-800",text: isLight ? "text-emerald-700" : "text-emerald-400", icon: isLight ? "text-emerald-600" : "text-emerald-400" },
       cyan:    { bg: isLight ? "bg-cyan-50" : "bg-cyan-900/20",       border: isLight ? "border-cyan-200" : "border-cyan-800",    text: isLight ? "text-cyan-700" : "text-cyan-400",       icon: isLight ? "text-cyan-600" : "text-cyan-400" },
+      rose:    { bg: isLight ? "bg-rose-50" : "bg-rose-900/20",       border: isLight ? "border-rose-200" : "border-rose-800",    text: isLight ? "text-rose-700" : "text-rose-400",       icon: isLight ? "text-rose-600" : "text-rose-400" },
     };
 
     return (
@@ -618,7 +667,7 @@ export default function BulkUploadCenter() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {ENTITY_CONFIGS.map((cfg) => {
+          {availableEntities.map((cfg) => {
             const colors = colorMap[cfg.color];
             return (
               <button
