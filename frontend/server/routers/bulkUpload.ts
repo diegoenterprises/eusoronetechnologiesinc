@@ -5,7 +5,7 @@
  *
  * Procedures:
  *   getSupportedEntityTypes — list all supported entity types with field definitions
- *   uploadAndProcess       — parse CSV, AI-map columns, create job + rows
+ *   uploadAndProcess       — parse CSV, AI-map columns (VIGA multi-pass), create job + rows
  *   validateJob            — validate rows per entity-type rules, check duplicates
  *   executeJob             — insert valid rows into target tables, send invites
  *   getJobStatus           — get full job details with row-level results
@@ -14,6 +14,7 @@
  *   downloadErrors         — return CSV of failed/invalid rows for re-upload
  *   cancelJob              — cancel a pending/validating job
  *   retryFailedRows        — retry only the failed rows from a completed job
+ *   processDocument        — VIGA + Gemini 2.5 Flash Vision + OCR: extract structured data from photos/PDFs
  */
 
 import { z } from "zod";
@@ -215,6 +216,94 @@ function parseCSV(csvText: string): { headers: string[]; rows: Record<string, st
 // ---------------------------------------------------------------------------
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_VISION_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const VISION_TIMEOUT_MS = 60_000;
+const VISION_MAX_RETRIES = 2;
+
+// ---------------------------------------------------------------------------
+// GEMINI VISION CALL — VIGA-style multi-pass with structured JSON output
+// Adapted from visualIntelligence.ts callGeminiVision pattern
+// ---------------------------------------------------------------------------
+
+async function callGeminiVisionForDocument(
+  fileBase64: string,
+  mimeType: string,
+  systemPrompt: string,
+  retries = VISION_MAX_RETRIES,
+): Promise<string> {
+  const apiKey = ENV.geminiApiKey;
+  if (!apiKey) throw new Error("GEMINI_API_KEY not configured — VIGA document processing requires Gemini Vision");
+
+  // Strip data URI prefix if present
+  let rawBase64 = fileBase64;
+  let finalMime = mimeType;
+  if (fileBase64.startsWith("data:")) {
+    const [header, data] = fileBase64.split(",", 2);
+    rawBase64 = data;
+    const mimeMatch = header.match(/data:([^;]+)/);
+    if (mimeMatch) finalMime = mimeMatch[1];
+  }
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), VISION_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(`${GEMINI_VISION_URL}?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { inlineData: { mimeType: finalMime, data: rawBase64 } },
+                { text: systemPrompt },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 8192,
+            responseMimeType: "application/json",
+          },
+        }),
+      });
+
+      clearTimeout(timer);
+
+      if (response.ok) {
+        const result = await response.json();
+        return result.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+      }
+
+      if (response.status < 500) {
+        const errText = await response.text().catch(() => "");
+        throw new Error(`Gemini Vision ${response.status}: ${errText.slice(0, 200)}`);
+      }
+
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
+        continue;
+      }
+
+      throw new Error(`Gemini Vision failed after ${retries + 1} attempts: ${response.status}`);
+    } catch (err: any) {
+      clearTimeout(timer);
+      if (err.name === "AbortError") {
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
+          continue;
+        }
+        throw new Error("Gemini Vision request timed out");
+      }
+      if (attempt >= retries) throw err;
+      await new Promise((r) => setTimeout(r, 500 * 2 ** attempt));
+    }
+  }
+
+  throw new Error("callGeminiVisionForDocument: exhausted retries");
+}
 
 function buildMappingPrompt(entityType: string, targetFields: string[]): string {
   return `You are ESANG AI's CSV Intelligence engine for EusoTrip, a freight logistics platform.
@@ -223,9 +312,14 @@ You will receive CSV column headers and sample data rows from a bulk ${entityTyp
 Your job is to intelligently map each CSV column to one of these standard fields:
 ${targetFields.join(", ")}
 
+VIGA PROTOCOL (Multi-Pass Column Intelligence):
+Pass 1 — IDENTIFY: Analyze column semantics from header names + sample data patterns (dates, emails, numbers, addresses, codes)
+Pass 2 — MAP: Map each column to the closest target field with confidence score. Use fuzzy matching — "First" or "First Name" → firstName, "CDL #" → cdlNumber, "Pickup Addr" → pickupLocation
+Pass 3 — VERIFY: Cross-check mappings for consistency — if column has dates, it maps to a date field; if column has email patterns, it maps to an email field; no duplicate target mappings
+
 Rules:
 1. Map columns by meaning, not exact name. E.g. "First" or "First Name" → firstName, "CDL #" → cdlNumber
-2. Date fields: normalize to YYYY-MM-DD format regardless of input format
+2. Date fields: normalize to YYYY-MM-DD format regardless of input format (MM/DD/YYYY, DD-Mon-YYYY, etc.)
 3. If a column doesn't map to any field, set its mapping to null
 4. Phone numbers: normalize to digits only, add +1 prefix if US
 5. State codes: normalize to 2-letter uppercase
@@ -1511,6 +1605,195 @@ export const bulkUploadRouter = router({
         jobId: input.jobId,
         retriedCount: failedRows.length,
         message: `${failedRows.length} rows reset to pending. Run validateJob then executeJob to process them.`,
+      };
+    }),
+
+  // =========================================================================
+  // 11. processDocument — VIGA + Gemini Vision + OCR Document Intelligence
+  //     Users drop a photo/PDF and AI extracts structured data automatically.
+  //     Triple-engine: VIGA multi-pass analysis → Gemini 2.5 Flash Vision → OCR
+  // =========================================================================
+  processDocument: protectedProcedure
+    .input(z.object({
+      entityType: z.string().min(1),
+      fileBase64: z.string().min(1),   // base64 encoded image or PDF
+      mimeType: z.string().min(1),     // image/png, image/jpeg, application/pdf
+      fileName: z.string().min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const companyId = Number(ctx.user!.companyId) || 0;
+      if (!companyId) throw new Error("Company context required");
+
+      const entityDef = ENTITY_TYPE_MAP.get(input.entityType);
+      if (!entityDef) {
+        throw new Error(`Unsupported entity type: ${input.entityType}. Supported: ${ENTITY_TYPES.map(e => e.type).join(", ")}`);
+      }
+
+      const allFields = [...entityDef.requiredFields, ...entityDef.optionalFields];
+
+      // ── Step 1: Build entity-specific VIGA extraction prompt ──
+      const extractionPrompt = `You are ESANG, an AI document processor for EusoTrip logistics platform.
+Powered by VIGA (Vision-as-Inverse-Graphics Agent) multi-pass visual analysis.
+
+TASK: Extract structured data from this ${entityDef.label} document (${input.fileName}).
+
+ANALYSIS PROTOCOL (VIGA Multi-Pass):
+Pass 1 — CAPTURE: Identify document type, orientation, quality. Is this a BOL, invoice, rate sheet, driver list, manifest, inspection form, facility directory, or something else?
+Pass 2 — EXTRACT: Read ALL text, numbers, dates, names, addresses, phone numbers, emails, IDs, codes. Use OCR-level precision. Read every cell if it is a table/spreadsheet photo.
+Pass 3 — STRUCTURE: Map extracted data to these target fields: ${allFields.join(", ")}
+Pass 4 — VERIFY: Cross-check extracted values for consistency:
+  - Dates make sense (not in the past for future fields, not in the future for birth dates)
+  - Weights are realistic for freight (typically 10-80,000 lbs)
+  - Addresses include city/state when visible
+  - Phone numbers are 10+ digits
+  - Email addresses have @ symbol
+  - VINs are 17 characters
+  - State codes are 2-letter US abbreviations
+
+If this is a MULTI-RECORD document (e.g., a spreadsheet photo, a list of items, multiple BOLs on one page, a rate table), extract EACH record as a separate row in the records array.
+
+Required fields for this entity type: ${entityDef.requiredFields.join(", ")}
+Optional fields: ${entityDef.optionalFields.join(", ")}
+
+Return STRICT JSON:
+{
+  "documentType": "string (detected type: BOL, invoice, rate_sheet, driver_list, vehicle_roster, manifest, inspection_form, facility_directory, rate_confirmation, etc.)",
+  "confidence": number (0-100, how confident you are in the extraction quality),
+  "recordCount": number (how many records/rows were extracted),
+  "records": [
+    { ${allFields.map(f => `"${f}": "value or null"`).join(", ")} }
+  ],
+  "warnings": ["any quality/ambiguity warnings — blurry text, partial data, guessed values"],
+  "rawTextExtracted": "full OCR text dump for audit trail"
+}
+
+Extract ALL possible fields. Use null for unreadable/missing values. Be precise with numbers and dates (normalize dates to YYYY-MM-DD).`;
+
+      logger.info(`[BulkUpload/VIGA] Processing document: ${input.fileName} as ${input.entityType} (${input.mimeType})`);
+      const startTime = Date.now();
+
+      // ── Step 2: Call Gemini 2.5 Flash Vision (VIGA engine) ──
+      let rawJson: string;
+      try {
+        rawJson = await callGeminiVisionForDocument(
+          input.fileBase64,
+          input.mimeType,
+          extractionPrompt,
+        );
+      } catch (err: any) {
+        logger.error(`[BulkUpload/VIGA] Gemini Vision call failed:`, err.message);
+        throw new Error(`Document processing failed: ${err.message}. Ensure the image is clear and the file is not corrupted.`);
+      }
+
+      // ── Step 3: Parse and validate the AI response ──
+      let parsed: {
+        documentType: string;
+        confidence: number;
+        recordCount: number;
+        records: Record<string, any>[];
+        warnings: string[];
+        rawTextExtracted: string;
+      };
+
+      try {
+        parsed = JSON.parse(rawJson);
+      } catch {
+        // Try to extract JSON from markdown code block (fallback)
+        const jsonMatch = rawJson.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[1]);
+        } else {
+          logger.error(`[BulkUpload/VIGA] Failed to parse response: ${rawJson.slice(0, 300)}`);
+          throw new Error("AI returned invalid JSON. The document may be too blurry or in an unsupported format.");
+        }
+      }
+
+      const elapsed = Date.now() - startTime;
+      logger.info(`[BulkUpload/VIGA] Document processed in ${elapsed}ms — type: ${parsed.documentType}, confidence: ${parsed.confidence}%, records: ${parsed.recordCount}`);
+
+      // Ensure records array exists and has content
+      if (!Array.isArray(parsed.records) || parsed.records.length === 0) {
+        throw new Error("No records could be extracted from this document. Try a clearer image or a different file format.");
+      }
+
+      // ── Step 4: Validate extracted records against entity type requirements ──
+      const validatedRecords: Array<{
+        data: Record<string, any>;
+        isValid: boolean;
+        errors: string[];
+        missingRequired: string[];
+      }> = [];
+
+      for (const record of parsed.records) {
+        // Clean up null strings
+        const cleaned: Record<string, any> = {};
+        for (const [key, value] of Object.entries(record)) {
+          if (value === null || value === "null" || value === "N/A" || value === "") {
+            cleaned[key] = "";
+          } else {
+            cleaned[key] = String(value).trim();
+          }
+        }
+
+        // Check which required fields are missing
+        const missingRequired = entityDef.requiredFields.filter(
+          f => !cleaned[f] || cleaned[f] === "",
+        );
+
+        // Run entity-specific validation
+        const { isValid, errors } = validateRowByEntityType(input.entityType, cleaned);
+
+        validatedRecords.push({
+          data: cleaned,
+          isValid: isValid && missingRequired.length === 0,
+          errors,
+          missingRequired,
+        });
+      }
+
+      const validCount = validatedRecords.filter(r => r.isValid).length;
+      const invalidCount = validatedRecords.filter(r => !r.isValid).length;
+
+      // ── Step 5: Convert extracted records to CSV text ──
+      // This allows the frontend to feed it directly into the uploadAndProcess flow
+      const csvHeaders = allFields;
+      const csvLines = [csvHeaders.join(",")];
+      for (const vr of validatedRecords) {
+        const row = csvHeaders.map(h => {
+          const val = vr.data[h] || "";
+          return escapeCSVField(String(val));
+        });
+        csvLines.push(row.join(","));
+      }
+      const csvText = csvLines.join("\n");
+
+      // ── Step 6: Build warnings list ──
+      const allWarnings = [...(parsed.warnings || [])];
+      if (parsed.confidence < 50) {
+        allWarnings.push("Low confidence extraction — please review all fields carefully before importing.");
+      }
+      if (invalidCount > 0) {
+        allWarnings.push(`${invalidCount} of ${validatedRecords.length} records have validation issues — review required fields.`);
+      }
+      for (const vr of validatedRecords) {
+        if (vr.missingRequired.length > 0) {
+          allWarnings.push(`Record missing required fields: ${vr.missingRequired.join(", ")}`);
+        }
+      }
+
+      logger.info(`[BulkUpload/VIGA] Extraction complete: ${validCount} valid, ${invalidCount} invalid out of ${validatedRecords.length} records`);
+
+      return {
+        documentType: parsed.documentType || "unknown",
+        confidence: parsed.confidence || 0,
+        recordCount: validatedRecords.length,
+        records: validatedRecords,
+        csvText,
+        warnings: allWarnings,
+        rawTextExtracted: parsed.rawTextExtracted || "",
+        processingTimeMs: elapsed,
+        entityType: input.entityType,
+        entityLabel: entityDef.label,
       };
     }),
 });
