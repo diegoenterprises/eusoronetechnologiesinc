@@ -62,7 +62,7 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     key: "loads",
     title: "Loads",
     description: "Import shipments, freight orders, and load postings in bulk. Supports LTL, FTL, and hazmat loads.",
-    icon: <Package className="w-8 h-8" />,
+    icon: <Package className="w-5 h-5" />,
     requiredFields: ["origin_city", "origin_state", "dest_city", "dest_state", "weight", "rate"],
     optionalFields: ["commodity", "equipment_type", "pickup_date", "delivery_date", "special_instructions", "hazmat_class"],
     maxRows: 10000,
@@ -72,7 +72,7 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     key: "drivers",
     title: "Drivers",
     description: "Onboard multiple drivers at once with CDL info, endorsements, and contact details.",
-    icon: <Users className="w-8 h-8" />,
+    icon: <Users className="w-5 h-5" />,
     requiredFields: ["first_name", "last_name", "email", "phone", "cdl_number", "cdl_state"],
     optionalFields: ["cdl_expiry", "endorsements", "hire_date", "home_terminal", "hazmat_endorsed"],
     maxRows: 5000,
@@ -82,7 +82,7 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     key: "vehicles",
     title: "Vehicles",
     description: "Register fleet vehicles, trailers, and equipment with VIN, plates, and inspection data.",
-    icon: <Truck className="w-8 h-8" />,
+    icon: <Truck className="w-5 h-5" />,
     requiredFields: ["vin", "unit_number", "type", "make", "model", "year"],
     optionalFields: ["license_plate", "plate_state", "last_inspection", "next_inspection", "gvwr", "axle_count"],
     maxRows: 5000,
@@ -92,7 +92,7 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     key: "contacts",
     title: "Contacts",
     description: "Import shipper contacts, broker partners, and business relationships.",
-    icon: <Contact className="w-8 h-8" />,
+    icon: <Contact className="w-5 h-5" />,
     requiredFields: ["company_name", "contact_name", "email", "phone"],
     optionalFields: ["role", "mc_number", "dot_number", "address", "city", "state", "notes"],
     maxRows: 10000,
@@ -102,7 +102,7 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     key: "rates",
     title: "Rates",
     description: "Bulk upload lane rates, contract pricing, and fuel surcharge schedules.",
-    icon: <DollarSign className="w-8 h-8" />,
+    icon: <DollarSign className="w-5 h-5" />,
     requiredFields: ["origin_city", "origin_state", "dest_city", "dest_state", "rate_per_mile", "equipment_type"],
     optionalFields: ["min_rate", "max_rate", "effective_date", "expiry_date", "fuel_surcharge", "contract_id"],
     maxRows: 50000,
@@ -112,7 +112,7 @@ const ENTITY_CONFIGS: EntityConfig[] = [
     key: "facilities",
     title: "Facilities",
     description: "Import warehouses, terminals, distribution centers, and pickup/delivery locations.",
-    icon: <Building2 className="w-8 h-8" />,
+    icon: <Building2 className="w-5 h-5" />,
     requiredFields: ["name", "address", "city", "state", "zip", "type"],
     optionalFields: ["phone", "contact_name", "operating_hours", "dock_count", "appointment_required", "notes"],
     maxRows: 5000,
@@ -650,7 +650,7 @@ export default function BulkUploadCenter() {
                   <Wand2 className="w-3 h-3" />
                   AI-Powered
                 </div>
-                <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110", colors.bg, colors.border, "border")}>
+                <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-110", colors.bg, colors.border, "border")}>
                   <div className={colors.icon}>{cfg.icon}</div>
                 </div>
                 <h3 className={cn("text-lg font-semibold mb-1", textPrimary)}>{cfg.title}</h3>
