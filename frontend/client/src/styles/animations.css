@@ -268,6 +268,79 @@
   scroll-behavior: smooth;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   PLATFORM-WIDE ICON HOVER ANIMATIONS
+   Targets all SVG icons inside interactive elements (buttons, tabs, links)
+   without needing to edit individual page files.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base: all icons inside interactive elements get smooth transitions */
+button svg,
+a svg,
+[role="tab"] svg,
+[data-state] svg,
+.tab-trigger svg,
+label svg {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              filter 0.3s ease,
+              opacity 0.2s ease;
+  will-change: transform;
+}
+
+/* Default hover: subtle lift + scale on ALL interactive icons */
+button:hover > svg,
+button:hover > span > svg,
+button:hover > div > svg,
+a:hover > svg,
+a:hover > span > svg,
+[role="tab"]:hover svg,
+[data-state]:hover svg,
+label:hover svg {
+  transform: scale(1.12) translateY(-1px);
+  filter: brightness(1.15);
+}
+
+/* Active/pressed: quick press-down */
+button:active > svg,
+button:active > span > svg,
+a:active > svg,
+[role="tab"]:active svg {
+  transform: scale(0.92);
+  transition-duration: 0.1s;
+}
+
+/* Tab triggers — selected state glow */
+[role="tab"][data-state="active"] svg,
+[role="tab"][aria-selected="true"] svg {
+  filter: drop-shadow(0 0 4px currentColor) brightness(1.2);
+}
+
+/* Don't animate loading spinners (they already have animate-spin) */
+button svg.animate-spin,
+.animate-spin svg,
+svg.animate-spin {
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Don't animate icons in data tables/grids (too distracting) */
+table svg,
+[role="grid"] svg,
+[role="row"] svg,
+[role="gridcell"] svg,
+td svg,
+th svg {
+  transition: none;
+}
+table button svg,
+table a svg {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+table button:hover svg,
+table a:hover svg {
+  transform: scale(1.15);
+}
+
 /* Notification dot pulse */
 .notification-dot::after {
   content: '';
