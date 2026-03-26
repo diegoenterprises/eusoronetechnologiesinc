@@ -338,6 +338,39 @@ export default function BulkUploadCenter() {
   const [error, setError] = useState<string | null>(null);
 
   // tRPC mutations
+  const processDocMut = (trpc as any).bulkUpload?.processDocument?.useMutation?.({
+    onSuccess: (data: any) => {
+      if (data?.records?.length > 0) {
+        // Build column mappings from extracted record keys
+        const fields = Object.keys(data.records[0]).filter((k: string) => data.records[0][k] !== null);
+        const mappings: ColumnMapping[] = fields.map((f: string) => ({
+          source: f.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+          target: f,
+          confidence: data.confidence || 90,
+          isManual: false,
+        }));
+        setColumnMappings(mappings);
+        setPreviewRows(data.records);
+        setAiConfidence(data.confidence || 90);
+        setTotalRows(data.recordCount || data.records.length);
+        // Also store the generated CSV for the upload pipeline
+        if (data.csvText) setCsvText(data.csvText);
+        setUploading(false);
+        goToStep(3);
+        toast.success(`AI extracted ${data.recordCount || data.records.length} records from document`);
+      } else {
+        setUploading(false);
+        setError("AI could not extract records from this document. Try a clearer image or CSV.");
+        toast.error("No records extracted — try a different file");
+      }
+    },
+    onError: (e: any) => {
+      setUploading(false);
+      setError(e.message || "Document processing failed");
+      toast.error(e.message || "Document processing failed");
+    },
+  }) || null;
+
   const uploadMut = (trpc as any).bulkUpload?.uploadAndProcess?.useMutation?.({
     onSuccess: (data: any) => {
       setColumnMappings(data.columnMappings || []);
@@ -495,7 +528,7 @@ export default function BulkUploadCenter() {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!file && !csvText.trim()) {
       toast.error("Please upload a file or paste CSV data");
       return;
@@ -503,42 +536,74 @@ export default function BulkUploadCenter() {
     setUploading(true);
     setError(null);
 
-    if (uploadMut) {
+    // Route 1: Photo/PDF → VIGA processDocument (OCR + AI extraction)
+    if (file && isOcrFile(file.name)) {
+      if (processDocMut) {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const base64 = btoa(
+            new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+          );
+          const mimeMap: Record<string, string> = {
+            jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+            webp: "image/webp", pdf: "application/pdf", tif: "image/tiff", tiff: "image/tiff",
+          };
+          const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+          const mimeType = mimeMap[ext] || "image/jpeg";
+
+          processDocMut.mutate({
+            entityType,
+            fileBase64: base64,
+            mimeType,
+            fileName: file.name,
+          });
+        } catch (e: any) {
+          setUploading(false);
+          setError("Failed to read file: " + e.message);
+          toast.error("Failed to read file");
+        }
+        return;
+      }
+    }
+
+    // Route 2: CSV/XLSX → read as text, send to uploadAndProcess
+    if (file && !isOcrFile(file.name)) {
+      try {
+        const text = await file.text();
+        setCsvText(text);
+        if (uploadMut) {
+          uploadMut.mutate({
+            entityType,
+            fileName: file.name,
+            csvData: text,
+            useAIMapping,
+            sendInvites,
+          });
+          return;
+        }
+      } catch (e: any) {
+        setUploading(false);
+        setError("Failed to read file: " + e.message);
+        return;
+      }
+    }
+
+    // Route 3: Pasted CSV text
+    if (csvText.trim() && uploadMut) {
       uploadMut.mutate({
         entityType,
-        fileName: file?.name || "pasted-data.csv",
-        csvData: csvText || undefined,
+        fileName: "pasted-data.csv",
+        csvData: csvText,
         useAIMapping,
         sendInvites,
-        loadStatus: entityType === "loads" ? loadStatus : undefined,
-        setAllAvailable: entityType === "vehicles" ? setAllAvailable : undefined,
       });
-    } else {
-      // Demo mode — simulate processing
-      setTimeout(() => {
-        const cfg = getEntityConfig(entityType!);
-        const demoMappings: ColumnMapping[] = cfg.requiredFields.map((f, i) => ({
-          source: f.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-          target: f,
-          confidence: 85 + Math.floor(Math.random() * 15),
-          isManual: false,
-        }));
-        const demoRows = Array.from({ length: 10 }, (_, r) => {
-          const row: Record<string, string> = {};
-          cfg.requiredFields.forEach((f) => {
-            row[f] = `Sample ${f} ${r + 1}`;
-          });
-          return row;
-        });
-        setColumnMappings(demoMappings);
-        setPreviewRows(demoRows);
-        setAiConfidence(92);
-        setTotalRows(file ? 247 : csvText.split("\n").length - 1);
-        setUploading(false);
-        goToStep(3);
-        toast.success(`File processed: ${file ? 247 : csvText.split("\n").length - 1} rows detected`);
-      }, 1500);
+      return;
     }
+
+    // Fallback: no mutation available — show error, not fake data
+    setUploading(false);
+    setError("Upload service is initializing. Please try again in a moment.");
+    toast.error("Upload service not ready — please retry");
   };
 
   const handleValidate = () => {
