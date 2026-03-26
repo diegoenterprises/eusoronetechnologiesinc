@@ -317,14 +317,22 @@ Pass 1 — IDENTIFY: Analyze column semantics from header names + sample data pa
 Pass 2 — MAP: Map each column to the closest target field with confidence score. Use fuzzy matching — "First" or "First Name" → firstName, "CDL #" → cdlNumber, "Pickup Addr" → pickupLocation
 Pass 3 — VERIFY: Cross-check mappings for consistency — if column has dates, it maps to a date field; if column has email patterns, it maps to an email field; no duplicate target mappings
 
+PLATFORM VALUE NORMALIZATION:
+- cargoType values MUST be one of: general, hazmat, refrigerated, oversized, liquid, gas, chemicals, petroleum, livestock, vehicles, timber, grain, dry_bulk, food_grade, water, intermodal, cryogenic
+- vehicleType values MUST be one of: tractor, trailer, tanker, flatbed, refrigerated, dry_van, lowboy, step_deck, hopper, pneumatic, reefer, auto_carrier, chemical_tanker, box_truck, specialized, oversize, container_chassis, conestoga, rgn, double_drop
+- hazmatClass MUST be DOT class: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 3, 4.1, 4.2, 4.3, 5.1, 5.2, 6.1, 6.2, 7, 8, 9
+- rateType MUST be: flat, per_mile, per_barrel, per_gallon, per_ton
+- Map "crude"/"crude oil"/"WTI" → cargoType: petroleum | "gasoline"/"diesel" → petroleum | "LPG"/"propane" → gas | "frozen"/"produce"/"dairy" → refrigerated
+
 Rules:
 1. Map columns by meaning, not exact name. E.g. "First" or "First Name" → firstName, "CDL #" → cdlNumber
 2. Date fields: normalize to YYYY-MM-DD format regardless of input format (MM/DD/YYYY, DD-Mon-YYYY, etc.)
 3. If a column doesn't map to any field, set its mapping to null
 4. Phone numbers: normalize to digits only, add +1 prefix if US
-5. State codes: normalize to 2-letter uppercase
+5. State codes: normalize to 2-letter uppercase (e.g., "Texas" → TX, "Louisiana" → LA)
 6. Email: lowercase and trim
-7. For each row, apply data cleaning (trim whitespace, fix obvious typos in dates, normalize state abbreviations)
+7. For each row, apply data cleaning AND normalize enum values to exact platform codes listed above
+8. If commodity/cargo implies hazmat, auto-populate hazmatClass even if not in a separate column
 
 Respond with VALID JSON only. No markdown, no explanation.
 
@@ -1631,24 +1639,57 @@ export const bulkUploadRouter = router({
 
       const allFields = [...entityDef.requiredFields, ...entityDef.optionalFields];
 
-      // ── Step 1: Build entity-specific VIGA extraction prompt ──
+      // ── Step 1: Build entity-specific VIGA extraction prompt with FULL platform code mappings ──
+      const PLATFORM_CODES = `
+EUSOTRIP PLATFORM CODE REFERENCE — You MUST map extracted values to these EXACT codes:
+
+CARGO TYPES (use for cargoType field): general, hazmat, refrigerated, oversized, liquid, gas, chemicals, petroleum, livestock, vehicles, timber, grain, dry_bulk, food_grade, water, intermodal, cryogenic
+MAPPING RULES: "crude oil"/"crude"/"WTI"/"Brent" → petroleum | "gasoline"/"diesel"/"jet fuel"/"refined" → petroleum | "LPG"/"propane"/"NGL"/"ammonia" → gas | "LNG"/"LOX"/"liquid nitrogen" → cryogenic | "milk"/"edible oil"/"juice" → food_grade | "produce"/"frozen"/"dairy"/"meat"/"pharma" → refrigerated | "steel"/"lumber"/"machinery"/"solar panels" → general | "grain"/"sand"/"cement"/"flour" → dry_bulk | "cattle"/"poultry"/"hogs" → livestock | "cars"/"auto"/"vehicle transport" → vehicles
+
+VEHICLE TYPES (use for vehicleType field): tractor, trailer, tanker, flatbed, refrigerated, dry_van, lowboy, step_deck, hopper, pneumatic, end_dump, intermodal_chassis, curtain_side, reefer, auto_carrier, car_hauler, grain_trailer, dump_trailer, container_chassis, conestoga, rgn, double_drop, roll_off, box_truck, chemical_tanker, specialized, oversize
+
+DOT HAZMAT CLASSES (use for hazmatClass field): 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 3, 4.1, 4.2, 4.3, 5.1, 5.2, 6.1, 6.2, 7, 8, 9
+MAPPING: "Flammable Liquid"/"combustible" → 3 | "Flammable Gas"/"propane"/"LPG" → 2.1 | "Poison Gas"/"toxic gas"/"H2S"/"chlorine" → 2.3 | "Corrosive"/"acid"/"caustic" → 8 | "Oxidizer" → 5.1 | "Explosive" → 1.1-1.6 | "Radioactive" → 7
+
+KEY UN NUMBERS: UN1005=Ammonia, UN1017=Chlorine, UN1075=LPG, UN1170=Ethanol, UN1202=Diesel, UN1203=Gasoline, UN1267=Crude Oil, UN1268=Condensate, UN1789=HCl, UN1830=H2SO4, UN1863=Jet Fuel, UN1972=LNG, UN1977=Liquid Nitrogen, UN1993=Flammable Liquid NOS, UN1999=Asphalt, UN2067=Ammonium Nitrate
+
+DOT TANK SPECS: MC-306/DOT-406=Liquid Tank, MC-307/DOT-407=Chemical Tank, MC-312/DOT-412=Corrosive Tank, MC-331=Pressurized Gas, MC-338=Cryogenic
+
+WEIGHT UNITS: lbs (default), kg | VOLUME UNITS: gal (default), bbl (barrels for petroleum), cbm | RATE TYPES: flat, per_mile, per_barrel, per_gallon, per_ton
+
+CDL CLASSES: A, B, C | ENDORSEMENTS: H=Hazmat, N=Tank, X=Hazmat+Tank, T=Doubles/Triples, P=Passenger
+
+FACILITY TYPES: TERMINAL, REFINERY, WELL, RACK, TANK_BATTERY, TRANSLOAD, BULK_PLANT
+
+US STATE CODES: AL,AK,AZ,AR,CA,CO,CT,DE,FL,GA,HI,ID,IL,IN,IA,KS,KY,LA,ME,MD,MA,MI,MN,MS,MO,MT,NE,NV,NH,NJ,NM,NY,NC,ND,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VT,VA,WA,WV,WI,WY`;
+
       const extractionPrompt = `You are ESANG, an AI document processor for EusoTrip logistics platform.
 Powered by VIGA (Vision-as-Inverse-Graphics Agent) multi-pass visual analysis.
 
 TASK: Extract structured data from this ${entityDef.label} document (${input.fileName}).
 
+${PLATFORM_CODES}
+
 ANALYSIS PROTOCOL (VIGA Multi-Pass):
 Pass 1 — CAPTURE: Identify document type, orientation, quality. Is this a BOL, invoice, rate sheet, driver list, manifest, inspection form, facility directory, or something else?
-Pass 2 — EXTRACT: Read ALL text, numbers, dates, names, addresses, phone numbers, emails, IDs, codes. Use OCR-level precision. Read every cell if it is a table/spreadsheet photo.
+Pass 2 — EXTRACT: Read ALL text, numbers, dates, names, addresses, phone numbers, emails, IDs, codes, UN numbers, hazmat placards, seal numbers, trailer numbers. Use OCR-level precision. Read every cell if it is a table/spreadsheet photo.
 Pass 3 — STRUCTURE: Map extracted data to these target fields: ${allFields.join(", ")}
-Pass 4 — VERIFY: Cross-check extracted values for consistency:
-  - Dates make sense (not in the past for future fields, not in the future for birth dates)
-  - Weights are realistic for freight (typically 10-80,000 lbs)
-  - Addresses include city/state when visible
-  - Phone numbers are 10+ digits
-  - Email addresses have @ symbol
-  - VINs are 17 characters
-  - State codes are 2-letter US abbreviations
+  CRITICAL: Use the PLATFORM CODE REFERENCE above to normalize values:
+  - Cargo descriptions → map to exact cargoType enum (e.g., "Electrical Appliances" → general, "Crude Oil" → petroleum)
+  - Hazmat info → map to exact hazmatClass code (e.g., "Flammable Liquid" → 3) + resolve UN number
+  - Vehicle/trailer descriptions → map to exact vehicleType enum
+  - Weights → normalize to lbs with unit "lbs"
+  - Volumes → normalize to appropriate unit (bbl for petroleum, gal otherwise)
+  - States → 2-letter code (e.g., "Louisiana" → LA, "New Orleans, LA" → extract "LA")
+  - Dates → YYYY-MM-DD format
+Pass 4 — VERIFY: Cross-check extracted values:
+  - cargoType MUST be one of the enum values listed above
+  - hazmatClass MUST be a valid DOT class (1.1-9) if present
+  - vehicleType MUST be one of the enum values listed above
+  - State codes MUST be valid 2-letter US/CA codes
+  - UN numbers MUST be 4-digit format (UN####)
+  - Weights realistic for freight (500-80,000 lbs typical)
+  - If commodity implies hazmat (crude oil, gasoline, chemicals), set hazmatClass appropriately even if not explicitly stated
 
 If this is a MULTI-RECORD document (e.g., a spreadsheet photo, a list of items, multiple BOLs on one page, a rate table), extract EACH record as a separate row in the records array.
 
@@ -1657,17 +1698,17 @@ Optional fields: ${entityDef.optionalFields.join(", ")}
 
 Return STRICT JSON:
 {
-  "documentType": "string (detected type: BOL, invoice, rate_sheet, driver_list, vehicle_roster, manifest, inspection_form, facility_directory, rate_confirmation, etc.)",
-  "confidence": number (0-100, how confident you are in the extraction quality),
-  "recordCount": number (how many records/rows were extracted),
+  "documentType": "string (detected type)",
+  "confidence": number (0-100),
+  "recordCount": number,
   "records": [
     { ${allFields.map(f => `"${f}": "value or null"`).join(", ")} }
   ],
-  "warnings": ["any quality/ambiguity warnings — blurry text, partial data, guessed values"],
-  "rawTextExtracted": "full OCR text dump for audit trail"
+  "warnings": ["any quality/ambiguity warnings"],
+  "rawTextExtracted": "full OCR text for audit"
 }
 
-Extract ALL possible fields. Use null for unreadable/missing values. Be precise with numbers and dates (normalize dates to YYYY-MM-DD).`;
+Extract ALL possible fields. Use null for unreadable/missing values. Be precise.`;
 
       logger.info(`[BulkUpload/VIGA] Processing document: ${input.fileName} as ${input.entityType} (${input.mimeType})`);
       const startTime = Date.now();
