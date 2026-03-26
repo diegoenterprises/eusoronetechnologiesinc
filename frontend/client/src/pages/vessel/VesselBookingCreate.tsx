@@ -2,7 +2,7 @@
  * VESSEL BOOKING CREATION WIZARD
  * 5-step multi-modal wizard for ocean freight bookings
  */
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
-import { Ship, Package, MapPin, FileText, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle, Anchor, Thermometer } from "lucide-react";
+import { Ship, Package, MapPin, FileText, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle, Anchor, Thermometer, Search } from "lucide-react";
 import { toast } from "sonner";
 import { VerticalSelector } from "@/components/VerticalFieldsPanel";
 import { VERTICAL_VESSEL_MAP, VERTICAL_CONTAINER_MAP } from "@/lib/loadConstants";
@@ -40,6 +40,10 @@ export default function VesselBookingCreate() {
   const [, navigate] = useLocation();
   const [step, setStep] = useState(0);
   const [selectedVertical, setSelectedVertical] = useState("");
+  const [imdgSearch, setImdgSearch] = useState("");
+  const [imdgDebouncedSearch, setImdgDebouncedSearch] = useState("");
+  const [showImdgSuggestions, setShowImdgSuggestions] = useState(false);
+  const imdgDropdownRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState({
     // Step 1: Cargo
@@ -48,6 +52,8 @@ export default function VesselBookingCreate() {
     isHazmat: false,
     imdgClass: "",
     unNumber: "",
+    properShippingName: "",
+    marinePollutant: false,
     // Step 2: Containers
     containerSize: "",
     numberOfContainers: "1",
@@ -78,6 +84,45 @@ export default function VesselBookingCreate() {
     },
     onError: (e) => toast.error(e.message),
   });
+
+  // IMDG/ERG hazmat lookup
+  useEffect(() => {
+    const timer = setTimeout(() => setImdgDebouncedSearch(imdgSearch), 300);
+    return () => clearTimeout(timer);
+  }, [imdgSearch]);
+
+  // Try IMDG search first, fall back to ERG
+  const imdgResults = (trpc as any).imdg?.search?.useQuery?.(
+    { query: imdgDebouncedSearch, limit: 10 },
+    { enabled: !!imdgDebouncedSearch && imdgDebouncedSearch.length >= 2 }
+  );
+  const ergFallbackResults = (trpc as any).erg?.search?.useQuery?.(
+    { query: imdgDebouncedSearch, limit: 10 },
+    { enabled: !!imdgDebouncedSearch && imdgDebouncedSearch.length >= 2 && !imdgResults }
+  );
+  const hazmatLookupResults = imdgResults || ergFallbackResults;
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (imdgDropdownRef.current && !imdgDropdownRef.current.contains(e.target as Node)) {
+        setShowImdgSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleImdgSelect = (material: any) => {
+    setForm((p) => ({
+      ...p,
+      imdgClass: material.hazardClass || material.hazmatClass || material.imdgClass || "",
+      unNumber: material.unNumber || "",
+      properShippingName: material.name || material.properShippingName || "",
+      marinePollutant: material.marinePollutant || false,
+    }));
+    setImdgSearch(material.name || material.unNumber || "");
+    setShowImdgSuggestions(false);
+  };
 
   const set = (k: string, v: string | boolean) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -189,22 +234,107 @@ export default function VesselBookingCreate() {
           </Button>
         </div>
         {form.isHazmat && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-8 border-l-2 border-amber-500/30">
-            <div>
-              <Label className={lbl}>IMDG Class *</Label>
-              <Select value={form.imdgClass} onValueChange={(v) => set("imdgClass", v)}>
-                <SelectTrigger><SelectValue placeholder="Select IMDG class" /></SelectTrigger>
-                <SelectContent>
-                  {IMDG_CLASSES.map((c) => (
-                    <SelectItem key={c} value={c}>Class {c}</SelectItem>
+          <div className="pl-8 border-l-2 border-amber-500/30 space-y-4">
+            {/* IMDG/ERG Search */}
+            <div className="relative" ref={imdgDropdownRef}>
+              <Label className={lbl}>Search IMDG / ERG Database</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  value={imdgSearch}
+                  onChange={(e) => { setImdgSearch(e.target.value); setShowImdgSuggestions(true); }}
+                  onFocus={() => { if (imdgSearch.length >= 2) setShowImdgSuggestions(true); }}
+                  placeholder="Search by UN number or material name..."
+                  className="pl-9"
+                />
+              </div>
+              {showImdgSuggestions && hazmatLookupResults?.data?.materials?.length > 0 && (
+                <div className={cn(
+                  "absolute z-50 w-full mt-1 rounded-lg border shadow-lg max-h-60 overflow-y-auto",
+                  isLight ? "bg-white border-slate-200" : "bg-slate-800 border-slate-600"
+                )}>
+                  {hazmatLookupResults.data.materials.map((m: any, idx: number) => (
+                    <button
+                      key={`${m.unNumber}-${idx}`}
+                      type="button"
+                      onClick={() => handleImdgSelect(m)}
+                      className={cn(
+                        "w-full text-left px-3 py-2 text-sm transition-colors",
+                        isLight ? "hover:bg-slate-100 border-b border-slate-100" : "hover:bg-slate-700 border-b border-slate-700/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs font-mono shrink-0">{m.unNumber}</Badge>
+                        <span className={cn("truncate", textColor)}>{m.name}</span>
+                        {m.marinePollutant && <Badge className="bg-blue-600 text-white text-[10px] shrink-0">MP</Badge>}
+                      </div>
+                      <div className={cn("text-xs mt-0.5", mutedText)}>
+                        IMDG Class {m.hazardClass || m.hazmatClass || m.imdgClass} | PG {m.packingGroup || "—"}
+                      </div>
+                    </button>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              )}
+              {showImdgSuggestions && imdgDebouncedSearch.length >= 2 && hazmatLookupResults?.isLoading && (
+                <div className={cn(
+                  "absolute z-50 w-full mt-1 rounded-lg border p-3 text-center text-sm",
+                  isLight ? "bg-white border-slate-200 text-slate-500" : "bg-slate-800 border-slate-600 text-slate-400"
+                )}>
+                  Searching hazmat database...
+                </div>
+              )}
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className={lbl}>IMDG Class *</Label>
+                <Select value={form.imdgClass} onValueChange={(v) => set("imdgClass", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select IMDG class" /></SelectTrigger>
+                  <SelectContent>
+                    {IMDG_CLASSES.map((c) => (
+                      <SelectItem key={c} value={c}>Class {c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className={lbl}>UN Number</Label>
+                <Input value={form.unNumber} onChange={(e) => set("unNumber", e.target.value)} placeholder="e.g. UN1203" />
+              </div>
+            </div>
+
             <div>
-              <Label className={lbl}>UN Number</Label>
-              <Input value={form.unNumber} onChange={(e) => set("unNumber", e.target.value)} placeholder="e.g. UN1203" />
+              <Label className={lbl}>Proper Shipping Name</Label>
+              <Input value={form.properShippingName} onChange={(e) => set("properShippingName", e.target.value)} placeholder="Auto-filled from IMDG lookup" />
             </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <Label className={lbl}>Marine Pollutant</Label>
+              <Button
+                variant={form.marinePollutant ? "default" : "outline"}
+                size="sm"
+                onClick={() => set("marinePollutant", !form.marinePollutant)}
+                className={form.marinePollutant ? "bg-blue-600 hover:bg-blue-700" : ""}
+              >
+                {form.marinePollutant ? "Yes — Marine Pollutant" : "No"}
+              </Button>
+            </div>
+
+            {form.imdgClass && (
+              <div className={cn("flex items-center gap-3 p-3 rounded-lg", isLight ? "bg-amber-50 border border-amber-200" : "bg-amber-900/20 border border-amber-800/30")}>
+                <div className={cn(
+                  "w-10 h-10 rounded flex items-center justify-center font-bold text-lg border-2",
+                  "border-amber-500 text-amber-500"
+                )}>
+                  {form.imdgClass}
+                </div>
+                <div>
+                  <span className={cn("text-sm font-medium", textColor)}>IMDG Class {form.imdgClass}</span>
+                  {form.properShippingName && <p className={cn("text-xs", mutedText)}>{form.properShippingName}</p>}
+                </div>
+                {form.marinePollutant && <Badge className="bg-blue-600 text-white text-xs ml-auto">Marine Pollutant</Badge>}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -357,6 +487,8 @@ export default function VesselBookingCreate() {
             <>
               <span className={mutedText}>Hazmat:</span>
               <span><Badge variant="destructive" className="text-xs">IMDG {form.imdgClass} — UN {form.unNumber}</Badge></span>
+              {form.properShippingName && (<><span className={mutedText}>Shipping Name:</span><span className={textColor}>{form.properShippingName}</span></>)}
+              {form.marinePollutant && (<><span className={mutedText}>Marine Pollutant:</span><span><Badge className="bg-blue-600 text-white text-xs">Yes</Badge></span></>)}
             </>
           )}
         </div>

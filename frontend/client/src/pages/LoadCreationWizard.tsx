@@ -385,6 +385,8 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
   ) || { data: [], isLoading: false, refetch: () => {} };
   const myProducts: any[] = myProductsQuery.data || [];
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [productAutoFilled, setProductAutoFilled] = useState(false);
+  const [autoFilledProductName, setAutoFilledProductName] = useState("");
   const [myProductSearch, setMyProductSearch] = useState("");
   const [showSaveProductDialog, setShowSaveProductDialog] = useState(false);
   const [saveProductNickname, setSaveProductNickname] = useState("");
@@ -850,15 +852,41 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
       reidVaporPressure: product.reidVaporPressure || undefined,
       appearance: product.appearance || undefined,
       compartments: 1,
+      // Mark as SPECTRA-verified if saved product has complete hazmat classification
+      spectraVerified: !!(product.hazmatClass && product.unNumber) || undefined,
     }));
     setSelectedProductId(product.id);
+    setProductAutoFilled(true);
+    setAutoFilledProductName(product.nickname || product.productName);
     incrementUsageMutation.mutate({ id: product.id });
-    const originStepIdx = activeStepIndices.findIndex((i: number) => ALL_STEPS[i] === "Origin & Destination");
-    if (originStepIdx >= 0) {
-      setStep(originStepIdx);
+
+    // Smart skip: if product has all required fields, jump past redundant steps
+    const hasTrailer = !!product.trailerType;
+    const hasProduct = !!product.productName;
+    const productIsHazmat = TRAILER_TYPES.find(t => t.id === product.trailerType)?.hazmat ?? false;
+    const hasHazmatDetails = !!(product.hazmatClass && product.unNumber);
+
+    let targetStep: string;
+    if (hasTrailer && hasProduct) {
+      if (productIsHazmat && !hasHazmatDetails) {
+        // Hazmat but missing classification — go to Product Classification
+        targetStep = "Product Classification";
+      } else {
+        // All product info available — skip to Quantity & Weight
+        targetStep = "Quantity & Weight";
+      }
+    } else if (hasTrailer) {
+      targetStep = "Product Classification";
+    } else {
+      targetStep = "Industry & Trailer";
     }
-    toast.success(`${product.nickname} loaded`, {
-      description: `${product.productName} — ${product.trailerType}${product.hazmatClass ? ` (Class ${product.hazmatClass})` : ''}`,
+
+    const targetIdx = activeStepIndices.findIndex((i: number) => ALL_STEPS[i] === targetStep);
+    if (targetIdx >= 0) {
+      setStep(targetIdx);
+    }
+    toast.success(`${product.nickname} loaded — skipping to ${targetStep}`, {
+      description: `${product.productName} — ${TRAILER_TYPES.find(t => t.id === product.trailerType)?.name || product.trailerType}${product.hazmatClass ? ` (Class ${product.hazmatClass})` : ''}`,
     });
   }, [activeStepIndices, setStep, incrementUsageMutation]);
 
@@ -1103,6 +1131,20 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
           {/* STEP 1: Select Your Industry Vertical + Trailer Type */}
           {rs === 1 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+              {productAutoFilled && formData.trailerType && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-emerald-400 text-sm font-bold">Trailer auto-filled from "{autoFilledProductName}"</p>
+                      <p className="text-slate-400 text-xs">{TRAILER_TYPES.find(t => t.id === formData.trailerType)?.name} is pre-selected. You can change it below or skip ahead.</p>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" className="border-emerald-400/30 text-emerald-400 hover:bg-emerald-400/10 ml-3 flex-shrink-0" onClick={() => setStep(step + 1)}>
+                    Skip <ArrowRight className="w-3 h-3 ml-1" />
+                  </Button>
+                </div>
+              )}
               <div>
                 <p className="text-slate-900 dark:text-white font-bold text-lg">Select Your Industry Vertical</p>
                 <p className="text-slate-400 text-sm">Choose your industry to see the most relevant trailer types, then pick your equipment.</p>
@@ -1126,7 +1168,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                     ? TRAILER_TYPES.filter(t => VERTICAL_TRAILER_MAP[selectedVertical].includes(t.id))
                     : TRAILER_TYPES
                   ).map((t) => (
-                    <button key={t.id} onClick={() => { updateField("trailerType", t.id); updateField("equipment", t.equipment); updateField("quantityUnit", getDefaultUnit(t.id)); updateField("compartments", 1); updateField("compartmentProducts", undefined); const cType = TRAILER_COMMODITY_MAP[t.id] || 'general'; const cUnits = COMMODITY_UNITS[cType]; if (cUnits) { updateField("volumeUnit", cUnits.volumeUnit); updateField("weightUnit", cUnits.weightUnit); } }}
+                    <button key={t.id} onClick={() => { updateField("trailerType", t.id); updateField("equipment", t.equipment); updateField("quantityUnit", getDefaultUnit(t.id)); updateField("compartments", 1); updateField("compartmentProducts", undefined); const cType = TRAILER_COMMODITY_MAP[t.id] || 'general'; const cUnits = COMMODITY_UNITS[cType]; if (cUnits) { updateField("volumeUnit", cUnits.volumeUnit); updateField("weightUnit", cUnits.weightUnit); } if (productAutoFilled && t.id !== formData.trailerType) setProductAutoFilled(false); }}
                       className={cn("p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02]",
                         formData.trailerType === t.id ? "bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border-cyan-500/50 ring-2 ring-cyan-500/30" : "bg-slate-50 dark:bg-slate-700/30 border-slate-200 dark:border-slate-600/30 hover:border-slate-400 dark:hover:border-slate-500/50"
                       )}>
@@ -1142,8 +1184,11 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
               {selectedTrailer && (
                 <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-cyan-400 flex-shrink-0" />
-                  <div>
-                    <p className="text-cyan-400 text-sm font-bold">{selectedTrailer.name}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-cyan-400 text-sm font-bold">{selectedTrailer.name}</p>
+                      {productAutoFilled && <Badge className="text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Auto-filled from {autoFilledProductName}</Badge>}
+                    </div>
                     <p className="text-slate-400 text-xs">{isHazmat ? "Next: Product Classification with ERG 2020 search" : "Next: Product / Commodity Description"}</p>
                   </div>
                 </div>
@@ -1167,6 +1212,25 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
           {/* STEP 2: Product Classification (driven by trailer type) */}
           {rs === 2 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              {productAutoFilled && formData.productName && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-emerald-400 text-sm font-bold">Product auto-filled from "{autoFilledProductName}"</p>
+                      <p className="text-slate-400 text-xs">
+                        {formData.productName}
+                        {formData.hazmatClass ? ` — Class ${formData.hazmatClass}` : ''}
+                        {formData.unNumber ? ` — ${formData.unNumber}` : ''}
+                        {' '}is pre-filled. You can change it below or skip ahead.
+                      </p>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" className="border-emerald-400/30 text-emerald-400 hover:bg-emerald-400/10 ml-3 flex-shrink-0" onClick={() => setStep(step + 1)}>
+                    Skip <ArrowRight className="w-3 h-3 ml-1" />
+                  </Button>
+                </div>
+              )}
               {isHazmat ? (<>
                 <div ref={suggestRef} className="relative z-50">
                   <label className="text-sm text-slate-400 mb-1 block">Product Name</label>
@@ -1212,6 +1276,7 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
                       <div className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-emerald-400" />
                         <span className="text-sm font-semibold text-emerald-400">ERG Verified Classification</span>
+                        {productAutoFilled && <Badge className="text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Auto-filled</Badge>}
                       </div>
                       <button onClick={() => updateField("spectraVerified", false)} className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline">Change</button>
                     </div>
@@ -1815,6 +1880,24 @@ export default function LoadCreationWizard({ quickMode: quickModeProp }: { quick
           {/* STEP 4: Quantity & Weight */}
           {rs === 4 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              {productAutoFilled && (
+                <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-700/20 border border-slate-200 dark:border-slate-700/30 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <p className="text-slate-600 dark:text-slate-300 text-sm">
+                      Using <span className="font-bold text-emerald-500">{autoFilledProductName}</span>
+                      {' — '}{TRAILER_TYPES.find(t => t.id === formData.trailerType)?.name}
+                      {formData.hazmatClass ? ` — Class ${formData.hazmatClass}` : ''}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { const idx = activeStepIndices.findIndex((i: number) => ALL_STEPS[i] === "Industry & Trailer"); if (idx >= 0) setStep(idx); }}
+                    className="text-xs text-cyan-400 hover:text-cyan-300 underline transition-colors flex-shrink-0 ml-3"
+                  >
+                    Change Product Details
+                  </button>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Quantity</label>

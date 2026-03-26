@@ -2,7 +2,7 @@
  * RAIL SHIPMENT CREATION WIZARD
  * 5-step multi-modal wizard for rail freight
  */
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
-import { TrainFront, Package, MapPin, FileText, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { TrainFront, Package, MapPin, FileText, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle, Search } from "lucide-react";
 import { toast } from "sonner";
 import { VerticalSelector } from "@/components/VerticalFieldsPanel";
 import { VERTICAL_RAIL_MAP } from "@/lib/loadConstants";
@@ -35,6 +35,10 @@ export default function RailShipmentCreate() {
   const [, navigate] = useLocation();
   const [step, setStep] = useState(0);
   const [selectedVertical, setSelectedVertical] = useState("");
+  const [ergSearch, setErgSearch] = useState("");
+  const [ergDebouncedSearch, setErgDebouncedSearch] = useState("");
+  const [showErgSuggestions, setShowErgSuggestions] = useState(false);
+  const ergDropdownRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState({
     commodity: "",
@@ -42,6 +46,9 @@ export default function RailShipmentCreate() {
     isHazmat: false,
     hazmatClass: "",
     unNumber: "",
+    properShippingName: "",
+    packingGroup: "",
+    ergGuide: "",
     weightLbs: "",
     carType: "",
     numberOfCars: "1",
@@ -62,6 +69,40 @@ export default function RailShipmentCreate() {
     },
     onError: (e) => toast.error(e.message),
   });
+
+  // ERG hazmat lookup
+  useEffect(() => {
+    const timer = setTimeout(() => setErgDebouncedSearch(ergSearch), 300);
+    return () => clearTimeout(timer);
+  }, [ergSearch]);
+
+  const ergResults = (trpc as any).erg?.search?.useQuery?.(
+    { query: ergDebouncedSearch, limit: 10 },
+    { enabled: !!ergDebouncedSearch && ergDebouncedSearch.length >= 2 }
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ergDropdownRef.current && !ergDropdownRef.current.contains(e.target as Node)) {
+        setShowErgSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleErgSelect = (material: any) => {
+    setForm((p) => ({
+      ...p,
+      hazmatClass: material.hazardClass || material.hazmatClass || "",
+      unNumber: material.unNumber || "",
+      properShippingName: material.name || material.properShippingName || "",
+      packingGroup: material.packingGroup || "",
+      ergGuide: material.ergGuide || "",
+    }));
+    setErgSearch(material.name || material.unNumber || "");
+    setShowErgSuggestions(false);
+  };
 
   const set = (k: string, v: string | boolean) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -149,21 +190,93 @@ export default function RailShipmentCreate() {
           </Button>
         </div>
         {form.isHazmat && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-8 border-l-2 border-amber-500/30">
-            <div>
-              <Label className={lbl}>Hazmat Class *</Label>
-              <Select value={form.hazmatClass} onValueChange={(v) => set("hazmatClass", v)}>
-                <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
-                <SelectContent>
-                  {HAZMAT_CLASSES.map((c) => (
-                    <SelectItem key={c} value={c}>Class {c}</SelectItem>
+          <div className="pl-8 border-l-2 border-amber-500/30 space-y-4">
+            {/* ERG Search */}
+            <div className="relative" ref={ergDropdownRef}>
+              <Label className={lbl}>Search ERG Database</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  value={ergSearch}
+                  onChange={(e) => { setErgSearch(e.target.value); setShowErgSuggestions(true); }}
+                  onFocus={() => { if (ergSearch.length >= 2) setShowErgSuggestions(true); }}
+                  placeholder="Search by UN number or material name..."
+                  className="pl-9"
+                />
+              </div>
+              {showErgSuggestions && ergResults?.data?.materials?.length > 0 && (
+                <div className={cn(
+                  "absolute z-50 w-full mt-1 rounded-lg border shadow-lg max-h-60 overflow-y-auto",
+                  isLight ? "bg-white border-slate-200" : "bg-slate-800 border-slate-600"
+                )}>
+                  {ergResults.data.materials.map((m: any, idx: number) => (
+                    <button
+                      key={`${m.unNumber}-${idx}`}
+                      type="button"
+                      onClick={() => handleErgSelect(m)}
+                      className={cn(
+                        "w-full text-left px-3 py-2 text-sm transition-colors",
+                        isLight ? "hover:bg-slate-100 border-b border-slate-100" : "hover:bg-slate-700 border-b border-slate-700/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs font-mono shrink-0">{m.unNumber}</Badge>
+                        <span className={cn("truncate", textColor)}>{m.name}</span>
+                      </div>
+                      <div className={cn("text-xs mt-0.5", mutedText)}>
+                        Class {m.hazardClass || m.hazmatClass} | PG {m.packingGroup || "—"} | Guide {m.ergGuide || "—"}
+                      </div>
+                    </button>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              )}
+              {showErgSuggestions && ergDebouncedSearch.length >= 2 && ergResults?.isLoading && (
+                <div className={cn(
+                  "absolute z-50 w-full mt-1 rounded-lg border p-3 text-center text-sm",
+                  isLight ? "bg-white border-slate-200 text-slate-500" : "bg-slate-800 border-slate-600 text-slate-400"
+                )}>
+                  Searching ERG database...
+                </div>
+              )}
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className={lbl}>Hazmat Class *</Label>
+                <Select value={form.hazmatClass} onValueChange={(v) => set("hazmatClass", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+                  <SelectContent>
+                    {HAZMAT_CLASSES.map((c) => (
+                      <SelectItem key={c} value={c}>Class {c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className={lbl}>UN Number</Label>
+                <Input value={form.unNumber} onChange={(e) => set("unNumber", e.target.value)} placeholder="e.g. UN1203" />
+              </div>
+            </div>
+
             <div>
-              <Label className={lbl}>UN Number</Label>
-              <Input value={form.unNumber} onChange={(e) => set("unNumber", e.target.value)} placeholder="e.g. UN1203" />
+              <Label className={lbl}>Proper Shipping Name</Label>
+              <Input value={form.properShippingName} onChange={(e) => set("properShippingName", e.target.value)} placeholder="Auto-filled from ERG lookup" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className={lbl}>Packing Group</Label>
+                <Input value={form.packingGroup} onChange={(e) => set("packingGroup", e.target.value)} placeholder="e.g. I, II, III" />
+              </div>
+              <div>
+                <Label className={lbl}>ERG Guide #</Label>
+                <div className="flex items-center gap-2">
+                  <Input value={form.ergGuide} onChange={(e) => set("ergGuide", e.target.value)} placeholder="e.g. 128" />
+                  {form.ergGuide && (
+                    <Badge className="bg-orange-600 text-white shrink-0">Guide {form.ergGuide}</Badge>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -294,6 +407,9 @@ export default function RailShipmentCreate() {
             <>
               <span className={mutedText}>Hazmat:</span>
               <span><Badge variant="destructive" className="text-xs">Class {form.hazmatClass} — UN {form.unNumber}</Badge></span>
+              {form.properShippingName && (<><span className={mutedText}>Shipping Name:</span><span className={textColor}>{form.properShippingName}</span></>)}
+              {form.packingGroup && (<><span className={mutedText}>Packing Group:</span><span className={textColor}>{form.packingGroup}</span></>)}
+              {form.ergGuide && (<><span className={mutedText}>ERG Guide:</span><span><Badge className="bg-orange-600 text-white text-xs">Guide {form.ergGuide}</Badge></span></>)}
             </>
           )}
         </div>
