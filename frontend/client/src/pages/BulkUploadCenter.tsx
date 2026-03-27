@@ -13,7 +13,7 @@ import {
   Anchor, Train, Ship, Container, UserCog, Boxes,
 } from "lucide-react";
 
-const trpc = (window as any).__trpc || {};
+import { trpc } from "@/lib/trpc";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -338,10 +338,9 @@ export default function BulkUploadCenter() {
   const [error, setError] = useState<string | null>(null);
 
   // tRPC mutations
-  const processDocMut = (trpc as any).bulkUpload?.processDocument?.useMutation?.({
+  const processDocMut = (trpc as any).bulkUpload.processDocument.useMutation({
     onSuccess: (data: any) => {
       if (data?.records?.length > 0) {
-        // Build column mappings from extracted record keys
         const fields = Object.keys(data.records[0]).filter((k: string) => data.records[0][k] !== null);
         const mappings: ColumnMapping[] = fields.map((f: string) => ({
           source: f.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
@@ -353,8 +352,10 @@ export default function BulkUploadCenter() {
         setPreviewRows(data.records);
         setAiConfidence(data.confidence || 90);
         setTotalRows(data.recordCount || data.records.length);
-        // Also store the generated CSV for the upload pipeline
         if (data.csvText) setCsvText(data.csvText);
+        if (data.detectedTypeMismatch && data.warnings?.length) {
+          toast.warning(data.warnings[0]);
+        }
         setUploading(false);
         goToStep(3);
         toast.success(`AI extracted ${data.recordCount || data.records.length} records from document`);
@@ -369,9 +370,9 @@ export default function BulkUploadCenter() {
       setError(e.message || "Document processing failed");
       toast.error(e.message || "Document processing failed");
     },
-  }) || null;
+  });
 
-  const uploadMut = (trpc as any).bulkUpload?.uploadAndProcess?.useMutation?.({
+  const uploadMut = (trpc as any).bulkUpload.uploadAndProcess.useMutation({
     onSuccess: (data: any) => {
       setColumnMappings(data.columnMappings || []);
       setPreviewRows(data.previewRows || []);
@@ -388,7 +389,7 @@ export default function BulkUploadCenter() {
     },
   }) || null;
 
-  const validateMut = (trpc as any).bulkUpload?.validate?.useMutation?.({
+  const validateMut = (trpc as any).bulkUpload.validateJob.useMutation({
     onSuccess: (data: any) => {
       setValidationResults(data.results || []);
       setValidCount(data.validCount || 0);
@@ -405,7 +406,7 @@ export default function BulkUploadCenter() {
     },
   }) || null;
 
-  const importMut = (trpc as any).bulkUpload?.executeImport?.useMutation?.({
+  const importMut = (trpc as any).bulkUpload.executeJob.useMutation({
     onSuccess: (data: any) => {
       setImportComplete(true);
       setIsImporting(false);
@@ -538,7 +539,7 @@ export default function BulkUploadCenter() {
 
     // Route 1: Photo/PDF → VIGA processDocument (OCR + AI extraction)
     if (file && isOcrFile(file.name)) {
-      if (processDocMut) {
+      {
         try {
           const arrayBuffer = await file.arrayBuffer();
           const base64 = btoa(
@@ -571,16 +572,14 @@ export default function BulkUploadCenter() {
       try {
         const text = await file.text();
         setCsvText(text);
-        if (uploadMut) {
-          uploadMut.mutate({
-            entityType,
-            fileName: file.name,
-            csvData: text,
-            useAIMapping,
-            sendInvites,
-          });
-          return;
-        }
+        uploadMut.mutate({
+          entityType,
+          fileName: file.name,
+          csvData: text,
+          useAIMapping,
+          sendInvites,
+        });
+        return;
       } catch (e: any) {
         setUploading(false);
         setError("Failed to read file: " + e.message);
@@ -589,7 +588,7 @@ export default function BulkUploadCenter() {
     }
 
     // Route 3: Pasted CSV text
-    if (csvText.trim() && uploadMut) {
+    if (csvText.trim()) {
       uploadMut.mutate({
         entityType,
         fileName: "pasted-data.csv",
@@ -600,10 +599,9 @@ export default function BulkUploadCenter() {
       return;
     }
 
-    // Fallback: no mutation available — show error, not fake data
     setUploading(false);
-    setError("Upload service is initializing. Please try again in a moment.");
-    toast.error("Upload service not ready — please retry");
+    setError("No file or data to upload.");
+    toast.error("Please select a file or paste CSV data");
   };
 
   const handleValidate = () => {
