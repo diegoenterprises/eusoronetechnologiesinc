@@ -376,8 +376,8 @@ export const loads = mysqlTable(
     requiresEscort: boolean("requiresEscort").default(false).notNull(),
     escortCount: int("escortCount").default(0).notNull(),
     // V8: Denormalized state columns for indexed filtering (avoids JSON parsing on load board queries)
-    originState: varchar("originState", { length: 2 }),
-    destState: varchar("destState", { length: 2 }),
+    originState: varchar("originState", { length: 10 }),
+    destState: varchar("destState", { length: 10 }),
     // WS-P0-020R: Double-brokering prevention
     originalShipperId: int("originalShipperId"),
     brokerChainDepth: int("brokerChainDepth").default(0).notNull(),
