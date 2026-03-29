@@ -789,8 +789,8 @@ export default function DispatchCommandCenter() {
 
       {/* ═══ BULK IMPORT MODAL ═══ */}
       {showBulkImport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
+          <div className="bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <div className="flex items-center gap-3">
