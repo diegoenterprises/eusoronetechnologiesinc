@@ -11124,3 +11124,76 @@ export const complianceEvents = mysqlTable("compliance_events", {
 }));
 
 export type ComplianceEvent = typeof complianceEvents.$inferSelect;
+
+// ============================================================================
+// TOURNAMENTS & GUILD CHALLENGES
+// ============================================================================
+
+export const tournaments = mysqlTable(
+  "tournaments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 200 }).notNull(),
+    description: text("description"),
+    type: mysqlEnum("type", ["weekly", "monthly", "seasonal", "special"]),
+    status: mysqlEnum("status", ["upcoming", "active", "completed", "cancelled"]),
+    startDate: timestamp("startDate"),
+    endDate: timestamp("endDate"),
+    entryFee: int("entryFee").default(0),
+    prizePool: int("prizePool").default(0),
+    maxParticipants: int("maxParticipants").default(100),
+    metric: varchar("metric", { length: 50 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    statusIdx: index("tournament_status_idx").on(table.status),
+    typeIdx: index("tournament_type_idx").on(table.type),
+  })
+);
+
+export type Tournament = typeof tournaments.$inferSelect;
+
+export const tournamentParticipants = mysqlTable(
+  "tournament_participants",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    tournamentId: int("tournamentId").notNull().references(() => tournaments.id),
+    userId: int("userId").notNull().references(() => users.id),
+    score: decimal("score", { precision: 10, scale: 2 }).default("0"),
+    rank: int("rank"),
+    joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    tournamentIdx: index("tp_tournament_idx").on(table.tournamentId),
+    userIdx: index("tp_user_idx").on(table.userId),
+    tournamentUserIdx: uniqueIndex("tp_tournament_user_idx").on(table.tournamentId, table.userId),
+  })
+);
+
+export type TournamentParticipant = typeof tournamentParticipants.$inferSelect;
+
+export const guildChallenges = mysqlTable(
+  "guild_challenges",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    challengerGuildId: int("challengerGuildId"),
+    defenderGuildId: int("defenderGuildId"),
+    name: varchar("name", { length: 200 }),
+    description: text("description"),
+    metric: varchar("metric", { length: 50 }),
+    status: mysqlEnum("status", ["pending", "active", "completed", "declined"]),
+    startDate: timestamp("startDate"),
+    endDate: timestamp("endDate"),
+    challengerScore: decimal("challengerScore", { precision: 10, scale: 2 }).default("0"),
+    defenderScore: decimal("defenderScore", { precision: 10, scale: 2 }).default("0"),
+    winnerId: int("winnerId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    challengerIdx: index("gc_challenger_idx").on(table.challengerGuildId),
+    defenderIdx: index("gc_defender_idx").on(table.defenderGuildId),
+    statusIdx: index("gc_status_idx").on(table.status),
+  })
+);
+
+export type GuildChallenge = typeof guildChallenges.$inferSelect;

@@ -15,7 +15,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
-import { eq, and, desc, sql, gte, lte, count, sum, asc, isNotNull } from "drizzle-orm";
+import { eq, and, or, desc, sql, gte, lte, count, sum, asc, isNotNull, inArray } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   users,
@@ -35,6 +35,9 @@ import {
   auditLogs,
   inspections,
   fuelTransactions,
+  tournaments,
+  tournamentParticipants,
+  guildChallenges,
 } from "../../drizzle/schema";
 
 // ---------------------------------------------------------------------------
@@ -565,20 +568,68 @@ export const advancedGamificationRouter = router({
     }));
   }),
 
-  getGuildChallenges: protectedProcedure.query(async () => {
-    // No guild_challenges table yet; returns empty until schema is extended
-    return [] as Array<{
-      id: string;
-      type: "war" | "challenge";
-      title: string;
-      description: string;
-      guild1: { id: string; name: string; score: number };
-      guild2: { id: string; name: string; score: number };
-      startsAt: string;
-      endsAt: string;
-      reward: string;
-      status: "active" | "upcoming" | "completed";
-    }>;
+  getGuildChallenges: protectedProcedure.query(async ({ ctx }) => {
+    const db = await requireDb();
+    const uid = userId(ctx);
+
+    // Find the user's guild
+    const [membership] = await db
+      .select({ guildId: guildMembers.guildId })
+      .from(guildMembers)
+      .where(eq(guildMembers.userId, uid))
+      .limit(1);
+
+    if (!membership) return [];
+
+    const myGuildId = membership.guildId;
+
+    // Get all challenges involving the user's guild
+    const challenges = await db
+      .select()
+      .from(guildChallenges)
+      .where(
+        or(
+          eq(guildChallenges.challengerGuildId, myGuildId),
+          eq(guildChallenges.defenderGuildId, myGuildId)
+        )
+      )
+      .orderBy(desc(guildChallenges.createdAt))
+      .limit(20);
+
+    if (challenges.length === 0) return [];
+
+    // Collect all guild IDs we need to look up
+    const guildIds = [
+      ...new Set(
+        challenges.flatMap((c) => [c.challengerGuildId, c.defenderGuildId].filter(Boolean) as number[])
+      ),
+    ];
+
+    const guildRows = guildIds.length
+      ? await db.select({ id: guilds.id, name: guilds.name }).from(guilds).where(inArray(guilds.id, guildIds))
+      : [];
+    const guildMap = Object.fromEntries(guildRows.map((g) => [g.id, g.name]));
+
+    return challenges.map((c) => ({
+      id: String(c.id),
+      type: "challenge" as const,
+      title: c.name || "Guild Challenge",
+      description: c.description || "",
+      guild1: {
+        id: String(c.challengerGuildId ?? 0),
+        name: guildMap[c.challengerGuildId ?? 0] || "Unknown Guild",
+        score: Number(c.challengerScore ?? 0),
+      },
+      guild2: {
+        id: String(c.defenderGuildId ?? 0),
+        name: guildMap[c.defenderGuildId ?? 0] || "Unknown Guild",
+        score: Number(c.defenderScore ?? 0),
+      },
+      startsAt: c.startDate?.toISOString() ?? "",
+      endsAt: c.endDate?.toISOString() ?? "",
+      reward: `${c.metric ?? "points"} competition`,
+      status: (c.status === "pending" ? "upcoming" : c.status ?? "active") as "active" | "upcoming" | "completed",
+    }));
   }),
 
   // ======================== PRESTIGE ========================
@@ -925,29 +976,189 @@ export const advancedGamificationRouter = router({
 
   // ======================== TOURNAMENTS ========================
 
-  getTournaments: protectedProcedure.query(async () => {
-    // Tournaments require a dedicated DB table — return empty until implemented
-    return [] as Array<{
-      id: string; name: string; type: string; status: string;
-      startsAt: string; endsAt: string; entryFee: number; prizePool: string;
-      maxParticipants: number; currentParticipants: number; description: string;
-      daysRemaining: number | null; daysUntilStart: number | null;
-      spotsRemaining: number; isRegistered: boolean;
-    }>;
+  getTournaments: protectedProcedure.query(async ({ ctx }) => {
+    const db = await requireDb();
+    const uid = userId(ctx);
+
+    // Fetch active + upcoming tournaments
+    const rows = await db
+      .select()
+      .from(tournaments)
+      .where(inArray(tournaments.status, ["active", "upcoming"]))
+      .orderBy(asc(tournaments.startDate))
+      .limit(50);
+
+    // Count participants per tournament
+    const tourIds = rows.map((t) => t.id);
+    const participantCounts = tourIds.length
+      ? await db
+          .select({ tournamentId: tournamentParticipants.tournamentId, cnt: count() })
+          .from(tournamentParticipants)
+          .where(inArray(tournamentParticipants.tournamentId, tourIds))
+          .groupBy(tournamentParticipants.tournamentId)
+      : [];
+    const countMap = Object.fromEntries(participantCounts.map((p) => [p.tournamentId, Number(p.cnt)]));
+
+    // Check which tournaments the user is registered for
+    const registrations = tourIds.length
+      ? await db
+          .select({ tournamentId: tournamentParticipants.tournamentId })
+          .from(tournamentParticipants)
+          .where(and(inArray(tournamentParticipants.tournamentId, tourIds), eq(tournamentParticipants.userId, uid)))
+      : [];
+    const registeredSet = new Set(registrations.map((r) => r.tournamentId));
+
+    return rows.map((t) => {
+      const currentParticipants = countMap[t.id] || 0;
+      const now = Date.now();
+      const start = t.startDate ? new Date(t.startDate).getTime() : null;
+      const end = t.endDate ? new Date(t.endDate).getTime() : null;
+
+      return {
+        id: String(t.id),
+        name: t.name,
+        type: t.type ?? "special",
+        status: t.status ?? "upcoming",
+        startsAt: t.startDate?.toISOString() ?? "",
+        endsAt: t.endDate?.toISOString() ?? "",
+        entryFee: t.entryFee ?? 0,
+        prizePool: `${t.prizePool ?? 0} XP`,
+        maxParticipants: t.maxParticipants ?? 100,
+        currentParticipants,
+        description: t.description ?? "",
+        daysRemaining: end ? Math.max(0, Math.ceil((end - now) / 86_400_000)) : null,
+        daysUntilStart: start && start > now ? Math.ceil((start - now) / 86_400_000) : null,
+        spotsRemaining: (t.maxParticipants ?? 100) - currentParticipants,
+        isRegistered: registeredSet.has(t.id),
+      };
+    });
   }),
 
   getTournamentBracket: protectedProcedure
     .input(z.object({ tournamentId: z.string() }))
     .query(async ({ input }) => {
-      // Tournaments require a dedicated DB table — no bracket data until implemented
-      throw new TRPCError({ code: "NOT_FOUND", message: "Tournament not found" });
+      const db = await requireDb();
+      const tourId = Number(input.tournamentId);
+
+      const [tournament] = await db
+        .select()
+        .from(tournaments)
+        .where(eq(tournaments.id, tourId))
+        .limit(1);
+
+      if (!tournament) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Tournament not found" });
+      }
+
+      // Get participants ranked by score descending
+      const participants = await db
+        .select({
+          id: tournamentParticipants.id,
+          userId: tournamentParticipants.userId,
+          score: tournamentParticipants.score,
+          rank: tournamentParticipants.rank,
+          joinedAt: tournamentParticipants.joinedAt,
+          userName: users.name,
+        })
+        .from(tournamentParticipants)
+        .leftJoin(users, eq(tournamentParticipants.userId, users.id))
+        .where(eq(tournamentParticipants.tournamentId, tourId))
+        .orderBy(desc(tournamentParticipants.score))
+        .limit(100);
+
+      return {
+        tournament: {
+          id: String(tournament.id),
+          name: tournament.name,
+          type: tournament.type,
+          status: tournament.status,
+          metric: tournament.metric ?? "loads_completed",
+          prizePool: tournament.prizePool ?? 0,
+          startsAt: tournament.startDate?.toISOString() ?? "",
+          endsAt: tournament.endDate?.toISOString() ?? "",
+        },
+        participants: participants.map((p, idx) => ({
+          rank: p.rank ?? idx + 1,
+          userId: String(p.userId),
+          name: p.userName ?? "Unknown",
+          score: Number(p.score ?? 0),
+          joinedAt: p.joinedAt?.toISOString() ?? "",
+        })),
+      };
     }),
 
   joinTournament: protectedProcedure
     .input(z.object({ tournamentId: z.string() }))
-    .mutation(async ({ input }) => {
-      // Tournaments require a dedicated DB table — cannot join until implemented
-      throw new TRPCError({ code: "NOT_FOUND", message: "No tournaments available" });
+    .mutation(async ({ input, ctx }) => {
+      const db = await requireDb();
+      const uid = userId(ctx);
+      const tourId = Number(input.tournamentId);
+
+      // Verify tournament exists and is joinable
+      const [tournament] = await db
+        .select()
+        .from(tournaments)
+        .where(eq(tournaments.id, tourId))
+        .limit(1);
+
+      if (!tournament) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Tournament not found" });
+      }
+
+      if (tournament.status !== "active" && tournament.status !== "upcoming") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Tournament is not open for registration" });
+      }
+
+      // Check if already registered
+      const [existing] = await db
+        .select()
+        .from(tournamentParticipants)
+        .where(and(eq(tournamentParticipants.tournamentId, tourId), eq(tournamentParticipants.userId, uid)))
+        .limit(1);
+
+      if (existing) {
+        throw new TRPCError({ code: "CONFLICT", message: "Already registered for this tournament" });
+      }
+
+      // Check capacity
+      const [{ cnt }] = await db
+        .select({ cnt: count() })
+        .from(tournamentParticipants)
+        .where(eq(tournamentParticipants.tournamentId, tourId));
+
+      if (Number(cnt) >= (tournament.maxParticipants ?? 100)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Tournament is full" });
+      }
+
+      // Deduct entry fee from user XP if applicable
+      const fee = tournament.entryFee ?? 0;
+      if (fee > 0) {
+        const [profile] = await db
+          .select()
+          .from(gamificationProfiles)
+          .where(eq(gamificationProfiles.userId, uid))
+          .limit(1);
+
+        const currentXp = profile?.currentXp ?? 0;
+        if (currentXp < fee) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Not enough XP. Need ${fee}, have ${currentXp}` });
+        }
+
+        await db
+          .update(gamificationProfiles)
+          .set({ currentXp: currentXp - fee })
+          .where(eq(gamificationProfiles.userId, uid));
+      }
+
+      // Register participant
+      await db.insert(tournamentParticipants).values({
+        tournamentId: tourId,
+        userId: uid,
+        score: "0",
+        rank: 0,
+      });
+
+      return { success: true, message: `Joined "${tournament.name}"${fee > 0 ? ` (${fee} XP entry fee deducted)` : ""}` };
     }),
 
   // ======================== ACHIEVEMENTS ========================
