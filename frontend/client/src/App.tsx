@@ -478,6 +478,10 @@ const VesselNavigation = lazy(() => import("./pages/vessel/VesselNavigation"));
 const VesselEnvironmental = lazy(() => import("./pages/vessel/VesselEnvironmental"));
 const PortGateOperations = lazy(() => import("./pages/vessel/PortGateOperations"));
 const RailSwitchingOps = lazy(() => import("./pages/rail/RailSwitchingOps"));
+const RailYardTracks = lazy(() => import("./pages/rail/RailYardTracks"));
+const ShipLogs = lazy(() => import("./pages/vessel/ShipLogs"));
+const ContainerYardManagement = lazy(() => import("./pages/vessel/ContainerYardManagement"));
+const VesselMarketplace = lazy(() => import("./pages/vessel/VesselMarketplace"));
 // ═══ V5 Multi-Modal: Intermodal Pages ═══
 const IntermodalDashboard = lazy(() => import("./pages/intermodal/IntermodalDashboard"));
 const IntermodalShipmentCreate = lazy(() => import("./pages/intermodal/IntermodalShipmentCreate"));
@@ -1176,6 +1180,21 @@ function Router() {
       <Route path={"/port/gate/queue"} component={guard(PORT, <PortGateOperations />)} />
       <Route path={"/rail/switching"} component={guard(RAIL_OPS, <RailSwitchingOps />)} />
       <Route path={"/rail/yards/spotting"} component={guard(RAIL_OPS, <RailSwitchingOps />)} />
+      <Route path={"/rail/yards/tracks"} component={guard(RAIL_OPS, <RailYardTracks />)} />
+      <Route path={"/rail/yards/capacity"} component={guard(RAIL_OPS, <RailYardTracks />)} />
+      <Route path={"/vessel/logs"} component={guard(VESL_NAV, <ShipLogs />)} />
+      <Route path={"/vessel/logs/official"} component={guard(VESL_NAV, <ShipLogs />)} />
+      <Route path={"/vessel/logs/oil"} component={guard(VESL_NAV, <ShipLogs />)} />
+      <Route path={"/vessel/logs/garbage"} component={guard(VESL_NAV, <ShipLogs />)} />
+      <Route path={"/port/containers"} component={guard(PORT, <ContainerYardManagement />)} />
+      <Route path={"/port/containers/stacks"} component={guard(PORT, <ContainerYardManagement />)} />
+      <Route path={"/port/containers/reefer"} component={guard(PORT, <ContainerYardManagement />)} />
+      <Route path={"/port/containers/hazmat"} component={guard(PORT, <ContainerYardManagement />)} />
+      <Route path={"/port/terminal/yard"} component={guard(PORT, <ContainerYardManagement />)} />
+      <Route path={"/vessel/marketplace"} component={guard(VESL_BOOK, <VesselMarketplace />)} />
+      <Route path={"/vessel/marketplace/schedules"} component={guard(VESL_BOOK, <VesselMarketplace />)} />
+      <Route path={"/vessel/marketplace/rates"} component={guard(VESL_BOOK, <VesselMarketplace />)} />
+      <Route path={"/vessel/marketplace/spot"} component={guard(VESL_BOOK, <VesselMarketplace />)} />
       <Route path={"/vessel/bookings/create"} component={guard(VESL_BOOK, <VesselBookingCreate />)} />
       <Route path={"/vessel/bookings/:id"} component={guard(VESL, <VesselBookingDetail />)} />
       <Route path={"/vessel/bookings"} component={guard(VESL, <VesselBookings />)} />
