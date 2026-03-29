@@ -2,10 +2,10 @@ import React from 'react';
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import { 
+import {
   Package, DollarSign, TrendingUp, Users, MapPin, Clock,
   Truck, Target, BarChart, Navigation, Fuel, Shield,
-  AlertCircle, CheckCircle, Star, Calendar, FileText, Zap
+  AlertCircle, CheckCircle, Star, Calendar, FileText, Zap, Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
@@ -15,10 +15,10 @@ import { Button } from "@/components/ui/button";
 export const LoadBoardWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const { data: loads, refetch } = trpc.loads.list.useQuery({ limit: 20 });
   const [, navigate] = useLocation();
-  
+
   // Auto-refresh every 30 seconds
   useAutoRefresh(() => refetch(), 30000);
-  
+
   const availableLoads = loads?.filter((l: any) => l.status === 'posted').slice(0, compact ? 3 : 5) || [];
 
   return (
@@ -30,7 +30,7 @@ export const LoadBoardWidget: React.FC<{ compact?: boolean }> = ({ compact = fal
         </div>
       ) : (
         availableLoads.map((load: any) => (
-          <div 
+          <div
             key={load.id}
             onClick={() => navigate(`/loads/${load.id}`)}
             className="p-3 rounded-lg bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border border-indigo-500/30 hover:border-indigo-500/50 cursor-pointer"
@@ -54,30 +54,47 @@ export const LoadBoardWidget: React.FC<{ compact?: boolean }> = ({ compact = fal
   );
 };
 
-// Catalyst Sourcing Widget
+// Catalyst Sourcing Widget — queries dashboard.getCatalystSourcing
 export const CatalystSourcingWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const catalysts = [
-    { id: 1, name: 'Swift Transport', rating: 4.8, available: 12, rate: 2400 },
-    { id: 2, name: 'Prime Logistics', rating: 4.7, available: 8, rate: 2300 },
-    { id: 3, name: 'Express Freight', rating: 4.6, available: 5, rate: 2500 },
-  ];
+  const { data: catalystsData, isLoading } = (trpc as any).dashboard.getCatalystSourcing.useQuery(undefined, {
+    refetchInterval: 120000,
+  });
+
+  const catalysts = (Array.isArray(catalystsData) ? catalystsData : catalystsData?.catalysts || []).slice(0, compact ? 2 : 3);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
+      </div>
+    );
+  }
+
+  if (catalysts.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <Truck className="w-12 h-12 mx-auto mb-2 opacity-50" />
+        <p className="text-xs">No catalysts available</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
-      {catalysts.slice(0, compact ? 2 : 3).map(catalyst => (
-        <div key={catalyst.id} className="p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 cursor-pointer">
+      {catalysts.map((catalyst: any, i: number) => (
+        <div key={catalyst.id || catalyst.name || i} className="p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 cursor-pointer">
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="text-sm font-semibold text-white">{catalyst.name}</p>
-              <p className="text-xs text-gray-400">{catalyst.available} trucks available</p>
+              <p className="text-xs text-gray-400">{catalyst.loads || catalyst.trucks || 0} {catalyst.trucks ? 'trucks available' : 'loads'}</p>
             </div>
             <div className="flex items-center gap-1">
               <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-              <span className="text-xs text-yellow-400">{catalyst.rating}</span>
+              <span className="text-xs text-yellow-400">{catalyst.rating || 0}</span>
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-green-400">${catalyst.rate}/load</span>
+            <span className="text-sm text-green-400">{catalyst.onTime || 0}% on-time</span>
             <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
               Contact
             </Button>
@@ -88,17 +105,26 @@ export const CatalystSourcingWidget: React.FC<{ compact?: boolean }> = ({ compac
   );
 };
 
-// Margin Calculator Widget
+// Margin Calculator Widget — queries dashboard.getMarginCalculator
 export const MarginCalculatorWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const [revenue, setRevenue] = React.useState(3000);
-  const [cost, setCost] = React.useState(2400);
-  const margin = revenue - cost;
-  const marginPercent = ((margin / revenue) * 100).toFixed(1);
+  const { data: marginData, isLoading } = (trpc as any).dashboard.getMarginCalculator.useQuery(undefined, {
+    refetchInterval: 60000,
+  });
+
+  const calc = marginData || { shipperRate: 0, catalystRate: 0, margin: 0, marginPercent: 0, avgMargin: 0 };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-green-400" />
+      </div>
+    );
+  }
 
   if (compact) {
     return (
       <div className="text-center">
-        <p className="text-2xl font-bold text-green-400">{marginPercent}%</p>
+        <p className="text-2xl font-bold text-green-400">{calc.marginPercent}%</p>
         <p className="text-xs text-gray-400">Avg Margin</p>
       </div>
     );
@@ -107,100 +133,131 @@ export const MarginCalculatorWidget: React.FC<{ compact?: boolean }> = ({ compac
   return (
     <div className="space-y-4">
       <div className="text-center p-4 bg-gradient-to-br from-green-900/30 to-emerald-900/30 rounded-lg border border-green-500/30">
-        <p className="text-4xl font-bold text-green-400">${margin}</p>
-        <p className="text-sm text-gray-400">Profit Margin ({marginPercent}%)</p>
+        <p className="text-4xl font-bold text-green-400">${calc.margin}</p>
+        <p className="text-sm text-gray-400">Profit Margin ({calc.marginPercent}%)</p>
       </div>
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Revenue</span>
-          <span className="text-white">${revenue}</span>
+          <span className="text-gray-400">Shipper Rate</span>
+          <span className="text-white">${calc.shipperRate}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Cost</span>
-          <span className="text-red-400">${cost}</span>
+          <span className="text-gray-400">Catalyst Rate</span>
+          <span className="text-red-400">${calc.catalystRate}</span>
         </div>
       </div>
     </div>
   );
 };
 
-// Active Negotiations Widget
+// Active Negotiations Widget — queries dashboard.getBidManagement
 export const ActiveNegotiationsWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const negotiations = [
-    { id: 1, load: '#1234', catalyst: 'Swift Transport', offer: 2400, asking: 2600, status: 'pending' },
-    { id: 2, load: '#5678', catalyst: 'Prime Logistics', offer: 1800, asking: 1900, status: 'counter' },
-  ];
+  const { data, isLoading } = (trpc as any).dashboard.getBidManagement.useQuery(undefined, {
+    refetchInterval: 60000,
+  });
+
+  const bids = data || { active: 0, won: 0, lost: 0, pending: 0 };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-orange-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
-      {negotiations.map(neg => (
-        <div key={neg.id} className="p-3 rounded-lg bg-orange-900/20 border border-orange-500/30">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <p className="text-sm font-semibold text-white">Load {neg.load}</p>
-              <p className="text-xs text-gray-400">{neg.catalyst}</p>
-            </div>
-            <span className={`text-xs px-2 py-1 rounded-full ${
-              neg.status === 'pending' ? 'bg-yellow-900/50 text-yellow-300' :
-              'bg-orange-900/50 text-orange-300'
-            }`}>
-              {neg.status}
-            </span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-400">Offer: ${neg.offer}</span>
-            <span className="text-white">Ask: ${neg.asking}</span>
-          </div>
-          <Button size="sm" className="w-full mt-2 bg-orange-600 hover:bg-orange-700">
-            Respond
-          </Button>
+      <div className="grid grid-cols-2 gap-2 text-center">
+        <div className="p-2 rounded-lg bg-yellow-500/10">
+          <p className="text-lg font-bold text-yellow-400">{bids.pending}</p>
+          <p className="text-xs text-gray-400">Pending</p>
         </div>
-      ))}
+        <div className="p-2 rounded-lg bg-blue-500/10">
+          <p className="text-lg font-bold text-blue-400">{bids.active}</p>
+          <p className="text-xs text-gray-400">Active</p>
+        </div>
+      </div>
+      <div className="flex justify-between p-2 rounded-lg bg-white/5">
+        <span className="text-xs text-gray-400">Won</span>
+        <span className="text-xs text-green-400">{bids.won}</span>
+      </div>
+      <div className="flex justify-between p-2 rounded-lg bg-white/5">
+        <span className="text-xs text-gray-400">Lost</span>
+        <span className="text-xs text-red-400">{bids.lost}</span>
+      </div>
     </div>
   );
 };
 
-// Commission Tracker Widget
+// Commission Tracker Widget — queries dashboard.getRevenue
 export const CommissionTrackerWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const thisMonth = 8450;
-  const lastMonth = 7200;
-  const growth = ((thisMonth - lastMonth) / lastMonth * 100).toFixed(1);
+  const { data: revenueData, isLoading } = (trpc as any).dashboard.getRevenue.useQuery(undefined, {
+    refetchInterval: 300000,
+  });
+
+  const revenue = revenueData || { mtd: 0, ytd: 0, growth: '0%', target: 0, progress: 0 };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
       <div className="text-center p-4 bg-gradient-to-br from-purple-900/30 to-pink-900/30 rounded-lg border border-purple-500/30">
-        <p className="text-3xl font-bold text-purple-400">${(thisMonth || 0).toLocaleString()}</p>
-        <p className="text-sm text-gray-400">This Month</p>
+        <p className="text-3xl font-bold text-purple-400">${(revenue.mtd / 1000).toFixed(0)}K</p>
+        <p className="text-sm text-gray-400">Revenue MTD</p>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-400">vs Last Month</span>
+        <span className="text-sm text-gray-400">Growth</span>
         <span className="text-green-400 flex items-center gap-1">
           <TrendingUp className="w-4 h-4" />
-          +{growth}%
+          {revenue.growth}
         </span>
       </div>
     </div>
   );
 };
 
-// Market Rates Widget
+// Market Rates Widget — queries dashboard.getLaneAnalytics
 export const MarketRatesWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const routes = [
-    { route: 'LA → NYC', rate: 2650, trend: 'up' },
-    { route: 'CHI → MIA', rate: 1950, trend: 'down' },
-    { route: 'DAL → SEA', rate: 2300, trend: 'stable' },
-  ];
+  const { data: ratesData, isLoading } = (trpc as any).dashboard.getLaneAnalytics.useQuery(undefined, {
+    refetchInterval: 300000,
+  });
+
+  const rates = (Array.isArray(ratesData) ? ratesData : []).slice(0, 3);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-green-400" />
+      </div>
+    );
+  }
+
+  if (rates.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <BarChart className="w-12 h-12 mx-auto mb-2 opacity-50" />
+        <p className="text-xs">No market rate data</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
-      {routes.map((r, i) => (
-        <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-gray-800/50">
-          <span className="text-sm text-white">{r.route}</span>
+      {rates.map((r: any, i: number) => (
+        <div key={r.lane || i} className="flex items-center justify-between p-2 rounded-lg bg-gray-800/50">
+          <span className="text-sm text-white">{r.lane}</span>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-green-400">${r.rate}</span>
+            <span className="text-sm font-bold text-green-400">${r.avgRate}</span>
             <TrendingUp className={`w-3 h-3 ${
-              r.trend === 'up' ? 'text-green-400' :
-              r.trend === 'down' ? 'text-red-400 rotate-180' :
+              r.trend?.startsWith('+') ? 'text-green-400' :
+              r.trend?.startsWith('-') ? 'text-red-400 rotate-180' :
               'text-gray-400'
             }`} />
           </div>
@@ -210,26 +267,46 @@ export const MarketRatesWidget: React.FC<{ compact?: boolean }> = ({ compact = f
   );
 };
 
-// Client Relationships Widget
+// Client Relationships Widget — queries dashboard.getCustomerAccounts
 export const ClientRelationshipsWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const clients = [
-    { name: 'Amazon Logistics', loads: 145, revenue: 425000, satisfaction: 4.9 },
-    { name: 'Walmart Supply', loads: 98, revenue: 298000, satisfaction: 4.7 },
-  ];
+  const { data, isLoading } = (trpc as any).dashboard.getCustomerAccounts.useQuery(undefined, {
+    refetchInterval: 300000,
+  });
+
+  const clients = (Array.isArray(data) ? data : data?.accounts || []).slice(0, 3);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+      </div>
+    );
+  }
+
+  if (clients.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+        <p className="text-xs">No client data</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
-      {clients.map((client, i) => (
-        <div key={i} className="p-3 rounded-lg bg-gradient-to-r from-blue-900/20 to-cyan-900/20 border border-blue-500/30">
+      {clients.map((client: any, i: number) => (
+        <div key={client.id || i} className="p-3 rounded-lg bg-gradient-to-r from-blue-900/20 to-cyan-900/20 border border-blue-500/30">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-semibold text-white">{client.name}</p>
-            <div className="flex items-center gap-1">
-              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-              <span className="text-xs text-yellow-400">{client.satisfaction}</span>
-            </div>
+            <p className="text-sm font-semibold text-white">{client.name || `Client ${i + 1}`}</p>
+            {client.satisfaction && (
+              <div className="flex items-center gap-1">
+                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                <span className="text-xs text-yellow-400">{client.satisfaction}</span>
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between text-xs text-gray-400">
-            <span>{client.loads} loads</span>
+            <span>{client.loads || 0} loads</span>
             <span className="text-green-400">${(client.revenue || 0).toLocaleString()}</span>
           </div>
         </div>
@@ -238,27 +315,52 @@ export const ClientRelationshipsWidget: React.FC<{ compact?: boolean }> = ({ com
   );
 };
 
-// Pending Assignments Widget
+// Pending Assignments Widget — queries dashboard.getDispatchData
 export const PendingAssignmentsWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const pending = [
-    { id: 1, load: '#1234', shipper: 'ABC Corp', urgency: 'high' },
-    { id: 2, load: '#5678', shipper: 'XYZ Inc', urgency: 'medium' },
-  ];
+  const { data: dispatchData, isLoading } = (trpc as any).dashboard.getDispatchData.useQuery(undefined, {
+    refetchInterval: 60000,
+  });
+
+  const dispatch = dispatchData || { unassigned: 0, loadsRequiringAction: [] };
+  const pending = (dispatch.loadsRequiringAction || []).filter((l: any) => l.status === 'UNASSIGNED' || l.action).slice(0, 3);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-red-400" />
+      </div>
+    );
+  }
+
+  if (pending.length === 0 && dispatch.unassigned === 0) {
+    return (
+      <div className="text-center py-6 text-gray-500">
+        <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-400 opacity-60" />
+        <p className="text-xs text-green-400">No pending assignments</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
-      {pending.map(p => (
-        <div key={p.id} className="p-3 rounded-lg bg-red-900/20 border border-red-500/30">
+      {dispatch.unassigned > 0 && pending.length === 0 && (
+        <div className="p-3 rounded-lg bg-red-900/20 border border-red-500/30 text-center">
+          <p className="text-lg font-bold text-red-400">{dispatch.unassigned}</p>
+          <p className="text-xs text-gray-400">Unassigned loads</p>
+        </div>
+      )}
+      {pending.map((p: any, i: number) => (
+        <div key={p.loadId || i} className="p-3 rounded-lg bg-red-900/20 border border-red-500/30">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-white">Load {p.load}</p>
-              <p className="text-xs text-gray-400">{p.shipper}</p>
+              <p className="text-sm font-semibold text-white">{p.loadId || `Load ${i + 1}`}</p>
+              <p className="text-xs text-gray-400">{p.route || ''}</p>
             </div>
             <span className={`text-xs px-2 py-1 rounded-full ${
-              p.urgency === 'high' ? 'bg-red-900/50 text-red-300' :
+              p.status === 'UNASSIGNED' ? 'bg-red-900/50 text-red-300' :
               'bg-orange-900/50 text-orange-300'
             }`}>
-              {p.urgency}
+              {p.action || p.status || 'pending'}
             </span>
           </div>
         </div>
@@ -269,14 +371,30 @@ export const PendingAssignmentsWidget: React.FC<{ compact?: boolean }> = ({ comp
 
 // ============= DRIVER WIDGETS =============
 
-// Route Navigation Widget
+// Route Navigation Widget — queries dashboard.getRouteHistory
 export const RouteNavigationWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const route = {
-    destination: 'Miami, FL',
-    distance: '245 miles',
-    eta: '4h 15m',
-    nextStop: 'Rest Area - 45 miles',
-  };
+  const { data: routeData, isLoading } = (trpc as any).dashboard.getRouteHistory.useQuery(undefined, {
+    refetchInterval: 60000,
+  });
+
+  const route = routeData || { current: { origin: '', dest: '', miles: 0, eta: '' }, completed: 0, upcoming: 0 };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
+      </div>
+    );
+  }
+
+  if (!route.current?.dest) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <Navigation className="w-12 h-12 mx-auto mb-2 opacity-50" />
+        <p className="text-xs">No active route</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -284,34 +402,42 @@ export const RouteNavigationWidget: React.FC<{ compact?: boolean }> = ({ compact
         <div className="flex items-center gap-3 mb-3">
           <Navigation className="w-6 h-6 text-cyan-400" />
           <div>
-            <p className="text-sm font-semibold text-white">{route.destination}</p>
-            <p className="text-xs text-gray-400">{route.distance} • ETA {route.eta}</p>
+            <p className="text-sm font-semibold text-white">{route.current.dest}</p>
+            <p className="text-xs text-gray-400">{route.current.miles} mi • ETA {route.current.eta}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <MapPin className="w-3 h-3" />
-          <span>Next: {route.nextStop}</span>
+          <span>From: {route.current.origin}</span>
         </div>
       </div>
-      <Button className="w-full bg-cyan-600 hover:bg-cyan-700">
-        Start Navigation
-      </Button>
     </div>
   );
 };
 
-// HOS Tracker Widget
+// HOS Tracker Widget — queries dashboard.getHOSStatus
 export const HOSTrackerWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const hos = {
-    driving: { used: 6.5, limit: 11 },
-    onDuty: { used: 8.2, limit: 14 },
-    cycle: { used: 45, limit: 70 },
-  };
+  const { data: hosData, isLoading } = (trpc as any).dashboard.getHOSStatus.useQuery(undefined, {
+    refetchInterval: 60000,
+  });
+
+  const hos = hosData || { drivingRemaining: 11, dutyRemaining: 14, cycleRemaining: 70, status: 'OFF_DUTY' };
+  const driving = { used: 11 - (hos.drivingRemaining ?? 11), limit: 11 };
+  const onDuty = { used: 14 - (hos.dutyRemaining ?? 14), limit: 14 };
+  const cycle = { used: 70 - (hos.cycleRemaining ?? 70), limit: 70 };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
+      </div>
+    );
+  }
 
   if (compact) {
     return (
       <div className="text-center">
-        <p className="text-2xl font-bold text-green-400">{hos.driving.limit - hos.driving.used}h</p>
+        <p className="text-2xl font-bold text-green-400">{(driving.limit - driving.used).toFixed(1)}h</p>
         <p className="text-xs text-gray-400">Drive Time Left</p>
       </div>
     );
@@ -320,40 +446,53 @@ export const HOSTrackerWidget: React.FC<{ compact?: boolean }> = ({ compact = fa
   return (
     <div className="space-y-3">
       {[
-        { label: 'Drive Time', ...hos.driving, color: 'cyan' },
-        { label: 'On Duty', ...hos.onDuty, color: 'blue' },
-        { label: 'Cycle', ...hos.cycle, color: 'purple' },
-      ].map((item, i) => (
-        <div key={i}>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-400">{item.label}</span>
-            <span className="text-white">{item.used} / {item.limit}h</span>
+        { label: 'Drive Time', ...driving, color: 'cyan' },
+        { label: 'On Duty', ...onDuty, color: 'blue' },
+        { label: 'Cycle', ...cycle, color: 'purple' },
+      ].map((item, i) => {
+        const pct = (item.used / item.limit) * 100;
+        const barColor = pct >= 90 ? 'bg-red-500' : pct >= 75 ? 'bg-amber-500' : `bg-${item.color}-500`;
+        return (
+          <div key={i}>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-gray-400">{item.label}</span>
+              <span className="text-white">{item.used.toFixed(1)} / {item.limit}h</span>
+            </div>
+            <div className="w-full bg-gray-800 rounded-full h-2">
+              <div
+                className={`${barColor} h-2 rounded-full transition-all`}
+                style={{ width: `${Math.min(pct, 100)}%` }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-gray-800 rounded-full h-2">
-            <div 
-              className={`bg-gradient-to-r from-${item.color}-500 to-${item.color}-400 h-2 rounded-full`}
-              style={{ width: `${(item.used / item.limit) * 100}%` }}
-            />
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
 
-// Earnings Widget
+// Earnings Widget — queries dashboard.getEarnings
 export const EarningsWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const earnings = {
-    today: 450,
-    week: 2850,
-    month: 11200,
-  };
+  const { data: earningsData, isLoading } = (trpc as any).dashboard.getEarnings.useQuery(
+    { period: 'week' },
+    { refetchInterval: 300000 }
+  );
+
+  const earnings = earningsData || { total: 0, loads: 0, average: 0 };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-green-400" />
+      </div>
+    );
+  }
 
   if (compact) {
     return (
       <div className="text-center">
-        <p className="text-2xl font-bold text-green-400">${earnings.today}</p>
-        <p className="text-xs text-gray-400">Today</p>
+        <p className="text-2xl font-bold text-green-400">${(earnings.total || 0).toLocaleString()}</p>
+        <p className="text-xs text-gray-400">This Week</p>
       </div>
     );
   }
@@ -362,35 +501,52 @@ export const EarningsWidget: React.FC<{ compact?: boolean }> = ({ compact = fals
     <div className="space-y-3">
       <div className="text-center p-4 bg-gradient-to-br from-green-900/30 to-emerald-900/30 rounded-lg border border-green-500/30">
         <DollarSign className="w-8 h-8 text-green-400 mx-auto mb-2" />
-        <p className="text-3xl font-bold text-green-400">${(earnings.month || 0).toLocaleString()}</p>
-        <p className="text-sm text-gray-400">This Month</p>
+        <p className="text-3xl font-bold text-green-400">${(earnings.total || 0).toLocaleString()}</p>
+        <p className="text-sm text-gray-400">This Week</p>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-gray-800/50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-1">Today</p>
-          <p className="text-xl font-bold text-cyan-400">${earnings.today}</p>
+          <p className="text-xs text-gray-400 mb-1">Loads</p>
+          <p className="text-xl font-bold text-cyan-400">{earnings.loads || 0}</p>
         </div>
         <div className="bg-gray-800/50 rounded-lg p-3">
-          <p className="text-xs text-gray-400 mb-1">This Week</p>
-          <p className="text-xl font-bold text-blue-400">${(earnings.week || 0).toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mb-1">Avg/Load</p>
+          <p className="text-xl font-bold text-blue-400">${(earnings.average || 0).toLocaleString()}</p>
         </div>
       </div>
     </div>
   );
 };
 
-// Fuel Stations Widget
+// Fuel Stations Widget — queries dashboard.getFuelStations
 export const FuelStationsWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const stations = [
-    { name: 'Pilot Travel Center', distance: '12 miles', price: 3.89 },
-    { name: "Love's Truck Stop", distance: '28 miles', price: 3.92 },
-    { name: 'TA Petro', distance: '45 miles', price: 3.85 },
-  ];
+  const { data: stationsData, isLoading } = (trpc as any).dashboard.getFuelStations.useQuery(undefined, {
+    refetchInterval: 300000,
+  });
+
+  const stations = (Array.isArray(stationsData) ? stationsData : stationsData?.stations || []).slice(0, compact ? 2 : 3);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-orange-400" />
+      </div>
+    );
+  }
+
+  if (stations.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <Fuel className="w-12 h-12 mx-auto mb-2 opacity-50" />
+        <p className="text-xs">No fuel stations nearby</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
-      {stations.slice(0, compact ? 2 : 3).map((station, i) => (
-        <div key={i} className="p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 cursor-pointer">
+      {stations.map((station: any, i: number) => (
+        <div key={station.name || i} className="p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 cursor-pointer">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <Fuel className="w-4 h-4 text-orange-400" />
@@ -398,121 +554,141 @@ export const FuelStationsWidget: React.FC<{ compact?: boolean }> = ({ compact = 
             </div>
             <span className="text-sm font-bold text-green-400">${station.price}/gal</span>
           </div>
-          <p className="text-xs text-gray-400">{station.distance} ahead</p>
+          <p className="text-xs text-gray-400">{station.distance} mi</p>
         </div>
       ))}
     </div>
   );
 };
 
-// Trip Summary Widget
+// Trip Summary Widget — queries dashboard.getTripSummary
 export const TripSummaryWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const trip = {
-    miles: 1245,
-    hours: 18.5,
-    fuel: 245,
-    earnings: 1850,
-  };
+  const { data, isLoading } = (trpc as any).dashboard.getTripSummary.useQuery(undefined, {
+    refetchInterval: 120000,
+  });
+
+  const trip = data || { miles: 0, hours: 0, fuelUsed: 0, avgSpeed: 0 };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
         <p className="text-xs text-gray-400 mb-1">Miles</p>
-        <p className="text-2xl font-bold text-blue-400">{trip.miles}</p>
+        <p className="text-2xl font-bold text-blue-400">{trip.miles || 0}</p>
       </div>
       <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-3">
         <p className="text-xs text-gray-400 mb-1">Hours</p>
-        <p className="text-2xl font-bold text-purple-400">{trip.hours}</p>
+        <p className="text-2xl font-bold text-purple-400">{trip.hours || 0}</p>
       </div>
       <div className="bg-orange-900/20 border border-orange-500/30 rounded-lg p-3">
-        <p className="text-xs text-gray-400 mb-1">Fuel Cost</p>
-        <p className="text-2xl font-bold text-orange-400">${trip.fuel}</p>
+        <p className="text-xs text-gray-400 mb-1">Fuel Used</p>
+        <p className="text-2xl font-bold text-orange-400">{trip.fuelUsed || 0} gal</p>
       </div>
       <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
-        <p className="text-xs text-gray-400 mb-1">Earned</p>
-        <p className="text-2xl font-bold text-green-400">${trip.earnings}</p>
+        <p className="text-xs text-gray-400 mb-1">Avg Speed</p>
+        <p className="text-2xl font-bold text-green-400">{trip.avgSpeed || 0} mph</p>
       </div>
     </div>
   );
 };
 
-// Load Status Widget
+// Load Status Widget — queries loads list for current driver load
 export const LoadStatusWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const load = {
-    id: '#1234',
-    status: 'in_transit',
-    pickup: 'Los Angeles, CA',
-    delivery: 'Miami, FL',
-    progress: 65,
-  };
+  const { data: loads, isLoading } = trpc.loads.list.useQuery({ limit: 5 });
+
+  const activeLoad = loads?.find((l: any) => l.status === 'in_transit' || l.status === 'assigned' || l.status === 'accepted') as any;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-green-400" />
+      </div>
+    );
+  }
+
+  if (!activeLoad) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+        <p className="text-xs">No active load</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
       <div className="p-4 bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-500/30 rounded-lg">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-semibold text-white">Load {load.id}</p>
+          <p className="text-sm font-semibold text-white">Load #{activeLoad.id}</p>
           <span className="text-xs px-2 py-1 rounded-full bg-blue-900/50 text-blue-300">
-            {load.status}
+            {activeLoad.status}
           </span>
         </div>
         <p className="text-xs text-gray-400 mb-3">
-          {load.pickup} → {load.delivery}
+          {activeLoad.pickupLocation?.city}, {activeLoad.pickupLocation?.state} → {activeLoad.deliveryLocation?.city}, {activeLoad.deliveryLocation?.state}
         </p>
-        <div className="w-full bg-gray-800 rounded-full h-2">
-          <div 
-            className="bg-gradient-to-r from-green-500 to-emerald-400 h-2 rounded-full"
-            style={{ width: `${load.progress}%` }}
-          />
-        </div>
-        <p className="text-xs text-gray-400 mt-1 text-right">{load.progress}% complete</p>
       </div>
     </div>
   );
 };
 
-// Vehicle Inspection Widget
+// Vehicle Inspection Widget — queries dashboard.getVehicleHealth
 export const VehicleInspectionWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const inspection = {
-    lastCheck: '2 hours ago',
-    status: 'passed',
-    nextDue: 'Tomorrow',
-  };
+  const { data: healthData, isLoading } = (trpc as any).dashboard.getVehicleHealth.useQuery(undefined, {
+    refetchInterval: 60000,
+  });
+
+  const health = healthData || { overall: 0 };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-5 h-5 animate-spin text-green-400" />
+      </div>
+    );
+  }
+
+  const passed = health.overall >= 70;
 
   return (
-    <div className="p-4 bg-gradient-to-r from-green-900/20 to-emerald-900/20 border border-green-500/30 rounded-lg">
+    <div className={`p-4 bg-gradient-to-r ${passed ? 'from-green-900/20 to-emerald-900/20 border-green-500/30' : 'from-red-900/20 to-orange-900/20 border-red-500/30'} border rounded-lg`}>
       <div className="flex items-center gap-3 mb-3">
-        <CheckCircle className="w-6 h-6 text-green-400" />
+        {passed ? (
+          <CheckCircle className="w-6 h-6 text-green-400" />
+        ) : (
+          <AlertCircle className="w-6 h-6 text-red-400" />
+        )}
         <div>
-          <p className="text-sm font-semibold text-white">Pre-Trip Inspection</p>
-          <p className="text-xs text-gray-400">Last: {inspection.lastCheck}</p>
+          <p className="text-sm font-semibold text-white">Vehicle Health</p>
+          <p className="text-xs text-gray-400">Overall: {health.overall}%</p>
         </div>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-400">Next due: {inspection.nextDue}</span>
-        <Button size="sm" className="bg-green-600 hover:bg-green-700">
-          Start Check
+        <span className="text-xs text-gray-400">{passed ? 'All systems normal' : 'Attention needed'}</span>
+        <Button size="sm" className={`${passed ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
+          {passed ? 'View Details' : 'Check Now'}
         </Button>
       </div>
     </div>
   );
 };
 
-// Weather Alerts Widget
+// Weather Alerts Widget — empty state (requires external weather API)
 export const WeatherAlertsWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const alerts = [
-    { type: 'warning', message: 'Heavy rain expected in 50 miles', severity: 'medium' },
-  ];
-
   return (
     <div className="space-y-2">
-      {alerts.map((alert, i) => (
-        <div key={i} className="p-3 rounded-lg bg-orange-900/20 border border-orange-500/30">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-white">{alert.message}</p>
-          </div>
-        </div>
-      ))}
+      <div className="text-center py-6 text-gray-500">
+        <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-40" />
+        <p className="text-xs">No weather alerts</p>
+        <p className="text-xs text-gray-600 mt-1">Weather alerts will appear when conditions affect your route</p>
+      </div>
     </div>
   );
 };

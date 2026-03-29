@@ -590,10 +590,10 @@ export const ShipmentCostsWidget: React.FC = () => {
   const raw = costsData as any;
   const costs = {
     total: raw?.total ?? raw?.totalCost ?? 0,
-    fuel: raw?.fuel ?? { amount: Math.round((raw?.totalCost || 0) * 0.35), percent: 35 },
-    labor: raw?.labor ?? { amount: Math.round((raw?.totalCost || 0) * 0.40), percent: 40 },
-    maintenance: raw?.maintenance ?? { amount: Math.round((raw?.totalCost || 0) * 0.15), percent: 15 },
-    other: raw?.other ?? { amount: Math.round((raw?.totalCost || 0) * 0.10), percent: 10 },
+    fuel: raw?.fuel ?? { amount: 0, percent: 0 },
+    labor: raw?.labor ?? { amount: 0, percent: 0 },
+    maintenance: raw?.maintenance ?? { amount: 0, percent: 0 },
+    other: raw?.other ?? { amount: 0, percent: 0 },
   };
 
   return (
@@ -1080,15 +1080,16 @@ export const ComplianceDashboardWidget: React.FC = () => {
   const expiringCount = alerts.length;
   const criticalCount = alerts.filter((a: any) => a.severity === 'critical').length;
 
-  // Compliance categories with calculated scores
-  const categories = [
-    { name: 'Driver Qualifications', score: criticalCount === 0 ? 98 : 85 },
-    { name: 'Vehicle Inspections', score: 95 },
-    { name: 'HOS Compliance', score: 99 },
-    { name: 'Insurance & Docs', score: expiringCount > 3 ? 80 : 96 },
-  ];
+  // Derive compliance status from real alert data — no hardcoded scores
+  const hasAlerts = alerts.length > 0;
+  const overallScore = hasAlerts
+    ? Math.max(0, 100 - (criticalCount * 15) - ((expiringCount - criticalCount) * 5))
+    : (alerts.length === 0 && !alertsData ? 0 : 100);
 
-  const overallScore = Math.round(categories.reduce((sum, c) => sum + c.score, 0) / categories.length);
+  const categories = alerts.length > 0 || alertsData ? [
+    { name: 'Active Alerts', score: expiringCount },
+    { name: 'Critical', score: criticalCount },
+  ] : [];
 
   return (
     <ResponsiveWidget>
@@ -1117,17 +1118,22 @@ export const ComplianceDashboardWidget: React.FC = () => {
               </div>
               {isExpanded && (
                 <div className="space-y-2">
-                  {categories.map((cat) => (
-                    <div key={cat.name} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
-                      <span className="text-sm text-gray-300">{cat.name}</span>
-                      <span className={`text-sm font-semibold ${cat.score >= 95 ? 'text-green-400' : cat.score >= 80 ? 'text-yellow-400' : 'text-red-400'}`}>
-                        {cat.score}%
+                  {expiringCount > 0 && (
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-white/5">
+                      <span className="text-sm text-gray-300">Expiring Documents</span>
+                      <span className={`text-sm font-semibold ${expiringCount > 5 ? 'text-red-400' : 'text-yellow-400'}`}>
+                        {expiringCount}
                       </span>
                     </div>
-                  ))}
-                  {alerts.length > 0 && (
+                  )}
+                  {criticalCount > 0 && (
                     <div className="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
                       <p className="text-xs text-red-400">{criticalCount} critical alert(s) require attention</p>
+                    </div>
+                  )}
+                  {alerts.length === 0 && alertsData && (
+                    <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                      <p className="text-xs text-green-400">All compliance checks passed</p>
                     </div>
                   )}
                 </div>
