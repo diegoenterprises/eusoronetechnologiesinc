@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
+import { eq, desc, asc, sql, and, gte, lte, isNotNull } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
@@ -257,7 +257,7 @@ export const fuelManagementRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ input }) => {
-      // TODO: Integrate external truck stop API (NATSO, Pilot/Flying J API, etc.)
+      // Fuel station search requires an external provider (NATSO, Pilot/Flying J, etc.)
       // Returns empty until a real fuel station data source is connected
       return {
         stations: [] as { id: string; name: string; brand: string; lat: number; lng: number; price: number; distance: number; rating: number; amenities: string[]; hasDef: boolean; truckParking: number }[],
@@ -298,8 +298,20 @@ export const fuelManagementRouter = router({
       }> = [];
 
       if (gallonsNeeded > currentGallons) {
-        // TODO: Query hzFuelPrices for real-time state diesel prices along route
-        const avgDieselPrice = 3.70;
+        // Query hzFuelPrices for latest national diesel average; fallback to 0 if no data
+        let avgDieselPrice = 0;
+        const dbForPrice = await getDb();
+        if (dbForPrice) {
+          try {
+            const [latestPrice] = await dbForPrice.select({
+              price: hzFuelPrices.dieselRetail,
+            }).from(hzFuelPrices)
+              .where(sql`${hzFuelPrices.dieselRetail} IS NOT NULL`)
+              .orderBy(desc(hzFuelPrices.reportDate))
+              .limit(1);
+            avgDieselPrice = Number(latestPrice?.price) || 0;
+          } catch { /* fallback to 0 */ }
+        }
         const numStops = Math.ceil((gallonsNeeded - currentGallons) / (input.tankCapacity * 0.7));
 
         // Pull known station names from company fuel transactions instead of hardcoding
@@ -647,9 +659,9 @@ export const fuelManagementRouter = router({
             ))
             .groupBy(tripStateMiles.stateCode);
 
-          // Also get fuel purchased per state from fuel transactions (for tax-paid calculation)
+          // Fuel purchased totals (fuelTransactions lacks a state column, so we aggregate
+          // company-wide purchases and distribute proportionally across states below)
           const fuelPurchased = await db.select({
-            // TODO: fuelTransactions doesn't have a state column; correlate via driver/vehicle location or add state to schema
             totalGallons: sql<number>`SUM(${fuelTransactions.gallons})`,
           }).from(fuelTransactions)
             .where(and(
@@ -929,18 +941,34 @@ export const fuelManagementRouter = router({
     }).optional())
     .query(async () => {
       const history: Array<{ week: string; doePrice: number; surchargePerMile: number }> = [];
-      const now = new Date();
-      // TODO: Replace with real DOE price history from hzFuelPrices table once populated
-      for (let i = 51; i >= 0; i--) {
-        const d = new Date(now.getTime() - i * 7 * 86400000);
-        const price = DOE_BASELINE_PRICE + (Math.sin(i / 8) * 0.25);
-        const diff = price - DOE_BASELINE_PRICE;
-        history.push({
-          week: d.toISOString().slice(0, 10),
-          doePrice: Math.round(price * 1000) / 1000,
-          surchargePerMile: diff > 0 ? Math.round((diff / 6.0) * 10000) / 10000 : 0,
-        });
+
+      // Query historical diesel prices from hzFuelPrices
+      const db = await getDb();
+      if (db) {
+        try {
+          const rows = await db.select({
+            reportDate: hzFuelPrices.reportDate,
+            dieselRetail: hzFuelPrices.dieselRetail,
+          }).from(hzFuelPrices)
+            .where(and(
+              isNotNull(hzFuelPrices.dieselRetail),
+              sql`${hzFuelPrices.reportDate} >= DATE_SUB(CURDATE(), INTERVAL 365 DAY)`,
+            ))
+            .groupBy(hzFuelPrices.reportDate)
+            .orderBy(asc(hzFuelPrices.reportDate));
+
+          for (const row of rows) {
+            const price = Number(row.dieselRetail) || 0;
+            const diff = price - DOE_BASELINE_PRICE;
+            history.push({
+              week: String(row.reportDate),
+              doePrice: Math.round(price * 1000) / 1000,
+              surchargePerMile: diff > 0 ? Math.round((diff / 6.0) * 10000) / 10000 : 0,
+            });
+          }
+        } catch (_) { /* fall through to empty array */ }
       }
+
       return { history, basePrice: DOE_BASELINE_PRICE };
     }),
 
@@ -1039,50 +1067,40 @@ export const fuelManagementRouter = router({
           .orderBy(sql`SUM(${fuelTransactions.gallons}) ASC`)
           .limit(20);
 
-        // TODO: Join with tripStateMiles to get real miles per driver instead of estimating from gallons
-        // For now, query total miles from tripStateMiles for each driver's vehicles
+        // Compute miles per driver from delivered loads (loads.distance) for the period
         let driverMilesMap = new Map<number, number>();
         try {
           const driverMiles = await db.select({
-            vehicleId: tripStateMiles.vehicleId,
-            totalMiles: sql<number>`SUM(${tripStateMiles.miles})`,
-          }).from(tripStateMiles)
-            .where(gte(tripStateMiles.entryTime, thirtyDaysAgo))
-            .groupBy(tripStateMiles.vehicleId);
+            driverId: loads.driverId,
+            totalMiles: sql<number>`COALESCE(SUM(CAST(${loads.distance} AS DECIMAL)), 0)`,
+          }).from(loads)
+            .where(and(
+              gte(loads.createdAt, thirtyDaysAgo),
+              isNotNull(loads.driverId),
+              isNotNull(loads.distance),
+            ))
+            .groupBy(loads.driverId);
 
-          // Map vehicle miles to drivers via fuel transactions (driver->vehicle correlation)
           for (const dm of driverMiles) {
-            if (dm.vehicleId) {
-              // Find which driver used this vehicle from fuel transactions
-              const driverForVehicle = byDriver.find(d => {
-                // We'll match below in the ranking loop instead
-                return false;
-              });
+            if (dm.driverId) {
+              driverMilesMap.set(dm.driverId, Number(dm.totalMiles) || 0);
             }
           }
-          // Simpler approach: get miles per driver by joining fuel transactions vehicle to tripStateMiles
-          // Since we don't have a direct driver->miles join, use fleet average MPG
-        } catch (_) { /* use fallback */ }
+        } catch (_) { /* use fallback fleet MPG */ }
 
-        // Compute fleet-wide MPG from total gallons and total miles
+        // Compute fleet-wide MPG from total gallons and total miles (from loads.distance)
         const totalFleetGallons = byDriver.reduce((s, r) => s + (Number(r.totalGallons) || 0), 0);
-        let fleetAvgMpgCalc = 6.5;
-        try {
-          const totalMilesResult = await db.select({
-            totalMiles: sql<number>`SUM(${tripStateMiles.miles})`,
-          }).from(tripStateMiles)
-            .where(gte(tripStateMiles.entryTime, thirtyDaysAgo));
-          const totalMiles = Number(totalMilesResult[0]?.totalMiles) || 0;
-          if (totalFleetGallons > 0 && totalMiles > 0) {
-            fleetAvgMpgCalc = totalMiles / totalFleetGallons;
-          }
-        } catch (_) { /* use default */ }
+        const totalFleetMiles = Array.from(driverMilesMap.values()).reduce((s, m) => s + m, 0);
+        let fleetAvgMpgCalc = totalFleetGallons > 0 && totalFleetMiles > 0
+          ? totalFleetMiles / totalFleetGallons
+          : 6.5;
 
         const rankings = byDriver.map((r, idx) => {
           const gallons = Number(r.totalGallons) || 1;
-          // Use computed fleet MPG instead of random multiplier
-          const estimatedMiles = gallons * fleetAvgMpgCalc;
-          const mpg = estimatedMiles / gallons;
+          // Use actual miles from loads when available, otherwise estimate from fleet MPG
+          const driverActualMiles = driverMilesMap.get(Number(r.driverId)) || 0;
+          const estimatedMiles = driverActualMiles > 0 ? driverActualMiles : gallons * fleetAvgMpgCalc;
+          const mpg = gallons > 0 ? estimatedMiles / gallons : 0;
           // Deterministic trend: compare driver's gallons/tx ratio to fleet average
           const avgGallonsPerTx = gallons / (Number(r.txCount) || 1);
           const fleetAvgGallonsPerTx = totalFleetGallons / byDriver.reduce((s, d) => s + (Number(d.txCount) || 1), 0);

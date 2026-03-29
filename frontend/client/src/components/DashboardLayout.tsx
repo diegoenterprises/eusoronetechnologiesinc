@@ -876,9 +876,8 @@ export default function DashboardLayout({
                 <motion.div
                   className="flex-shrink-0 relative"
                   animate={(isActive || isChildActive) && !isLocked ? { scale: [1, 1.15, 1] } : {}}
-                  transition={{ duration: 0.3 }}
+                  transition={!isLocked && iconHoverAnimations[item.icon]?.transition ? iconHoverAnimations[item.icon].transition : { duration: 0.3 }}
                   whileHover={!isLocked ? (iconHoverAnimations[item.icon]?.whileHover || defaultIconHover.whileHover) : {}}
-                  {...(!isLocked && iconHoverAnimations[item.icon]?.transition ? { transition: iconHoverAnimations[item.icon].transition } : {})}
                 >
                   {iconMap[item.icon] || item.icon}
                   {isLocked && (

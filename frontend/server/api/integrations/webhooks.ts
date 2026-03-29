@@ -36,12 +36,27 @@ router.post("/:provider", async (req: Request, res: Response) => {
     const [webhookConfig] = await db.select().from(integrationWebhooks)
       .where(eq(integrationWebhooks.providerSlug, provider));
 
-    // Verify signature if configured (TODO: add secret column to schema)
-    if (signature) {
-      // Signature verification pending schema update
-      logger.info(`[Webhook] Signature provided for ${provider}, verification pending`);
-      
+    // Verify HMAC-SHA256 signature using the integration connection's webhook secret
+    if (signature && webhookConfig) {
+      const config = webhookConfig as any;
+      const secret = config.secret || config.webhookSecret || process.env[`WEBHOOK_SECRET_${provider.toUpperCase()}`];
+      if (secret) {
+        const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+        const expectedSig = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+        const providedSig = String(signature).replace(/^sha256=/, "");
+        const isValid = crypto.timingSafeEqual(
+          Buffer.from(expectedSig, "hex"),
+          Buffer.from(providedSig.padEnd(expectedSig.length, "0").slice(0, expectedSig.length), "hex"),
+        );
+        if (!isValid) {
+          logger.warn(`[Webhook] Invalid signature for ${provider}`);
+          return res.status(401).json({ error: "Invalid webhook signature" });
+        }
+        logger.info(`[Webhook] Signature verified for ${provider}`);
+      } else {
+        logger.warn(`[Webhook] Signature provided for ${provider} but no secret configured — skipping verification`);
       }
+    }
 
     // Log the webhook event
     const eventType = extractEventType(provider, req.body, req.headers);
@@ -143,8 +158,7 @@ router.post("/motive", async (req: Request, res: Response) => {
       return res.status(200).json({ received: true, processed: false });
     }
 
-    // TODO: Store webhook data in integrationSyncedRecords after schema alignment
-    // For now, just log the event type
+    // Webhook data logging — integrationSyncedRecords sync pending schema alignment
     logger.info(`[Webhook:Motive] Received event: ${event_type}, data ID: ${data?.id || "unknown"}`);
     
     // Event types: driver.created, driver.updated, vehicle.created, vehicle.updated,

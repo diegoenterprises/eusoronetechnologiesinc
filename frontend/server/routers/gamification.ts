@@ -24,6 +24,7 @@ import {
   seasons,
   leaderboards,
   rewards,
+  hosLogs,
 } from "../../drizzle/schema";
 import { pickWeeklyMissions, getRewardsCatalogForRole, generateWeeklyMissions, forceRotateMissions } from "../services/missionGenerator";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
@@ -1492,6 +1493,19 @@ export const gamificationRouter = router({
       if (!db) return templateFallback(userRole.toUpperCase()).map(m => ({ ...m, source: "esang_ai", hosCompliant: true }));
 
       try {
+        // Query driver's current HOS compliance from hosLogs
+        let hosCompliant = true;
+        try {
+          const recentViolations = await db.select({ cnt: sql<number>`count(*)` })
+            .from(hosLogs)
+            .where(and(
+              eq(hosLogs.userId, userId),
+              eq(hosLogs.eventType, "violation"),
+              gte(hosLogs.createdAt, new Date(Date.now() - 7 * 86_400_000)),
+            ));
+          hosCompliant = (recentViolations[0]?.cnt ?? 0) === 0;
+        } catch (_) { /* HOS check non-critical, default to compliant */ }
+
         // Ensure weekly missions are seeded (idempotent — skips if already created)
         try { await generateWeeklyMissions(); } catch (err) { logger.error("[getAIMissions] seed failed:", err); }
 
@@ -1555,7 +1569,7 @@ export const gamificationRouter = router({
             currentProgress: progress?.currentProgress ? parseFloat(progress.currentProgress) : 0,
             status: progress?.status || "not_started",
             source: "esang_ai",
-            hosCompliant: true,
+            hosCompliant,
           };
         });
       } catch (err) {

@@ -11,6 +11,7 @@ import { eq, sql, and, desc } from "drizzle-orm";
 import { getDb } from "../db";
 import { auditLogs, loads, certifications, documents, notifications, inspections, users } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
+import { suggestAssignments } from "../services/ai/autoDispatch";
 
 function generateId(prefix: string): string {
   return `${prefix}-${Date.now()}-${randomBytes(3).toString("hex")}`;
@@ -427,9 +428,25 @@ const autoDispatchRouter = router({
         getDailyAutoDispatchQuota(),
       ]);
       const shouldAuto = confidence > 0.95 && enabled && !disabledSet.has("load_assignment") && (dispatched / Math.max(totalLoads, 1)) < quota;
+
+      // Use real auto-dispatch suggestion engine
+      let topDriver = { id: "none", name: "No drivers available", score: 0 };
+      try {
+        const loadIdNum = parseInt(input.loadId, 10);
+        if (!isNaN(loadIdNum)) {
+          const assignments = await suggestAssignments([loadIdNum]);
+          if (assignments.length > 0 && assignments[0].suggestedDrivers.length > 0) {
+            const best = assignments[0].suggestedDrivers[0];
+            topDriver = { id: String(best.driverId), name: best.driverName, score: best.score };
+          }
+        }
+      } catch (err) {
+        // Fall back to empty suggestion if service errors
+      }
+
       return {
         loadId: input.loadId,
-        topDriver: { id: "pending", name: "Use autoDispatch service for real matching", score: Math.floor(confidence * 100) },
+        topDriver,
         confidence,
         shouldAutoDispatch: shouldAuto,
         reasoning: [

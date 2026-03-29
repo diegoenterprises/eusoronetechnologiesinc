@@ -10,7 +10,7 @@ import { z } from "zod";
 import { complianceProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { drivers, documents, certifications, drugTests, trainingRecords, inspections, users, companies, vehicles } from "../../drizzle/schema";
+import { drivers, documents, certifications, drugTests, trainingRecords, inspections, users, companies, vehicles, hosLogs } from "../../drizzle/schema";
 import { eq, and, desc, asc, sql, gte, lte, or, isNotNull, count } from "drizzle-orm";
 import { fmcsaService } from "../services/fmcsa";
 import { clearinghouseService } from "../services/clearinghouse";
@@ -693,14 +693,28 @@ export const complianceRouter = router({
         const hzExpired = expHz?.count || 0;
         const hazmatScore = hzTotal > 0 ? Math.round(((hzTotal - hzExpired) / hzTotal) * 100) : 100;
 
-        const hosScore = 95;
+        // Compute HOS score from actual violation data in hosLogs
+        let hosScore = 100;
+        let hosItems = 0;
+        let hosIssues = 0;
+        try {
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000);
+          const [hosTotal] = await db.select({ count: sql<number>`count(*)` }).from(hosLogs)
+            .where(gte(hosLogs.createdAt, thirtyDaysAgo));
+          const [hosViolationCount] = await db.select({ count: sql<number>`count(*)` }).from(hosLogs)
+            .where(and(eq(hosLogs.eventType, 'violation'), gte(hosLogs.createdAt, thirtyDaysAgo)));
+          hosItems = hosTotal?.count || 0;
+          hosIssues = hosViolationCount?.count || 0;
+          hosScore = Math.max(0, 100 - hosIssues * 5);
+        } catch (_) { /* HOS query non-critical, default to 100 */ }
+
         const overallScore = Math.round((dqScore * 0.25) + (hosScore * 0.20) + (drugScore * 0.20) + (vehicleScore * 0.15) + (hazmatScore * 0.10) + (dqScore * 0.10));
 
         return {
           overallScore,
           scores: {
             dqFiles: { score: dqScore, items: certTotal, issues: certExpired },
-            hos: { score: hosScore, items: 0, issues: 0 },
+            hos: { score: hosScore, items: hosItems, issues: hosIssues },
             drugAlcohol: { score: drugScore, items: testTotal, issues: testTotal - testNeg },
             vehicle: { score: vehicleScore, items: inspTotal, issues: inspTotal - inspPassed },
             hazmat: { score: hazmatScore, items: hzTotal, issues: hzExpired },

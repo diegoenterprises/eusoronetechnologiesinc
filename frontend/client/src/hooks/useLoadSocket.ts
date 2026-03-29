@@ -44,10 +44,47 @@ interface ApprovalEvent {
   timestamp: string;
 }
 
+interface BidReceivedEvent {
+  loadId: string;
+  bidId: number;
+  carrierId: number;
+  amount: number;
+  timestamp: string;
+}
+
+interface CarrierSafetyEvent {
+  carrierId: number;
+  field: string;
+  oldValue: unknown;
+  newValue: unknown;
+  timestamp: string;
+}
+
+interface SOSAlertEvent {
+  driverId: number;
+  driverName: string;
+  loadId?: string;
+  location?: { lat: number; lng: number };
+  message?: string;
+  timestamp: string;
+}
+
+interface NotificationEvent {
+  userId: number;
+  type: string;
+  title: string;
+  message: string;
+  timestamp: string;
+}
+
 interface UseLoadSocketOptions {
   onStateChange?: (event: LoadStateChangeEvent) => void;
   onTimerUpdate?: (event: TimerEvent) => void;
   onApprovalUpdate?: (event: ApprovalEvent) => void;
+  onBidReceived?: (event: BidReceivedEvent) => void;
+  onCarrierSafetyChanged?: (event: CarrierSafetyEvent) => void;
+  onSOSAlert?: (event: SOSAlertEvent) => void;
+  onNotification?: (event: NotificationEvent) => void;
   enabled?: boolean;
 }
 
@@ -109,9 +146,17 @@ export function useLoadSocket(
   const onStateChangeRef = useRef(options.onStateChange);
   const onTimerUpdateRef = useRef(options.onTimerUpdate);
   const onApprovalUpdateRef = useRef(options.onApprovalUpdate);
+  const onBidReceivedRef = useRef(options.onBidReceived);
+  const onCarrierSafetyChangedRef = useRef(options.onCarrierSafetyChanged);
+  const onSOSAlertRef = useRef(options.onSOSAlert);
+  const onNotificationRef = useRef(options.onNotification);
   onStateChangeRef.current = options.onStateChange;
   onTimerUpdateRef.current = options.onTimerUpdate;
   onApprovalUpdateRef.current = options.onApprovalUpdate;
+  onBidReceivedRef.current = options.onBidReceived;
+  onCarrierSafetyChangedRef.current = options.onCarrierSafetyChanged;
+  onSOSAlertRef.current = options.onSOSAlert;
+  onNotificationRef.current = options.onNotification;
 
   useEffect(() => {
     if (!enabled || !loadId) return;
@@ -151,11 +196,37 @@ export function useLoadSocket(
       }
     };
 
+    // Bid received handler
+    const handleBidReceived = (event: BidReceivedEvent) => {
+      if (event.loadId === loadId) {
+        onBidReceivedRef.current?.(event);
+      }
+    };
+
+    // Carrier safety changed handler
+    const handleCarrierSafetyChanged = (event: CarrierSafetyEvent) => {
+      onCarrierSafetyChangedRef.current?.(event);
+    };
+
+    // SOS alert handler
+    const handleSOSAlert = (event: SOSAlertEvent) => {
+      onSOSAlertRef.current?.(event);
+    };
+
+    // Notification handler
+    const handleNotification = (event: NotificationEvent) => {
+      onNotificationRef.current?.(event);
+    };
+
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("load:stateChange", handleStateChange);
     socket.on("load:timerUpdate", handleTimerUpdate);
     socket.on("load:approvalUpdate", handleApprovalUpdate);
+    socket.on("bid:received", handleBidReceived);
+    socket.on("carrier:safety:changed", handleCarrierSafetyChanged);
+    socket.on("sos:alert", handleSOSAlert);
+    socket.on("notification", handleNotification);
 
     if (socket.connected) setIsConnected(true);
 
@@ -171,6 +242,10 @@ export function useLoadSocket(
       socket.off("load:stateChange", handleStateChange);
       socket.off("load:timerUpdate", handleTimerUpdate);
       socket.off("load:approvalUpdate", handleApprovalUpdate);
+      socket.off("bid:received", handleBidReceived);
+      socket.off("carrier:safety:changed", handleCarrierSafetyChanged);
+      socket.off("sos:alert", handleSOSAlert);
+      socket.off("notification", handleNotification);
 
       releaseSocket();
     };

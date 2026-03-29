@@ -33,6 +33,8 @@ import {
   sendPendingAlerts,
 } from "../services/carrierMonitor";
 import { runPreComputePipeline } from "../services/lightspeed/preCompute";
+import { notifications, users } from "../../drizzle/schema";
+import { eq, sql } from "drizzle-orm";
 
 // ============================================================================
 // CONFIGURATION
@@ -57,7 +59,27 @@ async function withErrorHandling(jobName: string, fn: () => Promise<any>): Promi
     logger.info(`[FMCSA Cron] Completed job: ${jobName} in ${duration}s`);
   } catch (err: any) {
     logger.error(`[FMCSA Cron] Job failed: ${jobName}`, err.message);
-    // TODO: Send alert to Slack/PagerDuty
+
+    // Notify ADMIN users about ETL failure
+    try {
+      const db = await getDb();
+      if (db) {
+        const admins = await db.select({ id: users.id }).from(users)
+          .where(sql`${users.role} IN ('ADMIN', 'SUPER_ADMIN')`);
+        for (const admin of admins) {
+          await db.insert(notifications).values({
+            userId: admin.id,
+            type: "system",
+            title: `FMCSA ETL Failed: ${jobName}`,
+            message: `The scheduled job "${jobName}" failed at ${new Date().toISOString()}. Error: ${err.message?.slice(0, 500) || "Unknown error"}`,
+            isRead: false,
+          });
+        }
+        logger.info(`[FMCSA Cron] Notified ${admins.length} admins about ETL failure`);
+      }
+    } catch (notifyErr: any) {
+      logger.error(`[FMCSA Cron] Failed to send ETL failure notification:`, notifyErr.message);
+    }
   }
 }
 

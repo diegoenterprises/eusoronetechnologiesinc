@@ -34,6 +34,7 @@ import {
   seasons,
   auditLogs,
   inspections,
+  fuelTransactions,
 } from "../../drizzle/schema";
 
 // ---------------------------------------------------------------------------
@@ -421,7 +422,7 @@ export const advancedGamificationRouter = router({
         achievements: [] as Array<{ id: string; name: string; description: string; progress: number; earnedAt: string | null }>,
         treasury: { totalPoints: Number(guild.totalMiles ?? 0), weeklyEarned: totalWeekly },
         weeklyXp: totalWeekly,
-        activeChallenges: [] as Array<unknown>, // TODO: guild challenges table
+        activeChallenges: [] as Array<unknown>, // No guild_challenges table yet; returns empty until schema is extended
       };
     }),
 
@@ -565,7 +566,7 @@ export const advancedGamificationRouter = router({
   }),
 
   getGuildChallenges: protectedProcedure.query(async () => {
-    // TODO: guild challenges table needed
+    // No guild_challenges table yet; returns empty until schema is extended
     return [] as Array<{
       id: string;
       type: "war" | "challenge";
@@ -1516,6 +1517,17 @@ export const advancedGamificationRouter = router({
       const onTime = onTimeCount?.cnt ?? 0;
       const onTimeRate = delivered > 0 ? Math.round((onTime / delivered) * 1000) / 10 : 100;
 
+      // Compute avg MPG from fuel transactions
+      let avgMpg = 0;
+      try {
+        const [fuelStats] = await db
+          .select({ totalGallons: sql<number>`COALESCE(SUM(CAST(${fuelTransactions.gallons} AS DECIMAL)), 0)` })
+          .from(fuelTransactions)
+          .where(eq(fuelTransactions.driverId, targetUserId));
+        const totalGallons = Number(fuelStats?.totalGallons) || 0;
+        avgMpg = totalGallons > 0 ? Math.round((totalMiles / totalGallons) * 10) / 10 : 0;
+      } catch (_) { /* fuel data non-critical */ }
+
       const stats = await getDriverStats(targetUserId);
       const recentAchievements = buildAchievementTemplates(stats)
         .filter(a => a.unlocked)
@@ -1546,10 +1558,10 @@ export const advancedGamificationRouter = router({
           totalLoads,
           onTimeRate,
           safetyScore: driver?.safetyScore ?? 100,
-          avgMpg: 7.4, // TODO: derive from fuel transactions
+          avgMpg,
           yearsOfService: Math.round(yearsOfService * 10) / 10,
           rankOverall: profile?.rank ?? 0,
-          rankGuild: 0, // TODO: compute from guild leaderboard
+          rankGuild: 0, // Guild-internal ranking not available without a per-member scoring table
         },
         recentAchievements,
         customization: {

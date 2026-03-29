@@ -2110,6 +2110,17 @@ async function logTransition(
 // TRPC ROUTER
 // ═══════════════════════════════════════════════════════════════
 
+// ── DATA INTEGRITY FIX: Reset orphaned in_transit loads that have no driver assigned ──
+// These loads cannot be in-transit without a driver; reset to 'posted' so they re-enter the pipeline.
+(async () => {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    await db.execute(sql`UPDATE loads SET status = 'posted' WHERE status = 'in_transit' AND driverId IS NULL`);
+    logger.info("[LoadLifecycle] Data integrity check: reset any in_transit loads with NULL driverId to 'posted'");
+  } catch { /* non-critical startup task */ }
+})();
+
 export const loadLifecycleRouter = router({
 
   // ── GET STATE MACHINE DEFINITION ──
@@ -2300,6 +2311,13 @@ export const loadLifecycleRouter = router({
         return { success: false, errors, step: "GUARD_VALIDATION" };
       }
 
+      // ── DRIVER ASSIGNMENT GUARD — cannot transition to IN_TRANSIT without a driver ──
+      if (transition.to === "IN_TRANSIT" && !load.driverId) {
+        const driverErr = "Cannot mark load as in-transit without an assigned driver";
+        await logTransition(numericLoadId, currentState, transition.to, transition, ctx.user?.id || 0, userRole, guardsPassed, [], input.metadata, false, driverErr);
+        return { success: false, errors: [driverErr], step: "DRIVER_VALIDATION" };
+      }
+
       // Resolve __previous_state__ sentinel for ON_HOLD release
       let resolvedTo: string = transition.to;
       if (transition.to === "__previous_state__") {
@@ -2455,16 +2473,23 @@ export const loadLifecycleRouter = router({
                 } catch { /* platform_fee_configs table may not exist yet */ }
               }
 
-              // 3. Calculate platform commission fee
+              // 3. Calculate platform commission fee (default 3.5% if no config)
               const totalShipperCharge = loadRate + accessorialTotal + hazmatSurcharge;
-              const feeResult = await feeCalculator.calculateFee({
+              let feeResult = await feeCalculator.calculateFee({
                 userId: load.shipperId,
                 userRole: "SHIPPER",
                 transactionType: "load_completion",
                 amount: totalShipperCharge,
                 loadId: numericLoadId,
               });
-              const platformFee = feeResult.finalFee;
+              // P0-001 FIX: If fee calculator returned zero (no config), use default 3.5%
+              let platformFee = feeResult.finalFee;
+              if (platformFee <= 0 && totalShipperCharge > 0) {
+                const defaultFeePercent = 3.5;
+                platformFee = totalShipperCharge * (defaultFeePercent / 100);
+                feeResult = { ...feeResult, finalFee: platformFee, baseFee: platformFee, breakdown: { ...feeResult.breakdown, baseRate: defaultFeePercent, feeCode: "DEFAULT_PLATFORM_FEE" } };
+                logger.info(`[Settlement] No fee config found — using default ${defaultFeePercent}% platform fee ($${platformFee.toFixed(2)}) for load ${numericLoadId}`);
+              }
               const carrierPay = totalShipperCharge - platformFee;
 
               await _sDb.insert(settlements).values({
@@ -3056,6 +3081,11 @@ export const loadLifecycleRouter = router({
       }
       if (errors.length > 0) {
         return { success: false, errors, step: "COMPLIANCE_VALIDATION" };
+      }
+
+      // ── DRIVER ASSIGNMENT GUARD — cannot transition to IN_TRANSIT without a driver (v1 compat) ──
+      if (to === "IN_TRANSIT" && !load.driverId) {
+        return { success: false, error: "Cannot mark load as in-transit without an assigned driver", step: "DRIVER_VALIDATION" };
       }
 
       // Update status

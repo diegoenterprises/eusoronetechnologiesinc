@@ -26,6 +26,12 @@ import {
   inspections,
   zeunRepairProviders,
   fuelTransactions,
+  partsInventory,
+  warrantyRecords,
+  warrantyClaims,
+  tireInventory,
+  purchaseOrders,
+  complianceEvents,
 } from "../../drizzle/schema";
 
 // ---------------------------------------------------------------------------
@@ -86,8 +92,7 @@ function mapBreakdownToWoPriority(severity: string): "critical" | "high" | "medi
   }
 }
 
-// Static part catalog — reference config for common fleet parts
-// TODO: migrate to parts_inventory table for dynamic inventory management
+// Static part catalog — fallback reference data when parts_inventory table is empty
 const PART_CATALOG = [
   { partNumber: "OIL-15W40-GAL", name: "15W-40 Diesel Engine Oil (gal)", category: "Fluids", unitCost: 22.50, qtyOnHand: 48, reorderPoint: 20, reorderQty: 50 },
   { partNumber: "FLT-OIL-DD15", name: "Oil Filter - DD15 Engine", category: "Filters", unitCost: 18.75, qtyOnHand: 12, reorderPoint: 10, reorderQty: 24 },
@@ -282,9 +287,28 @@ export const fleetMaintenanceRouter = router({
       .orderBy(sql`SUM(${zeunMaintenanceLogs.cost}) DESC`)
       .limit(6);
 
-    // TODO: wire to warranty table and compute from WO open->close times
-    const expiringWarranties = 0;
-    const avgRepairTurnaround = 0;
+    // Expiring warranties: active warranties expiring within 90 days
+    const ninetyDaysFromNow = new Date(now.getTime() + 90 * 86400000);
+    const [expiringWarrantyRow] = await db.select({ cnt: count() })
+      .from(warrantyRecords)
+      .where(and(
+        eq(warrantyRecords.companyId, companyId),
+        eq(warrantyRecords.status, "active"),
+        lte(warrantyRecords.expiryDate, ninetyDaysFromNow),
+        gte(warrantyRecords.expiryDate, now),
+      ));
+    const expiringWarranties = expiringWarrantyRow?.cnt ?? 0;
+
+    // Compute average repair turnaround from resolved breakdown reports (createdAt -> resolvedAt)
+    const [turnaroundRow] = await db.select({
+      avgHours: sql<number>`COALESCE(AVG(TIMESTAMPDIFF(HOUR, ${zeunBreakdownReports.createdAt}, ${zeunBreakdownReports.resolvedAt})), 0)`,
+    }).from(zeunBreakdownReports)
+      .where(and(
+        eq(zeunBreakdownReports.companyId, companyId),
+        eq(zeunBreakdownReports.status, "RESOLVED"),
+        sql`${zeunBreakdownReports.resolvedAt} IS NOT NULL`,
+      ));
+    const avgRepairTurnaround = Math.round(Number(turnaroundRow?.avgHours ?? 0));
     const complianceScore = overduePMs === 0 && recallAlerts === 0 ? 100
       : Math.max(60, 100 - overduePMs * 3 - recallAlerts * 5);
 
@@ -302,8 +326,8 @@ export const fleetMaintenanceRouter = router({
       vehiclesInShop,
       fleetAvailability,
       recallAlerts,
-      expiringWarranties, // TODO: wire to warranty table when created
-      avgRepairTurnaroundHrs: avgRepairTurnaround, // TODO: compute from real data
+      expiringWarranties,
+      avgRepairTurnaroundHrs: avgRepairTurnaround, // computed from resolved breakdown reports
       complianceScore,
       recentActivity: recentLogs.map((log) => ({
         id: `act_${log.id}`,
@@ -692,8 +716,7 @@ export const fleetMaintenanceRouter = router({
     }),
 
   // =========================================================================
-  // PARTS INVENTORY — TODO: create parts_inventory table
-  // Uses static catalog with deterministic data until table exists.
+  // PARTS INVENTORY (backed by parts_inventory table, static catalog fallback)
   // =========================================================================
 
   getPartsInventory: protectedProcedure
@@ -703,15 +726,53 @@ export const fleetMaintenanceRouter = router({
       search: z.string().optional(),
     }).merge(paginationInput))
     .query(async ({ ctx, input }) => {
-      // TODO: Replace with DB query when parts_inventory table is created
-      let parts = PART_CATALOG.map((p, i) => ({
-        ...p,
-        id: i + 1,
-        totalValue: Math.round(p.unitCost * p.qtyOnHand * 100) / 100,
-        isLowStock: p.qtyOnHand <= p.reorderPoint,
-        lastOrderDate: new Date(Date.now() - (i + 1) * 15 * 86400000).toISOString(),
-        avgMonthlyUsage: Math.round(p.reorderQty / 2),
-      }));
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user!.companyId || 1;
+
+      // Query real parts_inventory table; fall back to static catalog if table is empty
+      const dbParts = await db.select().from(partsInventory)
+        .where(eq(partsInventory.companyId, companyId))
+        .orderBy(desc(partsInventory.updatedAt))
+        .limit(500);
+
+      let parts: Array<{
+        id: number; partNumber: string; name: string; category: string;
+        unitCost: number; qtyOnHand: number; reorderPoint: number; reorderQty: number;
+        totalValue: number; isLowStock: boolean; lastOrderDate: string | null; avgMonthlyUsage: number;
+      }>;
+
+      if (dbParts.length > 0) {
+        parts = dbParts.map((p) => {
+          const qty = p.quantity ?? 0;
+          const cost = Number(p.unitCost ?? 0);
+          const reorder = p.reorderLevel ?? 5;
+          return {
+            id: p.id,
+            partNumber: p.partNumber,
+            name: p.name,
+            category: p.category || "Other",
+            unitCost: cost,
+            qtyOnHand: qty,
+            reorderPoint: reorder,
+            reorderQty: reorder * 2,
+            totalValue: Math.round(cost * qty * 100) / 100,
+            isLowStock: qty <= reorder,
+            lastOrderDate: p.lastOrderedAt?.toISOString() ?? null,
+            avgMonthlyUsage: Math.round(reorder),
+          };
+        });
+      } else {
+        // Fall back to static catalog when no DB rows exist yet
+        parts = PART_CATALOG.map((p, i) => ({
+          ...p,
+          id: i + 1,
+          totalValue: Math.round(p.unitCost * p.qtyOnHand * 100) / 100,
+          isLowStock: p.qtyOnHand <= p.reorderPoint,
+          lastOrderDate: new Date(Date.now() - (i + 1) * 15 * 86400000).toISOString(),
+          avgMonthlyUsage: Math.round(p.reorderQty / 2),
+        }));
+      }
 
       if (input.category) parts = parts.filter(p => p.category === input.category);
       if (input.lowStock) parts = parts.filter(p => p.isLowStock);
@@ -722,6 +783,7 @@ export const fleetMaintenanceRouter = router({
 
       const totalInventoryValue = parts.reduce((sum, p) => sum + p.totalValue, 0);
       const lowStockCount = parts.filter(p => p.isLowStock).length;
+      const categories = Array.from(new Set(parts.map(p => p.category)));
 
       const start = (input.page - 1) * input.limit;
       return {
@@ -731,7 +793,7 @@ export const fleetMaintenanceRouter = router({
         totalPages: Math.ceil(parts.length / input.limit),
         totalInventoryValue: Math.round(totalInventoryValue * 100) / 100,
         lowStockCount,
-        categories: Array.from(new Set(PART_CATALOG.map(p => p.category))),
+        categories,
       };
     }),
 
@@ -744,17 +806,43 @@ export const fleetMaintenanceRouter = router({
       notes: z.string().max(500).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // TODO: Insert into purchase_orders table when created
-      const part = PART_CATALOG.find(p => p.partNumber === input.partNumber);
-      const poId = `PO-${Date.now().toString(36).toUpperCase()}`;
-      logger.info(`[FleetMaintenance] Purchase order ${poId} created for ${input.quantity}x ${input.partNumber}`);
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user!.companyId || 1;
+
+      // Look up part cost from parts_inventory first, fall back to static catalog
+      const [dbPart] = await db.select({ unitCost: partsInventory.unitCost, name: partsInventory.name })
+        .from(partsInventory)
+        .where(and(eq(partsInventory.companyId, companyId), eq(partsInventory.partNumber, input.partNumber)))
+        .limit(1);
+      const staticPart = PART_CATALOG.find(p => p.partNumber === input.partNumber);
+      const unitCost = Number(dbPart?.unitCost ?? staticPart?.unitCost ?? 0);
+      const partName = dbPart?.name ?? staticPart?.name ?? input.partNumber;
+      const totalCost = unitCost * input.quantity;
+
+      const poNumber = `PO-${Date.now().toString(36).toUpperCase()}`;
+
+      // Insert into purchase_orders table
+      const [poResult] = await db.insert(purchaseOrders).values({
+        companyId,
+        poNumber,
+        vendorId: input.vendorId ?? null,
+        vendorName: null,
+        status: "submitted",
+        totalAmount: String(totalCost) as any,
+        items: [{ partNumber: input.partNumber, description: partName, quantity: input.quantity, unitCost }],
+        orderedAt: new Date(),
+        notes: input.notes || null,
+      }).$returningId();
+
+      logger.info(`[FleetMaintenance] Purchase order ${poNumber} (id=${poResult.id}) created for ${input.quantity}x ${input.partNumber}`);
       return {
-        purchaseOrderId: poId,
+        purchaseOrderId: poNumber,
         partNumber: input.partNumber,
-        partName: part?.name || input.partNumber,
+        partName,
         quantity: input.quantity,
-        unitCost: part?.unitCost || 0,
-        totalCost: (part?.unitCost || 0) * input.quantity,
+        unitCost,
+        totalCost,
         urgency: input.urgency,
         estimatedDelivery: new Date(Date.now() + (input.urgency === "emergency" ? 1 : input.urgency === "expedited" ? 3 : 7) * 86400000).toISOString(),
         status: "ordered" as const,
@@ -764,8 +852,7 @@ export const fleetMaintenanceRouter = router({
     }),
 
   // =========================================================================
-  // WARRANTY MANAGEMENT — TODO: create warranty table
-  // Deterministic seeded data until warranty table exists.
+  // WARRANTY MANAGEMENT (backed by warranty_records + warranty_claims tables)
   // =========================================================================
 
   getWarrantyTracker: protectedProcedure
@@ -779,52 +866,112 @@ export const fleetMaintenanceRouter = router({
       const companyId = ctx.user!.companyId || 1;
       const now = new Date();
 
-      // Get real vehicles to build warranty entries from
-      const conditions = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
-      if (input.vehicleId) conditions.push(eq(vehicles.id, input.vehicleId));
+      // Try real warranty_records table first
+      const wrConditions: SQL[] = [eq(warrantyRecords.companyId, companyId)];
+      if (input.vehicleId) wrConditions.push(eq(warrantyRecords.vehicleId, input.vehicleId));
 
-      const fleetVehicles = await db.select({
-        id: vehicles.id,
-        licensePlate: vehicles.licensePlate,
-        year: vehicles.year,
-        make: vehicles.make,
-      }).from(vehicles).where(and(...conditions)).limit(100);
+      const dbWarranties = await db.select({
+        id: warrantyRecords.id,
+        vehicleId: warrantyRecords.vehicleId,
+        component: warrantyRecords.component,
+        provider: warrantyRecords.provider,
+        startDate: warrantyRecords.startDate,
+        expiryDate: warrantyRecords.expiryDate,
+        mileageLimit: warrantyRecords.mileageLimit,
+        status: warrantyRecords.status,
+        policyNumber: warrantyRecords.policyNumber,
+        vehicleLicensePlate: vehicles.licensePlate,
+        vehicleMileage: vehicles.mileage,
+      }).from(warrantyRecords)
+        .leftJoin(vehicles, eq(warrantyRecords.vehicleId, vehicles.id))
+        .where(and(...wrConditions))
+        .orderBy(warrantyRecords.expiryDate)
+        .limit(500);
 
-      // TODO: Replace with real warranty table query
-      const components = [
-        { component: "Engine", provider: "Detroit Diesel / Daimler", durationMonths: 60, mileageLimit: 500000 },
-        { component: "Transmission", provider: "Eaton Fuller", durationMonths: 48, mileageLimit: 400000 },
-        { component: "Aftertreatment (DPF/SCR)", provider: "Detroit Diesel", durationMonths: 60, mileageLimit: 350000 },
-        { component: "Turbocharger", provider: "BorgWarner", durationMonths: 36, mileageLimit: 300000 },
-        { component: "Starter Motor", provider: "Delco Remy", durationMonths: 24, mileageLimit: 200000 },
-      ];
+      // Count claims per warranty
+      const claimCounts = dbWarranties.length > 0
+        ? await db.select({
+            warrantyId: warrantyClaims.warrantyId,
+            cnt: count(),
+          }).from(warrantyClaims)
+            .where(eq(warrantyClaims.companyId, companyId))
+            .groupBy(warrantyClaims.warrantyId)
+        : [];
+      const claimMap = new Map(claimCounts.map(c => [c.warrantyId, c.cnt]));
 
-      const warranties = fleetVehicles.flatMap((v) => {
-        return components.map((c, ci) => {
-          const yearOffset = v.year ? now.getFullYear() - v.year : 3;
-          const purchaseDate = new Date(now.getTime() - yearOffset * 365 * 86400000 + ci * 30 * 86400000);
-          const expiryDate = new Date(purchaseDate.getTime() + c.durationMonths * 30 * 86400000);
-          const daysRemaining = Math.round((expiryDate.getTime() - now.getTime()) / 86400000);
+      let warranties: Array<{
+        id: string; vehicleId: number; vehicleUnit: string; component: string;
+        provider: string; purchaseDate: string; expiryDate: string; daysRemaining: number;
+        mileageLimit: number; currentMiles: number; milesRemaining: number;
+        status: "active" | "expiring_soon" | "expired"; claimsCount: number;
+      }>;
 
+      if (dbWarranties.length > 0) {
+        warranties = dbWarranties.map((w) => {
+          const expiry = w.expiryDate ?? now;
+          const daysRemaining = Math.round((expiry.getTime() - now.getTime()) / 86400000);
+          const currentMiles = w.vehicleMileage ?? 0;
+          const mlimit = w.mileageLimit ?? 0;
           return {
-            id: `wrty_${v.id}_${ci}`,
-            vehicleId: v.id,
-            vehicleUnit: v.licensePlate || `VH-${v.id}`,
-            component: c.component,
-            provider: c.provider,
-            purchaseDate: purchaseDate.toISOString(),
-            expiryDate: expiryDate.toISOString(),
+            id: `wrty_${w.id}`,
+            vehicleId: w.vehicleId ?? 0,
+            vehicleUnit: w.vehicleLicensePlate || `VH-${w.vehicleId}`,
+            component: w.component,
+            provider: w.provider || "Unknown",
+            purchaseDate: w.startDate?.toISOString() ?? now.toISOString(),
+            expiryDate: expiry.toISOString(),
             daysRemaining: Math.max(0, daysRemaining),
-            mileageLimit: c.mileageLimit,
-            currentMiles: 0,
-            milesRemaining: c.mileageLimit,
+            mileageLimit: mlimit,
+            currentMiles,
+            milesRemaining: Math.max(0, mlimit - currentMiles),
             status: daysRemaining <= 0 ? "expired" as const
               : daysRemaining <= 90 ? "expiring_soon" as const
               : "active" as const,
-            claimsCount: 0,
+            claimsCount: claimMap.get(w.id) ?? 0,
           };
         });
-      });
+      } else {
+        // Fallback: generate synthetic warranty entries from fleet vehicles
+        const vehConditions: SQL[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
+        if (input.vehicleId) vehConditions.push(eq(vehicles.id, input.vehicleId));
+        const fleetVehicles = await db.select({
+          id: vehicles.id, licensePlate: vehicles.licensePlate, year: vehicles.year,
+        }).from(vehicles).where(and(...vehConditions)).limit(100);
+
+        const components = [
+          { component: "Engine", provider: "Detroit Diesel / Daimler", durationMonths: 60, mileageLimit: 500000 },
+          { component: "Transmission", provider: "Eaton Fuller", durationMonths: 48, mileageLimit: 400000 },
+          { component: "Aftertreatment (DPF/SCR)", provider: "Detroit Diesel", durationMonths: 60, mileageLimit: 350000 },
+          { component: "Turbocharger", provider: "BorgWarner", durationMonths: 36, mileageLimit: 300000 },
+          { component: "Starter Motor", provider: "Delco Remy", durationMonths: 24, mileageLimit: 200000 },
+        ];
+
+        warranties = fleetVehicles.flatMap((v) =>
+          components.map((c, ci) => {
+            const yearOffset = v.year ? now.getFullYear() - v.year : 3;
+            const purchaseDate = new Date(now.getTime() - yearOffset * 365 * 86400000 + ci * 30 * 86400000);
+            const expiryDate = new Date(purchaseDate.getTime() + c.durationMonths * 30 * 86400000);
+            const daysRemaining = Math.round((expiryDate.getTime() - now.getTime()) / 86400000);
+            return {
+              id: `wrty_${v.id}_${ci}`,
+              vehicleId: v.id,
+              vehicleUnit: v.licensePlate || `VH-${v.id}`,
+              component: c.component,
+              provider: c.provider,
+              purchaseDate: purchaseDate.toISOString(),
+              expiryDate: expiryDate.toISOString(),
+              daysRemaining: Math.max(0, daysRemaining),
+              mileageLimit: c.mileageLimit,
+              currentMiles: 0,
+              milesRemaining: c.mileageLimit,
+              status: daysRemaining <= 0 ? "expired" as const
+                : daysRemaining <= 90 ? "expiring_soon" as const
+                : "active" as const,
+              claimsCount: 0,
+            };
+          })
+        );
+      }
 
       let filtered = warranties;
       if (input.expiringWithinDays) {
@@ -858,8 +1005,32 @@ export const fleetMaintenanceRouter = router({
       estimatedRepairCost: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // TODO: Insert into warranty_claims table when created
-      const claimId = `WC-${Date.now().toString(36).toUpperCase()}`;
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user!.companyId || 1;
+
+      // Parse warranty record id (format: wrty_<id> or wrty_<vid>_<idx>)
+      const warrantyDbId = parseInt(input.warrantyId.replace("wrty_", ""), 10) || null;
+
+      const [claimResult] = await db.insert(warrantyClaims).values({
+        warrantyId: warrantyDbId,
+        companyId,
+        vehicleId: input.vehicleId,
+        claimDate: new Date(input.failureDate),
+        description: `${input.component}: ${input.issueDescription}`,
+        repairCost: String(input.estimatedRepairCost) as any,
+        status: "submitted",
+        notes: `Mileage at failure: ${input.mileageAtFailure}`,
+      }).$returningId();
+
+      // If warranty record exists, update its status to claimed
+      if (warrantyDbId) {
+        await db.update(warrantyRecords)
+          .set({ status: "claimed" })
+          .where(eq(warrantyRecords.id, warrantyDbId));
+      }
+
+      const claimId = `WC-${claimResult.id}`;
       logger.info(`[FleetMaintenance] Warranty claim ${claimId} submitted for warranty ${input.warrantyId}`);
       return {
         claimId,
@@ -872,8 +1043,7 @@ export const fleetMaintenanceRouter = router({
     }),
 
   // =========================================================================
-  // TIRE MANAGEMENT — TODO: create tire_inventory table
-  // Derives data from vehicles table; seeded for tire-specific fields.
+  // TIRE MANAGEMENT (backed by tire_inventory table, synthetic fallback)
   // =========================================================================
 
   getTireManagement: protectedProcedure
@@ -888,49 +1058,109 @@ export const fleetMaintenanceRouter = router({
       const positions = Object.values(tirePositionSchema.enum);
 
       // Get real vehicles (tractors only for tires)
-      const conditions: SQL[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
-      if (input.vehicleId) conditions.push(eq(vehicles.id, input.vehicleId));
-      else conditions.push(sql`${vehicles.vehicleType} IN ('tractor','box_truck','escort_truck','pilot_car')`);
+      const vehConditions: SQL[] = [eq(vehicles.companyId, companyId), eq(vehicles.isActive, true)];
+      if (input.vehicleId) vehConditions.push(eq(vehicles.id, input.vehicleId));
+      else vehConditions.push(sql`${vehicles.vehicleType} IN ('tractor','box_truck','escort_truck','pilot_car')`);
 
       const fleetVehicles = await db.select({
         id: vehicles.id,
         licensePlate: vehicles.licensePlate,
         mileage: vehicles.mileage,
-      }).from(vehicles).where(and(...conditions)).limit(50);
+      }).from(vehicles).where(and(...vehConditions)).limit(50);
 
-      // TODO: Replace with real tire_inventory table
-      const tires: Array<{
+      // Try real tire_inventory table
+      const tireConditions: SQL[] = [eq(tireInventory.companyId, companyId)];
+      if (input.vehicleId) tireConditions.push(eq(tireInventory.vehicleId, input.vehicleId));
+
+      const dbTires = await db.select({
+        id: tireInventory.id,
+        vehicleId: tireInventory.vehicleId,
+        position: tireInventory.position,
+        brand: tireInventory.brand,
+        model: tireInventory.model,
+        size: tireInventory.size,
+        treadDepth: tireInventory.treadDepth,
+        installedAt: tireInventory.installedAt,
+        installedMileage: tireInventory.installedMileage,
+        status: tireInventory.status,
+        vehicleLicensePlate: vehicles.licensePlate,
+        vehicleMileage: vehicles.mileage,
+      }).from(tireInventory)
+        .leftJoin(vehicles, eq(tireInventory.vehicleId, vehicles.id))
+        .where(and(...tireConditions))
+        .limit(500);
+
+      type TireRow = {
         id: string; vehicleId: number; vehicleUnit: string; position: string;
         brand: string; model: string; size: string; dotCode: string;
         installedDate: string | null; installedMileage: number; currentMileage: number;
         treadDepth32nds: number; treadDepthStatus: "good" | "monitor" | "replace_soon" | "critical";
         pressure: number; pressureStatus: "ok" | "low" | "high";
         nextRotationMiles: number; nextRotationDate: string | null; costPerMile: number;
-      }> = [];
+      };
 
-      for (const vehicle of fleetVehicles) {
-        const currentMiles = vehicle.mileage ?? 0;
-        for (let pi = 0; pi < Math.min(positions.length, 6); pi++) {
-          tires.push({
-            id: `tire_${vehicle.id}_${pi}`,
-            vehicleId: vehicle.id,
-            vehicleUnit: vehicle.licensePlate || `VH-${vehicle.id}`,
-            position: positions[pi],
-            brand: "Unknown",
-            model: pi < 2 ? "Steer" : "Drive",
-            size: pi < 2 ? "11R22.5" : "295/75R22.5",
+      let tires: TireRow[];
+
+      if (dbTires.length > 0) {
+        tires = dbTires.map((t) => {
+          const depth = Number(t.treadDepth ?? 0);
+          const depth32 = Math.round(depth * 32); // decimal inches to 32nds
+          const currentMiles = t.vehicleMileage ?? 0;
+          const installedMiles = t.installedMileage ?? 0;
+          const milesDriven = Math.max(0, currentMiles - installedMiles);
+          let treadStatus: "good" | "monitor" | "replace_soon" | "critical" = "good";
+          if (depth32 <= 2) treadStatus = "critical";
+          else if (depth32 <= 4) treadStatus = "replace_soon";
+          else if (depth32 <= 6) treadStatus = "monitor";
+
+          return {
+            id: `tire_${t.id}`,
+            vehicleId: t.vehicleId ?? 0,
+            vehicleUnit: t.vehicleLicensePlate || `VH-${t.vehicleId}`,
+            position: t.position || "SPARE",
+            brand: t.brand || "Unknown",
+            model: t.model || "Unknown",
+            size: t.size || "295/75R22.5",
             dotCode: "",
-            installedDate: null,
-            installedMileage: 0,
+            installedDate: t.installedAt?.toISOString() ?? null,
+            installedMileage: installedMiles,
             currentMileage: currentMiles,
-            treadDepth32nds: 0,
-            treadDepthStatus: "good",
+            treadDepth32nds: depth32,
+            treadDepthStatus: treadStatus,
             pressure: 0,
-            pressureStatus: "ok",
+            pressureStatus: "ok" as const,
             nextRotationMiles: currentMiles + 20000,
             nextRotationDate: null,
             costPerMile: 0,
-          });
+          };
+        });
+      } else {
+        // Fallback: generate synthetic tire data from fleet vehicles
+        tires = [];
+        for (const vehicle of fleetVehicles) {
+          const currentMiles = vehicle.mileage ?? 0;
+          for (let pi = 0; pi < Math.min(positions.length, 6); pi++) {
+            tires.push({
+              id: `tire_${vehicle.id}_${pi}`,
+              vehicleId: vehicle.id,
+              vehicleUnit: vehicle.licensePlate || `VH-${vehicle.id}`,
+              position: positions[pi],
+              brand: "Unknown",
+              model: pi < 2 ? "Steer" : "Drive",
+              size: pi < 2 ? "11R22.5" : "295/75R22.5",
+              dotCode: "",
+              installedDate: null,
+              installedMileage: 0,
+              currentMileage: currentMiles,
+              treadDepth32nds: 0,
+              treadDepthStatus: "good",
+              pressure: 0,
+              pressureStatus: "ok",
+              nextRotationMiles: currentMiles + 20000,
+              nextRotationDate: null,
+              costPerMile: 0,
+            });
+          }
         }
       }
 
@@ -1315,6 +1545,26 @@ export const fleetMaintenanceRouter = router({
 
       const fuelMap = new Map(fuelAggs.map(f => [f.vehicleId, f]));
 
+      // Weekly fuel aggregates for trend / weeklyMpg computation
+      const weeklyFuel = await db.select({
+        vehicleId: fuelTransactions.vehicleId,
+        week: sql<string>`DATE_FORMAT(${fuelTransactions.transactionDate}, '%x-W%v')`,
+        gallons: sql<string>`COALESCE(SUM(${fuelTransactions.gallons}), 0)`,
+      }).from(fuelTransactions)
+        .where(and(
+          eq(fuelTransactions.companyId, companyId),
+          gte(fuelTransactions.transactionDate, since),
+        ))
+        .groupBy(fuelTransactions.vehicleId, sql`DATE_FORMAT(${fuelTransactions.transactionDate}, '%x-W%v')`)
+        .orderBy(sql`DATE_FORMAT(${fuelTransactions.transactionDate}, '%x-W%v')`);
+
+      // Build a map: vehicleId -> [{week, gallons}]
+      const weeklyMap = new Map<number, Array<{ week: string; gallons: number }>>();
+      for (const row of weeklyFuel) {
+        if (!weeklyMap.has(row.vehicleId)) weeklyMap.set(row.vehicleId, []);
+        weeklyMap.get(row.vehicleId)!.push({ week: row.week, gallons: Number(row.gallons) });
+      }
+
       const vehicleData = fleetVehicles.map((v) => {
         const fuel = fuelMap.get(v.id);
         const totalGallons = Math.round(Number(fuel?.totalGallons ?? 0));
@@ -1339,10 +1589,23 @@ export const fleetMaintenanceRouter = router({
           totalFuelCost,
           avgCostPerGallon: Math.round(avgFuelCost * 100) / 100,
           costPerMile,
-          idlePercent: 0, // TODO: from telemetry
+          idlePercent: 0, // Requires ELD/telematics integration (Motive, Samsara) for idle engine time data
           idleFuelWaste: 0,
-          trend: "improving" as const, // TODO: compute from historical data
-          weeklyMpg: [], // TODO: compute from weekly fuel transaction aggregates
+          trend: (() => {
+            const weeks = weeklyMap.get(v.id) || [];
+            if (weeks.length < 2) return "stable" as const;
+            const half = Math.floor(weeks.length / 2);
+            const firstHalfGal = weeks.slice(0, half).reduce((s, w) => s + w.gallons, 0);
+            const secondHalfGal = weeks.slice(half).reduce((s, w) => s + w.gallons, 0);
+            // Fewer gallons in second half with same miles = improving MPG
+            if (secondHalfGal < firstHalfGal * 0.95) return "improving" as const;
+            if (secondHalfGal > firstHalfGal * 1.05) return "declining" as const;
+            return "stable" as const;
+          })(),
+          weeklyMpg: (weeklyMap.get(v.id) || []).map((w) => ({
+            week: w.week,
+            mpg: w.gallons > 0 ? Math.round(mpg * 100) / 100 : 0, // approximate using overall MPG
+          })),
         };
       });
 
@@ -1490,24 +1753,67 @@ export const fleetMaintenanceRouter = router({
       .orderBy(desc(zeunRepairProviders.zeunRating))
       .limit(50);
 
+    // Aggregate total spend and job count per provider from maintenance logs
+    const providerSpendRows = await db.select({
+      providerId: zeunMaintenanceLogs.providerId,
+      totalSpend: sql<number>`COALESCE(SUM(${zeunMaintenanceLogs.cost}), 0)`,
+      jobCount: sql<number>`COUNT(*)`,
+    }).from(zeunMaintenanceLogs)
+      .where(sql`${zeunMaintenanceLogs.providerId} IS NOT NULL`)
+      .groupBy(zeunMaintenanceLogs.providerId);
+
+    // Also aggregate from purchase_orders by vendorId
+    const poSpendRows = await db.select({
+      vendorId: purchaseOrders.vendorId,
+      totalSpend: sql<number>`COALESCE(SUM(${purchaseOrders.totalAmount}), 0)`,
+    }).from(purchaseOrders)
+      .where(sql`${purchaseOrders.vendorId} IS NOT NULL AND ${purchaseOrders.status} != 'cancelled'`)
+      .groupBy(purchaseOrders.vendorId);
+
+    const spendByProvider = new Map<number, { totalSpend: number; jobCount: number }>();
+    for (const row of providerSpendRows) {
+      if (row.providerId) {
+        spendByProvider.set(row.providerId, {
+          totalSpend: Math.round(Number(row.totalSpend) * 100) / 100,
+          jobCount: Number(row.jobCount),
+        });
+      }
+    }
+    // Merge PO spend into provider totals
+    for (const row of poSpendRows) {
+      if (row.vendorId) {
+        const existing = spendByProvider.get(row.vendorId);
+        if (existing) {
+          existing.totalSpend += Math.round(Number(row.totalSpend) * 100) / 100;
+        } else {
+          spendByProvider.set(row.vendorId, { totalSpend: Math.round(Number(row.totalSpend) * 100) / 100, jobCount: 0 });
+        }
+      }
+    }
+
     return {
-      vendors: providers.map((p) => ({
-        id: p.id,
-        name: p.name,
-        rating: Number(p.zeunRating ?? p.rating ?? 0),
-        specialty: (p.services as string[] | null)?.[0] || p.providerType,
-        phone: p.phone || null,
-        email: p.email || null,
-        address: [p.address, p.city, p.state, p.zip].filter(Boolean).join(", "),
-        jobsCompleted: p.jobsCompleted ?? 0,
-        avgTurnaroundHours: p.averageWaitTimeMinutes ? Math.round(p.averageWaitTimeMinutes / 60) : 0,
-        totalSpend: 0, // TODO: aggregate from maintenance logs by providerId
-        avgJobCost: 0,
-        warrantyRate: 95,
-        isPreferred: Number(p.zeunRating ?? p.rating ?? 0) >= 4.5,
-        lastUsed: p.lastVerified?.toISOString() ?? p.updatedAt.toISOString(),
-        certifications: (p.certifications as string[] | null) || [],
-      })),
+      vendors: providers.map((p) => {
+        const spend = spendByProvider.get(p.id);
+        const provTotalSpend = spend?.totalSpend ?? 0;
+        const provJobCount = spend?.jobCount ?? 0;
+        return {
+          id: p.id,
+          name: p.name,
+          rating: Number(p.zeunRating ?? p.rating ?? 0),
+          specialty: (p.services as string[] | null)?.[0] || p.providerType,
+          phone: p.phone || null,
+          email: p.email || null,
+          address: [p.address, p.city, p.state, p.zip].filter(Boolean).join(", "),
+          jobsCompleted: p.jobsCompleted ?? 0,
+          avgTurnaroundHours: p.averageWaitTimeMinutes ? Math.round(p.averageWaitTimeMinutes / 60) : 0,
+          totalSpend: provTotalSpend,
+          avgJobCost: provJobCount > 0 ? Math.round(provTotalSpend / provJobCount * 100) / 100 : 0,
+          warrantyRate: 95,
+          isPreferred: Number(p.zeunRating ?? p.rating ?? 0) >= 4.5,
+          lastUsed: p.lastVerified?.toISOString() ?? p.updatedAt.toISOString(),
+          certifications: (p.certifications as string[] | null) || [],
+        };
+      }),
     };
   }),
 
@@ -1705,7 +2011,7 @@ export const fleetMaintenanceRouter = router({
         const maintenanceHours = Math.round(maintMap.get(v.id) ?? 0);
         const isInMaintenance = v.status === "maintenance" || v.status === "out_of_service";
 
-        // TODO: derive driving/idle hours from GPS/ELD data
+        // Driving/idle hours require ELD/GPS telemetry integration (Motive, Samsara, KeepTruckin)
         const drivingHours = 0;
         const idleHours = 0;
         const downHours = isInMaintenance ? totalHours : Math.max(0, totalHours - maintenanceHours);
@@ -1829,8 +2135,62 @@ export const fleetMaintenanceRouter = router({
           }
         }
 
-        // TODO: create compliance_events table for registration, IFTA, 2290 tracking
-        // No real compliance event data yet — only show DOT inspection and maintenance dates
+        // No additional synthetic events — compliance_events table provides the rest
+      }
+
+      // Merge real compliance_events from the database
+      const ceConditions: SQL[] = [eq(complianceEvents.companyId, companyId)];
+      if (input.vehicleId) ceConditions.push(eq(complianceEvents.vehicleId, input.vehicleId));
+      ceConditions.push(sql`${complianceEvents.status} != 'completed'`);
+
+      const dbCompEvents = await db.select({
+        id: complianceEvents.id,
+        vehicleId: complianceEvents.vehicleId,
+        eventType: complianceEvents.eventType,
+        description: complianceEvents.description,
+        dueDate: complianceEvents.dueDate,
+        completedDate: complianceEvents.completedDate,
+        status: complianceEvents.status,
+        amount: complianceEvents.amount,
+        vehicleLicensePlate: vehicles.licensePlate,
+      }).from(complianceEvents)
+        .leftJoin(vehicles, eq(complianceEvents.vehicleId, vehicles.id))
+        .where(and(...ceConditions))
+        .orderBy(complianceEvents.dueDate)
+        .limit(200);
+
+      for (const ce of dbCompEvents) {
+        const dueDate = ce.dueDate ?? now;
+        const daysUntilDue = Math.round((dueDate.getTime() - now.getTime()) / 86400000);
+        if (daysUntilDue > input.daysAhead) continue;
+
+        const labelMap: Record<string, string> = {
+          registration: "Vehicle Registration",
+          ifta: "IFTA Filing",
+          "2290": "IRS Form 2290 (HVUT)",
+          irp: "IRP Registration",
+          ucr: "UCR Filing",
+          dot_inspection: "DOT Inspection",
+          state_inspection: "State Inspection",
+        };
+
+        let status: "overdue" | "due_soon" | "upcoming" | "compliant" = "compliant";
+        if (ce.status === "overdue" || daysUntilDue <= 0) status = "overdue";
+        else if (ce.status === "due" || daysUntilDue <= 14) status = "due_soon";
+        else if (daysUntilDue <= 30) status = "upcoming";
+
+        events.push({
+          id: `comp_evt_${ce.id}`,
+          vehicleId: ce.vehicleId ?? 0,
+          vehicleUnit: ce.vehicleLicensePlate || (ce.vehicleId ? `VH-${ce.vehicleId}` : "Company-wide"),
+          type: ce.eventType || "registration",
+          label: labelMap[ce.eventType || "registration"] || ce.description || "Compliance Event",
+          dueDate: dueDate.toISOString(),
+          daysUntilDue: Math.max(0, daysUntilDue),
+          status,
+          lastCompleted: ce.completedDate?.toISOString() ?? "",
+          estimatedCost: Math.round(Number(ce.amount ?? 0)),
+        });
       }
 
       events.sort((a, b) => a.daysUntilDue - b.daysUntilDue);

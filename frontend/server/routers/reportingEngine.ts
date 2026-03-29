@@ -18,7 +18,7 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   loads, payments, users, vehicles, companies, drivers,
-  inspections, incidents, settlements, bids, auditLogs,
+  inspections, incidents, settlements, bids, auditLogs, hzCarrierSafety,
 } from "../../drizzle/schema";
 
 // ---------------------------------------------------------------------------
@@ -711,17 +711,32 @@ export const reportingEngineRouter = router({
         const inspTotal = safeNum(inspStats?.total);
         const violationCount = safeNum(inspStats?.violations);
 
+        // Query actual CSA BASIC scores from hz_carrier_safety table (average across carriers)
+        let csaScores = { unsafe_driving: 0, hos: 0, vehicle_maint: 0, controlled_substances: 0, driver_fitness: 0 };
+        try {
+          const [csaAvg] = await db.select({
+            unsafe_driving: sql<number>`COALESCE(AVG(CAST(${hzCarrierSafety.unsafeDrivingScore} AS DECIMAL)), 0)`,
+            hos: sql<number>`COALESCE(AVG(CAST(${hzCarrierSafety.hosComplianceScore} AS DECIMAL)), 0)`,
+            vehicle_maint: sql<number>`COALESCE(AVG(CAST(${hzCarrierSafety.vehicleMaintenanceScore} AS DECIMAL)), 0)`,
+            controlled_substances: sql<number>`COALESCE(AVG(CAST(${hzCarrierSafety.controlledSubstancesScore} AS DECIMAL)), 0)`,
+            driver_fitness: sql<number>`COALESCE(AVG(CAST(${hzCarrierSafety.driverFitnessScore} AS DECIMAL)), 0)`,
+          }).from(hzCarrierSafety);
+          if (csaAvg) {
+            csaScores = {
+              unsafe_driving: Math.round((Number(csaAvg.unsafe_driving) || 0) * 10) / 10,
+              hos: Math.round((Number(csaAvg.hos) || 0) * 10) / 10,
+              vehicle_maint: Math.round((Number(csaAvg.vehicle_maint) || 0) * 10) / 10,
+              controlled_substances: Math.round((Number(csaAvg.controlled_substances) || 0) * 10) / 10,
+              driver_fitness: Math.round((Number(csaAvg.driver_fitness) || 0) * 10) / 10,
+            };
+          }
+        } catch (_) { /* CSA query non-critical */ }
+
         return {
           accidentCount: 0,
           violationCount,
           inspectionCount: inspTotal,
-          csaScores: {
-            unsafe_driving: 12.5,
-            hos: 18.3,
-            vehicle_maint: 15.7,
-            controlled_substances: 0,
-            driver_fitness: 5.2,
-          },
+          csaScores,
           accidentsByMonth: [],
           inspectionResults: [
             { result: "passed", count: inspTotal - violationCount },

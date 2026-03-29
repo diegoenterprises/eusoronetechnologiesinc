@@ -116,9 +116,21 @@ export class VeriforceService extends BaseIntegrationService {
     try {
       const response = await this.makeRequest<{ qualifications: VeriforceOQRecord[] }>("/oq/qualifications");
       stats.fetched = response.qualifications.length;
-      // TODO: Store in database when schema is updated
-      logger.info(`[Veriforce] Fetched ${stats.fetched} OQ records`);
-      stats.created = stats.fetched;
+
+      for (const record of response.qualifications) {
+        try {
+          const mapped = this.mapToInternal([record], "oq_records")[0];
+          if (mapped) {
+            await this.saveSyncedRecord(mapped, 0);
+            stats.created++;
+          }
+        } catch (recErr) {
+          logger.warn(`[Veriforce] Failed to persist OQ record ${record.id}:`, recErr);
+          stats.failed++;
+        }
+      }
+
+      logger.info(`[Veriforce] Fetched ${stats.fetched} OQ records, persisted ${stats.created}`);
     } catch (error) {
       logger.error("[Veriforce] Failed to fetch OQ records:", error);
       throw error;
@@ -131,9 +143,31 @@ export class VeriforceService extends BaseIntegrationService {
     try {
       const response = await this.makeRequest<{ tests: VeriforceDARecord[] }>("/da/tests");
       stats.fetched = response.tests.length;
-      // TODO: Store in database when schema is updated
-      logger.info(`[Veriforce] Fetched ${stats.fetched} D&A test records`);
-      stats.created = stats.fetched;
+
+      for (const test of response.tests) {
+        try {
+          await this.saveSyncedRecord({
+            externalId: test.id,
+            externalType: "da_test",
+            externalData: test as unknown as Record<string, unknown>,
+            internalTable: "drug_tests",
+            internalData: {
+              workerId: test.workerId,
+              workerName: test.workerName,
+              testType: this.mapDATestType(test.testType),
+              specimenType: test.specimenType,
+              collectionDate: test.collectionDate,
+              result: test.result,
+            },
+          }, 0);
+          stats.created++;
+        } catch (recErr) {
+          logger.warn(`[Veriforce] Failed to persist D&A record ${test.id}:`, recErr);
+          stats.failed++;
+        }
+      }
+
+      logger.info(`[Veriforce] Fetched ${stats.fetched} D&A test records, persisted ${stats.created}`);
     } catch (error) {
       logger.error("[Veriforce] Failed to fetch DA records:", error);
       throw error;
@@ -146,9 +180,32 @@ export class VeriforceService extends BaseIntegrationService {
     try {
       const response = await this.makeRequest<{ trainings: VeriforceTraining[] }>("/training/completions");
       stats.fetched = response.trainings.length;
-      // TODO: Store in database when schema is updated
-      logger.info(`[Veriforce] Fetched ${stats.fetched} training records`);
-      stats.created = stats.fetched;
+
+      for (const training of response.trainings) {
+        try {
+          await this.saveSyncedRecord({
+            externalId: training.id,
+            externalType: "training_completion",
+            externalData: training as unknown as Record<string, unknown>,
+            internalTable: "training_records",
+            internalData: {
+              workerId: training.workerId,
+              workerName: training.workerName,
+              courseName: training.courseName,
+              completionDate: training.completionDate,
+              expirationDate: training.expirationDate,
+              score: training.score,
+              passingScore: training.passingScore,
+            },
+          }, 0);
+          stats.created++;
+        } catch (recErr) {
+          logger.warn(`[Veriforce] Failed to persist training record ${training.id}:`, recErr);
+          stats.failed++;
+        }
+      }
+
+      logger.info(`[Veriforce] Fetched ${stats.fetched} training records, persisted ${stats.created}`);
     } catch (error) {
       logger.error("[Veriforce] Failed to fetch training records:", error);
       throw error;

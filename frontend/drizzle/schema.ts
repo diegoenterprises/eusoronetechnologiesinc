@@ -10992,3 +10992,135 @@ export const rfpAwards = mysqlTable("rfp_awards", {
 }));
 
 export type RfpAward = typeof rfpAwards.$inferSelect;
+
+// ============================================================================
+// FLEET MAINTENANCE — Parts, Warranties, Tires, POs, Compliance Events
+// ============================================================================
+
+export const partsInventory = mysqlTable("parts_inventory", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  partNumber: varchar("partNumber", { length: 50 }).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  category: varchar("category", { length: 50 }),
+  quantity: int("quantity").default(0),
+  unit: varchar("unit", { length: 20 }).default("each"),
+  unitCost: decimal("unitCost", { precision: 10, scale: 2 }),
+  reorderLevel: int("reorderLevel").default(5),
+  supplier: varchar("supplier", { length: 200 }),
+  location: varchar("location", { length: 100 }),
+  lastOrderedAt: timestamp("lastOrderedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  companyIdx: index("parts_inv_company_idx").on(table.companyId),
+  partNumberIdx: index("parts_inv_partnum_idx").on(table.partNumber),
+}));
+
+export type PartsInventory = typeof partsInventory.$inferSelect;
+
+export const warrantyRecords = mysqlTable("warranty_records", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  vehicleId: int("vehicleId").references(() => vehicles.id),
+  component: varchar("component", { length: 100 }).notNull(),
+  provider: varchar("provider", { length: 200 }),
+  startDate: timestamp("startDate"),
+  expiryDate: timestamp("expiryDate"),
+  mileageLimit: int("mileageLimit"),
+  status: mysqlEnum("status", ["active", "expired", "claimed", "voided"]),
+  policyNumber: varchar("policyNumber", { length: 100 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  companyIdx: index("warranty_rec_company_idx").on(table.companyId),
+  vehicleIdx: index("warranty_rec_vehicle_idx").on(table.vehicleId),
+  statusIdx: index("warranty_rec_status_idx").on(table.status),
+}));
+
+export type WarrantyRecord = typeof warrantyRecords.$inferSelect;
+
+export const warrantyClaims = mysqlTable("warranty_claims", {
+  id: int("id").autoincrement().primaryKey(),
+  warrantyId: int("warrantyId").references(() => warrantyRecords.id),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  vehicleId: int("vehicleId").references(() => vehicles.id),
+  claimDate: timestamp("claimDate"),
+  description: text("description"),
+  repairCost: decimal("repairCost", { precision: 10, scale: 2 }),
+  status: mysqlEnum("status", ["submitted", "approved", "denied", "paid"]),
+  approvedAmount: decimal("approvedAmount", { precision: 10, scale: 2 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  warrantyIdx: index("warranty_claims_warranty_idx").on(table.warrantyId),
+  companyIdx: index("warranty_claims_company_idx").on(table.companyId),
+  statusIdx: index("warranty_claims_status_idx").on(table.status),
+}));
+
+export type WarrantyClaim = typeof warrantyClaims.$inferSelect;
+
+export const tireInventory = mysqlTable("tire_inventory", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  vehicleId: int("vehicleId").references(() => vehicles.id),
+  position: varchar("position", { length: 20 }),
+  brand: varchar("brand", { length: 100 }),
+  model: varchar("model", { length: 100 }),
+  size: varchar("size", { length: 30 }),
+  treadDepth: decimal("treadDepth", { precision: 4, scale: 2 }),
+  installedAt: timestamp("installedAt"),
+  installedMileage: int("installedMileage"),
+  status: mysqlEnum("status", ["active", "worn", "replaced", "retreaded"]),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+}, (table) => ({
+  companyIdx: index("tire_inv_company_idx").on(table.companyId),
+  vehicleIdx: index("tire_inv_vehicle_idx").on(table.vehicleId),
+  statusIdx: index("tire_inv_status_idx").on(table.status),
+}));
+
+export type TireInventory = typeof tireInventory.$inferSelect;
+
+export const purchaseOrders = mysqlTable("purchase_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  poNumber: varchar("poNumber", { length: 50 }).notNull(),
+  vendorId: int("vendorId"),
+  vendorName: varchar("vendorName", { length: 200 }),
+  status: mysqlEnum("status", ["draft", "submitted", "approved", "received", "cancelled"]),
+  totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }),
+  items: json("items").$type<Array<{ partNumber: string; description: string; quantity: number; unitCost: number }>>(),
+  orderedAt: timestamp("orderedAt"),
+  receivedAt: timestamp("receivedAt"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  companyIdx: index("po_company_idx").on(table.companyId),
+  poNumberIdx: index("po_number_idx").on(table.poNumber),
+  statusIdx: index("po_status_idx").on(table.status),
+}));
+
+export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
+
+export const complianceEvents = mysqlTable("compliance_events", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull().references(() => companies.id),
+  vehicleId: int("vehicleId").references(() => vehicles.id),
+  eventType: mysqlEnum("eventType", ["registration", "ifta", "2290", "irp", "ucr", "dot_inspection", "state_inspection"]),
+  description: varchar("description", { length: 300 }),
+  dueDate: timestamp("dueDate"),
+  completedDate: timestamp("completedDate"),
+  status: mysqlEnum("status", ["upcoming", "due", "overdue", "completed"]),
+  amount: decimal("amount", { precision: 10, scale: 2 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  companyIdx: index("comp_events_company_idx").on(table.companyId),
+  vehicleIdx: index("comp_events_vehicle_idx").on(table.vehicleId),
+  eventTypeIdx: index("comp_events_type_idx").on(table.eventType),
+  statusIdx: index("comp_events_status_idx").on(table.status),
+}));
+
+export type ComplianceEvent = typeof complianceEvents.$inferSelect;

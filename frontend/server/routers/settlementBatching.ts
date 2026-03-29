@@ -723,6 +723,103 @@ export const settlementBatchingRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════
+  // P0-001: MANUAL SETTLEMENT GENERATION
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * generateSettlement — Manually create settlements for a delivered load that is missing them.
+   * Creates carrier settlement (load rate minus platform fee) and shipper settlement (full charge).
+   */
+  generateSettlement: protectedProcedure
+    .input(z.object({ loadId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      await requireAccess({ userId: ctx.user!.id, role: ctx.user!.role, companyId: ctx.user!.companyId, action: "CREATE", resource: "INVOICE" }, ctx.req);
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // 1. Verify load exists and is delivered
+      const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
+      if (!load) throw new Error("Load not found");
+      if (load.status !== "delivered") throw new Error(`Load #${input.loadId} is in status "${load.status}" — must be "delivered" to generate settlement`);
+
+      // 2. Check if settlements already exist for this load
+      const existing = await db.select({ id: settlements.id }).from(settlements).where(eq(settlements.loadId, input.loadId));
+      if (existing.length > 0) throw new Error(`Load #${input.loadId} already has ${existing.length} settlement(s). Use the existing records.`);
+
+      // 3. Get rate and parties
+      const loadRate = parseFloat(load.rate || "0");
+      if (loadRate <= 0) throw new Error(`Load #${input.loadId} has no rate set (rate=${load.rate}). Set a rate first.`);
+      const carrierId = load.catalystId || load.driverId || 0;
+      const shipperId = load.shipperId || 0;
+
+      // 4. Get platform fee from config, fall back to 3.5%
+      let platformFeePercent = 3.5;
+      try {
+        const [feeRows] = await db.execute(
+          sql`SELECT baseRate FROM platform_fee_configs WHERE feeCode = 'LOAD_COMPLETION' AND isActive = true AND (effectiveFrom IS NULL OR effectiveFrom <= NOW()) AND (effectiveTo IS NULL OR effectiveTo >= NOW()) LIMIT 1`
+        ) as unknown as [Record<string, unknown>[]];
+        const feeConfig = (feeRows || [])[0];
+        if (feeConfig?.baseRate) {
+          platformFeePercent = parseFloat(String(feeConfig.baseRate));
+        }
+      } catch { /* use default 3.5% */ }
+
+      const platformFeeAmount = loadRate * (platformFeePercent / 100);
+      const carrierPayment = loadRate - platformFeeAmount;
+
+      // 5. Insert carrier settlement
+      await db.insert(settlements).values({
+        loadId: input.loadId,
+        shipperId,
+        carrierId,
+        driverId: load.driverId || null,
+        loadRate: loadRate.toFixed(2),
+        platformFeePercent: platformFeePercent.toFixed(2),
+        platformFeeAmount: platformFeeAmount.toFixed(2),
+        carrierPayment: carrierPayment.toFixed(2),
+        accessorialCharges: "0.00",
+        hazmatSurcharge: "0.00",
+        totalShipperCharge: loadRate.toFixed(2),
+        status: "pending",
+      });
+
+      // 6. Notify
+      try {
+        if (carrierId) {
+          await db.insert(notifications).values({
+            userId: carrierId,
+            type: "payment_received",
+            title: "Settlement Generated",
+            message: `Manual settlement created for Load #${load.loadNumber || input.loadId} — $${carrierPayment.toFixed(2)}`,
+            data: { loadId: input.loadId, amount: carrierPayment.toFixed(2) },
+          });
+        }
+        if (shipperId) {
+          await db.insert(notifications).values({
+            userId: shipperId,
+            type: "payment_received",
+            title: "Settlement Generated",
+            message: `Manual settlement created for Load #${load.loadNumber || input.loadId} — Total charge: $${loadRate.toFixed(2)}`,
+            data: { loadId: input.loadId, amount: loadRate.toFixed(2) },
+          });
+        }
+      } catch { /* notification failure non-blocking */ }
+
+      // 7. Blockchain audit
+      try { await BlockchainService.logEvent(input.loadId, "MANUAL_SETTLEMENT_CREATED", { loadRate, platformFeePercent, platformFeeAmount, carrierPayment, carrierId, shipperId, createdBy: ctx.user?.id, timestamp: new Date().toISOString() }); } catch { /* best-effort */ }
+
+      return {
+        success: true,
+        loadId: input.loadId,
+        loadRate,
+        platformFeePercent,
+        platformFeeAmount: parseFloat(platformFeeAmount.toFixed(2)),
+        carrierPayment: parseFloat(carrierPayment.toFixed(2)),
+        totalShipperCharge: loadRate,
+      };
+    }),
+
+  // ═══════════════════════════════════════════════════════════════
   // INVOICE QUERY ENDPOINTS
   // ═══════════════════════════════════════════════════════════════
 

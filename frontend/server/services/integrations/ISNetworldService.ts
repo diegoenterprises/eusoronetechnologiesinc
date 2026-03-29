@@ -133,9 +133,22 @@ export class ISNetworldService extends BaseIntegrationService {
     try {
       const response = await this.makeRequest<{ requirements: ISNComplianceRecord[] }>("/contractor/requirements");
       stats.fetched = response.requirements.length;
-      // TODO: Store in database when schema is updated
-      logger.info(`[ISNetworld] Fetched ${stats.fetched} compliance records`);
-      stats.created = stats.fetched;
+
+      // Persist each record to integrationSyncedRecords
+      for (const record of response.requirements) {
+        try {
+          const mapped = this.mapToInternal([record], "compliance")[0];
+          if (mapped) {
+            await this.saveSyncedRecord(mapped, 0);
+            stats.created++;
+          }
+        } catch (recErr) {
+          logger.warn(`[ISNetworld] Failed to persist compliance record ${record.id}:`, recErr);
+          stats.failed++;
+        }
+      }
+
+      logger.info(`[ISNetworld] Fetched ${stats.fetched} compliance records, persisted ${stats.created}`);
     } catch (error) {
       logger.error("[ISNetworld] Failed to fetch compliance records:", error);
       throw error;
@@ -148,9 +161,29 @@ export class ISNetworldService extends BaseIntegrationService {
     try {
       const response = await this.makeRequest<{ safetyRecords: ISNSafetyRecord[] }>("/contractor/safety-records");
       stats.fetched = response.safetyRecords.length;
-      // TODO: Store in database when schema is updated
-      logger.info(`[ISNetworld] Fetched ${stats.fetched} safety records`);
-      stats.created = stats.fetched;
+
+      for (const record of response.safetyRecords) {
+        try {
+          await this.saveSyncedRecord({
+            externalId: record.id,
+            externalType: "safety_record",
+            externalData: record as unknown as Record<string, unknown>,
+            internalTable: "safety_records",
+            internalData: {
+              recordType: record.recordType,
+              year: record.year,
+              value: record.value,
+              verifiedAt: record.verifiedAt,
+            },
+          }, 0);
+          stats.created++;
+        } catch (recErr) {
+          logger.warn(`[ISNetworld] Failed to persist safety record ${record.id}:`, recErr);
+          stats.failed++;
+        }
+      }
+
+      logger.info(`[ISNetworld] Fetched ${stats.fetched} safety records, persisted ${stats.created}`);
     } catch (error) {
       logger.error("[ISNetworld] Failed to fetch safety records:", error);
       throw error;
@@ -163,9 +196,30 @@ export class ISNetworldService extends BaseIntegrationService {
     try {
       const response = await this.makeRequest<{ employees: ISNEmployee[] }>("/contractor/employees");
       stats.fetched = response.employees.length;
-      // TODO: Store in database when schema is updated
-      logger.info(`[ISNetworld] Fetched ${stats.fetched} employee records`);
-      stats.created = stats.fetched;
+
+      for (const employee of response.employees) {
+        try {
+          await this.saveSyncedRecord({
+            externalId: employee.id,
+            externalType: "employee",
+            externalData: employee as unknown as Record<string, unknown>,
+            internalTable: "employees",
+            internalData: {
+              firstName: employee.firstName,
+              lastName: employee.lastName,
+              role: employee.role,
+              certificationCount: employee.certifications?.length ?? 0,
+              trainingCount: employee.trainings?.length ?? 0,
+            },
+          }, 0);
+          stats.created++;
+        } catch (recErr) {
+          logger.warn(`[ISNetworld] Failed to persist employee record ${employee.id}:`, recErr);
+          stats.failed++;
+        }
+      }
+
+      logger.info(`[ISNetworld] Fetched ${stats.fetched} employee records, persisted ${stats.created}`);
     } catch (error) {
       logger.error("[ISNetworld] Failed to fetch employee records:", error);
       throw error;

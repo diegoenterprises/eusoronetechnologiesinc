@@ -6,8 +6,9 @@ import { z } from "zod";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { geofences, geofenceEvents, locationHistory } from "../../drizzle/schema";
+import { geofences, geofenceEvents, locationHistory, detentionRecords, loads } from "../../drizzle/schema";
 import { unsafeCast } from "../_core/types/unsafe";
+import { logger } from "../_core/logger";
 
 const geofenceSchema = z.object({
   name: z.string().min(1).max(255),
@@ -206,6 +207,99 @@ export const geofencingRouter = router({
       dwellSeconds: input.dwellSeconds,
       eventTimestamp: new Date(),
     }).$returningId();
+
+    // ── AUTO-CREATE DETENTION TIMER on geofence entry at pickup/delivery for active loads ──
+    if (input.eventType === "enter") {
+      try {
+        // Look up the geofence to check if it's a pickup/delivery zone with an associated load
+        const [gf] = await db.select().from(geofences)
+          .where(and(eq(geofences.id, input.geofenceId), eq(geofences.isActive, true)))
+          .limit(1);
+
+        if (gf && (gf.type === "pickup" || gf.type === "delivery") && gf.loadId) {
+          // Verify the load is in an active status (assigned through in_transit)
+          const [load] = await db.select({ id: loads.id, status: loads.status, driverId: loads.driverId })
+            .from(loads).where(eq(loads.id, gf.loadId)).limit(1);
+
+          const activeStatuses = ["assigned", "confirmed", "en_route_pickup", "at_pickup", "loading", "loaded", "in_transit", "at_delivery", "unloading"];
+          if (load && activeStatuses.includes(load.status || "")) {
+            // Check if there's already an open detention record for this load + location type
+            const existingRows = await db.select({ id: detentionRecords.id })
+              .from(detentionRecords)
+              .where(and(
+                eq(detentionRecords.loadId, gf.loadId),
+                eq(detentionRecords.locationType, unsafeCast(gf.type)),
+                sql`${detentionRecords.geofenceExitAt} IS NULL`
+              ))
+              .limit(1);
+
+            if (existingRows.length === 0) {
+              await db.insert(detentionRecords).values({
+                loadId: gf.loadId,
+                locationType: gf.type as "pickup" | "delivery",
+                geofenceId: gf.id,
+                driverId: load.driverId || Number(userId),
+                geofenceEnterAt: new Date(),
+                freeTimeMinutes: 120, // standard 2-hour free time
+                enterGeotagId: event.id,
+              });
+              logger.info(`[Geofencing] Auto-created detention timer for load #${gf.loadId} at ${gf.type} zone (geofence #${gf.id})`);
+            }
+          }
+        }
+      } catch (detErr) {
+        // Non-critical — log and continue; the geofence event itself was already recorded
+        logger.warn("[Geofencing] Failed to auto-create detention record:", (detErr as Error).message);
+      }
+    }
+
+    // ── AUTO-CLOSE DETENTION TIMER on geofence exit ──
+    if (input.eventType === "exit") {
+      try {
+        const [gf] = await db.select().from(geofences)
+          .where(and(eq(geofences.id, input.geofenceId), eq(geofences.isActive, true)))
+          .limit(1);
+
+        if (gf && (gf.type === "pickup" || gf.type === "delivery") && gf.loadId) {
+          // Find the open detention record and close it
+          const openRecords = await db.select()
+            .from(detentionRecords)
+            .where(and(
+              eq(detentionRecords.loadId, gf.loadId),
+              eq(detentionRecords.locationType, unsafeCast(gf.type)),
+              sql`${detentionRecords.geofenceExitAt} IS NULL`
+            ))
+            .limit(1);
+
+          if (openRecords.length > 0) {
+            const rec = openRecords[0];
+            const enterTime = rec.geofenceEnterAt.getTime();
+            const exitTime = Date.now();
+            const totalDwellMinutes = Math.round((exitTime - enterTime) / 60000);
+            const freeTime = rec.freeTimeMinutes ?? 120;
+            const detentionMinutes = Math.max(0, totalDwellMinutes - freeTime);
+            const isBillable = detentionMinutes > 0;
+            const ratePerHour = 75; // standard detention rate $/hr
+            const detentionCharge = isBillable ? Math.round(detentionMinutes / 60 * ratePerHour * 100) / 100 : 0;
+
+            await db.update(detentionRecords).set({
+              geofenceExitAt: new Date(),
+              totalDwellMinutes,
+              detentionStartedAt: isBillable ? new Date(enterTime + freeTime * 60000) : null,
+              detentionMinutes,
+              detentionRatePerHour: String(ratePerHour),
+              detentionCharge: String(detentionCharge),
+              isBillable,
+              exitGeotagId: event.id,
+            }).where(eq(detentionRecords.id, rec.id));
+
+            logger.info(`[Geofencing] Closed detention timer for load #${gf.loadId} at ${gf.type}: ${totalDwellMinutes}min dwell, ${detentionMinutes}min billable ($${detentionCharge})`);
+          }
+        }
+      } catch (detErr) {
+        logger.warn("[Geofencing] Failed to close detention record:", (detErr as Error).message);
+      }
+    }
 
     return { success: true, eventId: event.id };
   }),

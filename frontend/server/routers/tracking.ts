@@ -9,7 +9,7 @@ import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { isolatedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { loads, vehicles, users, companies, gpsTracking, geofences, geofenceEvents, safetyAlerts, railShipments, vesselShipments } from "../../drizzle/schema";
+import { loads, vehicles, users, companies, gpsTracking, geofences, geofenceEvents, safetyAlerts, railShipments, vesselShipments, hosLogs } from "../../drizzle/schema";
 import { emitGPSUpdate, wsService, WS_CHANNELS } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
 import { unsafeCast } from "../_core/types/unsafe";
@@ -191,7 +191,26 @@ export const trackingRouter = router({
         const [activeLoad] = await db.select({ driverId: loads.driverId }).from(loads).where(and(eq(loads.vehicleId, vehicleId), eq(loads.status, 'in_transit'))).limit(1);
         if (activeLoad?.driverId) {
           const [driver] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, activeLoad.driverId)).limit(1);
-          if (driver) driverInfo = { id: `d_${driver.id}`, name: driver.name || 'Driver', hosStatus: 'driving', hoursRemaining: 8 };
+          if (driver) {
+            // Query actual HOS data from hosLogs
+            let hosStatus = 'off_duty';
+            let hoursRemaining = 0;
+            try {
+              const [latestHos] = await db.select({
+                toStatus: hosLogs.toStatus,
+                drivingMinutes: hosLogs.drivingMinutesAtEvent,
+              }).from(hosLogs)
+                .where(and(eq(hosLogs.userId, driver.id), eq(hosLogs.eventType, 'status_change')))
+                .orderBy(desc(hosLogs.createdAt))
+                .limit(1);
+              if (latestHos) {
+                hosStatus = latestHos.toStatus || 'off_duty';
+                const drivingMinutesUsed = latestHos.drivingMinutes ?? 0;
+                hoursRemaining = Math.max(0, Math.round(((11 * 60) - Number(drivingMinutesUsed)) / 60 * 10) / 10);
+              }
+            } catch (_) { /* HOS lookup non-critical */ }
+            driverInfo = { id: `d_${driver.id}`, name: driver.name || 'Driver', hosStatus, hoursRemaining };
+          }
         }
 
         // Get current load

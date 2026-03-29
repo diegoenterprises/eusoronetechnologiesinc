@@ -1269,8 +1269,36 @@ function decodeSimplePolyline(polyline: string): LatLng[] {
       return { lat, lng };
     }).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
   }
-  // TODO: Add Google encoded polyline decoder when Routes API is integrated
-  return [];
+  // Decode Google encoded polyline format (Algorithm: https://developers.google.com/maps/documentation/utilities/polylinealgorithm)
+  const points: LatLng[] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  while (index < polyline.length) {
+    // Decode latitude
+    let shift = 0;
+    let result = 0;
+    let byte: number;
+    do {
+      byte = polyline.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+
+    // Decode longitude
+    shift = 0;
+    result = 0;
+    do {
+      byte = polyline.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+
+    points.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+  return points;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

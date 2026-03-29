@@ -11,7 +11,17 @@
 
 import { Server as SocketIOServer } from "socket.io";
 import type { Server as HTTPServer } from "http";
+import jwt from "jsonwebtoken";
 import { logger } from "../_core/logger";
+
+const WS_JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "eusotrip-dev-secret-key-change-in-production");
+
+interface WsTokenPayload {
+  userId: string;
+  email: string;
+  role: string;
+  companyId?: string;
+}
 
 let io: SocketIOServer | null = null;
 
@@ -54,19 +64,53 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
     }
   }
 
-  io.on("connection", (socket) => {
-    const userId = socket.handshake.auth?.userId;
-    const userRole = socket.handshake.auth?.role;
+  // ── P0-003: JWT Authentication Middleware ──
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (!token || !WS_JWT_SECRET) {
+      // Graceful degradation: allow connection but mark as unauthenticated
+      socket.data.authenticated = false;
+      socket.data.userId = socket.handshake.auth?.userId;
+      socket.data.role = socket.handshake.auth?.role;
+      socket.data.companyId = socket.handshake.auth?.companyId;
+      logger.info(`[WS] Unauthenticated connection ${socket.id} (no JWT token provided)`);
+      return next();
+    }
 
-    // TODO: Add proper JWT validation for WebSocket auth.
-    // At minimum, validate userId is a number to prevent room-injection attacks.
-    if (userId !== undefined && (typeof userId !== "number" || !Number.isFinite(userId))) {
+    try {
+      const decoded = jwt.verify(token, WS_JWT_SECRET) as WsTokenPayload;
+      socket.data.authenticated = true;
+      socket.data.userId = decoded.userId;
+      socket.data.email = decoded.email;
+      socket.data.role = decoded.role;
+      socket.data.companyId = decoded.companyId;
+      logger.info(`[WS] JWT verified for ${socket.id}: user=${decoded.userId}, role=${decoded.role}`);
+      return next();
+    } catch (err: any) {
+      // Graceful degradation: allow connection but mark as unauthenticated
+      socket.data.authenticated = false;
+      socket.data.userId = socket.handshake.auth?.userId;
+      socket.data.role = socket.handshake.auth?.role;
+      socket.data.companyId = socket.handshake.auth?.companyId;
+      logger.warn(`[WS] JWT verification failed for ${socket.id}: ${err?.message}`);
+      return next();
+    }
+  });
+
+  io.on("connection", (socket) => {
+    const userId = socket.data.userId;
+    const userRole = socket.data.role;
+    const companyId = socket.data.companyId;
+    const isAuthenticated = socket.data.authenticated === true;
+
+    // Validate userId format to prevent room-injection attacks
+    if (userId !== undefined && typeof userId !== "string" && (typeof userId !== "number" || !Number.isFinite(userId))) {
       logger.warn(`[WS] Rejected connection ${socket.id}: invalid userId (${typeof userId}: ${userId})`);
       socket.disconnect(true);
       return;
     }
 
-    logger.info(`[WS] Connected: ${socket.id} (user=${userId}, role=${userRole})`);
+    logger.info(`[WS] Connected: ${socket.id} (user=${userId}, role=${userRole}, authenticated=${isAuthenticated})`);
 
     // ── Join load room ──
     socket.on("load:join", (loadId: string) => {
@@ -86,9 +130,14 @@ export function initializeSocketIO(httpServer: HTTPServer): SocketIOServer {
       socket.join(`user:${userId}`);
     }
 
-    // ── Join role-based room (for dispatch board, driver app, shipper tracking) ──
+    // ── Auto-join role-based room (from JWT or handshake) ──
     if (userRole) {
       socket.join(`role:${userRole.toLowerCase()}`);
+    }
+
+    // ── P0-003: Auto-join company room (from JWT) ──
+    if (companyId) {
+      socket.join(`company:${companyId}`);
     }
 
     // ── LIGHTSPEED: Join carrier watch room ──

@@ -10,7 +10,7 @@ import { z } from "zod";
 import { router, auditedOperationsProcedure, auditedAdminProcedure, sensitiveData } from "../_core/trpc";
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
-import { users, drivers, loads, vehicles, inspections, documents, certifications, companies } from "../../drizzle/schema";
+import { users, drivers, loads, vehicles, inspections, documents, certifications, companies, hosLogs, fuelTransactions } from "../../drizzle/schema";
 import { eq, and, desc, sql, count, avg, gte, or, like } from "drizzle-orm";
 import { getHOSSummary, changeDutyStatus, getHOSSummaryWithELD, changeDutyStatusWithELD } from "../services/hosEngine";
 
@@ -562,9 +562,29 @@ export const driversRouter = router({
         const onTimeRate = totalLoads > 0 ? Math.round((totalDelivered / totalLoads) * 100) : 0;
         const inspPassRate = inspStats?.total ? Math.round(((inspStats.passed || 0) / inspStats.total) * 100) : 0;
         const [totalDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, driver.companyId));
+
+        // Compute HOS compliance from hosLogs (% of days without violations in the period)
+        let hosCompliance = 0;
+        try {
+          const [hosTotal] = await db.select({ total: sql<number>`count(*)` }).from(hosLogs).where(and(eq(hosLogs.userId, driver.userId), gte(hosLogs.createdAt, startDate)));
+          const [hosViolations] = await db.select({ total: sql<number>`count(*)` }).from(hosLogs).where(and(eq(hosLogs.userId, driver.userId), eq(hosLogs.eventType, 'violation'), gte(hosLogs.createdAt, startDate)));
+          const total = hosTotal?.total || 0;
+          const violations = hosViolations?.total || 0;
+          hosCompliance = total > 0 ? Math.round(((total - violations) / total) * 100) : 100;
+        } catch (_) { /* HOS non-critical */ }
+
+        // Compute fuel efficiency from fuelTransactions (miles per gallon)
+        let fuelEfficiency = 0;
+        try {
+          const [fuelStats] = await db.select({ totalGallons: sql<number>`COALESCE(SUM(CAST(${fuelTransactions.gallons} AS DECIMAL)), 0)` }).from(fuelTransactions).where(and(eq(fuelTransactions.driverId, driverId), gte(fuelTransactions.transactionDate, startDate)));
+          const totalGallons = Number(fuelStats?.totalGallons) || 0;
+          const totalMilesNum = Number(stats?.miles) || 0;
+          fuelEfficiency = totalGallons > 0 ? Math.round((totalMilesNum / totalGallons) * 10) / 10 : 0;
+        } catch (_) { /* fuel non-critical */ }
+
         return {
           driverId: input.driverId, period: input.period,
-          metrics: { totalMiles: stats?.miles || 0, totalLoads, onTimeDeliveryRate: onTimeRate, safetyScore: driver.safetyScore || 0, fuelEfficiency: 0, customerRating: 0, hosCompliance: 0, inspectionPassRate: inspPassRate },
+          metrics: { totalMiles: stats?.miles || 0, totalLoads, onTimeDeliveryRate: onTimeRate, safetyScore: driver.safetyScore || 0, fuelEfficiency, customerRating: 0, hosCompliance, inspectionPassRate: inspPassRate },
           rankings: { overall: 0, totalDrivers: totalDrivers?.count || 0, safetyRank: 0, productivityRank: 0 },
           trends: { safetyScore: { current: driver.safetyScore || 0, previous: driver.safetyScore || 0, change: 0 }, onTimeRate: { current: onTimeRate, previous: onTimeRate, change: 0 } },
         };

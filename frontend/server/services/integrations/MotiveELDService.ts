@@ -185,9 +185,21 @@ export class MotiveELDService extends BaseIntegrationService {
     try {
       const response = await this.makeRequest<{ drivers: MotiveDriver[] }>("/drivers");
       stats.fetched = response.drivers.length;
-      // TODO: Store in database when schema is updated with external ID columns
-      logger.info(`[Motive] Fetched ${stats.fetched} drivers`);
-      stats.created = stats.fetched;
+
+      for (const driver of response.drivers) {
+        try {
+          const mapped = this.mapToInternal([driver], "drivers")[0];
+          if (mapped) {
+            await this.saveSyncedRecord(mapped, 0);
+            stats.created++;
+          }
+        } catch (recErr) {
+          logger.warn(`[Motive] Failed to persist driver ${driver.id}:`, recErr);
+          stats.failed++;
+        }
+      }
+
+      logger.info(`[Motive] Fetched ${stats.fetched} drivers, persisted ${stats.created}`);
     } catch (error) {
       logger.error("[Motive] Failed to fetch drivers:", error);
       throw error;
@@ -201,9 +213,32 @@ export class MotiveELDService extends BaseIntegrationService {
     try {
       const response = await this.makeRequest<{ vehicles: MotiveVehicle[] }>("/vehicles");
       stats.fetched = response.vehicles.length;
-      // TODO: Store in database when schema is updated with external ID columns
-      logger.info(`[Motive] Fetched ${stats.fetched} vehicles`);
-      stats.created = stats.fetched;
+
+      for (const vehicle of response.vehicles) {
+        try {
+          await this.saveSyncedRecord({
+            externalId: vehicle.id,
+            externalType: "vehicle",
+            externalData: vehicle as unknown as Record<string, unknown>,
+            internalTable: "vehicles",
+            internalData: {
+              vin: vehicle.vin,
+              make: vehicle.make,
+              model: vehicle.model,
+              year: vehicle.year,
+              licensePlate: vehicle.license_plate_number,
+              status: vehicle.status,
+              odometer: vehicle.odometer,
+            },
+          }, 0);
+          stats.created++;
+        } catch (recErr) {
+          logger.warn(`[Motive] Failed to persist vehicle ${vehicle.id}:`, recErr);
+          stats.failed++;
+        }
+      }
+
+      logger.info(`[Motive] Fetched ${stats.fetched} vehicles, persisted ${stats.created}`);
     } catch (error) {
       logger.error("[Motive] Failed to fetch vehicles:", error);
       throw error;
@@ -220,9 +255,32 @@ export class MotiveELDService extends BaseIntegrationService {
         `/hos_logs?start_date=${startDate.toISOString().split("T")[0]}`
       );
       stats.fetched = response.hos_logs.length;
-      // TODO: Store in database when schema is updated
-      logger.info(`[Motive] Fetched ${stats.fetched} HOS logs`);
-      stats.created = stats.fetched;
+
+      for (const log of response.hos_logs) {
+        try {
+          await this.saveSyncedRecord({
+            externalId: log.id,
+            externalType: "hos_log",
+            externalData: log as unknown as Record<string, unknown>,
+            internalTable: "hos_logs",
+            internalData: {
+              driverExternalId: log.driver_id,
+              status: this.mapHOSStatus(log.status),
+              date: log.date,
+              startTime: log.start_time,
+              endTime: log.end_time,
+              durationSeconds: log.duration_seconds,
+              certified: log.certified,
+            },
+          }, 0);
+          stats.created++;
+        } catch (recErr) {
+          logger.warn(`[Motive] Failed to persist HOS log ${log.id}:`, recErr);
+          stats.failed++;
+        }
+      }
+
+      logger.info(`[Motive] Fetched ${stats.fetched} HOS logs, persisted ${stats.created}`);
     } catch (error) {
       logger.error("[Motive] Failed to fetch HOS logs:", error);
       throw error;
@@ -239,9 +297,31 @@ export class MotiveELDService extends BaseIntegrationService {
         `/dvirs?start_date=${startDate.toISOString().split("T")[0]}`
       );
       stats.fetched = response.dvirs.length;
-      // TODO: Store in database when schema is updated
-      logger.info(`[Motive] Fetched ${stats.fetched} DVIRs`);
-      stats.created = stats.fetched;
+
+      for (const dvir of response.dvirs) {
+        try {
+          await this.saveSyncedRecord({
+            externalId: dvir.id,
+            externalType: "dvir",
+            externalData: dvir as unknown as Record<string, unknown>,
+            internalTable: "inspections",
+            internalData: {
+              driverExternalId: dvir.driver_id,
+              vehicleExternalId: dvir.vehicle_id,
+              inspectionType: dvir.inspection_type,
+              status: dvir.status,
+              defectCount: dvir.defects?.length ?? 0,
+              createdAt: dvir.created_at,
+            },
+          }, 0);
+          stats.created++;
+        } catch (recErr) {
+          logger.warn(`[Motive] Failed to persist DVIR ${dvir.id}:`, recErr);
+          stats.failed++;
+        }
+      }
+
+      logger.info(`[Motive] Fetched ${stats.fetched} DVIRs, persisted ${stats.created}`);
     } catch (error) {
       logger.error("[Motive] Failed to fetch DVIRs:", error);
       throw error;
@@ -254,9 +334,33 @@ export class MotiveELDService extends BaseIntegrationService {
     try {
       const response = await this.makeRequest<{ locations: MotiveLocation[] }>("/vehicle_locations");
       stats.fetched = response.locations.length;
-      // TODO: Store in database when schema is updated
-      logger.info(`[Motive] Fetched ${stats.fetched} vehicle locations`);
-      stats.updated = stats.fetched;
+
+      for (const loc of response.locations) {
+        try {
+          await this.saveSyncedRecord({
+            externalId: loc.vehicle_id,
+            externalType: "vehicle_location",
+            externalData: loc as unknown as Record<string, unknown>,
+            internalTable: "location_history",
+            internalData: {
+              vehicleExternalId: loc.vehicle_id,
+              driverExternalId: loc.driver_id,
+              lat: loc.lat,
+              lon: loc.lon,
+              speed: loc.speed,
+              bearing: loc.bearing,
+              odometer: loc.odometer,
+              locatedAt: loc.located_at,
+            },
+          }, 0);
+          stats.updated++;
+        } catch (recErr) {
+          logger.warn(`[Motive] Failed to persist location for vehicle ${loc.vehicle_id}:`, recErr);
+          stats.failed++;
+        }
+      }
+
+      logger.info(`[Motive] Fetched ${stats.fetched} vehicle locations, persisted ${stats.updated}`);
     } catch (error) {
       logger.error("[Motive] Failed to fetch locations:", error);
       throw error;

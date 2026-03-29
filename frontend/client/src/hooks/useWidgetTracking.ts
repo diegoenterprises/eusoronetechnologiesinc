@@ -27,15 +27,16 @@ export function useWidgetTracking(
 ) {
   const { batchSize = 5, flushInterval = 30000 } = options;
   
-  // TODO: Re-enable when widgets router is added to backend
-  // const trackEventMutation = trpc.widgets.analytics.trackEvent.useMutation();
+  // Widgets router exists but does not yet expose an analytics.trackEvent endpoint.
+  // Wire up: const trackEventMutation = trpc.widgets.trackEvent.useMutation();
+  // once the backend procedure is added.
   const sessionStartRef = useRef<number>(Date.now());
   const eventQueueRef = useRef<Array<{ eventType: WidgetEventType; metadata?: Record<string, unknown> }>>([]);
   const batchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
-   * Flush queued events to backend
-   * TODO: Re-enable when widgets analytics router is added
+   * Flush queued events to backend.
+   * Currently logs to console; will POST via tRPC once widgets.trackEvent is added.
    */
   const flushEvents = useCallback(async () => {
     if (eventQueueRef.current.length === 0) return;
