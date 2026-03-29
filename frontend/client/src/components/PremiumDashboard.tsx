@@ -83,6 +83,35 @@ import {
   CustomerSatisfactionWidget
 } from "./widgets/PremiumAnalyticsWidgets";
 import { ELDFleetPulseWidget, ELDNetworkEffectWidget, ELDRoadIntelligenceWidget } from "./widgets/ELDWidgets";
+import {
+  RailActiveShipmentsWidget, RailYardOpsWidget, RailCrewStatusWidget, RailConsistStatusWidget,
+  RailDemurrageWidget, RailComplianceWidget, RailSafetyWidget, RailWeatherWidget,
+  RailMarketplaceWidget, RailRatesWidget, RailScheduleAdherenceWidget, RailUtilizationWidget,
+  RailIntermodalWidget, RailInterchangeWidget, RailSwitchingWidget, RailTerminalsWidget,
+  RailTrackAllocationWidget, RailTrainManifestWidget, RailLocomotivesWidget,
+  RailBrkShipmentsWidget, RailBrkRatesWidget, RailBrkCommissionWidget, RailBrkCapacityWidget,
+  RailBrkMarketWidget, RailBrkPerformanceWidget, RailBrkNetworkWidget,
+  RailEngAssignmentsWidget, RailEngHosWidget, RailEngSafetyWidget, RailEngRouteWidget,
+  RailConAssignmentsWidget, RailConYardWidget, RailConDocsWidget, RailConSafetyWidget,
+  RailCrewHosWidget, RailCrewCertsWidget, RailCrewTrainingWidget
+} from "./widgets/RailWidgets";
+import {
+  FactoringPendingInvoicesWidget, FactoringFundedWidget, FactoringAgingWidget,
+  FactoringRiskWidget, FactoringCollectionsWidget, FactoringChargebacksWidget,
+  FactoringCatalystPortfolioWidget, FactoringRatesFeesWidget, FactoringAdvanceRateWidget,
+  FactoringApprovalRateWidget, FactoringCashFlowWidget, FactoringDefaultRiskWidget,
+  FactoringHistoryWidget, FactoringPortfolioWidget, FactoringReserveWidget
+} from "./widgets/FactoringWidgets";
+import * as VW from "./widgets/VesselWidgets";
+import {
+  WeatherWidget as WeatherSpecialtyWidget, WeatherAlertsSpecialtyWidget,
+  LiveMapWidget as LiveMapSpecialtyWidget, CSAScoresSpecialtyWidget,
+  DOTNumberStatusSpecialtyWidget, SpectraMatchSpecialtyWidget,
+  StripeConnectSpecialtyWidget, TerminalKPIsSpecialtyWidget,
+  LoadMatchingAISpecialtyWidget as LoadMatchingAISpecWidget,
+  RouteOptimizationAISpecialtyWidget, SafetyROISpecialtyWidget,
+  ShipmentTrackingSpecialtyWidget, PODDocumentsSpecialtyWidget
+} from "./widgets/SpecialtyWidgets";
 import StripeConnectWidget from "./widgets/StripeConnectWidget";
 import WidgetStore from "./widgets/WidgetStore";
 import Weather from "./Weather";
@@ -451,6 +480,57 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     case 'eld_network_effect': return <ELDNetworkEffectWidget />;
     case 'eld_road_intelligence': return <ELDRoadIntelligenceWidget />;
 
+    // Rail widgets — Operations
+    case 'rail_active_shipments': return <RailActiveShipmentsWidget />;
+    case 'rail_yard_ops': return <RailYardOpsWidget />;
+    case 'rail_crew_status': return <RailCrewStatusWidget />;
+    case 'rail_consist_status': return <RailConsistStatusWidget />;
+    case 'rail_demurrage': return <RailDemurrageWidget />;
+    case 'rail_compliance': case 'rail_compliance_status': return <RailComplianceWidget />;
+    case 'rail_safety': return <RailSafetyWidget />;
+    case 'rail_weather': return <RailWeatherWidget />;
+
+    // Rail widgets — Marketplace / Rates / Analytics
+    case 'rail_marketplace': return <RailMarketplaceWidget />;
+    case 'rail_rates': return <RailRatesWidget />;
+    case 'rail_schedule_adherence': return <RailScheduleAdherenceWidget />;
+    case 'rail_utilization': return <RailUtilizationWidget />;
+
+    // Rail widgets — Infrastructure
+    case 'rail_intermodal': return <RailIntermodalWidget />;
+    case 'rail_interchange': return <RailInterchangeWidget />;
+    case 'rail_switching': return <RailSwitchingWidget />;
+    case 'rail_terminals': return <RailTerminalsWidget />;
+    case 'rail_track_allocation': return <RailTrackAllocationWidget />;
+    case 'rail_train_manifest': return <RailTrainManifestWidget />;
+    case 'rail_locomotive': return <RailLocomotivesWidget />;
+
+    // Rail Broker widgets
+    case 'rail_brk_shipments': return <RailBrkShipmentsWidget />;
+    case 'rail_brk_rates': return <RailBrkRatesWidget />;
+    case 'rail_brk_commission': return <RailBrkCommissionWidget />;
+    case 'rail_brk_capacity': return <RailBrkCapacityWidget />;
+    case 'rail_brk_market': return <RailBrkMarketWidget />;
+    case 'rail_brk_performance': return <RailBrkPerformanceWidget />;
+    case 'rail_brk_network': case 'rail_carrier_network': return <RailBrkNetworkWidget />;
+
+    // Rail Engineer widgets
+    case 'rail_eng_assignment': case 'rail_eng_assignments': return <RailEngAssignmentsWidget />;
+    case 'rail_eng_hos': return <RailEngHosWidget />;
+    case 'rail_eng_safety': return <RailEngSafetyWidget />;
+    case 'rail_eng_route': case 'rail_track_ahead': return <RailEngRouteWidget />;
+
+    // Rail Conductor widgets
+    case 'rail_con_train': case 'rail_con_assignments': return <RailConAssignmentsWidget />;
+    case 'rail_con_yard_map': case 'rail_con_yard': return <RailConYardWidget />;
+    case 'rail_con_manifest': case 'rail_con_docs': return <RailConDocsWidget />;
+    case 'rail_con_safety_brief': case 'rail_con_safety': return <RailConSafetyWidget />;
+
+    // Rail Crew widgets
+    case 'rail_crew_hos': case 'rail_con_hos': return <RailCrewHosWidget />;
+    case 'rail_crew_certs': case 'rail_eng_certs': case 'rail_con_certs': return <RailCrewCertsWidget />;
+    case 'rail_crew_training': return <RailCrewTrainingWidget />;
+
     // Premium Analytics widgets
     case 'revenue_forecasting': return <RevenueForecastingWidget />;
     case 'route_optimization_ai': return <RouteOptimizationAIWidget />;
@@ -465,6 +545,67 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     case 'real_time_tracking': return <RealTimeTrackingWidget />;
     case 'cost_breakdown': return <CostBreakdownWidget />;
     case 'customer_satisfaction': return <CustomerSatisfactionWidget />;
+
+    // Factoring widgets
+    case 'factoring_pending_invoices': return <FactoringPendingInvoicesWidget />;
+    case 'factoring_funded': return <FactoringFundedWidget />;
+    case 'factoring_aging': return <FactoringAgingWidget />;
+    case 'factoring_risk': return <FactoringRiskWidget />;
+    case 'factoring_collections': return <FactoringCollectionsWidget />;
+    case 'factoring_chargebacks': return <FactoringChargebacksWidget />;
+    case 'factoring_catalyst_portfolio': return <FactoringCatalystPortfolioWidget />;
+    case 'factoring_rates_fees': return <FactoringRatesFeesWidget />;
+    case 'factoring_advance_rate': return <FactoringAdvanceRateWidget />;
+    case 'factoring_approval_rate': return <FactoringApprovalRateWidget />;
+    case 'factoring_cash_flow': return <FactoringCashFlowWidget />;
+    case 'factoring_default_risk': return <FactoringDefaultRiskWidget />;
+    case 'factoring_history': return <FactoringHistoryWidget />;
+    case 'factoring_portfolio': return <FactoringPortfolioWidget />;
+    case 'factoring_reserve': return <FactoringReserveWidget />;
+
+    // Vessel/Maritime widgets
+    case 'vessel_active_shipments': return <VW.VesselActiveShipmentsWidget />;
+    case 'vessel_fleet': return <VW.VesselFleetWidget />;
+    case 'vessel_containers': return <VW.VesselContainersWidget />;
+    case 'vessel_port_status': return <VW.VesselPortStatusWidget />;
+    case 'vessel_customs': return <VW.VesselCustomsWidget />;
+    case 'vessel_rates': return <VW.VesselRatesWidget />;
+    case 'vessel_bol': return <VW.VesselBOLWidget />;
+    case 'vessel_bookings': return <VW.VesselBookingsWidget />;
+    case 'vessel_analytics': return <VW.VesselAnalyticsWidget />;
+    case 'vessel_bunker_fuel': return <VW.VesselBunkerFuelWidget />;
+    case 'vessel_crew': return <VW.VesselCrewWidget />;
+    case 'vessel_utilization': return <VW.VesselUtilizationWidget />;
+    case 'vessel_voyage_revenue': return <VW.VesselVoyageRevenueWidget />;
+    case 'vessel_port_schedule': return <VW.VesselPortScheduleWidget />;
+    case 'vessel_container_inv': return <VW.VesselContainerInvWidget />;
+    case 'vessel_cargo_manifest': return <VW.VesselCargoManifestWidget />;
+    case 'vessel_maintenance': return <VW.VesselMaintenanceWidget />;
+    case 'vessel_insurance': return <VW.VesselInsuranceWidget />;
+    // Port widgets
+    case 'port_arrivals': return <VW.PortArrivalsWidget />;
+    case 'port_berths': return <VW.PortBerthsWidget />;
+    case 'port_cranes': return <VW.PortCranesWidget />;
+    case 'port_customs_checkpoint': return <VW.PortCustomsCheckpointWidget />;
+    // Captain widgets
+    case 'captain_voyage': return <VW.CaptainVoyageWidget />;
+    case 'captain_cargo': return <VW.CaptainCargoWidget />;
+    case 'captain_crew': return <VW.CaptainCrewWidget />;
+    case 'captain_weather': return <VW.CaptainWeatherWidget />;
+    case 'captain_safety_drills': return <VW.CaptainSafetyDrillsWidget />;
+    case 'captain_bridge_alerts': return <VW.CaptainBridgeAlertsWidget />;
+    // Vessel Broker widgets
+    case 'vbrk_marketplace': return <VW.VBrkMarketplaceWidget />;
+    case 'vbrk_bookings': return <VW.VBrkBookingsWidget />;
+    case 'vbrk_rates': return <VW.VBrkRatesWidget />;
+    case 'vbrk_commission': return <VW.VBrkCommissionWidget />;
+    case 'vbrk_performance': return <VW.VBrkPerformanceWidget />;
+    // Customs widgets
+    case 'customs_pending': return <VW.CustomsPendingWidget />;
+    case 'customs_processing': return <VW.CustomsProcessingWidget />;
+    case 'customs_duty': return <VW.CustomsDutyWidget />;
+    case 'customs_cbp_holds': return <VW.CustomsCBPHoldsWidget />;
+    case 'customs_releases': return <VW.CustomsReleasesWidget />;
 
     default: {
       const widget = ALL_WIDGETS.find(w => w.id === widgetId);
