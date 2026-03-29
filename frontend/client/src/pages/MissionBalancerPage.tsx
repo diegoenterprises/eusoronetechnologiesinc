@@ -65,14 +65,14 @@ export default function MissionBalancerPage() {
         <div className={cn("rounded-xl border p-5", cB)}>
           <h3 className={cn("text-sm font-semibold mb-4 flex items-center gap-2", tP)}><Package className="w-4 h-4 text-amber-400" />Pending Loads</h3>
           {loads.slice(0,8).map((ld:any,i:number) => (<div key={i} className={cn("flex items-center justify-between py-2 border-b last:border-0", L ? "border-slate-100" : "border-white/5")}>
-            <div className="flex items-center gap-2"><MapPin className="w-3 h-3 text-green-400" /><span className={cn("text-xs", tP)}>{ld.origin||"—"}</span><ChevronRight className="w-3 h-3 text-slate-500" /><span className={cn("text-xs", tP)}>{ld.destination||"—"}</span></div>
+            <div className="flex items-center gap-2"><MapPin className="w-3 h-3 text-green-400" /><span className={cn("text-xs", tP)}>{typeof ld.origin === "object" ? `${ld.origin?.city || ""}, ${ld.origin?.state || ""}` : (ld.origin || "—")}</span><ChevronRight className="w-3 h-3 text-slate-500" /><span className={cn("text-xs", tP)}>{typeof ld.destination === "object" ? `${ld.destination?.city || ""}, ${ld.destination?.state || ""}` : (ld.destination || "—")}</span></div>
             <Badge className={cn("text-xs", ld.priority==="critical"?"bg-red-500/15 text-red-400":"bg-slate-500/15 text-slate-400")}>{ld.priority||"normal"}</Badge></div>))}
           {loads.length === 0 && <p className={cn("text-sm text-center py-4", tS)}>No pending loads</p>}
         </div>
         <div className={cn("rounded-xl border p-5 lg:col-span-2", cB)}>
           <h3 className={cn("text-sm font-semibold mb-4 flex items-center gap-2", tP)}><Zap className="w-4 h-4 text-amber-400" />AI Suggestions</h3>
           {(d?.assignments||[]).slice(0,5).map((a:any,i:number) => (<div key={i} className={cn("flex items-center justify-between py-3 border-b last:border-0", L ? "border-slate-100" : "border-white/5")}>
-            <div className="flex items-center gap-3"><Truck className="w-4 h-4 text-blue-400" /><div><p className={cn("text-sm font-medium", tP)}>{a.driverName||`Driver ${i+1}`}</p><p className={cn("text-xs", tS)}>{a.loadOrigin||"—"} → {a.loadDestination||"—"}</p></div></div>
+            <div className="flex items-center gap-3"><Truck className="w-4 h-4 text-blue-400" /><div><p className={cn("text-sm font-medium", tP)}>{a.driverName||`Driver ${i+1}`}</p><p className={cn("text-xs", tS)}>{typeof a.loadOrigin === "object" ? `${a.loadOrigin?.city || ""}, ${a.loadOrigin?.state || ""}` : (a.loadOrigin || "—")} → {typeof a.loadDestination === "object" ? `${a.loadDestination?.city || ""}, ${a.loadDestination?.state || ""}` : (a.loadDestination || "—")}</p></div></div>
             <div className="flex items-center gap-3"><span className={cn("text-sm font-bold", a.score>=80?"text-green-400":a.score>=60?"text-amber-400":"text-red-400")}>{a.score||0}%</span>
             <Button size="sm" variant="outline" className="h-7 text-xs">Assign</Button></div></div>))}
           {(!d?.assignments||d.assignments.length===0) && <div className="text-center py-8"><Brain className={cn("w-10 h-10 mx-auto mb-3", tS)} /><p className={cn("text-sm", tS)}>No suggestions yet</p></div>}
@@ -86,7 +86,7 @@ export default function MissionBalancerPage() {
         {drivers.length===0 && <div className="p-8 text-center"><p className={cn("text-sm", tS)}>No drivers</p></div>}</div>}
       {tab === "loads" && <div className={cn("rounded-xl border", cB)}><div className="p-4 border-b border-white/5"><h3 className={cn("text-sm font-semibold", tP)}>Loads ({loads.length})</h3></div>
         {loads.map((ld:any,i:number) => (<div key={i} className="flex items-center justify-between p-4 border-b border-white/5 hover:bg-white/[0.02]">
-          <div className="flex items-center gap-3"><Package className="w-5 h-5 text-amber-400" /><div><p className={cn("text-sm font-medium", tP)}>{ld.id||`Load ${i+1}`}</p><p className={cn("text-xs", tS)}>{ld.origin||"—"} → {ld.destination||"—"}</p></div></div>
+          <div className="flex items-center gap-3"><Package className="w-5 h-5 text-amber-400" /><div><p className={cn("text-sm font-medium", tP)}>{ld.id||`Load ${i+1}`}</p><p className={cn("text-xs", tS)}>{typeof ld.origin === "object" ? `${ld.origin?.city || ""}, ${ld.origin?.state || ""}` : (ld.origin || "—")} → {typeof ld.destination === "object" ? `${ld.destination?.city || ""}, ${ld.destination?.state || ""}` : (ld.destination || "—")}</p></div></div>
           <span className="text-sm font-bold text-green-400">${(ld.rate||0).toLocaleString()}</span></div>))}
         {loads.length===0 && <div className="p-8 text-center"><p className={cn("text-sm", tS)}>No loads</p></div>}</div>}
       {tab === "assignments" && <div className={cn("rounded-xl border", cB)}><div className="p-4 border-b border-white/5"><h3 className={cn("text-sm font-semibold", tP)}>Assignments ({d?.assignments?.length||0})</h3></div>
