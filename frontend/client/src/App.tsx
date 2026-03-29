@@ -482,6 +482,17 @@ const RailYardTracks = lazy(() => import("./pages/rail/RailYardTracks"));
 const ShipLogs = lazy(() => import("./pages/vessel/ShipLogs"));
 const ContainerYardManagement = lazy(() => import("./pages/vessel/ContainerYardManagement"));
 const VesselMarketplace = lazy(() => import("./pages/vessel/VesselMarketplace"));
+// Final wave: role-specific pages
+const RailShipperDashboard = lazy(() => import("./pages/rail/RailShipperDashboard"));
+const RailShipperShipments = lazy(() => import("./pages/rail/RailShipperShipments"));
+const RailDocuments = lazy(() => import("./pages/rail/RailDocuments"));
+const RailCarrierDashboard = lazy(() => import("./pages/rail/RailCarrierDashboard"));
+const RailFleetManagement = lazy(() => import("./pages/rail/RailFleetManagement"));
+const RailCrewManagement = lazy(() => import("./pages/rail/RailCrewManagement"));
+const VesselShipperDashboard = lazy(() => import("./pages/vessel/VesselShipperDashboard"));
+const VesselOperatorDashboard = lazy(() => import("./pages/vessel/VesselOperatorDashboard"));
+const VesselVoyages = lazy(() => import("./pages/vessel/VesselVoyages"));
+const VesselContainerOps = lazy(() => import("./pages/vessel/VesselContainerOps"));
 // ═══ V5 Multi-Modal: Intermodal Pages ═══
 const IntermodalDashboard = lazy(() => import("./pages/intermodal/IntermodalDashboard"));
 const IntermodalShipmentCreate = lazy(() => import("./pages/intermodal/IntermodalShipmentCreate"));
@@ -1195,6 +1206,28 @@ function Router() {
       <Route path={"/vessel/marketplace/schedules"} component={guard(VESL_BOOK, <VesselMarketplace />)} />
       <Route path={"/vessel/marketplace/rates"} component={guard(VESL_BOOK, <VesselMarketplace />)} />
       <Route path={"/vessel/marketplace/spot"} component={guard(VESL_BOOK, <VesselMarketplace />)} />
+      {/* Role-specific dashboards + dedicated pages */}
+      <Route path={"/rail/shipper/dashboard"} component={guard(["RAIL_SHIPPER", "ADMIN", "SUPER_ADMIN"] as UserRole[], <RailShipperDashboard />)} />
+      <Route path={"/rail/carrier/dashboard"} component={guard(RAIL_OPS, <RailCarrierDashboard />)} />
+      <Route path={"/rail/fleet"} component={guard(RAIL_OPS, <RailFleetManagement />)} />
+      <Route path={"/rail/railcars"} component={guard(RAIL_OPS, <RailFleetManagement />)} />
+      <Route path={"/rail/car-status"} component={guard(RAIL_OPS, <RailFleetManagement />)} />
+      <Route path={"/rail/maintenance"} component={guard(RAIL_OPS, <RailFleetManagement />)} />
+      <Route path={"/rail/crew/engineers"} component={guard(RAIL_OPS, <RailCrewManagement />)} />
+      <Route path={"/rail/crew/conductors"} component={guard(RAIL_OPS, <RailCrewManagement />)} />
+      <Route path={"/rail/crew/certifications"} component={guard(RAIL_OPS, <RailCrewManagement />)} />
+      <Route path={"/rail/crew/assignments"} component={guard(RAIL_OPS, <RailCrewManagement />)} />
+      <Route path={"/rail/drug-testing"} component={guard(RAIL_OPS, <RailCrewManagement />)} />
+      <Route path={"/rail/documents"} component={guard(RAIL, <RailDocuments />)} />
+      <Route path={"/rail/shipments/pending"} component={guard(RAIL_SHIP, <RailShipperShipments />)} />
+      <Route path={"/vessel/operator/dashboard"} component={guard(["VESSEL_OPERATOR", "ADMIN", "SUPER_ADMIN"] as UserRole[], <VesselOperatorDashboard />)} />
+      <Route path={"/vessel/voyages"} component={guard(VESL_OPS, <VesselVoyages />)} />
+      <Route path={"/vessel/voyages/active"} component={guard(VESL_OPS, <VesselVoyages />)} />
+      <Route path={"/vessel/voyages/schedule"} component={guard(VESL_OPS, <VesselVoyages />)} />
+      <Route path={"/vessel/containers/tracking"} component={guard(VESL, <VesselContainerOps />)} />
+      <Route path={"/vessel/containers/demurrage"} component={guard(VESL, <VesselContainerOps />)} />
+      <Route path={"/vessel/containers/returns"} component={guard(VESL, <VesselContainerOps />)} />
+      <Route path={"/vessel/operations/containers"} component={guard(VESL_OPS, <VesselContainerOps />)} />
       <Route path={"/vessel/bookings/create"} component={guard(VESL_BOOK, <VesselBookingCreate />)} />
       <Route path={"/vessel/bookings/:id"} component={guard(VESL, <VesselBookingDetail />)} />
       <Route path={"/vessel/bookings"} component={guard(VESL, <VesselBookings />)} />
