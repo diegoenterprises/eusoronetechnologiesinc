@@ -93,25 +93,9 @@ const DOC_TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; co
 };
 
 /* ------------------------------------------------------------------ */
-/*  Mock documents                                                     */
+/*  Empty documents array (populated by tRPC when endpoints exist)     */
 /* ------------------------------------------------------------------ */
-const MOCK_DOCUMENTS: RailDocument[] = [
-  { id: "D-001", type: "waybill", shipmentNumber: "RS-14201", shipmentId: 1, documentNumber: "WB-88201", title: "Waybill — Grain CHI to LAX", status: "active", createdAt: "2026-03-28T10:00:00Z", updatedAt: "2026-03-28T10:00:00Z", fileSize: "245 KB", fileType: "PDF", uploadedBy: "System" },
-  { id: "D-002", type: "waybill", shipmentNumber: "RS-14198", shipmentId: 2, documentNumber: "WB-88198", title: "Waybill — Chemicals HOU to ATL", status: "active", createdAt: "2026-03-27T14:30:00Z", updatedAt: "2026-03-27T14:30:00Z", fileSize: "312 KB", fileType: "PDF", uploadedBy: "System" },
-  { id: "D-003", type: "bol", shipmentNumber: "RS-14201", shipmentId: 1, documentNumber: "BOL-44501", title: "BOL — 45 Covered Hoppers Grain", status: "approved", createdAt: "2026-03-28T08:00:00Z", updatedAt: "2026-03-28T12:00:00Z", fileSize: "189 KB", fileType: "PDF", uploadedBy: "Rail Ops" },
-  { id: "D-004", type: "bol", shipmentNumber: "RS-14195", shipmentId: 3, documentNumber: "BOL-44498", title: "BOL — 110 Open Hoppers Coal", status: "pending_review", createdAt: "2026-03-27T09:00:00Z", updatedAt: "2026-03-27T09:00:00Z", fileSize: "202 KB", fileType: "PDF", uploadedBy: "Shipper" },
-  { id: "D-005", type: "hazmat", shipmentNumber: "RS-14198", shipmentId: 2, documentNumber: "HZ-22101", title: "Hazmat Shipping Paper — Class 3 Chemicals", status: "approved", createdAt: "2026-03-27T11:00:00Z", updatedAt: "2026-03-27T15:00:00Z", fileSize: "178 KB", fileType: "PDF", uploadedBy: "Safety Dept" },
-  { id: "D-006", type: "hazmat", shipmentNumber: "RS-14188", shipmentId: 4, documentNumber: "HZ-22098", title: "Hazmat Emergency Response — Tank Cars", status: "active", createdAt: "2026-03-26T13:00:00Z", updatedAt: "2026-03-26T13:00:00Z", fileSize: "156 KB", fileType: "PDF", uploadedBy: "Safety Dept" },
-  { id: "D-007", type: "customs", shipmentNumber: "RS-14192", shipmentId: 5, documentNumber: "CUS-9901", title: "Customs Declaration — Cross-Border Rail", status: "pending_review", createdAt: "2026-03-26T16:00:00Z", updatedAt: "2026-03-26T16:00:00Z", fileSize: "340 KB", fileType: "PDF", uploadedBy: "Customs Agent" },
-  { id: "D-008", type: "customs", shipmentNumber: "RS-14192", shipmentId: 5, documentNumber: "CUS-9902", title: "USMCA Certificate of Origin", status: "draft", createdAt: "2026-03-26T16:30:00Z", updatedAt: "2026-03-26T16:30:00Z", fileSize: "128 KB", fileType: "PDF", uploadedBy: "Shipper" },
-  { id: "D-009", type: "inspection", shipmentNumber: "RS-14201", shipmentId: 1, documentNumber: "INS-55601", title: "FRA Inspection — Pre-Departure", status: "approved", createdAt: "2026-03-28T06:00:00Z", updatedAt: "2026-03-28T07:00:00Z", fileSize: "412 KB", fileType: "PDF", uploadedBy: "Inspector" },
-  { id: "D-010", type: "rate_sheet", shipmentNumber: "RS-14201", shipmentId: 1, documentNumber: "RT-7701", title: "BNSF Rate Agreement — Grain Lane", status: "active", createdAt: "2026-03-20T10:00:00Z", updatedAt: "2026-03-20T10:00:00Z", fileSize: "98 KB", fileType: "PDF", uploadedBy: "Procurement" },
-  { id: "D-011", type: "invoice", shipmentNumber: "RS-14190", shipmentId: 6, documentNumber: "INV-33401", title: "Invoice — Lumber MEM to DAL", status: "active", createdAt: "2026-03-25T09:00:00Z", updatedAt: "2026-03-25T09:00:00Z", fileSize: "145 KB", fileType: "PDF", uploadedBy: "Billing" },
-  { id: "D-012", type: "pod", shipmentNumber: "RS-14190", shipmentId: 6, documentNumber: "POD-8801", title: "Proof of Delivery — Seattle Terminal", status: "approved", createdAt: "2026-03-28T22:45:00Z", updatedAt: "2026-03-29T01:00:00Z", fileSize: "567 KB", fileType: "PDF", uploadedBy: "Terminal" },
-  { id: "D-013", type: "waybill", shipmentNumber: "RS-14195", shipmentId: 3, documentNumber: "WB-88195", title: "Waybill — Coal KC to SEA", status: "active", createdAt: "2026-03-27T08:00:00Z", updatedAt: "2026-03-27T08:00:00Z", fileSize: "278 KB", fileType: "PDF", uploadedBy: "System" },
-  { id: "D-014", type: "bol", shipmentNumber: "RS-14188", shipmentId: 4, documentNumber: "BOL-44495", title: "BOL — 20 Tank Cars Chemicals", status: "approved", createdAt: "2026-03-26T10:00:00Z", updatedAt: "2026-03-26T14:00:00Z", fileSize: "195 KB", fileType: "PDF", uploadedBy: "Shipper" },
-  { id: "D-015", type: "waybill", shipmentNumber: "RS-14202", shipmentId: 7, documentNumber: "WB-88202", title: "Waybill — Autos DEN to STL", status: "draft", createdAt: "2026-03-29T07:00:00Z", updatedAt: "2026-03-29T07:00:00Z", fileSize: "220 KB", fileType: "PDF", uploadedBy: "System" },
-];
+const EMPTY_DOCUMENTS: RailDocument[] = [];
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -275,7 +259,7 @@ function DocumentPreview({ doc, isLight, text, muted, cardBg, onClose }: {
             <Button variant="outline" size="sm" className={cn("h-7 text-xs", isLight ? "border-slate-300" : "border-slate-600 text-slate-300")}>
               <Send className="w-3 h-3 mr-1" /> Share
             </Button>
-            <Button variant="outline" size="sm" className={cn("h-7 text-xs", isLight ? "border-slate-300" : "border-slate-600 text-slate-300")}>
+            <Button variant="outline" size="sm" className={cn("h-7 text-xs", isLight ? "border-slate-300" : "border-slate-600 text-slate-300")} onClick={() => toast.info("Download not available — no file stored yet")}>
               <Download className="w-3 h-3 mr-1" /> Download
             </Button>
             <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0">
@@ -335,8 +319,8 @@ function DocumentPreview({ doc, isLight, text, muted, cardBg, onClose }: {
             <FileText className="w-16 h-16 mx-auto mb-3 opacity-20" />
             <p className={cn("text-sm font-medium", text)}>{doc.title}</p>
             <p className="text-xs mt-1">{doc.fileType} Document — {doc.fileSize}</p>
-            <Button size="sm" className="mt-3 h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs">
-              <Download className="w-3.5 h-3.5 mr-1" /> Download to View
+            <Button size="sm" className="mt-3 h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs" onClick={() => toast.info("Download not available — no file stored yet")}>
+              <Download className="w-3.5 h-3.5 mr-1" /> Download not available
             </Button>
           </div>
         </div>
@@ -367,7 +351,7 @@ function DocumentRow({ doc, isLight, text, muted, onPreview }: {
       <span className={cn("text-xs", muted)}>{new Date(doc.createdAt).toLocaleDateString()}</span>
       <Badge className={cn("w-fit text-xs", DOC_STATUS_COLORS[doc.status])}>{doc.status.replace(/_/g, " ")}</Badge>
       <div className="flex items-center gap-1.5">
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={e => { e.stopPropagation(); toast.success("Downloading..."); }}>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={e => { e.stopPropagation(); toast.info("Download not available — no file stored yet"); }}>
           <Download className="w-3.5 h-3.5 text-slate-400" />
         </Button>
         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={e => { e.stopPropagation(); onPreview(doc); }}>
@@ -433,11 +417,11 @@ function DocStatsRow({ isLight, text, muted }: { isLight: boolean; text: string;
   const stats = useMemo(() => {
     const byType: Record<string, number> = {};
     const byStatus: Record<string, number> = {};
-    MOCK_DOCUMENTS.forEach(d => {
+    EMPTY_DOCUMENTS.forEach(d => {
       byType[d.type] = (byType[d.type] || 0) + 1;
       byStatus[d.status] = (byStatus[d.status] || 0) + 1;
     });
-    return { total: MOCK_DOCUMENTS.length, byType, byStatus };
+    return { total: EMPTY_DOCUMENTS.length, byType, byStatus };
   }, []);
 
   const cards = [
@@ -489,7 +473,7 @@ export default function RailDocuments() {
 
   /* Filter documents by tab and search */
   const filtered = useMemo(() => {
-    let docs = [...MOCK_DOCUMENTS];
+    let docs = [...EMPTY_DOCUMENTS];
 
     /* Tab filter */
     if (tab === "waybills") docs = docs.filter(d => d.type === "waybill");
@@ -567,11 +551,11 @@ export default function RailDocuments() {
       {/* ---- Tabs ---- */}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className={cn(isLight ? "bg-slate-100" : "bg-slate-800/60")}>
-          <TabsTrigger value="all" className="text-sm">All ({MOCK_DOCUMENTS.length})</TabsTrigger>
-          <TabsTrigger value="waybills" className="text-sm">Waybills ({MOCK_DOCUMENTS.filter(d => d.type === "waybill").length})</TabsTrigger>
-          <TabsTrigger value="bols" className="text-sm">BOLs ({MOCK_DOCUMENTS.filter(d => d.type === "bol").length})</TabsTrigger>
-          <TabsTrigger value="hazmat" className="text-sm">Hazmat ({MOCK_DOCUMENTS.filter(d => d.type === "hazmat").length})</TabsTrigger>
-          <TabsTrigger value="customs" className="text-sm">Customs ({MOCK_DOCUMENTS.filter(d => d.type === "customs").length})</TabsTrigger>
+          <TabsTrigger value="all" className="text-sm">All ({EMPTY_DOCUMENTS.length})</TabsTrigger>
+          <TabsTrigger value="waybills" className="text-sm">Waybills ({EMPTY_DOCUMENTS.filter(d => d.type === "waybill").length})</TabsTrigger>
+          <TabsTrigger value="bols" className="text-sm">BOLs ({EMPTY_DOCUMENTS.filter(d => d.type === "bol").length})</TabsTrigger>
+          <TabsTrigger value="hazmat" className="text-sm">Hazmat ({EMPTY_DOCUMENTS.filter(d => d.type === "hazmat").length})</TabsTrigger>
+          <TabsTrigger value="customs" className="text-sm">Customs ({EMPTY_DOCUMENTS.filter(d => d.type === "customs").length})</TabsTrigger>
         </TabsList>
 
         {/* All tabs share the same content, just filtered differently */}

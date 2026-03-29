@@ -102,45 +102,15 @@ interface Commission {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Mock data (replaced by tRPC queries when endpoints exist)          */
+/*  Data arrays (populated by tRPC queries when endpoints exist)       */
 /* ------------------------------------------------------------------ */
-const MOCK_LISTINGS: MarketListing[] = [
-  { id: "RL-4401", originYard: "CHI-Corwith", originCity: "Chicago, IL", destYard: "LAX-ICTF", destCity: "Los Angeles, CA", commodity: "Grain", carType: "Covered Hopper", carCount: 45, rateMin: 4200, rateMax: 4800, deadline: "2026-04-02", railroad: "BNSF", region: "West", postedAt: "2h ago", urgency: "hot" },
-  { id: "RL-4402", originYard: "HOU-Englewood", originCity: "Houston, TX", destYard: "ATL-Inman", destCity: "Atlanta, GA", commodity: "Chemicals", carType: "Tank Car", carCount: 22, rateMin: 5100, rateMax: 5600, deadline: "2026-04-05", railroad: "CSX", region: "Southeast", postedAt: "4h ago", urgency: "normal" },
-  { id: "RL-4403", originYard: "KC-Argentine", originCity: "Kansas City, MO", destYard: "SEA-SIG", destCity: "Seattle, WA", commodity: "Coal", carType: "Open Hopper", carCount: 110, rateMin: 3800, rateMax: 4100, deadline: "2026-04-01", railroad: "UP", region: "Northwest", postedAt: "30m ago", urgency: "critical" },
-  { id: "RL-4404", originYard: "PHL-Greenwich", originCity: "Philadelphia, PA", destYard: "CHI-59th St", destCity: "Chicago, IL", commodity: "Intermodal", carType: "Well Car", carCount: 60, rateMin: 2800, rateMax: 3200, deadline: "2026-04-04", railroad: "NS", region: "Northeast", postedAt: "1h ago", urgency: "normal" },
-  { id: "RL-4405", originYard: "MEM-Johnston", originCity: "Memphis, TN", destYard: "DAL-Zacha", destCity: "Dallas, TX", commodity: "Lumber", carType: "Centerbeam Flat", carCount: 30, rateMin: 3500, rateMax: 3900, deadline: "2026-04-03", railroad: "BNSF", region: "South Central", postedAt: "6h ago", urgency: "hot" },
-  { id: "RL-4406", originYard: "DEN-North Yard", originCity: "Denver, CO", destYard: "STL-Dupo", destCity: "St. Louis, MO", commodity: "Autos", carType: "Autorack", carCount: 18, rateMin: 6200, rateMax: 6800, deadline: "2026-04-06", railroad: "UP", region: "Central", postedAt: "8h ago", urgency: "normal" },
-];
+const EMPTY_LISTINGS: MarketListing[] = [];
 
-const MOCK_BIDS: Bid[] = [
-  { id: "BID-701", listingId: "RL-4390", route: "Chicago → Los Angeles", commodity: "Grain", bidAmount: 4500, carCount: 45, status: "accepted", submittedAt: "2026-03-25", respondedAt: "2026-03-26" },
-  { id: "BID-702", listingId: "RL-4388", route: "Houston → Atlanta", commodity: "Chemicals", bidAmount: 5350, carCount: 22, status: "pending", submittedAt: "2026-03-28" },
-  { id: "BID-703", listingId: "RL-4385", route: "KC → Seattle", commodity: "Coal", bidAmount: 3950, carCount: 110, status: "rejected", submittedAt: "2026-03-24", respondedAt: "2026-03-25" },
-  { id: "BID-704", listingId: "RL-4392", route: "Memphis → Dallas", commodity: "Lumber", bidAmount: 3700, carCount: 30, status: "accepted", submittedAt: "2026-03-22", respondedAt: "2026-03-23" },
-  { id: "BID-705", listingId: "RL-4395", route: "Denver → St. Louis", commodity: "Autos", bidAmount: 6500, carCount: 18, status: "pending", submittedAt: "2026-03-28" },
-  { id: "BID-706", listingId: "RL-4382", route: "Philadelphia → Chicago", commodity: "Intermodal", bidAmount: 3050, carCount: 60, status: "expired", submittedAt: "2026-03-20", respondedAt: "2026-03-22" },
-];
+const EMPTY_BIDS: Bid[] = [];
 
-const MOCK_CARRIERS: Carrier[] = [
-  { id: "C1", name: "BNSF Railway", classType: "I", territory: ["West", "Southwest", "Midwest"], agreementsOnFile: 14, onTimeRate: 92, activeShipments: 38 },
-  { id: "C2", name: "Union Pacific", classType: "I", territory: ["West", "Central", "South"], agreementsOnFile: 11, onTimeRate: 89, activeShipments: 27 },
-  { id: "C3", name: "CSX Transportation", classType: "I", territory: ["East", "Southeast", "Midwest"], agreementsOnFile: 9, onTimeRate: 91, activeShipments: 22 },
-  { id: "C4", name: "Norfolk Southern", classType: "I", territory: ["East", "Southeast", "Midwest"], agreementsOnFile: 8, onTimeRate: 88, activeShipments: 19 },
-  { id: "C5", name: "Kansas City Southern", classType: "I", territory: ["Central", "South", "Mexico"], agreementsOnFile: 5, onTimeRate: 87, activeShipments: 11 },
-  { id: "C6", name: "Florida East Coast", classType: "II", territory: ["Southeast"], agreementsOnFile: 3, onTimeRate: 94, activeShipments: 6 },
-  { id: "C7", name: "Montana Rail Link", classType: "II", territory: ["Northwest"], agreementsOnFile: 2, onTimeRate: 90, activeShipments: 4 },
-  { id: "C8", name: "Genesee & Wyoming", classType: "III", territory: ["Northeast", "Southeast"], agreementsOnFile: 4, onTimeRate: 85, activeShipments: 8 },
-];
+const EMPTY_CARRIERS: Carrier[] = [];
 
-const MOCK_COMMISSIONS: Commission[] = [
-  { lane: "CHI → LAX (Grain)", railroad: "BNSF", amount: 8_640, status: "paid", date: "2026-03-25" },
-  { lane: "HOU → ATL (Chemicals)", railroad: "CSX", amount: 4_718, status: "pending", date: "2026-03-28" },
-  { lane: "KC → SEA (Coal)", railroad: "UP", amount: 17_380, status: "processing", date: "2026-03-27" },
-  { lane: "MEM → DAL (Lumber)", railroad: "BNSF", amount: 4_440, status: "paid", date: "2026-03-23" },
-  { lane: "DEN → STL (Autos)", railroad: "UP", amount: 4_680, status: "pending", date: "2026-03-28" },
-  { lane: "PHL → CHI (Intermodal)", railroad: "NS", amount: 7_320, status: "paid", date: "2026-03-20" },
-];
+const EMPTY_COMMISSIONS: Commission[] = [];
 
 /* ------------------------------------------------------------------ */
 /*  Helper: KPI stat card                                              */
@@ -368,8 +338,9 @@ function ShipmentMarketplace({ isLight, cardBg, text, muted }: {
 
   // In production, this would be a tRPC query
   // const listingsQuery = (trpc as any).railBroker.getMarketplaceListings.useQuery({ ... });
-  const listings = MOCK_LISTINGS;
+  const listings = EMPTY_LISTINGS;
   const loading = false;
+  const hasData = listings.length > 0;
 
   const filtered = useMemo(() => {
     return listings.filter((l) => {
@@ -452,7 +423,11 @@ function ShipmentMarketplace({ isLight, cardBg, text, muted }: {
         {loading ? <SkeletonRows rows={5} cols={6} /> : (
           <div className="space-y-3">
             {filtered.length === 0 && (
-              <div className={cn("text-center py-8", muted)}>No listings match your filters.</div>
+              <div className={cn("text-center py-12", muted)}>
+                <Gavel className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm font-medium">No market listings yet</p>
+                <p className="text-xs mt-1">Marketplace listings will appear here when available</p>
+              </div>
             )}
             {filtered.map((listing) => (
               <div
@@ -539,13 +514,13 @@ function ShipmentMarketplace({ isLight, cardBg, text, muted }: {
 function MyBids({ isLight, cardBg, text, muted }: {
   isLight: boolean; cardBg: string; text: string; muted: string;
 }) {
-  const bids = MOCK_BIDS;
+  const bids = EMPTY_BIDS;
   const loading = false;
 
   const accepted = bids.filter((b) => b.status === "accepted").length;
   const total = bids.filter((b) => b.status !== "expired").length;
   const winRate = total > 0 ? ((accepted / total) * 100).toFixed(0) : "0";
-  const avgBid = bids.reduce((sum, b) => sum + b.bidAmount, 0) / bids.length;
+  const avgBid = bids.length > 0 ? bids.reduce((sum, b) => sum + b.bidAmount, 0) / bids.length : 0;
 
   return (
     <Card className={cn("border", cardBg)}>
@@ -610,7 +585,7 @@ function MyBids({ isLight, cardBg, text, muted }: {
 function CarrierNetwork({ isLight, cardBg, text, muted }: {
   isLight: boolean; cardBg: string; text: string; muted: string;
 }) {
-  const carriers = MOCK_CARRIERS;
+  const carriers = EMPTY_CARRIERS;
   const loading = false;
 
   const classICt = carriers.filter((c) => c.classType === "I").length;
@@ -695,7 +670,7 @@ function CarrierNetwork({ isLight, cardBg, text, muted }: {
 function FinancialCard({ isLight, cardBg, text, muted }: {
   isLight: boolean; cardBg: string; text: string; muted: string;
 }) {
-  const commissions = MOCK_COMMISSIONS;
+  const commissions = EMPTY_COMMISSIONS;
   const loading = false;
 
   const weekEarned = 13_078;
@@ -712,7 +687,7 @@ function FinancialCard({ isLight, cardBg, text, muted }: {
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   }, [commissions]);
 
-  const maxRev = Math.max(...revenueByRR.map(([, v]) => v));
+  const maxRev = revenueByRR.length > 0 ? Math.max(...revenueByRR.map(([, v]) => v)) : 1;
 
   return (
     <Card className={cn("border", cardBg)}>
@@ -961,7 +936,7 @@ export default function RailBrokerDashboard() {
     ? "bg-white border-slate-200 shadow-sm"
     : "bg-slate-800/60 border-slate-700/50";
 
-  // tRPC queries — gracefully fall back to mock data when endpoints don't exist
+  // tRPC queries — gracefully fall back to empty data when endpoints don't exist
   const statsQuery = (trpc as any).railShipments?.getRailDashboardStats?.useQuery?.() ?? { data: null, isLoading: false };
   const shipmentsQuery = (trpc as any).railShipments?.getRailShipments?.useQuery?.({ status: "all", limit: 10 }) ?? { data: null, isLoading: false };
 
@@ -1001,7 +976,7 @@ export default function RailBrokerDashboard() {
             "gap-1.5",
             isLight ? "border-slate-300 text-slate-700 hover:bg-slate-100" : "border-slate-600 text-slate-300 hover:bg-slate-700"
           )}
-          onClick={() => toast.info("Refreshing market data...")}
+          onClick={() => { statsQuery?.refetch?.(); shipmentsQuery?.refetch?.(); toast.success("Market data refreshed"); }}
         >
           <RefreshCw className="w-4 h-4" /> Refresh Market
         </Button>
@@ -1019,11 +994,11 @@ export default function RailBrokerDashboard() {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <KpiCard icon={<Gavel className="w-5 h-5" />} label="Active Deals" value={12} subtitle="4 closing this week" isLight={isLight} accent="purple" />
-          <KpiCard icon={<Clock className="w-5 h-5" />} label="Pending Bids" value={MOCK_BIDS.filter(b => b.status === "pending").length} subtitle="Avg response: 18h" isLight={isLight} accent="amber" />
+          <KpiCard icon={<Clock className="w-5 h-5" />} label="Pending Bids" value={0} subtitle="No bids yet" isLight={isLight} accent="amber" />
           <KpiCard icon={<DollarSign className="w-5 h-5" />} label="Monthly Commission" value="$47.2K" subtitle="+8.3% vs. last month" isLight={isLight} accent="emerald" />
           <KpiCard icon={<Percent className="w-5 h-5" />} label="Win Rate" value="40%" subtitle="Above avg (32%)" isLight={isLight} accent="cyan" />
-          <KpiCard icon={<Train className="w-5 h-5" />} label="Carrier Partners" value={MOCK_CARRIERS.length} subtitle="5 Class I railroads" isLight={isLight} accent="blue" />
-          <KpiCard icon={<Activity className="w-5 h-5" />} label="Market Listings" value={MOCK_LISTINGS.length} subtitle="2 critical urgency" isLight={isLight} accent="red" />
+          <KpiCard icon={<Train className="w-5 h-5" />} label="Carrier Partners" value={0} subtitle="No carriers yet" isLight={isLight} accent="blue" />
+          <KpiCard icon={<Activity className="w-5 h-5" />} label="Market Listings" value={0} subtitle="No listings yet" isLight={isLight} accent="red" />
         </div>
       )}
 

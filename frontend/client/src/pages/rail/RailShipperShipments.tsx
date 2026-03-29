@@ -92,16 +92,9 @@ interface ShipmentTemplate {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Mock templates                                                     */
+/*  Empty templates (populated by tRPC when endpoints exist)           */
 /* ------------------------------------------------------------------ */
-const MOCK_TEMPLATES: ShipmentTemplate[] = [
-  { id: "T-001", name: "Weekly Grain — CHI to LAX", originYard: "CHI-Corwith", destYard: "LAX-ICTF", commodity: "Grain", stccCode: "01131", carType: "Covered Hopper", carCount: 45, weight: 4500, railroad: "BNSF", lastUsed: "2026-03-25", timesUsed: 28 },
-  { id: "T-002", name: "Chemical Run — HOU to ATL", originYard: "HOU-Englewood", destYard: "ATL-Inman", commodity: "Chemicals", stccCode: "28111", carType: "Tank Car", carCount: 20, weight: 1800, railroad: "CSX", lastUsed: "2026-03-22", timesUsed: 14 },
-  { id: "T-003", name: "Coal Unit Train — KC to SEA", originYard: "KC-Argentine", destYard: "SEA-SIG", commodity: "Coal", stccCode: "11211", carType: "Open Hopper", carCount: 110, weight: 11000, railroad: "UP", lastUsed: "2026-03-20", timesUsed: 52 },
-  { id: "T-004", name: "Auto Express — DEN to STL", originYard: "DEN-North Yard", destYard: "STL-Dupo", commodity: "Automobiles", stccCode: "37111", carType: "Autorack", carCount: 18, weight: 900, railroad: "UP", lastUsed: "2026-03-18", timesUsed: 9 },
-  { id: "T-005", name: "Lumber — MEM to DAL", originYard: "MEM-Johnston", destYard: "DAL-Zacha", commodity: "Lumber", stccCode: "24111", carType: "Centerbeam Flat", carCount: 30, weight: 2400, railroad: "BNSF", lastUsed: "2026-03-15", timesUsed: 21 },
-  { id: "T-006", name: "Intermodal — PHL to CHI", originYard: "PHL-Greenwich", destYard: "CHI-59th St", commodity: "Mixed Goods", stccCode: "46111", carType: "Well Car", carCount: 60, weight: 3600, railroad: "NS", lastUsed: "2026-03-12", timesUsed: 36 },
-];
+const EMPTY_TEMPLATES: ShipmentTemplate[] = [];
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -390,7 +383,7 @@ function TemplatesTab({ isLight, text, muted, cardBg }: {
   isLight: boolean; text: string; muted: string; cardBg: string;
 }) {
   const [search, setSearch] = useState("");
-  const filtered = MOCK_TEMPLATES.filter(t =>
+  const filtered = EMPTY_TEMPLATES.filter(t =>
     !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.commodity.toLowerCase().includes(search.toLowerCase())
   );
 

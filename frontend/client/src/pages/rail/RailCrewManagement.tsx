@@ -53,79 +53,18 @@ const TEST_RESULT: Record<string, string> = {
   scheduled: "bg-blue-500/20 text-blue-400",
 };
 
-/* ─── Mock Crew Data ─── */
-const MOCK_ENGINEERS = [
-  { id: 1, name: "James Martinez", employeeId: "ENG-1001", status: "on_duty", assignment: "Train Q401 (Chicago-KC)", hosRemaining: 4.5, hoursToday: 7.5, maxHours: 12, phone: "(312) 555-0101", email: "j.martinez@eslx.com", hireDate: "2018-03-15", seniorityDate: "2018-03-15", district: "Midwest" },
-  { id: 2, name: "Robert Chen", employeeId: "ENG-1002", status: "on_duty", assignment: "Train Z103 (Dallas-Houston)", hosRemaining: 8.0, hoursToday: 4.0, maxHours: 12, phone: "(214) 555-0202", email: "r.chen@eslx.com", hireDate: "2019-06-01", seniorityDate: "2019-06-01", district: "South" },
-  { id: 3, name: "Michael Davis", employeeId: "ENG-1003", status: "on_duty", assignment: "Train L780 (Denver-Omaha)", hosRemaining: 3.0, hoursToday: 9.0, maxHours: 12, phone: "(303) 555-0303", email: "m.davis@eslx.com", hireDate: "2016-09-20", seniorityDate: "2016-09-20", district: "West" },
-  { id: 4, name: "Patricia Brown", employeeId: "ENG-1004", status: "available", assignment: "—", hosRemaining: 12.0, hoursToday: 0, maxHours: 12, phone: "(312) 555-0404", email: "p.brown@eslx.com", hireDate: "2020-01-10", seniorityDate: "2020-01-10", district: "Midwest" },
-  { id: 5, name: "David Wilson", employeeId: "ENG-1005", status: "resting", assignment: "Off — 8hr rest", hosRemaining: 0, hoursToday: 12.0, maxHours: 12, phone: "(816) 555-0505", email: "d.wilson@eslx.com", hireDate: "2015-04-22", seniorityDate: "2015-04-22", district: "Midwest" },
-  { id: 6, name: "Sarah Thompson", employeeId: "ENG-1006", status: "on_duty", assignment: "Yard Ops - Chicago Terminal", hosRemaining: 6.5, hoursToday: 5.5, maxHours: 12, phone: "(312) 555-0606", email: "s.thompson@eslx.com", hireDate: "2021-07-15", seniorityDate: "2021-07-15", district: "Midwest" },
-  { id: 7, name: "William Garcia", employeeId: "ENG-1007", status: "available", assignment: "—", hosRemaining: 12.0, hoursToday: 0, maxHours: 12, phone: "(713) 555-0707", email: "w.garcia@eslx.com", hireDate: "2017-11-30", seniorityDate: "2017-11-30", district: "South" },
-  { id: 8, name: "Jennifer Adams", employeeId: "ENG-1008", status: "on_leave", assignment: "Vacation", hosRemaining: 0, hoursToday: 0, maxHours: 12, phone: "(404) 555-0808", email: "j.adams@eslx.com", hireDate: "2019-02-14", seniorityDate: "2019-02-14", district: "East" },
-];
+/* ─── Empty data arrays (populated by tRPC queries when endpoints exist) ─── */
+const EMPTY_ENGINEERS: any[] = [];
 
-const MOCK_CONDUCTORS = [
-  { id: 101, name: "Richard Park", employeeId: "CON-2001", status: "on_duty", assignment: "Train Q401 (Chicago-KC)", hosRemaining: 4.5, hoursToday: 7.5, maxHours: 12, phone: "(312) 555-1001", email: "r.park@eslx.com", hireDate: "2017-05-20", seniorityDate: "2017-05-20", district: "Midwest" },
-  { id: 102, name: "Amanda Lee", employeeId: "CON-2002", status: "on_duty", assignment: "Train Z103 (Dallas-Houston)", hosRemaining: 8.0, hoursToday: 4.0, maxHours: 12, phone: "(214) 555-1002", email: "a.lee@eslx.com", hireDate: "2020-08-01", seniorityDate: "2020-08-01", district: "South" },
-  { id: 103, name: "Kevin Wilson", employeeId: "CON-2003", status: "on_duty", assignment: "Train L780 (Denver-Omaha)", hosRemaining: 3.0, hoursToday: 9.0, maxHours: 12, phone: "(303) 555-1003", email: "k.wilson@eslx.com", hireDate: "2018-12-10", seniorityDate: "2018-12-10", district: "West" },
-  { id: 104, name: "Teresa Garcia", employeeId: "CON-2004", status: "available", assignment: "—", hosRemaining: 12.0, hoursToday: 0, maxHours: 12, phone: "(816) 555-1004", email: "t.garcia@eslx.com", hireDate: "2021-03-15", seniorityDate: "2021-03-15", district: "Midwest" },
-  { id: 105, name: "Brian Johnson", employeeId: "CON-2005", status: "resting", assignment: "Off — 8hr rest", hosRemaining: 0, hoursToday: 12.0, maxHours: 12, phone: "(312) 555-1005", email: "b.johnson@eslx.com", hireDate: "2016-07-22", seniorityDate: "2016-07-22", district: "Midwest" },
-  { id: 106, name: "Rachel Patel", employeeId: "CON-2006", status: "on_duty", assignment: "Yard Ops - Chicago Terminal", hosRemaining: 6.5, hoursToday: 5.5, maxHours: 12, phone: "(312) 555-1006", email: "r.patel@eslx.com", hireDate: "2022-01-10", seniorityDate: "2022-01-10", district: "Midwest" },
-  { id: 107, name: "Carlos Hernandez", employeeId: "CON-2007", status: "available", assignment: "—", hosRemaining: 12.0, hoursToday: 0, maxHours: 12, phone: "(713) 555-1007", email: "c.hernandez@eslx.com", hireDate: "2019-09-05", seniorityDate: "2019-09-05", district: "South" },
-  { id: 108, name: "Linda Foster", employeeId: "CON-2008", status: "on_duty", assignment: "Train M502 (STL-Memphis)", hosRemaining: 5.0, hoursToday: 7.0, maxHours: 12, phone: "(901) 555-1008", email: "l.foster@eslx.com", hireDate: "2018-04-18", seniorityDate: "2018-04-18", district: "South" },
-];
+const EMPTY_CONDUCTORS: any[] = [];
 
-const MOCK_CERTIFICATIONS = [
-  { id: 1, crewName: "James Martinez", employeeId: "ENG-1001", certType: "FRA Part 240 — Locomotive Engineer", issueDate: "2024-04-15", expiryDate: "2026-04-15", status: "expiring_soon", issuedBy: "FRA Region 4" },
-  { id: 2, crewName: "Robert Chen", employeeId: "ENG-1002", certType: "FRA Part 240 — Locomotive Engineer", issueDate: "2024-06-01", expiryDate: "2026-06-01", status: "valid", issuedBy: "FRA Region 6" },
-  { id: 3, crewName: "Michael Davis", employeeId: "ENG-1003", certType: "FRA Part 240 — Locomotive Engineer", issueDate: "2023-09-20", expiryDate: "2025-09-20", status: "expired", issuedBy: "FRA Region 7" },
-  { id: 4, crewName: "Richard Park", employeeId: "CON-2001", certType: "FRA Part 242 — Conductor", issueDate: "2024-05-20", expiryDate: "2027-05-20", status: "valid", issuedBy: "FRA Region 4" },
-  { id: 5, crewName: "Amanda Lee", employeeId: "CON-2002", certType: "FRA Part 242 — Conductor", issueDate: "2024-08-01", expiryDate: "2027-08-01", status: "valid", issuedBy: "FRA Region 6" },
-  { id: 6, crewName: "James Martinez", employeeId: "ENG-1001", certType: "Hazmat Transportation", issueDate: "2025-01-10", expiryDate: "2027-01-10", status: "valid", issuedBy: "DOT" },
-  { id: 7, crewName: "Sarah Thompson", employeeId: "ENG-1006", certType: "FRA Part 240 — Locomotive Engineer", issueDate: "2024-07-15", expiryDate: "2026-07-15", status: "valid", issuedBy: "FRA Region 4" },
-  { id: 8, crewName: "Kevin Wilson", employeeId: "CON-2003", certType: "FRA Part 242 — Conductor", issueDate: "2024-12-10", expiryDate: "2027-12-10", status: "valid", issuedBy: "FRA Region 7" },
-  { id: 9, crewName: "Patricia Brown", employeeId: "ENG-1004", certType: "FRA Part 240 — Locomotive Engineer", issueDate: "2025-01-10", expiryDate: "2027-01-10", status: "valid", issuedBy: "FRA Region 4" },
-  { id: 10, crewName: "Brian Johnson", employeeId: "CON-2005", certType: "FRA Part 242 — Conductor", issueDate: "2023-07-22", expiryDate: "2026-07-22", status: "valid", issuedBy: "FRA Region 4" },
-  { id: 11, crewName: "David Wilson", employeeId: "ENG-1005", certType: "Hazmat Transportation", issueDate: "2024-04-22", expiryDate: "2026-04-22", status: "expiring_soon", issuedBy: "DOT" },
-  { id: 12, crewName: "Linda Foster", employeeId: "CON-2008", certType: "FRA Part 242 — Conductor", issueDate: "2024-04-18", expiryDate: "2027-04-18", status: "valid", issuedBy: "FRA Region 6" },
-];
+const EMPTY_CERTIFICATIONS: { id: number; crewName: string; employeeId: string; certType: string; issueDate: string; expiryDate: string; status: string; issuedBy: string }[] = [];
 
-const MOCK_ASSIGNMENTS = [
-  { id: 1, crewName: "James Martinez", role: "Engineer", train: "Q401", route: "Chicago - Kansas City", startTime: "06:00", endTime: "18:00", date: "2026-03-29", status: "active" },
-  { id: 2, crewName: "Richard Park", role: "Conductor", train: "Q401", route: "Chicago - Kansas City", startTime: "06:00", endTime: "18:00", date: "2026-03-29", status: "active" },
-  { id: 3, crewName: "Robert Chen", role: "Engineer", train: "Z103", route: "Dallas - Houston", startTime: "08:00", endTime: "14:00", date: "2026-03-29", status: "active" },
-  { id: 4, crewName: "Amanda Lee", role: "Conductor", train: "Z103", route: "Dallas - Houston", startTime: "08:00", endTime: "14:00", date: "2026-03-29", status: "active" },
-  { id: 5, crewName: "Michael Davis", role: "Engineer", train: "L780", route: "Denver - Omaha", startTime: "03:00", endTime: "15:00", date: "2026-03-29", status: "active" },
-  { id: 6, crewName: "Kevin Wilson", role: "Conductor", train: "L780", route: "Denver - Omaha", startTime: "03:00", endTime: "15:00", date: "2026-03-29", status: "active" },
-  { id: 7, crewName: "Sarah Thompson", role: "Engineer", train: "YARD-CHI", route: "Chicago Terminal Ops", startTime: "07:00", endTime: "15:00", date: "2026-03-29", status: "active" },
-  { id: 8, crewName: "Rachel Patel", role: "Conductor", train: "YARD-CHI", route: "Chicago Terminal Ops", startTime: "07:00", endTime: "15:00", date: "2026-03-29", status: "active" },
-  { id: 9, crewName: "Linda Foster", role: "Conductor", train: "M502", route: "St. Louis - Memphis", startTime: "05:00", endTime: "17:00", date: "2026-03-29", status: "active" },
-  { id: 10, crewName: "David Wilson", role: "Engineer", train: "Q401", route: "Chicago - Kansas City", startTime: "06:00", endTime: "18:00", date: "2026-03-28", status: "completed" },
-  { id: 11, crewName: "Brian Johnson", role: "Conductor", train: "Q401", route: "Chicago - Kansas City", startTime: "06:00", endTime: "18:00", date: "2026-03-28", status: "completed" },
-];
+const EMPTY_ASSIGNMENTS: { id: number; crewName: string; role: string; train: string; route: string; startTime: string; endTime: string; date: string; status: string }[] = [];
 
-const MOCK_DRUG_TESTS = [
-  { id: 1, crewName: "James Martinez", employeeId: "ENG-1001", testType: "Random", testDate: "2026-03-15", result: "negative", lab: "Quest Diagnostics", nextDue: "2026-09-15" },
-  { id: 2, crewName: "Robert Chen", employeeId: "ENG-1002", testType: "Random", testDate: "2026-02-20", result: "negative", lab: "Quest Diagnostics", nextDue: "2026-08-20" },
-  { id: 3, crewName: "Richard Park", employeeId: "CON-2001", testType: "Pre-employment", testDate: "2026-01-10", result: "negative", lab: "LabCorp", nextDue: "2026-07-10" },
-  { id: 4, crewName: "Amanda Lee", employeeId: "CON-2002", testType: "Random", testDate: "2026-03-01", result: "negative", lab: "Quest Diagnostics", nextDue: "2026-09-01" },
-  { id: 5, crewName: "Patricia Brown", employeeId: "ENG-1004", testType: "Post-accident", testDate: "2025-11-18", result: "negative", lab: "LabCorp", nextDue: "2026-05-18" },
-  { id: 6, crewName: "Michael Davis", employeeId: "ENG-1003", testType: "Random", testDate: "—", result: "scheduled", lab: "Quest Diagnostics", nextDue: "2026-04-01" },
-  { id: 7, crewName: "Kevin Wilson", employeeId: "CON-2003", testType: "Return-to-duty", testDate: "2026-01-05", result: "negative", lab: "LabCorp", nextDue: "2026-07-05" },
-  { id: 8, crewName: "David Wilson", employeeId: "ENG-1005", testType: "Random", testDate: "2026-02-10", result: "negative", lab: "Quest Diagnostics", nextDue: "2026-08-10" },
-  { id: 9, crewName: "Teresa Garcia", employeeId: "CON-2004", testType: "Random", testDate: "—", result: "scheduled", lab: "Quest Diagnostics", nextDue: "2026-04-05" },
-  { id: 10, crewName: "Sarah Thompson", employeeId: "ENG-1006", testType: "Random", testDate: "2026-03-20", result: "negative", lab: "LabCorp", nextDue: "2026-09-20" },
-];
+const EMPTY_DRUG_TESTS: { id: number; crewName: string; employeeId: string; testType: string; testDate: string; result: string; lab: string; nextDue: string }[] = [];
 
-const MOCK_TRAINING = [
-  { id: 1, crewName: "James Martinez", course: "Advanced Signal Recognition", completedDate: "2026-02-15", validUntil: "2027-02-15", status: "valid", provider: "ESLX Training Center" },
-  { id: 2, crewName: "Robert Chen", course: "Hazmat Emergency Response", completedDate: "2026-01-20", validUntil: "2027-01-20", status: "valid", provider: "DOT Certified" },
-  { id: 3, crewName: "Michael Davis", course: "PTC System Operations", completedDate: "2025-06-10", validUntil: "2026-06-10", status: "valid", provider: "ESLX Training Center" },
-  { id: 4, crewName: "Patricia Brown", course: "Defensive Driving — Rail", completedDate: "2026-03-01", validUntil: "2027-03-01", status: "valid", provider: "AAR Certified" },
-  { id: 5, crewName: "Richard Park", course: "Hazmat Emergency Response", completedDate: "2025-12-05", validUntil: "2026-12-05", status: "valid", provider: "DOT Certified" },
-  { id: 6, crewName: "David Wilson", course: "CTC / Dark Territory Operations", completedDate: "2025-04-22", validUntil: "2026-04-22", status: "expiring_soon", provider: "ESLX Training Center" },
-];
+const EMPTY_TRAINING: { id: number; crewName: string; course: string; completedDate: string; validUntil: string; status: string; provider: string }[] = [];
 
 /* ─── Crew Row Component ─── */
 function CrewRow({ member, isLight, text, muted, expanded, onToggle }: {
@@ -238,15 +177,15 @@ export default function RailCrewManagement() {
     isLight ? "bg-white border-slate-300" : "bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
   );
 
-  // Merge live data with mock
+  // Merge live data with empty defaults
   const engineers = liveCrew.length > 0
     ? liveCrew.filter((c: any) => c.role === "engineer")
-    : MOCK_ENGINEERS;
+    : EMPTY_ENGINEERS;
   const conductors = liveCrew.length > 0
     ? liveCrew.filter((c: any) => c.role === "conductor")
-    : MOCK_CONDUCTORS;
+    : EMPTY_CONDUCTORS;
 
-  const districts = [...new Set([...MOCK_ENGINEERS, ...MOCK_CONDUCTORS].map((c) => c.district))];
+  const districts = [...new Set([...EMPTY_ENGINEERS, ...EMPTY_CONDUCTORS].map((c) => c.district))];
 
   // Filter crew
   const filterCrew = (crew: any[]) => {
@@ -264,14 +203,14 @@ export default function RailCrewManagement() {
 
   // Filtered certifications
   const filteredCerts = useMemo(() => {
-    if (certFilter === "all") return MOCK_CERTIFICATIONS;
-    return MOCK_CERTIFICATIONS.filter((c) => c.status === certFilter);
+    if (certFilter === "all") return EMPTY_CERTIFICATIONS;
+    return EMPTY_CERTIFICATIONS.filter((c) => c.status === certFilter);
   }, [certFilter]);
 
   // Filtered assignments
   const filteredAssignments = useMemo(() => {
-    if (assignmentFilter === "all") return MOCK_ASSIGNMENTS;
-    return MOCK_ASSIGNMENTS.filter((a) => a.status === assignmentFilter);
+    if (assignmentFilter === "all") return EMPTY_ASSIGNMENTS;
+    return EMPTY_ASSIGNMENTS.filter((a) => a.status === assignmentFilter);
   }, [assignmentFilter]);
 
   // KPIs
@@ -279,7 +218,7 @@ export default function RailCrewManagement() {
   const onDutyCount = allCrew.filter((c: any) => c.status === "on_duty").length;
   const availableCount = allCrew.filter((c: any) => c.status === "available").length;
   const restingCount = allCrew.filter((c: any) => c.status === "resting").length;
-  const alertCerts = MOCK_CERTIFICATIONS.filter((c) => c.status === "expired" || c.status === "expiring_soon").length;
+  const alertCerts = EMPTY_CERTIFICATIONS.filter((c) => c.status === "expired" || c.status === "expiring_soon").length;
 
   const hasFilters = search || filterStatus !== "all" || filterDistrict !== "all";
   const clearFilters = () => { setSearch(""); setFilterStatus("all"); setFilterDistrict("all"); };
@@ -522,7 +461,7 @@ export default function RailCrewManagement() {
             </CardHeader>
             <CardContent>
               {/* Alert banner for expiring/expired */}
-              {MOCK_CERTIFICATIONS.some((c) => c.status === "expired" || c.status === "expiring_soon") && (
+              {EMPTY_CERTIFICATIONS.some((c) => c.status === "expired" || c.status === "expiring_soon") && (
                 <div className={cn(
                   "rounded-lg border p-3 mb-4 flex items-center gap-3",
                   isLight ? "bg-red-50 border-red-200" : "bg-red-500/5 border-red-500/30"
@@ -533,8 +472,8 @@ export default function RailCrewManagement() {
                       Certification Alerts
                     </div>
                     <div className={cn("text-xs", isLight ? "text-red-600" : "text-red-400/70")}>
-                      {MOCK_CERTIFICATIONS.filter((c) => c.status === "expired").length} expired,{" "}
-                      {MOCK_CERTIFICATIONS.filter((c) => c.status === "expiring_soon").length} expiring soon — immediate action required
+                      {EMPTY_CERTIFICATIONS.filter((c) => c.status === "expired").length} expired,{" "}
+                      {EMPTY_CERTIFICATIONS.filter((c) => c.status === "expiring_soon").length} expiring soon — immediate action required
                     </div>
                   </div>
                 </div>
@@ -667,7 +606,7 @@ export default function RailCrewManagement() {
               </CardHeader>
               <CardContent>
                 {/* Upcoming tests banner */}
-                {MOCK_DRUG_TESTS.some((t) => t.result === "scheduled") && (
+                {EMPTY_DRUG_TESTS.some((t) => t.result === "scheduled") && (
                   <div className={cn(
                     "rounded-lg border p-3 mb-4 flex items-center gap-3",
                     isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/5 border-blue-500/30"
@@ -678,7 +617,7 @@ export default function RailCrewManagement() {
                         Upcoming Tests
                       </div>
                       <div className={cn("text-xs", isLight ? "text-blue-600" : "text-blue-400/70")}>
-                        {MOCK_DRUG_TESTS.filter((t) => t.result === "scheduled").length} crew members scheduled for testing
+                        {EMPTY_DRUG_TESTS.filter((t) => t.result === "scheduled").length} crew members scheduled for testing
                       </div>
                     </div>
                   </div>
@@ -694,7 +633,7 @@ export default function RailCrewManagement() {
                       </tr>
                     </thead>
                     <tbody>
-                      {MOCK_DRUG_TESTS.map((test) => (
+                      {EMPTY_DRUG_TESTS.map((test) => (
                         <tr key={test.id} className={cn(
                           "border-b transition-colors",
                           isLight ? "border-slate-100 hover:bg-slate-50" : "border-slate-800 hover:bg-slate-700/20"
@@ -732,7 +671,7 @@ export default function RailCrewManagement() {
               </CardHeader>
               <CardContent>
                 {/* Expiring training alert */}
-                {MOCK_TRAINING.some((t) => t.status === "expiring_soon") && (
+                {EMPTY_TRAINING.some((t) => t.status === "expiring_soon") && (
                   <div className={cn(
                     "rounded-lg border p-3 mb-4 flex items-center gap-3",
                     isLight ? "bg-amber-50 border-amber-200" : "bg-amber-500/5 border-amber-500/30"
@@ -743,14 +682,14 @@ export default function RailCrewManagement() {
                         Training Expiring
                       </div>
                       <div className={cn("text-xs", isLight ? "text-amber-600" : "text-amber-400/70")}>
-                        {MOCK_TRAINING.filter((t) => t.status === "expiring_soon").length} training records expiring soon
+                        {EMPTY_TRAINING.filter((t) => t.status === "expiring_soon").length} training records expiring soon
                       </div>
                     </div>
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  {MOCK_TRAINING.map((tr) => (
+                  {EMPTY_TRAINING.map((tr) => (
                     <div key={tr.id} className={cn(
                       "flex items-center justify-between p-3 rounded-lg border",
                       tr.status === "expiring_soon"

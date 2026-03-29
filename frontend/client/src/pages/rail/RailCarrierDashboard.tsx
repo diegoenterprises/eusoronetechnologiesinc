@@ -94,81 +94,48 @@ const CAR_TYPES = [
   { type: "intermodal", label: "Intermodal", icon: <Hash className="w-4 h-4" /> },
 ];
 
-/* ─── Mock Data (until backend endpoints exist) ─── */
-const MOCK_RAILROAD = { name: "Eusorone Short Line Railroad", reportingMark: "ESLX" };
+/* ─── Default empty data (populated by tRPC queries when endpoints exist) ─── */
+const RAILROAD_INFO = { name: "Eusorone Short Line Railroad", reportingMark: "ESLX" };
 
-const MOCK_FLEET = {
-  tankcar: { total: 245, inService: 218, utilization: 89 },
-  boxcar: { total: 312, inService: 287, utilization: 92 },
-  hopper: { total: 189, inService: 161, utilization: 85 },
-  flatcar: { total: 134, inService: 119, utilization: 89 },
-  gondola: { total: 98, inService: 82, utilization: 84 },
-  intermodal: { total: 567, inService: 534, utilization: 94 },
+const EMPTY_FLEET: Record<string, { total: number; inService: number; utilization: number }> = {
+  tankcar: { total: 0, inService: 0, utilization: 0 },
+  boxcar: { total: 0, inService: 0, utilization: 0 },
+  hopper: { total: 0, inService: 0, utilization: 0 },
+  flatcar: { total: 0, inService: 0, utilization: 0 },
+  gondola: { total: 0, inService: 0, utilization: 0 },
+  intermodal: { total: 0, inService: 0, utilization: 0 },
 };
 
-const MOCK_TRAINS = [
-  { id: "T-4401", symbol: "Q401", origin: "Chicago, IL", dest: "Kansas City, MO", cars: 87, crew: "J. Martinez / R. Chen", eta: "14:30 CST", status: "in_transit", speed: 42, milePost: 218 },
-  { id: "T-4402", symbol: "M502", origin: "St. Louis, MO", dest: "Memphis, TN", cars: 62, crew: "D. Johnson / S. Park", eta: "18:15 CST", status: "in_transit", speed: 38, milePost: 145 },
-  { id: "T-4403", symbol: "Z103", origin: "Dallas, TX", dest: "Houston, TX", cars: 44, crew: "A. Williams / B. Lee", eta: "11:00 CST", status: "departed", speed: 55, milePost: 42 },
-  { id: "T-4404", symbol: "L780", origin: "Denver, CO", dest: "Omaha, NE", cars: 105, crew: "M. Davis / K. Wilson", eta: "22:45 MST", status: "in_transit", speed: 48, milePost: 310 },
-  { id: "T-4405", symbol: "Q922", origin: "Atlanta, GA", dest: "Jacksonville, FL", cars: 53, crew: "P. Brown / T. Garcia", eta: "16:00 EST", status: "loading", speed: 0, milePost: 0 },
-  { id: "T-4406", symbol: "Z211", origin: "Portland, OR", dest: "Seattle, WA", cars: 38, crew: "H. Thompson / R. Patel", eta: "09:30 PST", status: "arrived", speed: 0, milePost: 180 },
-];
+const EMPTY_TRAINS: { id: string; symbol: string; origin: string; dest: string; cars: number; crew: string; eta: string; status: string; speed: number; milePost: number }[] = [];
 
-const MOCK_CREW = {
-  engineers: { onDuty: 24, available: 8, resting: 12, total: 44 },
-  conductors: { onDuty: 22, available: 10, resting: 14, total: 46 },
+const EMPTY_CREW = {
+  engineers: { onDuty: 0, available: 0, resting: 0, total: 0 },
+  conductors: { onDuty: 0, available: 0, resting: 0, total: 0 },
 };
 
-const MOCK_YARDS = [
-  { name: "Chicago Terminal", code: "CHIC", carCount: 342, avgDwell: 18.4, capacity: 500, utilization: 68 },
-  { name: "Kansas City Hub", code: "KCHY", carCount: 187, avgDwell: 14.2, capacity: 350, utilization: 53 },
-  { name: "St. Louis Yard", code: "STLS", carCount: 221, avgDwell: 22.1, capacity: 400, utilization: 55 },
-  { name: "Memphis Intermodal", code: "MEMP", carCount: 156, avgDwell: 11.8, capacity: 250, utilization: 62 },
-  { name: "Dallas Terminal", code: "DLLS", carCount: 198, avgDwell: 16.5, capacity: 300, utilization: 66 },
-  { name: "Houston Yard", code: "HSTX", carCount: 267, avgDwell: 20.3, capacity: 450, utilization: 59 },
-];
+const EMPTY_YARDS: { name: string; code: string; carCount: number; avgDwell: number; capacity: number; utilization: number }[] = [];
 
-const MOCK_REVENUE = {
-  mtd: 4_872_340,
-  commodities: [
-    { name: "Chemicals", revenue: 1_234_000, pct: 25 },
-    { name: "Grain", revenue: 987_500, pct: 20 },
-    { name: "Intermodal", revenue: 876_200, pct: 18 },
-    { name: "Coal/Minerals", revenue: 743_100, pct: 15 },
-    { name: "Automotive", revenue: 542_800, pct: 11 },
-    { name: "Other", revenue: 488_740, pct: 11 },
-  ],
-  lanes: [
-    { lane: "Chicago - Kansas City", revenue: 892_000, loads: 134 },
-    { lane: "St. Louis - Memphis", revenue: 654_000, loads: 98 },
-    { lane: "Dallas - Houston", revenue: 543_000, loads: 87 },
-    { lane: "Denver - Omaha", revenue: 478_000, loads: 72 },
-    { lane: "Atlanta - Jacksonville", revenue: 412_000, loads: 65 },
-  ],
-  shippers: [
-    { name: "Dow Chemical", revenue: 876_000, carloads: 142 },
-    { name: "Cargill Inc.", revenue: 654_000, carloads: 231 },
-    { name: "Amazon Logistics", revenue: 543_000, carloads: 312 },
-    { name: "Arch Coal", revenue: 432_000, carloads: 178 },
-    { name: "General Motors", revenue: 387_000, carloads: 95 },
-  ],
+const EMPTY_REVENUE = {
+  mtd: 0,
+  commodities: [] as { name: string; revenue: number; pct: number }[],
+  lanes: [] as { lane: string; revenue: number; loads: number }[],
+  shippers: [] as { name: string; revenue: number; carloads: number }[],
 };
 
-const MOCK_COMPLIANCE = {
-  safetyScore: 94.2,
-  inspections: { current: 187, due: 12, overdue: 3 },
-  hazmatPermits: { active: 34, expiringSoon: 4, expired: 1 },
-  crewCerts: { valid: 82, expiringSoon: 6, expired: 2 },
+const EMPTY_COMPLIANCE = {
+  safetyScore: 0,
+  inspections: { current: 0, due: 0, overdue: 0 },
+  hazmatPermits: { active: 0, expiringSoon: 0, expired: 0 },
+  crewCerts: { valid: 0, expiringSoon: 0, expired: 0 },
 };
 
 /* ─── Fleet Overview Section ─── */
 function FleetOverviewSection({ isLight, cardBg, text, muted }: {
   isLight: boolean; cardBg: string; text: string; muted: string;
 }) {
-  const totalCars = Object.values(MOCK_FLEET).reduce((a, b) => a + b.total, 0);
-  const inServiceCars = Object.values(MOCK_FLEET).reduce((a, b) => a + b.inService, 0);
-  const overallUtil = Math.round((inServiceCars / totalCars) * 100);
+  const totalCars = Object.values(EMPTY_FLEET).reduce((a, b) => a + b.total, 0);
+  const inServiceCars = Object.values(EMPTY_FLEET).reduce((a, b) => a + b.inService, 0);
+  const overallUtil = totalCars > 0 ? Math.round((inServiceCars / totalCars) * 100) : 0;
 
   return (
     <Card className={cn("border", cardBg)}>
@@ -191,7 +158,7 @@ function FleetOverviewSection({ isLight, cardBg, text, muted }: {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {CAR_TYPES.map((ct) => {
-            const data = MOCK_FLEET[ct.type as keyof typeof MOCK_FLEET];
+            const data = EMPTY_FLEET[ct.type as keyof typeof EMPTY_FLEET];
             return (
               <div key={ct.type} className={cn(
                 "rounded-lg border p-3 text-center transition-all hover:scale-[1.02]",
@@ -219,7 +186,7 @@ function ActiveTrainsSection({ isLight, cardBg, text, muted }: {
   isLight: boolean; cardBg: string; text: string; muted: string;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const activeTrains = MOCK_TRAINS.filter((t) => ["in_transit", "departed", "loading"].includes(t.status));
+  const activeTrains = EMPTY_TRAINS.filter((t) => ["in_transit", "departed", "loading"].includes(t.status));
 
   return (
     <Card className={cn("border", cardBg)}>
@@ -236,7 +203,14 @@ function ActiveTrainsSection({ isLight, cardBg, text, muted }: {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {MOCK_TRAINS.map((train) => (
+          {EMPTY_TRAINS.length === 0 && (
+            <div className={cn("text-center py-8", muted)}>
+              <TrainFront className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No active trains</p>
+              <p className="text-xs mt-1">Train data will appear when available</p>
+            </div>
+          )}
+          {EMPTY_TRAINS.map((train) => (
             <div key={train.id} className={cn(
               "rounded-lg border transition-all",
               isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700/50 hover:bg-slate-700/20",
@@ -335,14 +309,14 @@ function CrewStatusSection({ isLight, cardBg, text, muted }: {
     available: engineers.filter((c: any) => c.status === "available").length,
     resting: engineers.filter((c: any) => c.status === "resting").length,
     total: engineers.length,
-  } : MOCK_CREW.engineers;
+  } : EMPTY_CREW.engineers;
 
   const condStats = liveCrew.length > 0 ? {
     onDuty: conductors.filter((c: any) => c.status === "on_duty").length,
     available: conductors.filter((c: any) => c.status === "available").length,
     resting: conductors.filter((c: any) => c.status === "resting").length,
     total: conductors.length,
-  } : MOCK_CREW.conductors;
+  } : EMPTY_CREW.conductors;
 
   const crewGroups = [
     { label: "Engineers", stats: engStats, icon: <HardHat className="w-5 h-5 text-amber-400" /> },
@@ -401,11 +375,11 @@ function CrewStatusSection({ isLight, cardBg, text, muted }: {
                 <div className="flex justify-between text-xs mb-1">
                   <span className={muted}>Duty Coverage</span>
                   <span className={cn("font-medium", text)}>
-                    {Math.round(((group.stats.onDuty + group.stats.available) / group.stats.total) * 100)}%
+                    {group.stats.total > 0 ? Math.round(((group.stats.onDuty + group.stats.available) / group.stats.total) * 100) : 0}%
                   </span>
                 </div>
                 <Progress
-                  value={((group.stats.onDuty + group.stats.available) / group.stats.total) * 100}
+                  value={group.stats.total > 0 ? ((group.stats.onDuty + group.stats.available) / group.stats.total) * 100 : 0}
                   className="h-2"
                 />
               </div>
@@ -430,7 +404,7 @@ function YardSummarySection({ isLight, cardBg, text, muted }: {
     avgDwell: y.avgDwell || y.dwellTime || 0,
     capacity: y.capacity || 300,
     utilization: y.utilization || Math.round(((y.carCount || 0) / (y.capacity || 300)) * 100),
-  })) : MOCK_YARDS;
+  })) : EMPTY_YARDS;
 
   return (
     <Card className={cn("border", cardBg)}>
@@ -506,7 +480,7 @@ function RevenueSection({ isLight, cardBg, text, muted }: {
             <DollarSign className="w-5 h-5 text-emerald-400" /> Revenue Analytics
           </CardTitle>
           <Badge className="bg-emerald-500/20 text-emerald-400">
-            MTD: ${(MOCK_REVENUE.mtd / 1_000_000).toFixed(2)}M
+            MTD: ${(EMPTY_REVENUE.mtd / 1_000_000).toFixed(2)}M
           </Badge>
         </div>
       </CardHeader>
@@ -520,7 +494,7 @@ function RevenueSection({ isLight, cardBg, text, muted }: {
 
           <TabsContent value="commodity">
             <div className="space-y-3">
-              {MOCK_REVENUE.commodities.map((c) => (
+              {EMPTY_REVENUE.commodities.map((c) => (
                 <div key={c.name} className="flex items-center gap-3">
                   <div className={cn("w-28 text-sm font-medium truncate", text)}>{c.name}</div>
                   <div className="flex-1">
@@ -539,7 +513,7 @@ function RevenueSection({ isLight, cardBg, text, muted }: {
 
           <TabsContent value="lane">
             <div className="space-y-2">
-              {MOCK_REVENUE.lanes.map((l) => (
+              {EMPTY_REVENUE.lanes.map((l) => (
                 <div key={l.lane} className={cn(
                   "flex items-center justify-between p-3 rounded-lg border",
                   isLight ? "border-slate-200" : "border-slate-700/50"
@@ -558,7 +532,7 @@ function RevenueSection({ isLight, cardBg, text, muted }: {
 
           <TabsContent value="shipper">
             <div className="space-y-2">
-              {MOCK_REVENUE.shippers.map((s) => (
+              {EMPTY_REVENUE.shippers.map((s) => (
                 <div key={s.name} className={cn(
                   "flex items-center justify-between p-3 rounded-lg border",
                   isLight ? "border-slate-200" : "border-slate-700/50"
@@ -590,11 +564,11 @@ function ComplianceSection({ isLight, cardBg, text, muted }: {
   );
   const fraData = fraQuery?.data;
 
-  const safetyScore = fraData?.safetyScore ?? fraData?.overallScore ?? MOCK_COMPLIANCE.safetyScore;
+  const safetyScore = fraData?.safetyScore ?? fraData?.overallScore ?? EMPTY_COMPLIANCE.safetyScore;
   const inspections = {
-    current: fraData?.inspectionsYTD ?? fraData?.inspectionCount ?? MOCK_COMPLIANCE.inspections.current,
-    due: MOCK_COMPLIANCE.inspections.due,
-    overdue: fraData?.openDefects ?? MOCK_COMPLIANCE.inspections.overdue,
+    current: fraData?.inspectionsYTD ?? fraData?.inspectionCount ?? EMPTY_COMPLIANCE.inspections.current,
+    due: EMPTY_COMPLIANCE.inspections.due,
+    overdue: fraData?.openDefects ?? EMPTY_COMPLIANCE.inspections.overdue,
   };
 
   const sections = [
@@ -611,18 +585,18 @@ function ComplianceSection({ isLight, cardBg, text, muted }: {
       title: "Hazmat Permits",
       icon: <AlertTriangle className="w-4 h-4 text-orange-400" />,
       items: [
-        { label: "Active", value: MOCK_COMPLIANCE.hazmatPermits.active, color: "emerald" },
-        { label: "Expiring Soon", value: MOCK_COMPLIANCE.hazmatPermits.expiringSoon, color: "amber" },
-        { label: "Expired", value: MOCK_COMPLIANCE.hazmatPermits.expired, color: "red" },
+        { label: "Active", value: EMPTY_COMPLIANCE.hazmatPermits.active, color: "emerald" },
+        { label: "Expiring Soon", value: EMPTY_COMPLIANCE.hazmatPermits.expiringSoon, color: "amber" },
+        { label: "Expired", value: EMPTY_COMPLIANCE.hazmatPermits.expired, color: "red" },
       ],
     },
     {
       title: "Crew Certifications",
       icon: <Award className="w-4 h-4 text-purple-400" />,
       items: [
-        { label: "Valid", value: MOCK_COMPLIANCE.crewCerts.valid, color: "emerald" },
-        { label: "Expiring Soon", value: MOCK_COMPLIANCE.crewCerts.expiringSoon, color: "amber" },
-        { label: "Expired", value: MOCK_COMPLIANCE.crewCerts.expired, color: "red" },
+        { label: "Valid", value: EMPTY_COMPLIANCE.crewCerts.valid, color: "emerald" },
+        { label: "Expiring Soon", value: EMPTY_COMPLIANCE.crewCerts.expiringSoon, color: "amber" },
+        { label: "Expired", value: EMPTY_COMPLIANCE.crewCerts.expired, color: "red" },
       ],
     },
   ];
@@ -750,9 +724,9 @@ export default function RailCarrierDashboard() {
   const text = isLight ? "text-slate-900" : "text-white";
   const muted = isLight ? "text-slate-500" : "text-slate-400";
 
-  const totalFleetCars = Object.values(MOCK_FLEET).reduce((a, b) => a + b.total, 0);
-  const activeConsists = MOCK_TRAINS.filter((t) => ["in_transit", "departed"].includes(t.status)).length;
-  const crewOnDuty = MOCK_CREW.engineers.onDuty + MOCK_CREW.conductors.onDuty;
+  const totalFleetCars = Object.values(EMPTY_FLEET).reduce((a, b) => a + b.total, 0);
+  const activeConsists = EMPTY_TRAINS.filter((t) => ["in_transit", "departed"].includes(t.status)).length;
+  const crewOnDuty = EMPTY_CREW.engineers.onDuty + EMPTY_CREW.conductors.onDuty;
 
   return (
     <div className={cn("min-h-screen p-6", bg)}>
@@ -768,7 +742,7 @@ export default function RailCarrierDashboard() {
           <div>
             <h1 className={cn("text-2xl font-bold", text)}>Railroad Operations</h1>
             <p className={cn("text-sm", muted)}>
-              {MOCK_RAILROAD.name} ({MOCK_RAILROAD.reportingMark}) — {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+              {RAILROAD_INFO.name} ({RAILROAD_INFO.reportingMark}) — {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
             </p>
           </div>
         </div>
@@ -809,7 +783,7 @@ export default function RailCarrierDashboard() {
           icon={<Package className="w-5 h-5" />}
           label="Cars in Fleet"
           value={stats?.totalCars ?? totalFleetCars.toLocaleString()}
-          subtitle={`${Object.values(MOCK_FLEET).reduce((a, b) => a + b.inService, 0)} in service`}
+          subtitle={`${Object.values(EMPTY_FLEET).reduce((a, b) => a + b.inService, 0)} in service`}
           isLight={isLight}
           accent="blue"
         />
@@ -817,7 +791,7 @@ export default function RailCarrierDashboard() {
           icon={<Users className="w-5 h-5" />}
           label="Crew on Duty"
           value={crewOnDuty}
-          subtitle={`${MOCK_CREW.engineers.total + MOCK_CREW.conductors.total} total crew`}
+          subtitle={`${EMPTY_CREW.engineers.total + EMPTY_CREW.conductors.total} total crew`}
           trend={{ value: "Full coverage", up: true }}
           isLight={isLight}
           accent="purple"
@@ -825,7 +799,7 @@ export default function RailCarrierDashboard() {
         <KpiCard
           icon={<DollarSign className="w-5 h-5" />}
           label="Revenue MTD"
-          value={`$${(MOCK_REVENUE.mtd / 1_000_000).toFixed(2)}M`}
+          value={`$${(EMPTY_REVENUE.mtd / 1_000_000).toFixed(2)}M`}
           subtitle="Month to date"
           trend={{ value: "+8.3%", up: true }}
           isLight={isLight}
@@ -834,7 +808,7 @@ export default function RailCarrierDashboard() {
         <KpiCard
           icon={<Shield className="w-5 h-5" />}
           label="Safety Score"
-          value={MOCK_COMPLIANCE.safetyScore}
+          value={EMPTY_COMPLIANCE.safetyScore}
           subtitle="FRA composite"
           trend={{ value: "+1.2", up: true }}
           isLight={isLight}

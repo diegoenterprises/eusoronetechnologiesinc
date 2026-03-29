@@ -114,55 +114,17 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Mock data (supplementing live tRPC queries)                        */
+/*  Empty data arrays (populated by tRPC queries when endpoints exist) */
 /* ------------------------------------------------------------------ */
-const MOCK_RATES: RateComparison[] = [
-  { railroad: "BNSF Railway", ratePerCar: 4350, transitDays: 5, onTimeRate: 92, surcharges: 180, totalEstimate: 4530, region: "West" },
-  { railroad: "Union Pacific", ratePerCar: 4100, transitDays: 6, onTimeRate: 89, surcharges: 220, totalEstimate: 4320, region: "West" },
-  { railroad: "CSX Transportation", ratePerCar: 4600, transitDays: 4, onTimeRate: 91, surcharges: 150, totalEstimate: 4750, region: "East" },
-  { railroad: "Norfolk Southern", ratePerCar: 4450, transitDays: 5, onTimeRate: 88, surcharges: 200, totalEstimate: 4650, region: "East" },
-  { railroad: "Kansas City Southern", ratePerCar: 3900, transitDays: 7, onTimeRate: 87, surcharges: 170, totalEstimate: 4070, region: "South" },
-  { railroad: "Canadian National", ratePerCar: 4800, transitDays: 6, onTimeRate: 90, surcharges: 250, totalEstimate: 5050, region: "North" },
-];
+const EMPTY_RATES: RateComparison[] = [];
 
-const MOCK_TEMPLATES: ShipmentTemplate[] = [
-  { id: "T-001", name: "Weekly Grain — CHI to LAX", originYard: "CHI-Corwith", destYard: "LAX-ICTF", commodity: "Grain", carType: "Covered Hopper", carCount: 45, railroad: "BNSF", lastUsed: "2026-03-25", timesUsed: 28 },
-  { id: "T-002", name: "Chemical Shipment — HOU to ATL", originYard: "HOU-Englewood", destYard: "ATL-Inman", commodity: "Chemicals", carType: "Tank Car", carCount: 20, railroad: "CSX", lastUsed: "2026-03-22", timesUsed: 14 },
-  { id: "T-003", name: "Coal Unit Train — KC to SEA", originYard: "KC-Argentine", destYard: "SEA-SIG", commodity: "Coal", carType: "Open Hopper", carCount: 110, railroad: "UP", lastUsed: "2026-03-20", timesUsed: 52 },
-  { id: "T-004", name: "Auto Shipment — DEN to STL", originYard: "DEN-North Yard", destYard: "STL-Dupo", commodity: "Automobiles", carType: "Autorack", carCount: 18, railroad: "UP", lastUsed: "2026-03-18", timesUsed: 9 },
-  { id: "T-005", name: "Lumber — MEM to DAL", originYard: "MEM-Johnston", destYard: "DAL-Zacha", commodity: "Lumber", carType: "Centerbeam Flat", carCount: 30, railroad: "BNSF", lastUsed: "2026-03-15", timesUsed: 21 },
-];
+const EMPTY_TEMPLATES: ShipmentTemplate[] = [];
 
-const MOCK_FINANCIALS: FinancialSummary[] = [
-  { railroad: "BNSF Railway", linehaul: 412_500, demurrage: 8_200, accessorials: 3_400, total: 424_100, pendingSettlement: 42_300 },
-  { railroad: "Union Pacific", linehaul: 287_000, demurrage: 5_600, accessorials: 2_100, total: 294_700, pendingSettlement: 28_400 },
-  { railroad: "CSX Transportation", linehaul: 198_400, demurrage: 12_300, accessorials: 4_800, total: 215_500, pendingSettlement: 15_200 },
-  { railroad: "Norfolk Southern", linehaul: 156_200, demurrage: 3_400, accessorials: 1_900, total: 161_500, pendingSettlement: 18_600 },
-  { railroad: "Kansas City Southern", linehaul: 89_000, demurrage: 2_100, accessorials: 800, total: 91_900, pendingSettlement: 7_500 },
-];
+const EMPTY_FINANCIALS: FinancialSummary[] = [];
 
-const MOCK_EVENTS: RecentEvent[] = [
-  { id: "E-1", shipmentNumber: "RS-14201", eventType: "in_transit", description: "Departed CHI-Corwith, en route to LAX-ICTF", timestamp: "2026-03-29T08:15:00Z", location: "Joliet, IL" },
-  { id: "E-2", shipmentNumber: "RS-14198", eventType: "spotted", description: "Cars spotted at destination yard for unloading", timestamp: "2026-03-29T06:42:00Z", location: "Atlanta, GA" },
-  { id: "E-3", shipmentNumber: "RS-14195", eventType: "at_interchange", description: "Interchange with NS at Kansas City", timestamp: "2026-03-29T04:20:00Z", location: "Kansas City, MO" },
-  { id: "E-4", shipmentNumber: "RS-14190", eventType: "delivered", description: "Shipment delivered and empty cars released", timestamp: "2026-03-28T22:30:00Z", location: "Seattle, WA" },
-  { id: "E-5", shipmentNumber: "RS-14188", eventType: "loading", description: "Loading commenced at origin facility", timestamp: "2026-03-28T18:15:00Z", location: "Houston, TX" },
-  { id: "E-6", shipmentNumber: "RS-14185", eventType: "car_ordered", description: "Car order placed with BNSF — 30 covered hoppers", timestamp: "2026-03-28T14:00:00Z" },
-  { id: "E-7", shipmentNumber: "RS-14180", eventType: "settled", description: "Settlement completed — $186,400 total", timestamp: "2026-03-28T10:00:00Z" },
-  { id: "E-8", shipmentNumber: "RS-14176", eventType: "demurrage", description: "Demurrage charges posted — 3 days @ $150/car", timestamp: "2026-03-28T08:30:00Z", location: "Memphis, TN" },
-];
+const EMPTY_EVENTS: RecentEvent[] = [];
 
-/* ------------------------------------------------------------------ */
-/*  Mock tracked car positions for the map section                     */
-/* ------------------------------------------------------------------ */
-const MOCK_CAR_POSITIONS = [
-  { id: 1, shipmentNumber: "RS-14201", railcarNumber: "BNSF-482910", lat: 41.5, lng: -88.1, commodity: "Grain", status: "in_transit", destination: "LAX-ICTF" },
-  { id: 2, shipmentNumber: "RS-14198", railcarNumber: "CSX-773521", lat: 33.75, lng: -84.39, commodity: "Chemicals", status: "spotted", destination: "ATL-Inman" },
-  { id: 3, shipmentNumber: "RS-14195", railcarNumber: "UP-554810", lat: 39.1, lng: -94.58, commodity: "Coal", status: "at_interchange", destination: "SEA-SIG" },
-  { id: 4, shipmentNumber: "RS-14188", railcarNumber: "CSX-882103", lat: 29.76, lng: -95.37, commodity: "Chemicals", status: "loading", destination: "ATL-Inman" },
-  { id: 5, shipmentNumber: "RS-14202", railcarNumber: "NS-661420", lat: 36.16, lng: -86.78, commodity: "Autos", status: "in_transit", destination: "STL-Dupo" },
-  { id: 6, shipmentNumber: "RS-14199", railcarNumber: "BNSF-491023", lat: 35.15, lng: -90.05, commodity: "Lumber", status: "in_transit", destination: "DAL-Zacha" },
-];
+const EMPTY_CAR_POSITIONS: { id: number; shipmentNumber: string; railcarNumber: string; lat: number; lng: number; commodity: string; status: string; destination: string }[] = [];
 
 /* ------------------------------------------------------------------ */
 /*  Helper: KPI Card                                                   */
@@ -337,7 +299,7 @@ function RateComparisonSection({ isLight, cardBg, text, muted }: {
   const inputCls = cn("h-9 text-sm", isLight ? "bg-white border-slate-300" : "bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400");
 
   const sorted = useMemo(() => {
-    const arr = [...MOCK_RATES];
+    const arr = [...EMPTY_RATES];
     if (sortBy === "rate") arr.sort((a, b) => a.totalEstimate - b.totalEstimate);
     else if (sortBy === "transit") arr.sort((a, b) => a.transitDays - b.transitDays);
     else arr.sort((a, b) => b.onTimeRate - a.onTimeRate);
@@ -376,6 +338,13 @@ function RateComparisonSection({ isLight, cardBg, text, muted }: {
         </div>
 
         <div className="space-y-2">
+          {sorted.length === 0 && (
+            <div className={cn("text-center py-8", muted)}>
+              <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No rate data yet</p>
+              <p className="text-xs mt-1">Rate comparison data will appear when available</p>
+            </div>
+          )}
           {sorted.map((r, idx) => (
             <div key={r.railroad} className={cn(
               "rounded-lg border p-3 flex items-center justify-between transition-all",
@@ -438,7 +407,14 @@ function TemplatesSection({ isLight, cardBg, text, muted }: {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-          {MOCK_TEMPLATES.map(t => (
+          {EMPTY_TEMPLATES.length === 0 && (
+            <div className={cn("col-span-full text-center py-8", muted)}>
+              <Bookmark className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No templates saved yet</p>
+              <p className="text-xs mt-1">Save a shipment as a template for quick reuse</p>
+            </div>
+          )}
+          {EMPTY_TEMPLATES.map(t => (
             <div key={t.id} className={cn(
               "rounded-lg border p-3 transition-all hover:scale-[1.01] cursor-pointer",
               isLight ? "bg-white border-slate-200 hover:shadow-md" : "bg-slate-800/40 border-slate-700/40 hover:border-amber-500/30"
@@ -474,9 +450,9 @@ function TemplatesSection({ isLight, cardBg, text, muted }: {
 function FinancialSection({ isLight, cardBg, text, muted }: {
   isLight: boolean; cardBg: string; text: string; muted: string;
 }) {
-  const totalSpend = MOCK_FINANCIALS.reduce((s, f) => s + f.total, 0);
-  const totalDemurrage = MOCK_FINANCIALS.reduce((s, f) => s + f.demurrage, 0);
-  const totalPending = MOCK_FINANCIALS.reduce((s, f) => s + f.pendingSettlement, 0);
+  const totalSpend = EMPTY_FINANCIALS.reduce((s, f) => s + f.total, 0);
+  const totalDemurrage = EMPTY_FINANCIALS.reduce((s, f) => s + f.demurrage, 0);
+  const totalPending = EMPTY_FINANCIALS.reduce((s, f) => s + f.pendingSettlement, 0);
 
   return (
     <Card className={cn("border", cardBg)}>
@@ -505,7 +481,7 @@ function FinancialSection({ isLight, cardBg, text, muted }: {
         <div className={cn("grid grid-cols-6 gap-3 px-4 py-2.5 text-xs font-medium border-b", isLight ? "text-slate-500 bg-slate-50 border-slate-200" : "text-slate-400 bg-slate-800/40 border-slate-700/40")}>
           <span>Railroad</span><span className="text-right">Linehaul</span><span className="text-right">Demurrage</span><span className="text-right">Accessorials</span><span className="text-right">Total</span><span className="text-right">Pending Settlement</span>
         </div>
-        {MOCK_FINANCIALS.map(f => (
+        {EMPTY_FINANCIALS.map(f => (
           <div key={f.railroad} className={cn("grid grid-cols-6 gap-3 px-4 py-3 text-sm border-b last:border-b-0 transition-colors", isLight ? "hover:bg-slate-50 border-slate-100" : "hover:bg-slate-700/20 border-slate-700/20")}>
             <span className={cn("font-medium", text)}>{f.railroad}</span>
             <span className={cn("text-right", isLight ? "text-slate-600" : "text-slate-300")}>{fmt(f.linehaul)}</span>
@@ -526,7 +502,7 @@ function FinancialSection({ isLight, cardBg, text, muted }: {
 function TrackingMapSection({ isLight, cardBg, text, muted }: {
   isLight: boolean; cardBg: string; text: string; muted: string;
 }) {
-  const [selectedCar, setSelectedCar] = useState<typeof MOCK_CAR_POSITIONS[0] | null>(null);
+  const [selectedCar, setSelectedCar] = useState<{ id: number; shipmentNumber: string; railcarNumber: string; lat: number; lng: number; commodity: string; status: string; destination: string } | null>(null);
 
   return (
     <Card className={cn("border", cardBg)}>
@@ -551,12 +527,12 @@ function TrackingMapSection({ isLight, cardBg, text, muted }: {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className={cn("text-center", muted)}>
               <Globe className="w-12 h-12 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Interactive map — {MOCK_CAR_POSITIONS.length} cars tracked</p>
+              <p className="text-sm">Interactive map — {EMPTY_CAR_POSITIONS.length} cars tracked</p>
               <p className="text-xs mt-1">Open full tracking for live Google Maps view</p>
             </div>
           </div>
           {/* Car position indicators */}
-          {MOCK_CAR_POSITIONS.map(car => {
+          {EMPTY_CAR_POSITIONS.map(car => {
             const left = ((car.lng + 130) / 70) * 100;
             const top = ((50 - car.lat) / 30) * 100;
             return (
@@ -594,7 +570,7 @@ function TrackingMapSection({ isLight, cardBg, text, muted }: {
         </div>
         {/* Car list below map */}
         <div className="mt-3 space-y-1.5">
-          {MOCK_CAR_POSITIONS.map(car => (
+          {EMPTY_CAR_POSITIONS.map(car => (
             <div key={car.id} className={cn(
               "flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors cursor-pointer",
               selectedCar?.id === car.id
@@ -635,12 +611,19 @@ function RecentActivitySection({ isLight, cardBg, text, muted }: {
       </CardHeader>
       <CardContent>
         <div className="space-y-0">
-          {MOCK_EVENTS.map((evt, idx) => (
+          {EMPTY_EVENTS.length === 0 && (
+            <div className={cn("text-center py-8", muted)}>
+              <Activity className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No recent activity</p>
+              <p className="text-xs mt-1">Events will appear as shipments progress</p>
+            </div>
+          )}
+          {EMPTY_EVENTS.map((evt, idx) => (
             <div key={evt.id} className="flex gap-3">
               {/* Timeline line */}
               <div className="flex flex-col items-center">
                 <EventIcon type={evt.eventType} isLight={isLight} />
-                {idx < MOCK_EVENTS.length - 1 && (
+                {idx < EMPTY_EVENTS.length - 1 && (
                   <div className={cn("w-px flex-1 my-1", isLight ? "bg-slate-200" : "bg-slate-700/50")} />
                 )}
               </div>
@@ -687,7 +670,7 @@ export default function RailShipperDashboard() {
   const muted = isLight ? "text-slate-500" : "text-slate-400";
 
   /* Computed KPIs */
-  const totalMonthlySpend = MOCK_FINANCIALS.reduce((s, f) => s + f.total, 0);
+  const totalMonthlySpend = EMPTY_FINANCIALS.reduce((s, f) => s + f.total, 0);
   const onTimeRate = 91; // calculated from aggregated data
 
   return (
@@ -707,7 +690,7 @@ export default function RailShipperDashboard() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => { statsQuery.refetch(); toast.success("Dashboard refreshed"); }}
+            onClick={async () => { await statsQuery.refetch(); toast.success("Dashboard refreshed"); }}
             className={cn("h-9", isLight ? "border-slate-300" : "border-slate-600 text-slate-300 hover:bg-slate-700/50")}
           >
             <RefreshCw className="w-4 h-4 mr-1" /> Refresh

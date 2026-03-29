@@ -60,33 +60,10 @@ const CAR_TYPE_LABELS: Record<string, string> = {
   autorack: "Auto Rack",
 };
 
-/* ─── Mock Fleet Data ─── */
-const MOCK_CARS: any[] = [
-  { id: 1, carNumber: "ESLX-4421", type: "tankcar", ownerMark: "ESLX", status: "in_service", currentYard: "Chicago Terminal", capacity: "20,000 gal", lastInspection: "2026-02-15", nextInspection: "2026-08-15", inspectionStatus: "current", mileage: 142300, builtYear: 2018, commodity: "Ethanol", weight: "263,000 lbs" },
-  { id: 2, carNumber: "ESLX-4422", type: "tankcar", ownerMark: "ESLX", status: "loaded", currentYard: "Houston Yard", capacity: "20,000 gal", lastInspection: "2026-01-10", nextInspection: "2026-07-10", inspectionStatus: "current", mileage: 98200, builtYear: 2019, commodity: "Crude Oil", weight: "286,000 lbs" },
-  { id: 3, carNumber: "ESLX-5512", type: "boxcar", ownerMark: "ESLX", status: "in_service", currentYard: "Kansas City Hub", capacity: "5,238 cu ft", lastInspection: "2025-09-20", nextInspection: "2026-03-20", inspectionStatus: "overdue", mileage: 234100, builtYear: 2015, commodity: "Paper Products", weight: "220,000 lbs" },
-  { id: 4, carNumber: "ESLX-5513", type: "boxcar", ownerMark: "ESLX", status: "empty", currentYard: "St. Louis Yard", capacity: "5,238 cu ft", lastInspection: "2026-02-01", nextInspection: "2026-08-01", inspectionStatus: "current", mileage: 187600, builtYear: 2016, commodity: "—", weight: "220,000 lbs" },
-  { id: 5, carNumber: "ESLX-6678", type: "hopper", ownerMark: "ESLX", status: "maintenance", currentYard: "Chicago Terminal", capacity: "4,750 cu ft", lastInspection: "2025-08-12", nextInspection: "2026-02-12", inspectionStatus: "overdue", mileage: 312400, builtYear: 2012, commodity: "—", weight: "263,000 lbs" },
-  { id: 6, carNumber: "GATX-8891", type: "tankcar", ownerMark: "GATX", status: "in_service", currentYard: "Memphis Intermodal", capacity: "20,000 gal", lastInspection: "2026-03-01", nextInspection: "2026-09-01", inspectionStatus: "current", mileage: 67800, builtYear: 2021, commodity: "Sulfuric Acid", weight: "263,000 lbs" },
-  { id: 7, carNumber: "ESLX-7712", type: "flatcar", ownerMark: "ESLX", status: "in_service", currentYard: "Dallas Terminal", capacity: "80 tons", lastInspection: "2026-01-25", nextInspection: "2026-07-25", inspectionStatus: "current", mileage: 156200, builtYear: 2017, commodity: "Steel Coils", weight: "220,000 lbs" },
-  { id: 8, carNumber: "ESLX-7713", type: "flatcar", ownerMark: "ESLX", status: "loaded", currentYard: "Houston Yard", capacity: "80 tons", lastInspection: "2026-02-20", nextInspection: "2026-08-20", inspectionStatus: "current", mileage: 98700, builtYear: 2019, commodity: "Lumber", weight: "220,000 lbs" },
-  { id: 9, carNumber: "ESLX-3301", type: "gondola", ownerMark: "ESLX", status: "in_service", currentYard: "Kansas City Hub", capacity: "2,743 cu ft", lastInspection: "2025-12-10", nextInspection: "2026-06-10", inspectionStatus: "due_soon", mileage: 278900, builtYear: 2014, commodity: "Scrap Metal", weight: "220,000 lbs" },
-  { id: 10, carNumber: "ESLX-3302", type: "gondola", ownerMark: "ESLX", status: "empty", currentYard: "St. Louis Yard", capacity: "2,743 cu ft", lastInspection: "2026-01-15", nextInspection: "2026-07-15", inspectionStatus: "current", mileage: 201300, builtYear: 2016, commodity: "—", weight: "220,000 lbs" },
-  { id: 11, carNumber: "ESLX-9901", type: "intermodal", ownerMark: "ESLX", status: "in_transit", currentYard: "In Transit", capacity: "53 ft well", lastInspection: "2026-03-05", nextInspection: "2026-09-05", inspectionStatus: "current", mileage: 45200, builtYear: 2022, commodity: "Containers", weight: "220,000 lbs" },
-  { id: 12, carNumber: "ESLX-9902", type: "intermodal", ownerMark: "ESLX", status: "in_service", currentYard: "Chicago Terminal", capacity: "53 ft well", lastInspection: "2026-02-28", nextInspection: "2026-08-28", inspectionStatus: "current", mileage: 52100, builtYear: 2022, commodity: "Containers", weight: "220,000 lbs" },
-  { id: 13, carNumber: "ESLX-6679", type: "hopper", ownerMark: "ESLX", status: "in_service", currentYard: "Memphis Intermodal", capacity: "4,750 cu ft", lastInspection: "2026-03-10", nextInspection: "2026-09-10", inspectionStatus: "current", mileage: 189400, builtYear: 2015, commodity: "Grain", weight: "263,000 lbs" },
-  { id: 14, carNumber: "ESLX-4423", type: "tankcar", ownerMark: "ESLX", status: "out_of_service", currentYard: "Dallas Terminal", capacity: "20,000 gal", lastInspection: "2025-06-01", nextInspection: "2025-12-01", inspectionStatus: "overdue", mileage: 298700, builtYear: 2011, commodity: "—", weight: "263,000 lbs" },
-  { id: 15, carNumber: "TILX-2201", type: "hopper", ownerMark: "TILX", status: "loaded", currentYard: "Houston Yard", capacity: "4,750 cu ft", lastInspection: "2026-02-10", nextInspection: "2026-08-10", inspectionStatus: "current", mileage: 76300, builtYear: 2020, commodity: "Corn", weight: "263,000 lbs" },
-  { id: 16, carNumber: "ESLX-5514", type: "boxcar", ownerMark: "ESLX", status: "bad_order", currentYard: "Chicago Terminal", capacity: "5,238 cu ft", lastInspection: "2025-11-01", nextInspection: "2026-05-01", inspectionStatus: "due_soon", mileage: 267800, builtYear: 2013, commodity: "—", weight: "220,000 lbs" },
-];
+/* ─── Empty fleet data (populated by tRPC queries when endpoints exist) ─── */
+const EMPTY_CARS: any[] = [];
 
-const MOCK_MAINTENANCE = [
-  { id: 1, carNumber: "ESLX-6678", type: "hopper", issue: "Brake valve replacement", priority: "high", scheduledDate: "2026-04-02", assignedTo: "Shop A - Chicago", status: "scheduled" },
-  { id: 2, carNumber: "ESLX-4423", type: "tankcar", issue: "Tank shell repair — corrosion", priority: "critical", scheduledDate: "2026-03-30", assignedTo: "Shop B - Dallas", status: "in_progress" },
-  { id: 3, carNumber: "ESLX-5514", type: "boxcar", issue: "Door mechanism repair", priority: "medium", scheduledDate: "2026-04-05", assignedTo: "Shop A - Chicago", status: "scheduled" },
-  { id: 4, carNumber: "ESLX-3301", type: "gondola", issue: "Wheel bearing inspection", priority: "low", scheduledDate: "2026-04-10", assignedTo: "Shop C - Kansas City", status: "pending" },
-  { id: 5, carNumber: "ESLX-5512", type: "boxcar", issue: "Floor replacement", priority: "medium", scheduledDate: "2026-04-08", assignedTo: "Shop A - Chicago", status: "scheduled" },
-];
+const EMPTY_MAINTENANCE: { id: number; carNumber: string; type: string; issue: string; priority: string; scheduledDate: string; assignedTo: string; status: string }[] = [];
 
 const PRIORITY_COLORS: Record<string, string> = {
   critical: "bg-red-500/20 text-red-400",
@@ -223,13 +200,13 @@ export default function RailFleetManagement() {
   );
 
   // Unique values for filters
-  const yards = [...new Set(MOCK_CARS.map((c) => c.currentYard))];
-  const types = [...new Set(MOCK_CARS.map((c) => c.type))];
-  const statuses = [...new Set(MOCK_CARS.map((c) => c.status))];
+  const yards = [...new Set(EMPTY_CARS.map((c) => c.currentYard))];
+  const types = [...new Set(EMPTY_CARS.map((c) => c.type))];
+  const statuses = [...new Set(EMPTY_CARS.map((c) => c.status))];
 
   // Filtered cars
   const filteredCars = useMemo(() => {
-    return MOCK_CARS.filter((car) => {
+    return EMPTY_CARS.filter((car) => {
       if (search && !car.carNumber.toLowerCase().includes(search.toLowerCase()) &&
           !car.commodity?.toLowerCase().includes(search.toLowerCase())) return false;
       if (filterType !== "all" && car.type !== filterType) return false;
@@ -242,7 +219,7 @@ export default function RailFleetManagement() {
   // Cars by type for "By Type" tab
   const carsByType = useMemo(() => {
     const groups: Record<string, any[]> = {};
-    MOCK_CARS.forEach((car) => {
+    EMPTY_CARS.forEach((car) => {
       if (!groups[car.type]) groups[car.type] = [];
       groups[car.type].push(car);
     });
@@ -250,15 +227,15 @@ export default function RailFleetManagement() {
   }, []);
 
   // Inspection due list
-  const inspectionDue = MOCK_CARS
+  const inspectionDue = EMPTY_CARS
     .filter((c) => c.inspectionStatus === "overdue" || c.inspectionStatus === "due_soon")
     .sort((a, b) => (a.inspectionStatus === "overdue" ? -1 : 1));
 
   // KPIs
-  const totalCars = MOCK_CARS.length;
-  const inServiceCount = MOCK_CARS.filter((c) => ["in_service", "loaded", "in_transit"].includes(c.status)).length;
-  const maintenanceCount = MOCK_CARS.filter((c) => ["maintenance", "bad_order", "out_of_service"].includes(c.status)).length;
-  const overdueInspections = MOCK_CARS.filter((c) => c.inspectionStatus === "overdue").length;
+  const totalCars = EMPTY_CARS.length;
+  const inServiceCount = EMPTY_CARS.filter((c) => ["in_service", "loaded", "in_transit"].includes(c.status)).length;
+  const maintenanceCount = EMPTY_CARS.filter((c) => ["maintenance", "bad_order", "out_of_service"].includes(c.status)).length;
+  const overdueInspections = EMPTY_CARS.filter((c) => c.inspectionStatus === "overdue").length;
 
   const clearFilters = () => {
     setSearch("");
@@ -541,7 +518,7 @@ export default function RailFleetManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {MOCK_MAINTENANCE.map((m) => (
+                {EMPTY_MAINTENANCE.map((m) => (
                   <div key={m.id} className={cn(
                     "rounded-lg border p-4 transition-all",
                     isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700/50 hover:bg-slate-700/20"
@@ -683,10 +660,10 @@ export default function RailFleetManagement() {
               return (
                 <div className="space-y-3">
                   {ageGroups.map((group) => {
-                    const count = MOCK_CARS.filter(
+                    const count = EMPTY_CARS.filter(
                       (c) => c.builtYear > group.min && c.builtYear <= group.max
                     ).length;
-                    const pct = Math.round((count / MOCK_CARS.length) * 100);
+                    const pct = EMPTY_CARS.length > 0 ? Math.round((count / EMPTY_CARS.length) * 100) : 0;
                     const colorMap: Record<string, string> = {
                       emerald: isLight ? "bg-emerald-500" : "bg-emerald-600",
                       blue: isLight ? "bg-blue-500" : "bg-blue-600",
@@ -723,7 +700,7 @@ export default function RailFleetManagement() {
                   )}>
                     <span className={muted}>Average fleet age</span>
                     <span className={cn("font-semibold", text)}>
-                      {(MOCK_CARS.reduce((sum, c) => sum + (currentYear - c.builtYear), 0) / MOCK_CARS.length).toFixed(1)} years
+                      {EMPTY_CARS.length > 0 ? (EMPTY_CARS.reduce((sum, c) => sum + (currentYear - c.builtYear), 0) / EMPTY_CARS.length).toFixed(1) : "0.0"} years
                     </span>
                   </div>
                 </div>
@@ -741,7 +718,7 @@ export default function RailFleetManagement() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {[...MOCK_CARS]
+              {[...EMPTY_CARS]
                 .sort((a, b) => b.mileage - a.mileage)
                 .slice(0, 6)
                 .map((car, idx) => (
@@ -784,7 +761,7 @@ export default function RailFleetManagement() {
           <CardContent>
             <div className="space-y-2">
               {yards.map((yard) => {
-                const carsAtYard = MOCK_CARS.filter((c) => c.currentYard === yard);
+                const carsAtYard = EMPTY_CARS.filter((c) => c.currentYard === yard);
                 return (
                   <div key={yard} className={cn(
                     "flex items-center justify-between p-3 rounded-lg border",
