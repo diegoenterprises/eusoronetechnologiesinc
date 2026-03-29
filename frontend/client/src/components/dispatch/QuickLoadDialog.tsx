@@ -37,17 +37,31 @@ export interface QuickLoadData {
 }
 
 const CARGO_TYPES = [
-  { value: "crude_oil", label: "Crude Oil", hazmat: "3" },
-  { value: "ngl", label: "NGL", hazmat: "2.1" },
-  { value: "propane", label: "Propane", hazmat: "2.1" },
-  { value: "water", label: "Water", hazmat: "" },
-  { value: "sand", label: "Sand / Frac Sand", hazmat: "" },
-  { value: "diesel", label: "Diesel Fuel", hazmat: "3" },
-  { value: "condensate", label: "Condensate", hazmat: "3" },
-  { value: "produced_water", label: "Produced Water", hazmat: "" },
-  { value: "chemicals", label: "Chemicals", hazmat: "8" },
-  { value: "dry_bulk", label: "Dry Bulk", hazmat: "" },
+  // General
   { value: "general", label: "General Freight", hazmat: "" },
+  // Petroleum & Liquid
+  { value: "petroleum", label: "Petroleum / Crude Oil", hazmat: "3" },
+  { value: "liquid", label: "Liquid (Non-Hazmat)", hazmat: "" },
+  { value: "water", label: "Water", hazmat: "" },
+  // Gas & Cryogenic
+  { value: "gas", label: "Gas (LPG/NGL/Propane)", hazmat: "2.1" },
+  { value: "cryogenic", label: "Cryogenic (LNG/LOX)", hazmat: "2.2" },
+  // Hazmat & Chemicals
+  { value: "hazmat", label: "Hazmat (General)", hazmat: "9" },
+  { value: "chemicals", label: "Chemicals", hazmat: "8" },
+  // Temperature Controlled
+  { value: "refrigerated", label: "Refrigerated", hazmat: "" },
+  { value: "food_grade", label: "Food Grade", hazmat: "" },
+  // Flatbed & Heavy
+  { value: "oversized", label: "Oversized / Heavy Haul", hazmat: "" },
+  // Dry Bulk & Agriculture
+  { value: "dry_bulk", label: "Dry Bulk (Sand/Cement)", hazmat: "" },
+  { value: "grain", label: "Grain / Agriculture", hazmat: "" },
+  { value: "timber", label: "Timber / Lumber", hazmat: "" },
+  // Specialty
+  { value: "livestock", label: "Livestock", hazmat: "" },
+  { value: "vehicles", label: "Auto / Vehicle Transport", hazmat: "" },
+  { value: "intermodal", label: "Intermodal Container", hazmat: "" },
 ];
 
 const TRAILER_TYPES = [

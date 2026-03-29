@@ -938,7 +938,7 @@ function Router() {
       <Route path={"/settlement/:settlementId"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...ADMN], <SettlementDetails />)} />
       <Route path={"/tools/rate-calculator"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...ADMN], <RateCalculator />)} />
       <Route path={"/directory"} component={guard(ALL, <IndustryDirectory />)} />
-      <Route path={"/industry-verticals"} component={guard([...SHIP, ...CARR, ...BROK, ...ADMN], <IndustryVerticals />)} />
+      <Route path={"/industry-verticals"} component={guard([...SHIP, ...CARR, ...BROK, ...DISP, ...TERM, ...COMP, ...SAFE, ...ADMN], <IndustryVerticals />)} />
       <Route path={"/live-news"} component={guard(ALL, <LiveNewsFeed />)} />
       <Route path={"/catalyst-compliance"} component={guard(CARR, <OperatingAuthority />)} />
       <Route path={"/fuel-prices"} component={guard([...DRIV, ...CARR, ...DISP, ...BROK, ...SHIP, ...ADMN], <FuelPrices />)} />

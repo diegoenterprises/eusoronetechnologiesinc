@@ -311,7 +311,7 @@ export default function AllocationDashboard() {
               <div className={cn("text-2xl font-bold", L ? "text-blue-900" : "text-blue-300")}>
                 {summary.totalNominated.toLocaleString()}
               </div>
-              <div className={cn("text-xs mt-0.5", L ? "text-blue-600/70" : "text-blue-400/60")}>BBL</div>
+              <div className={cn("text-xs mt-0.5", L ? "text-blue-600/70" : "text-blue-400/60")}>Units</div>
             </div>
 
             {/* Loaded */}
@@ -327,7 +327,7 @@ export default function AllocationDashboard() {
               <div className={cn("text-2xl font-bold", L ? "text-amber-900" : "text-amber-300")}>
                 {summary.totalLoaded.toLocaleString()}
               </div>
-              <div className={cn("text-xs mt-0.5", L ? "text-amber-600/70" : "text-amber-400/60")}>BBL</div>
+              <div className={cn("text-xs mt-0.5", L ? "text-amber-600/70" : "text-amber-400/60")}>Units</div>
             </div>
 
             {/* Delivered */}
@@ -343,7 +343,7 @@ export default function AllocationDashboard() {
               <div className={cn("text-2xl font-bold", L ? "text-green-900" : "text-green-300")}>
                 {summary.totalDelivered.toLocaleString()}
               </div>
-              <div className={cn("text-xs mt-0.5", L ? "text-green-600/70" : "text-green-400/60")}>BBL</div>
+              <div className={cn("text-xs mt-0.5", L ? "text-green-600/70" : "text-green-400/60")}>Units</div>
             </div>
 
             {/* Fulfillment % */}
@@ -400,8 +400,8 @@ export default function AllocationDashboard() {
               )}
             </div>
             <div className="flex justify-between mt-1.5 text-[11px]">
-              <span className={L ? "text-slate-400" : "text-slate-500"}>0 BBL</span>
-              <span className={L ? "text-slate-400" : "text-slate-500"}>{summary.totalNominated.toLocaleString()} BBL</span>
+              <span className={L ? "text-slate-400" : "text-slate-500"}>0</span>
+              <span className={L ? "text-slate-400" : "text-slate-500"}>{summary.totalNominated.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -445,7 +445,7 @@ export default function AllocationDashboard() {
               <p className={cn("text-sm mb-6 text-center max-w-sm", L ? "text-slate-500" : "text-slate-500")}>
                 {filter !== "all"
                   ? "Try changing the filter or date to see more contracts."
-                  : "Create your first contract to start tracking daily barrel nominations, loads, and deliveries."}
+                  : "Create your first contract to start tracking daily allocations, loads, and deliveries across all freight verticals."}
               </p>
               {filter === "all" && (
                 <Button
@@ -526,7 +526,7 @@ export default function AllocationDashboard() {
                       {c.ratePerBbl != null && (
                         <span className={cn("flex items-center gap-1", L ? "text-slate-500" : "text-slate-400")}>
                           <DollarSign className="w-3 h-3" />
-                          ${Number(c.ratePerBbl).toFixed(2)}/BBL
+                          ${Number(c.ratePerBbl).toFixed(2)}/{(c as any).unit?.toUpperCase?.() || "BBL"}
                         </span>
                       )}
                       {(c.effectiveDate || c.expirationDate) && (
@@ -544,21 +544,21 @@ export default function AllocationDashboard() {
                       )}>
                         <div className={cn("text-[10px] font-medium uppercase tracking-wider mb-0.5", L ? "text-blue-500" : "text-blue-400/70")}>Nominated</div>
                         <div className={cn("text-sm font-bold", L ? "text-blue-700" : "text-blue-400")}>{Number(c.nominatedBbl).toLocaleString()}</div>
-                        <div className={cn("text-[10px]", L ? "text-blue-400" : "text-blue-500/50")}>BBL</div>
+                        <div className={cn("text-[10px]", L ? "text-blue-400" : "text-blue-500/50")}>{((c as any).unit || "bbl").toUpperCase()}</div>
                       </div>
                       <div className={cn("rounded-lg p-2.5 text-center border",
                         L ? "bg-amber-50 border-amber-100" : "bg-amber-500/5 border-amber-500/10"
                       )}>
                         <div className={cn("text-[10px] font-medium uppercase tracking-wider mb-0.5", L ? "text-amber-500" : "text-amber-400/70")}>Loaded</div>
                         <div className={cn("text-sm font-bold", L ? "text-amber-700" : "text-amber-400")}>{Number(c.loadedBbl).toLocaleString()}</div>
-                        <div className={cn("text-[10px]", L ? "text-amber-400" : "text-amber-500/50")}>BBL</div>
+                        <div className={cn("text-[10px]", L ? "text-amber-400" : "text-amber-500/50")}>{((c as any).unit || "bbl").toUpperCase()}</div>
                       </div>
                       <div className={cn("rounded-lg p-2.5 text-center border",
                         L ? "bg-green-50 border-green-100" : "bg-green-500/5 border-green-500/10"
                       )}>
                         <div className={cn("text-[10px] font-medium uppercase tracking-wider mb-0.5", L ? "text-green-500" : "text-green-400/70")}>Delivered</div>
                         <div className={cn("text-sm font-bold", L ? "text-green-700" : "text-green-400")}>{Number(c.deliveredBbl).toLocaleString()}</div>
-                        <div className={cn("text-[10px]", L ? "text-green-400" : "text-green-500/50")}>BBL</div>
+                        <div className={cn("text-[10px]", L ? "text-green-400" : "text-green-500/50")}>{((c as any).unit || "bbl").toUpperCase()}</div>
                       </div>
                     </div>
 
@@ -599,7 +599,7 @@ export default function AllocationDashboard() {
                         L ? "bg-red-50 border border-red-200 text-red-700" : "bg-red-500/10 border border-red-500/20 text-red-400"
                       )}>
                         <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                        <span><strong>{Number(c.remainingBbl).toLocaleString()} BBL</strong> behind schedule</span>
+                        <span><strong>{Number(c.remainingBbl).toLocaleString()} {(c as any)?.unit?.toUpperCase?.() || "BBL"}</strong> behind schedule</span>
                       </div>
                     )}
 
@@ -660,7 +660,7 @@ export default function AllocationDashboard() {
                 </div>
                 <div>
                   <h2 className={cn("text-lg font-bold", L ? "text-slate-900" : "text-white")}>New Allocation Contract</h2>
-                  <p className={cn("text-xs", L ? "text-slate-500" : "text-slate-400")}>Set up a new daily barrel allocation</p>
+                  <p className={cn("text-xs", L ? "text-slate-500" : "text-slate-400")}>Set up a new daily allocation contract for any freight vertical</p>
                 </div>
               </div>
               <button
@@ -699,15 +699,61 @@ export default function AllocationDashboard() {
               <div>
                 <h4 className={cn("text-xs font-semibold uppercase tracking-wider mb-3", L ? "text-slate-400" : "text-slate-500")}>Product & Volume</h4>
                 <div className="grid grid-cols-2 gap-3">
-                  <FormField label="Product" error={formErrors.product} L={L}>
+                  <FormField label="Cargo Type" error={formErrors.cargoType} L={L}>
+                    <select
+                      value={(form as any).cargoType || "petroleum"}
+                      onChange={e => {
+                        const ct = e.target.value;
+                        const unitMap: Record<string, string> = { petroleum: "bbl", liquid: "gal", gas: "gal", water: "bbl", chemicals: "gal", general: "lbs", refrigerated: "lbs", food_grade: "lbs", dry_bulk: "tons", grain: "tons", oversized: "lbs", livestock: "head", vehicles: "units", timber: "lbs", intermodal: "TEU", cryogenic: "gal", hazmat: "lbs" };
+                        setForm(p => ({ ...p, cargoType: ct, unit: unitMap[ct] || "lbs" } as any));
+                      }}
+                      className={cn("h-9 text-sm rounded-md px-3 w-full", inputStyle(L))}
+                    >
+                      <option value="petroleum">Petroleum / Crude Oil</option>
+                      <option value="general">General Freight</option>
+                      <option value="refrigerated">Refrigerated</option>
+                      <option value="food_grade">Food Grade</option>
+                      <option value="hazmat">Hazmat</option>
+                      <option value="chemicals">Chemicals</option>
+                      <option value="dry_bulk">Dry Bulk (Sand/Cement)</option>
+                      <option value="grain">Grain / Agriculture</option>
+                      <option value="liquid">Liquid (Non-Petroleum)</option>
+                      <option value="water">Water</option>
+                      <option value="gas">Gas (LPG/NGL)</option>
+                      <option value="cryogenic">Cryogenic</option>
+                      <option value="oversized">Oversized / Heavy Haul</option>
+                      <option value="livestock">Livestock</option>
+                      <option value="vehicles">Auto / Vehicle Transport</option>
+                      <option value="timber">Timber / Lumber</option>
+                      <option value="intermodal">Intermodal</option>
+                    </select>
+                  </FormField>
+                  <FormField label="Product Name" error={formErrors.product} L={L}>
                     <Input
                       value={form.product}
                       onChange={e => setForm(p => ({ ...p, product: e.target.value }))}
-                      placeholder="e.g., Crude Oil, Water"
+                      placeholder="e.g., WTI Crude, Frozen Produce, Steel Coils"
                       className={cn("h-9 text-sm", inputStyle(L), formErrors.product && "border-red-500")}
                     />
                   </FormField>
-                  <FormField label="Daily Nomination (BBL)" error={formErrors.dailyNominationBbl} L={L}>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-3">
+                  <FormField label="Tracking Unit" error="" L={L}>
+                    <select
+                      value={(form as any).unit || "bbl"}
+                      onChange={e => setForm(p => ({ ...p, unit: e.target.value } as any))}
+                      className={cn("h-9 text-sm rounded-md px-3 w-full", inputStyle(L))}
+                    >
+                      <option value="bbl">Barrels (BBL)</option>
+                      <option value="gal">Gallons (GAL)</option>
+                      <option value="lbs">Pounds (LBS)</option>
+                      <option value="tons">Tons</option>
+                      <option value="units">Units</option>
+                      <option value="head">Head (Livestock)</option>
+                      <option value="TEU">TEU (Containers)</option>
+                    </select>
+                  </FormField>
+                  <FormField label={`Daily Nomination (${((form as any).unit || "bbl").toUpperCase()})`} error={formErrors.dailyNominationBbl} L={L}>
                     <Input
                       type="number"
                       min={0}
@@ -758,7 +804,7 @@ export default function AllocationDashboard() {
               <div>
                 <h4 className={cn("text-xs font-semibold uppercase tracking-wider mb-3", L ? "text-slate-400" : "text-slate-500")}>Pricing & Schedule</h4>
                 <div className="grid grid-cols-3 gap-3">
-                  <FormField label="Rate per BBL ($)" error={formErrors.ratePerBbl} L={L}>
+                  <FormField label={`Rate per ${((form as any).unit || "bbl").toUpperCase()} ($)`} error={formErrors.ratePerBbl} L={L}>
                     <Input
                       type="number"
                       min={0}

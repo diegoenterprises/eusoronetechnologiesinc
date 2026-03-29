@@ -311,7 +311,7 @@ export default function DispatchPlanner() {
                 )}
                 onClick={() => setCargoFilter("")}
               >All</button>
-              {["hazmat", "petroleum", "general", "refrigerated", "chemicals"].map(c => (
+              {["general", "petroleum", "hazmat", "chemicals", "refrigerated", "food_grade", "oversized", "gas", "cryogenic", "dry_bulk", "grain", "livestock", "vehicles", "timber", "liquid", "water", "intermodal"].map(c => (
                 <button
                   key={c}
                   className={cn(
