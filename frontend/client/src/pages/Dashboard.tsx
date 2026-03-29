@@ -38,6 +38,8 @@ export default function Dashboard() {
       // Vessel roles → role-specific dashboards
       if (userRole === 'SHIP_CAPTAIN') { navigate('/vessel/captain/dashboard'); return; }
       if (userRole === 'PORT_MASTER') { navigate('/port/dashboard'); return; }
+      if (userRole === 'VESSEL_BROKER') { navigate('/vessel/broker/dashboard'); return; }
+      if (userRole === 'CUSTOMS_BROKER') { navigate('/customs/dashboard'); return; }
       if (VESSEL_ROLES.includes(userRole)) { navigate('/vessel/dashboard'); return; }
     }
   }, [userRole, loading, showOnboarding]);
