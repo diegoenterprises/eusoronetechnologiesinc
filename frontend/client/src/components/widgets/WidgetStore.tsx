@@ -112,7 +112,7 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
 
       {/* Store Panel */}
-      <div className="relative ml-auto w-full max-w-2xl h-full bg-slate-900 border-l border-slate-700/50 shadow-2xl flex flex-col overflow-hidden">
+      <div className="relative ml-auto w-full max-w-2xl h-full bg-slate-900/95 backdrop-blur-xl border-l border-slate-700/50 shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex-shrink-0 p-6 border-b border-slate-700/50 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
           <div className="flex items-center justify-between mb-4">

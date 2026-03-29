@@ -1,264 +1,100 @@
 /**
- * AI-OPTIMIZED MISSION BALANCING PAGE (GAP-438)
- * Fleet mission optimization dashboard with workload balancing and assignment suggestions.
+ * MISSION BALANCER PAGE
+ * AI-powered load-driver matching and fleet optimization dashboard.
  */
-
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState, useMemo } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { trpc } from "@/lib/trpc";
-import {
-  Target, Truck, User, MapPin, Clock, DollarSign,
-  BarChart3, Zap, CheckCircle, ArrowRight, RefreshCw,
-  Gauge, TrendingDown, AlertTriangle, ChevronRight, Package,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-
-type Tab = "balance" | "assignments" | "drivers";
-
-const GRADE_COLORS: Record<string, string> = {
-  A: "text-emerald-400", B: "text-blue-400", C: "text-amber-400", D: "text-orange-400", F: "text-red-500",
-};
-
-const PRIORITY_CONFIG: Record<string, { color: string; bg: string }> = {
-  standard: { color: "text-slate-400", bg: "bg-slate-500/10" },
-  hot: { color: "text-amber-400", bg: "bg-amber-500/10" },
-  critical: { color: "text-red-400", bg: "bg-red-500/10" },
-};
-
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Brain, Users, Package, Zap, RefreshCw, Truck, MapPin, CheckCircle, BarChart3, Target, ArrowRightLeft, ChevronRight, Search } from "lucide-react";
+function cn(...c: (string|false|undefined|null)[]): string { return c.filter(Boolean).join(" "); }
 export default function MissionBalancerPage() {
-  const [tab, setTab] = useState<Tab>("balance");
-  const [expandedAssignment, setExpandedAssignment] = useState<string | null>(null);
-
-  const dashQuery = (trpc as any).missionBalancer?.getDashboard?.useQuery?.() || { data: null, isLoading: false };
-  const dash = dashQuery.data;
-  const fb = dash?.fleetBalance;
-
+  const { theme } = useTheme(); const L = theme === "light";
+  const [search, setSearch] = useState(""); const [tab, setTab] = useState<"overview"|"drivers"|"loads"|"assignments">("overview");
+  const dQ = (trpc as any).missionBalancer?.getDashboard?.useQuery?.() ?? { data: null, isLoading: true };
+  const d = dQ.data; const cB = L ? "bg-white border-slate-200" : "bg-white/[0.03] border-white/[0.06]";
+  const tP = L ? "text-slate-900" : "text-white"; const tS = L ? "text-slate-500" : "text-slate-400";
+  const drivers = useMemo(() => { const l = d?.drivers || []; return search ? l.filter((x:any) => x.name?.toLowerCase().includes(search.toLowerCase())) : l; }, [d?.drivers, search]);
+  const loads = useMemo(() => { const l = d?.pendingLoads || []; return search ? l.filter((x:any) => x.id?.toLowerCase().includes(search.toLowerCase()) || x.origin?.toLowerCase().includes(search.toLowerCase())) : l; }, [d?.pendingLoads, search]);
+  const stats = d ? [
+    { label: "Active Drivers", value: d.drivers?.length || 0, icon: Users, color: "text-blue-400", bg: L ? "bg-blue-50" : "bg-blue-500/10" },
+    { label: "Pending Loads", value: d.pendingLoads?.length || 0, icon: Package, color: "text-amber-400", bg: L ? "bg-amber-50" : "bg-amber-500/10" },
+    { label: "Assignments", value: d.assignments?.length || 0, icon: CheckCircle, color: "text-green-400", bg: L ? "bg-green-50" : "bg-green-500/10" },
+    { label: "Fleet Balance", value: `${Math.round((d.fleetBalance || 0) * 100)}%`, icon: Target, color: "text-purple-400", bg: L ? "bg-purple-50" : "bg-purple-500/10" },
+  ] : [];
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-400 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent">
-            Mission Balancer
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">AI-optimized load distribution & fleet workload balancing</p>
+    <div className={cn("min-h-screen p-6", L ? "bg-slate-50" : "bg-[#0a0a0a]")}>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className={cn("p-2.5 rounded-xl", L ? "bg-purple-100" : "bg-purple-500/15")}><Brain className="w-6 h-6 text-purple-400" /></div>
+          <div><h1 className={cn("text-2xl font-bold", tP)}>Mission Balancer</h1><p className={tS}>AI-powered load-driver matching and fleet optimization</p></div>
         </div>
-        <Button size="sm" variant="outline" className="text-xs" onClick={() => dashQuery.refetch?.()}>
-          <RefreshCw className="w-3.5 h-3.5 mr-1" />Re-optimize
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative"><Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className={cn("pl-9 h-9 w-56 text-sm", L ? "bg-slate-50 border-slate-200" : "bg-white/[0.04] border-white/[0.08]")} />
+          </div>
+          <Button variant="outline" size="sm" onClick={() => dQ.refetch?.()}><RefreshCw className={cn("w-4 h-4 mr-1", dQ.isLoading && "animate-spin")} />Refresh</Button>
+        </div>
       </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1 w-fit">
-        {[
-          { id: "balance" as Tab, icon: <BarChart3 className="w-3.5 h-3.5 mr-1" />, label: "Fleet Balance", color: "bg-purple-600" },
-          { id: "assignments" as Tab, icon: <Target className="w-3.5 h-3.5 mr-1" />, label: "Assignments", color: "bg-blue-600" },
-          { id: "drivers" as Tab, icon: <User className="w-3.5 h-3.5 mr-1" />, label: "Driver Status", color: "bg-emerald-600" },
-        ].map(t => (
-          <Button key={t.id} size="sm" variant={tab === t.id ? "default" : "ghost"} className={cn("rounded-md text-xs", tab === t.id ? t.color : "text-slate-400")} onClick={() => setTab(t.id)}>
-            {t.icon}{t.label}
-          </Button>
+      {dQ.isLoading ? (
+        <div className="grid grid-cols-4 gap-4 mb-6">{[1,2,3,4].map(i => <div key={i} className={cn("rounded-xl border p-4 animate-pulse h-20", cB)} />)}</div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {stats.map(s => (<div key={s.label} className={cn("rounded-xl border p-4", cB)}>
+            <div className="flex items-center gap-2 mb-2"><div className={cn("p-1.5 rounded-lg", s.bg)}><s.icon className={cn("w-4 h-4", s.color)} /></div><span className={cn("text-xs", tS)}>{s.label}</span></div>
+            <p className={cn("text-2xl font-bold", tP)}>{s.value}</p></div>))}
+        </div>
+      )}
+      <div className="flex items-center gap-1 mb-6">
+        {([["overview","Overview",BarChart3],["drivers","Drivers",Users],["loads","Loads",Package],["assignments","Assignments",ArrowRightLeft]] as const).map(([k,l,I]) => (
+          <button key={k} onClick={() => setTab(k as any)} className={cn("flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+            tab === k ? (L ? "bg-purple-100 text-purple-700" : "bg-purple-500/15 text-purple-400") : (L ? "text-slate-500 hover:bg-slate-100" : "text-slate-400 hover:bg-white/5")
+          )}><I className="w-4 h-4" />{l} {k==="drivers" && `(${drivers.length})`}{k==="loads" && `(${loads.length})`}</button>
         ))}
       </div>
-
-      {dashQuery.isLoading && <Skeleton className="h-48 bg-slate-700/30 rounded-xl" />}
-
-      {/* ── Fleet Balance Tab ── */}
-      {tab === "balance" && fb && (
-        <div className="space-y-4">
-          {/* Grade + KPIs */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl col-span-1">
-              <CardContent className="p-3 text-center">
-                <p className={cn("text-4xl font-bold font-mono", GRADE_COLORS[fb.balanceGrade])}>{fb.balanceGrade}</p>
-                <p className="text-xs text-slate-500">Balance Grade</p>
-              </CardContent>
-            </Card>
-            {[
-              { label: "Avg Utilization", value: `${fb.avgUtilization}%`, color: fb.avgUtilization > 70 ? "text-emerald-400" : "text-amber-400" },
-              { label: "Util Std Dev", value: `${fb.utilizationStdDev}%`, color: fb.utilizationStdDev < 15 ? "text-emerald-400" : "text-red-400" },
-              { label: "Avg Revenue/Driver", value: `$${fb.avgRevenuePerDriver.toLocaleString()}`, color: "text-white" },
-              { label: "Deadhead Ratio", value: `${Math.round(fb.deadheadRatio * 100)}%`, color: fb.deadheadRatio < 0.15 ? "text-emerald-400" : "text-red-400" },
-              { label: "Total Deadhead", value: `${fb.totalDeadheadMiles.toLocaleString()} mi`, color: "text-slate-300" },
-            ].map(k => (
-              <Card key={k.label} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-                <CardContent className="p-3 text-center">
-                  <p className={cn("text-lg font-bold font-mono", k.color)}>{k.value}</p>
-                  <p className="text-xs text-slate-500">{k.label}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Optimization Summary */}
-          {dash?.optimizationSummary && (
-            <Card className="bg-purple-500/5 border-purple-500/20 rounded-xl">
-              <CardHeader className="pb-2"><CardTitle className="text-xs text-purple-400 flex items-center gap-2"><Zap className="w-4 h-4" />AI Optimization Impact</CardTitle></CardHeader>
-              <CardContent className="pb-3">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {[
-                    { label: "Deadhead Saved", value: `${dash.optimizationSummary.estimatedDeadheadSaved} mi`, icon: <TrendingDown className="w-3.5 h-3.5 text-emerald-400" /> },
-                    { label: "Revenue Lift", value: `$${dash.optimizationSummary.estimatedRevenueLift.toLocaleString()}`, icon: <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> },
-                    { label: "Balance Improvement", value: `+${dash.optimizationSummary.driverBalanceImprovement}%`, icon: <BarChart3 className="w-3.5 h-3.5 text-blue-400" /> },
-                    { label: "HOS Util Gain", value: `+${dash.optimizationSummary.hosUtilizationGain}%`, icon: <Clock className="w-3.5 h-3.5 text-cyan-400" /> },
-                  ].map(s => (
-                    <div key={s.label} className="p-2 rounded-lg bg-slate-900/30 flex items-center gap-2">
-                      {s.icon}
-                      <div>
-                        <p className="text-xs font-bold font-mono text-white">{s.value}</p>
-                        <p className="text-xs text-slate-500">{s.label}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Imbalance Areas */}
-          {fb.imbalanceAreas.length > 0 && (
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-              <CardHeader className="pb-2"><CardTitle className="text-xs text-white">Imbalance Areas</CardTitle></CardHeader>
-              <CardContent className="pb-3 space-y-1.5">
-                {fb.imbalanceAreas.map((area: any, i: number) => (
-                  <div key={i} className={cn("p-2.5 rounded-lg border", area.severity === "high" ? "border-red-500/20 bg-red-500/5" : area.severity === "medium" ? "border-amber-500/20 bg-amber-500/5" : "border-slate-700/30 bg-slate-900/20")}>
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className={cn("w-3.5 h-3.5", area.severity === "high" ? "text-red-400" : "text-amber-400")} />
-                      <span className="text-xs font-semibold text-white">{area.area}</span>
-                      <Badge variant="outline" className={cn("text-xs", area.severity === "high" ? "text-red-400" : "text-amber-400")}>{area.severity}</Badge>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1 ml-5">{area.description}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Recommendations */}
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-            <CardHeader className="pb-2"><CardTitle className="text-xs text-white">Recommendations</CardTitle></CardHeader>
-            <CardContent className="pb-3">
-              {fb.recommendations.map((r: string, i: number) => (
-                <p key={i} className="text-xs text-slate-300 py-1">• {r}</p>
-              ))}
-            </CardContent>
-          </Card>
+      {tab === "overview" && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className={cn("rounded-xl border p-5", cB)}>
+          <h3 className={cn("text-sm font-semibold mb-4 flex items-center gap-2", tP)}><Users className="w-4 h-4 text-blue-400" />Driver Utilization</h3>
+          {drivers.slice(0,8).map((dr:any,i:number) => (<div key={i} className="flex items-center gap-3 mb-3"><span className={cn("text-xs w-28 truncate", tS)}>{dr.name}</span>
+            <div className="flex-1 h-2 rounded-full overflow-hidden bg-slate-700/30"><div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500" style={{width:`${Math.min(100,dr.utilizationPct||0)}%`}} /></div>
+            <span className={cn("text-xs w-10 text-right", tS)}>{dr.utilizationPct||0}%</span></div>))}
+          {drivers.length === 0 && <p className={cn("text-sm text-center py-4", tS)}>No active drivers</p>}
         </div>
-      )}
-
-      {/* ── Assignments Tab ── */}
-      {tab === "assignments" && dash && (
-        <div className="space-y-2">
-          <p className="text-xs text-slate-500">{dash.suggestedAssignments.length} AI-optimized assignments for {dash.pendingLoads.length} pending loads</p>
-          {dash.suggestedAssignments.map((a: any) => {
-            const load = dash.pendingLoads.find((l: any) => l.loadId === a.loadId);
-            const isExp = expandedAssignment === a.loadId;
-            const pCfg = PRIORITY_CONFIG[load?.priority || "standard"];
-            return (
-              <Card key={a.loadId} className={cn("rounded-xl border transition-all cursor-pointer", isExp ? "bg-blue-500/5 border-blue-500/20" : "bg-slate-800/50 border-slate-700/50")} onClick={() => setExpandedAssignment(isExp ? null : a.loadId)}>
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
-                      <Package className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold font-mono text-white">{a.loadId}</span>
-                        <ArrowRight className="w-3 h-3 text-slate-500" />
-                        <span className="text-xs text-blue-400 font-semibold">{a.driverName}</span>
-                        {load && <Badge variant="outline" className={cn("text-xs", pCfg.color)}>{load.priority}</Badge>}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {load ? `${load.origin.city}, ${load.origin.state} → ${load.destination.city}, ${load.destination.state}` : ""}
-                        {` • ${a.deadheadMiles} mi deadhead • $${a.estimatedRevenue.toLocaleString()}`}
-                      </p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-lg font-bold font-mono text-white">{a.balanceScore}</p>
-                      <p className="text-xs text-slate-500">score</p>
-                    </div>
-                  </div>
-
-                  {isExp && (
-                    <div className="mt-3 space-y-2 border-t border-slate-700/30 pt-3" onClick={e => e.stopPropagation()}>
-                      <div className="grid grid-cols-4 gap-2">
-                        {[
-                          { label: "Deadhead", value: `${a.deadheadMiles} mi` },
-                          { label: "Total Miles", value: `${a.totalMiles} mi` },
-                          { label: "Revenue", value: `$${a.estimatedRevenue.toLocaleString()}` },
-                          { label: "RPM", value: `$${a.revenuePerMile}` },
-                        ].map(m => (
-                          <div key={m.label} className="p-1.5 rounded-lg bg-slate-900/30 text-center">
-                            <p className="text-xs font-mono font-bold text-white">{m.value}</p>
-                            <p className="text-xs text-slate-500">{m.label}</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="p-2 rounded-lg bg-slate-900/30">
-                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Why This Driver</p>
-                        {a.reasoning.map((r: string, i: number) => (
-                          <p key={i} className="text-xs text-emerald-300 py-0.5">- {r}</p>
-                        ))}
-                      </div>
-
-                      {a.alternativeDrivers.length > 0 && (
-                        <div className="p-2 rounded-lg bg-slate-900/30">
-                          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Alternatives</p>
-                          {a.alternativeDrivers.map((alt: any) => (
-                            <div key={alt.driverId} className="flex items-center justify-between py-0.5">
-                              <span className="text-xs text-slate-300">{alt.name}</span>
-                              <span className="text-xs font-mono text-slate-400">Score: {alt.score}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+        <div className={cn("rounded-xl border p-5", cB)}>
+          <h3 className={cn("text-sm font-semibold mb-4 flex items-center gap-2", tP)}><Package className="w-4 h-4 text-amber-400" />Pending Loads</h3>
+          {loads.slice(0,8).map((ld:any,i:number) => (<div key={i} className={cn("flex items-center justify-between py-2 border-b last:border-0", L ? "border-slate-100" : "border-white/5")}>
+            <div className="flex items-center gap-2"><MapPin className="w-3 h-3 text-green-400" /><span className={cn("text-xs", tP)}>{ld.origin||"—"}</span><ChevronRight className="w-3 h-3 text-slate-500" /><span className={cn("text-xs", tP)}>{ld.destination||"—"}</span></div>
+            <Badge className={cn("text-xs", ld.priority==="critical"?"bg-red-500/15 text-red-400":"bg-slate-500/15 text-slate-400")}>{ld.priority||"normal"}</Badge></div>))}
+          {loads.length === 0 && <p className={cn("text-sm text-center py-4", tS)}>No pending loads</p>}
         </div>
-      )}
-
-      {/* ── Drivers Tab ── */}
-      {tab === "drivers" && dash && (
-        <div className="space-y-2">
-          {dash.drivers.sort((a: any, b: any) => a.utilizationPct - b.utilizationPct).map((d: any) => (
-            <Card key={d.driverId} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-3">
-                  <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", d.fatigueScore > 70 ? "bg-red-500/10 text-red-400" : d.fatigueScore > 40 ? "bg-amber-500/10 text-amber-400" : "bg-emerald-500/10 text-emerald-400")}>
-                    <User className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-white">{d.driverName}</span>
-                      <Badge variant="outline" className="text-xs text-slate-400">{d.equipmentType}</Badge>
-                      <span className="text-xs text-slate-500"><MapPin className="w-2.5 h-2.5 inline mr-0.5" />{d.currentLocation.city}, {d.currentLocation.state}</span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs">
-                      <span className="text-slate-500">Util: <span className={cn("font-mono font-bold", d.utilizationPct > 80 ? "text-red-400" : d.utilizationPct > 50 ? "text-amber-400" : "text-emerald-400")}>{d.utilizationPct}%</span></span>
-                      <span className="text-slate-500">HOS: <span className="text-white font-mono">{d.hoursAvailable.toFixed(1)}h left</span></span>
-                      <span className="text-slate-500">Loads: <span className="text-white font-mono">{d.loadsThisWeek}</span></span>
-                      <span className="text-slate-500">Revenue: <span className="text-emerald-400 font-mono">${d.revenueThisWeek.toLocaleString()}</span></span>
-                      <span className="text-slate-500">DH: <span className={cn("font-mono", d.deadheadMilesThisWeek > 300 ? "text-red-400" : "text-white")}>{d.deadheadMilesThisWeek} mi</span></span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <Gauge className={cn("w-5 h-5", d.fatigueScore > 70 ? "text-red-400" : d.fatigueScore > 40 ? "text-amber-400" : "text-emerald-400")} />
-                    <p className="text-xs text-slate-500">Fatigue {d.fatigueScore}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className={cn("rounded-xl border p-5 lg:col-span-2", cB)}>
+          <h3 className={cn("text-sm font-semibold mb-4 flex items-center gap-2", tP)}><Zap className="w-4 h-4 text-amber-400" />AI Suggestions</h3>
+          {(d?.assignments||[]).slice(0,5).map((a:any,i:number) => (<div key={i} className={cn("flex items-center justify-between py-3 border-b last:border-0", L ? "border-slate-100" : "border-white/5")}>
+            <div className="flex items-center gap-3"><Truck className="w-4 h-4 text-blue-400" /><div><p className={cn("text-sm font-medium", tP)}>{a.driverName||`Driver ${i+1}`}</p><p className={cn("text-xs", tS)}>{a.loadOrigin||"—"} → {a.loadDestination||"—"}</p></div></div>
+            <div className="flex items-center gap-3"><span className={cn("text-sm font-bold", a.score>=80?"text-green-400":a.score>=60?"text-amber-400":"text-red-400")}>{a.score||0}%</span>
+            <Button size="sm" variant="outline" className="h-7 text-xs">Assign</Button></div></div>))}
+          {(!d?.assignments||d.assignments.length===0) && <div className="text-center py-8"><Brain className={cn("w-10 h-10 mx-auto mb-3", tS)} /><p className={cn("text-sm", tS)}>No suggestions yet</p></div>}
         </div>
-      )}
+      </div>}
+      {tab === "drivers" && <div className={cn("rounded-xl border", cB)}><div className="p-4 border-b border-white/5"><h3 className={cn("text-sm font-semibold", tP)}>Drivers ({drivers.length})</h3></div>
+        {drivers.map((dr:any,i:number) => (<div key={i} className="flex items-center justify-between p-4 border-b border-white/5 hover:bg-white/[0.02]">
+          <div className="flex items-center gap-3"><div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold", L?"bg-blue-100 text-blue-700":"bg-blue-500/15 text-blue-400")}>{(dr.name||"?")[0]}</div>
+          <div><p className={cn("text-sm font-medium", tP)}>{dr.name}</p><p className={cn("text-xs", tS)}>{dr.equipmentType||"General"} • {dr.loadsThisWeek||0} loads</p></div></div>
+          <div className="flex items-center gap-4"><span className={cn("text-sm font-bold", tP)}>{dr.utilizationPct||0}%</span><span className="text-sm font-bold text-green-400">${(dr.revenueThisWeek||0).toLocaleString()}</span></div></div>))}
+        {drivers.length===0 && <div className="p-8 text-center"><p className={cn("text-sm", tS)}>No drivers</p></div>}</div>}
+      {tab === "loads" && <div className={cn("rounded-xl border", cB)}><div className="p-4 border-b border-white/5"><h3 className={cn("text-sm font-semibold", tP)}>Loads ({loads.length})</h3></div>
+        {loads.map((ld:any,i:number) => (<div key={i} className="flex items-center justify-between p-4 border-b border-white/5 hover:bg-white/[0.02]">
+          <div className="flex items-center gap-3"><Package className="w-5 h-5 text-amber-400" /><div><p className={cn("text-sm font-medium", tP)}>{ld.id||`Load ${i+1}`}</p><p className={cn("text-xs", tS)}>{ld.origin||"—"} → {ld.destination||"—"}</p></div></div>
+          <span className="text-sm font-bold text-green-400">${(ld.rate||0).toLocaleString()}</span></div>))}
+        {loads.length===0 && <div className="p-8 text-center"><p className={cn("text-sm", tS)}>No loads</p></div>}</div>}
+      {tab === "assignments" && <div className={cn("rounded-xl border", cB)}><div className="p-4 border-b border-white/5"><h3 className={cn("text-sm font-semibold", tP)}>Assignments ({d?.assignments?.length||0})</h3></div>
+        {(d?.assignments||[]).map((a:any,i:number) => (<div key={i} className="flex items-center justify-between p-4 border-b border-white/5 hover:bg-white/[0.02]">
+          <div className="flex items-center gap-3"><ArrowRightLeft className="w-5 h-5 text-purple-400" /><div><p className={cn("text-sm font-medium", tP)}>{a.driverName||"Driver"} → {a.loadId||"Load"}</p><p className={cn("text-xs", tS)}>{a.reason||"Best match"}</p></div></div>
+          <div className="flex items-center gap-3"><span className={cn("text-sm font-bold", a.score>=80?"text-green-400":"text-amber-400")}>{a.score||0}%</span>
+          <Button size="sm" className="h-7 text-xs bg-purple-600 hover:bg-purple-700"><CheckCircle className="w-3 h-3 mr-1" />Accept</Button></div></div>))}
+        {(!d?.assignments||d.assignments.length===0) && <div className="p-8 text-center"><Brain className={cn("w-10 h-10 mx-auto mb-3", tS)} /><p className={cn("text-sm", tS)}>No assignments yet</p></div>}</div>}
     </div>
   );
 }
