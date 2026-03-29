@@ -96,7 +96,23 @@ export default function SettlementHistory() {
           <Button
             size="sm"
             className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl"
-            onClick={() => toast.info("Downloading settlement report...")}
+            onClick={() => {
+              if (!settlements.length) { toast.error("No settlement data to export"); return; }
+              const headers = "Period,Status,Gross,Deductions,Net,PaymentDate";
+              const rows = settlements.map((s: any) => [
+                s.periodLabel || s.period || "",
+                s.status || s.paymentStatus || "",
+                s.grossAmount || s.gross || "",
+                s.deductionTotal || s.deductions || "",
+                s.netAmount || s.amount || "",
+                s.paidAt || s.paymentDate || "",
+              ].join(",")).join("\n");
+              const blob = new Blob([headers + "\n" + rows], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a"); a.href = url; a.download = "settlement-history.csv"; a.click();
+              URL.revokeObjectURL(url);
+              toast.success("Settlement report downloaded");
+            }}
           >
             <Download className="w-4 h-4 mr-1.5" />
             Export

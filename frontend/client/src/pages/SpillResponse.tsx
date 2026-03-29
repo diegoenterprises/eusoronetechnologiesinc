@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLocation } from "wouter";
 import { toast } from "sonner";
 import {
   AlertTriangle, Phone, Shield, Wind, Eye, Droplets,
@@ -55,6 +56,7 @@ const NRC_THRESHOLDS: { material: string; quantity: string }[] = [
 export default function SpillResponse() {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const [, setLocation] = useLocation();
   const [activePhase, setActivePhase] = useState<ResponsePhase>("immediate");
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [sosActive, setSosActive] = useState(false);
@@ -408,7 +410,7 @@ export default function SpillResponse() {
 
             <Button
               className="w-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260DD] hover:to-[#A801DD] text-white border-0 rounded-xl h-11"
-              onClick={() => toast.info("Opening incident report form...")}
+              onClick={() => setLocation("/hazmat/incident-report")}
             >
               <FileText className="w-4 h-4 mr-2" />
               Start Incident Report

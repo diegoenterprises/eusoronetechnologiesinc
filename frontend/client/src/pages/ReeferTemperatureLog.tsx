@@ -113,7 +113,23 @@ export default function ReeferTemperatureLog() {
             size="sm"
             variant="outline"
             className={cn("rounded-xl gap-1.5 text-xs", isLight ? "border-slate-200" : "border-slate-700")}
-            onClick={() => toast.success("Temperature log exported")}
+            onClick={() => {
+              const exportRows: any[] = [];
+              Object.entries(latestByZone).forEach(([zone, r]: [string, any]) => {
+                exportRows.push({ Zone: zone, TempF: r?.tempF ?? "", Timestamp: r?.createdAt || r?.timestamp || "", Status: r?.inRange ? "In Range" : "Excursion" });
+              });
+              hourlyAvgs.forEach((h) => {
+                exportRows.push({ Zone: "All", TempF: h.avg.toFixed(1), Timestamp: `Hour ${h.hour}`, Status: "Hourly Avg" });
+              });
+              if (!exportRows.length) { toast.error("No temperature data to export"); return; }
+              const headers = Object.keys(exportRows[0]).join(",");
+              const csv = exportRows.map((r) => Object.values(r).join(",")).join("\n");
+              const blob = new Blob([headers + "\n" + csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a"); a.href = url; a.download = "reefer-temperature-log.csv"; a.click();
+              URL.revokeObjectURL(url);
+              toast.success("Temperature log exported");
+            }}
           >
             <Download className="w-3.5 h-3.5" /> Export
           </Button>

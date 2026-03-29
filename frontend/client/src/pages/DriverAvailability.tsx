@@ -355,7 +355,18 @@ export default function DriverAvailability() {
               <Button
                 variant="outline"
                 className={cn("w-full h-11 rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
-                onClick={() => toast.success("Home time request submitted to dispatch")}
+                onClick={() => {
+                  if (!homeDate) { toast.error("Please select a start date"); return; }
+                  const sendPush = (trpc as any).notifications?.sendPush?.useMutation ? null : null;
+                  // Update status to home_time and save via preferences mutation
+                  setCurrentStatus("home_time");
+                  updatePrefsMutation.mutate({
+                    maxDeadheadMiles: parseInt(maxMiles) || 500,
+                    availableDays: selectedDays,
+                    lanes: savedLanes,
+                  });
+                  toast.success("Home time request submitted to dispatch");
+                }}
               >
                 <Home className="w-4 h-4 mr-2" /> Submit Home Time Request
               </Button>

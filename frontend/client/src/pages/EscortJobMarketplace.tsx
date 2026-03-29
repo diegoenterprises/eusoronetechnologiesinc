@@ -342,11 +342,11 @@ export default function EscortJobMarketplace() {
                       )}
                     </div>
                     {job.applied ? (
-                      <Button variant="outline" className="border-cyan-500/30 text-cyan-400 rounded-lg" disabled>
+                      <Button variant="outline" className="border-cyan-500/30 text-cyan-400 rounded-lg" disabled title="You have already applied">
                         <CheckCircle className="w-4 h-4 mr-2" />Applied
                       </Button>
                     ) : job.urgency === "filled" ? (
-                      <Button variant="outline" className="border-slate-600 text-slate-500 rounded-lg" disabled>
+                      <Button variant="outline" className="border-slate-600 text-slate-500 rounded-lg" disabled title="This position has been filled">
                         Filled
                       </Button>
                     ) : (

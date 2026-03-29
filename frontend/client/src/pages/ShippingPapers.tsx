@@ -105,7 +105,7 @@ export default function ShippingPapers() {
             variant="outline"
             size="sm"
             className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
-            onClick={() => toast.info("Preparing print-ready shipping papers...")}
+            onClick={() => window.print()}
           >
             <Printer className="w-4 h-4 mr-1.5" />
             Print
@@ -113,7 +113,24 @@ export default function ShippingPapers() {
           <Button
             size="sm"
             className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl"
-            onClick={() => toast.info("Downloading shipping papers PDF...")}
+            onClick={() => {
+              const rows = shipments.map((s: any) => ({
+                UN: s.unNumber || "",
+                ProperShippingName: s.properShippingName || s.commodity || "",
+                HazardClass: s.hazmatClass || "",
+                PackingGroup: s.packingGroup || "",
+                Quantity: s.quantity || "",
+                EmergencyContact: s.emergencyPhone || "",
+              }));
+              if (!rows.length) { toast.error("No shipping paper data to download"); return; }
+              const headers = Object.keys(rows[0]).join(",");
+              const csv = rows.map((r: any) => Object.values(r).join(",")).join("\n");
+              const blob = new Blob([headers + "\n" + csv], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a"); a.href = url; a.download = "shipping-papers.csv"; a.click();
+              URL.revokeObjectURL(url);
+              toast.success("Shipping papers downloaded");
+            }}
           >
             <Download className="w-4 h-4 mr-1.5" />
             Download

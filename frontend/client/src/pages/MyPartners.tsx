@@ -873,7 +873,7 @@ export default function MyPartners() {
                   <UserPlus className="w-3.5 h-3.5 inline mr-1.5" />Send invite above to connect
                 </div>
               ) : (
-                <Button disabled className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm px-6 opacity-30">
+                <Button disabled title="Select a partner first" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm px-6 opacity-30">
                   Add Partner
                 </Button>
               )}

@@ -44,8 +44,10 @@ export default function IntermodalTransfers() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [tab, setTab] = useState("all");
+  const [localStatusOverrides, setLocalStatusOverrides] = useState<Record<number, string>>({});
   const transfersQuery = (trpc as any).intermodal.getTransfers.useQuery({ limit: 50 });
-  const allTransfers: any[] = transfersQuery.data || [];
+  const rawTransfers: any[] = transfersQuery.data || [];
+  const allTransfers = rawTransfers.map((t: any) => localStatusOverrides[t.id] ? { ...t, status: localStatusOverrides[t.id] } : t);
 
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = cn(
@@ -165,14 +167,24 @@ export default function IntermodalTransfers() {
                   </div>
                   {(t.status === "pending" || t.status === "scheduled") && (
                     <div className="mt-3">
-                      <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-xs" onClick={() => toast.success(`Transfer #${t.id} started`)}>
+                      <Button size="sm" className="bg-violet-600 hover:bg-violet-700 text-xs" onClick={() => {
+                        if (window.confirm(`Begin transfer #${t.id}? This will mark it as in progress.`)) {
+                          setLocalStatusOverrides((prev) => ({ ...prev, [t.id]: "in_progress" }));
+                          toast.success(`Transfer #${t.id} started`);
+                        }
+                      }}>
                         <CheckCircle className="w-3 h-3 mr-1" /> Begin Transfer
                       </Button>
                     </div>
                   )}
                   {t.status === "in_progress" && (
                     <div className="mt-3">
-                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs" onClick={() => toast.success(`Transfer #${t.id} completed`)}>
+                      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs" onClick={() => {
+                        if (window.confirm(`Complete transfer #${t.id}? This will mark it as completed.`)) {
+                          setLocalStatusOverrides((prev) => ({ ...prev, [t.id]: "completed" }));
+                          toast.success(`Transfer #${t.id} completed`);
+                        }
+                      }}>
                         <CheckCircle className="w-3 h-3 mr-1" /> Complete Transfer
                       </Button>
                     </div>

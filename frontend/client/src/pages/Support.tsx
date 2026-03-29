@@ -761,7 +761,7 @@ function UserSupportView() {
                     <p className="text-xs text-slate-400">Instant answers, always available</p>
                   </div>
                 </div>
-                <button onClick={() => toast.info("ESANG AI is available via the chat icon in the bottom-right corner")} className="font-bold text-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent hover:opacity-80 transition-opacity cursor-pointer">Chat now →</button>
+                <button onClick={() => setLocation("/messages")} className="font-bold text-lg bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent hover:opacity-80 transition-opacity cursor-pointer">Chat now →</button>
                 <p className="text-xs text-slate-400 mt-1">Compliance, ERG, loads, billing & more</p>
               </CardContent>
             </Card>

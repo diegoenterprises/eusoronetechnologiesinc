@@ -169,7 +169,7 @@ export default function SubscriptionPlan() {
                     ))}
                   </ul>
                   {plan.id === subscription?.plan ? (
-                    <Button disabled className="w-full rounded-lg">Current Plan</Button>
+                    <Button disabled title="You are already on this plan" className="w-full rounded-lg">Current Plan</Button>
                   ) : (
                     <Button
                       className={cn("w-full rounded-lg", plan.price > (subscription?.price ?? 0) ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90" : "bg-slate-600 hover:bg-slate-500")}

@@ -79,7 +79,22 @@ export default function DeductionsBreakdown() {
           <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => walletQuery.refetch?.()}>
             <RefreshCw className="w-4 h-4" />
           </Button>
-          <Button size="sm" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl" onClick={() => toast.info("Downloading deduction report...")}>
+          <Button size="sm" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl" onClick={() => {
+            if (!deductions.length) { toast.error("No deduction data to export"); return; }
+            const headers = "Type,Description,Amount,Category,Date";
+            const rows = deductions.map((d: any) => [
+              d.description || d.type || "",
+              d.notes || d.memo || "",
+              Math.abs(Number(d.amount || 0)).toFixed(2),
+              d.category || "",
+              d.createdAt || d.date || "",
+            ].join(",")).join("\n");
+            const blob = new Blob([headers + "\n" + rows], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = url; a.download = "deductions-breakdown.csv"; a.click();
+            URL.revokeObjectURL(url);
+            toast.success("Deduction report downloaded");
+          }}>
             <Download className="w-4 h-4 mr-1.5" /> Export
           </Button>
         </div>

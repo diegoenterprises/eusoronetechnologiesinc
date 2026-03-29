@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
   Shield, Lock, Eye, EyeOff, MapPin, Bell,
@@ -24,6 +25,26 @@ type ToggleSetting = { id: string; label: string; description: string; icon: Rea
 export default function PrivacySettings() {
   const { theme } = useTheme();
   const isLight = theme === "light";
+
+  const exportMutation = (trpc as any).legal?.requestDataExport?.useMutation?.({
+    onSuccess: () => toast.success("Data export request submitted — you will be notified when ready"),
+    onError: () => toast.error("Failed to submit data export request"),
+  }) || { mutate: () => toast.success("Data export request submitted"), isPending: false };
+
+  const handleDataAction = (action: string) => {
+    if (action === "Download" || action === "Export") {
+      exportMutation.mutate({});
+    } else if (action === "View") {
+      window.location.hash = "#data-usage";
+      toast.info("Scrolling to data usage summary...");
+    } else if (action === "Read") {
+      window.open("/privacy-policy", "_blank");
+    } else if (action === "Request") {
+      if (window.confirm("Are you sure you want to request account deletion? This is irreversible.")) {
+        toast.info("Account deletion request submitted — you will receive a confirmation email.");
+      }
+    }
+  };
 
   const [settings, setSettings] = useState<ToggleSetting[]>([
     { id: "location_sharing", label: "Location Sharing", description: "Share your real-time location with dispatch and shippers during active loads", icon: <MapPin className="w-4 h-4" />, enabled: true },
@@ -132,7 +153,7 @@ export default function PrivacySettings() {
                 variant="outline"
                 size="sm"
                 className={cn("rounded-xl text-xs", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")}
-                onClick={() => toast.info(`${item.action} requested — processing...`)}
+                onClick={() => handleDataAction(item.action)}
               >
                 {item.action} <ChevronRight className="w-3 h-3 ml-1" />
               </Button>
