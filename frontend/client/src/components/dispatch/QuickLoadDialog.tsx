@@ -11,10 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import {
   X, MapPin, Package, DollarSign, Truck, Clock,
-  ChevronDown, ChevronUp, Flame, Plus, Loader2
+  ChevronDown, ChevronUp, Flame, Plus, Loader2, Zap, Globe
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 interface QuickLoadDialogProps {
   open: boolean;
@@ -81,6 +83,30 @@ const US_STATES = [
   "VA","WA","WV","WI","WY"
 ];
 
+const CANADIAN_PROVINCES = ["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"];
+const MEXICAN_STATES = [
+  "AGU","BCN","BCS","CAM","CHP","CHH","COA","COL","DUR","GUA","GRO","HID","JAL",
+  "MEX","MIC","MOR","NAY","NLE","OAX","PUE","QUE","ROO","SLP","SIN","SON","TAB",
+  "TAM","TLA","VER","YUC","ZAC","CDMX"
+];
+
+const ALL_STATES = [...US_STATES, ...CANADIAN_PROVINCES, ...MEXICAN_STATES];
+
+function isCrossBorderState(state: string): boolean {
+  if (!state) return false;
+  const upper = state.toUpperCase();
+  return CANADIAN_PROVINCES.includes(upper) || MEXICAN_STATES.includes(upper);
+}
+
+function detectCrossBorderFromCity(city: string): boolean {
+  if (!city) return false;
+  const lower = city.toLowerCase();
+  return lower.includes("mexico") || lower.includes("canada") || lower.includes("monterrey") ||
+    lower.includes("guadalajara") || lower.includes("tijuana") || lower.includes("juarez") ||
+    lower.includes("toronto") || lower.includes("vancouver") || lower.includes("montreal") ||
+    lower.includes("calgary") || lower.includes("winnipeg");
+}
+
 export default function QuickLoadDialog({ open, onClose, onSubmit, isSubmitting }: QuickLoadDialogProps) {
   const [originCity, setOriginCity] = useState("");
   const [originState, setOriginState] = useState("");
@@ -95,6 +121,40 @@ export default function QuickLoadDialog({ open, onClose, onSubmit, isSubmitting 
 
   const selectedCargo = CARGO_TYPES.find(c => c.value === cargoType);
   const isHazmat = !!(selectedCargo?.hazmat);
+
+  // Cross-border detection
+  const isCrossBorder = isCrossBorderState(originState) || isCrossBorderState(destState) ||
+    detectCrossBorderFromCity(originCity) || detectCrossBorderFromCity(destCity);
+
+  // Pricebook rate lookup via tRPC utils (imperative fetch)
+  const utils = trpc.useUtils();
+  const [rateLookupLoading, setRateLookupLoading] = useState(false);
+
+  const handleAutoRate = async () => {
+    if (!originState || !destState || !cargoType) {
+      toast.info("Fill in origin state, destination state, and cargo type first");
+      return;
+    }
+    setRateLookupLoading(true);
+    try {
+      const result = await (utils as any).pricebook.lookupRate.fetch({
+        originState,
+        destinationState: destState,
+        cargoType,
+      });
+      if (result?.rate) {
+        setRate(String(result.rate));
+        const fscNote = result.fscIncluded ? " (FSC included)" : "";
+        toast.success(`Rate auto-filled: $${result.rate} — matched on ${result.matchLevel}${fscNote}`);
+      } else {
+        toast.info("No pricebook rate found for this lane");
+      }
+    } catch (err) {
+      toast.error("Rate lookup failed — enter rate manually");
+    } finally {
+      setRateLookupLoading(false);
+    }
+  };
 
   const canSubmit = originCity.trim() && originState && destCity.trim() && destState && cargoType && rate;
 
@@ -176,11 +236,11 @@ export default function QuickLoadDialog({ open, onClose, onSubmit, isSubmitting 
                   />
                 </div>
                 <Select value={originState} onValueChange={setOriginState}>
-                  <SelectTrigger className="h-9 text-sm bg-white/[0.04] border-white/[0.08]" aria-label="Origin state">
+                  <SelectTrigger className="h-9 text-sm bg-white/[0.04] border-white/[0.08]" aria-label="Origin state/province">
                     <SelectValue placeholder="State" />
                   </SelectTrigger>
                   <SelectContent>
-                    {US_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {ALL_STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -193,14 +253,20 @@ export default function QuickLoadDialog({ open, onClose, onSubmit, isSubmitting 
                   aria-label="Destination city"
                 />
                 <Select value={destState} onValueChange={setDestState}>
-                  <SelectTrigger className="h-9 text-sm bg-white/[0.04] border-white/[0.08]" aria-label="Destination state">
+                  <SelectTrigger className="h-9 text-sm bg-white/[0.04] border-white/[0.08]" aria-label="Destination state/province">
                     <SelectValue placeholder="State" />
                   </SelectTrigger>
                   <SelectContent>
-                    {US_STATES.map(s => <SelectItem key={`d-${s}`} value={s}>{s}</SelectItem>)}
+                    {ALL_STATES.map(s => <SelectItem key={`d-${s}`} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
+              {isCrossBorder && (
+                <div className="col-span-2 p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs flex items-center gap-2">
+                  <Globe className="w-4 h-4" aria-hidden="true" />
+                  Cross-border load detected — customs documentation will be required
+                </div>
+              )}
             </div>
 
             {/* Field 2: Cargo */}
@@ -238,16 +304,34 @@ export default function QuickLoadDialog({ open, onClose, onSubmit, isSubmitting 
                 <DollarSign className="w-3.5 h-3.5 text-green-400" aria-hidden="true" />
                 Rate <span className="text-red-400">*</span>
               </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">$</span>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  value={rate}
-                  onChange={e => setRate(e.target.value)}
-                  className="h-9 pl-7 text-sm bg-white/[0.04] border-white/[0.08]"
-                  aria-label="Load rate in dollars"
-                />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">$</span>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={rate}
+                    onChange={e => setRate(e.target.value)}
+                    className="h-9 pl-7 text-sm bg-white/[0.04] border-white/[0.08]"
+                    aria-label="Load rate in dollars"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-9 px-2 text-xs border-white/[0.08] hover:bg-cyan-500/10 hover:text-cyan-400 hover:border-cyan-500/30"
+                  disabled={rateLookupLoading || !originState || !destState || !cargoType}
+                  onClick={handleAutoRate}
+                  aria-label="Auto-fill rate from pricebook"
+                >
+                  {rateLookupLoading ? (
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Zap className="w-3 h-3 mr-1" aria-hidden="true" />
+                  )}
+                  Auto Rate
+                </Button>
               </div>
             </div>
 

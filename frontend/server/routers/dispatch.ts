@@ -10,7 +10,7 @@ import { isolatedApprovedProcedure as protectedProcedure, router } from "../_cor
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { requireAccess } from "../services/security/rbac/access-check";
-import { drivers, loads, users, escortAssignments, convoys, companies, vehicles, documents, incidents, railShipments, vesselShipments } from "../../drizzle/schema";
+import { drivers, loads, users, escortAssignments, convoys, companies, vehicles, documents, incidents, railShipments, vesselShipments, settlements } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, isNull, ne } from "drizzle-orm";
 import { emitDispatchEvent, emitDriverStatusChange, emitLoadStatusChange, emitNotification, emitEscortJobAssigned, emitEscortJobAvailable } from "../_core/websocket";
 import { TRPCError } from "@trpc/server";
@@ -806,7 +806,7 @@ export const dispatchRouter = router({
       const loadIdNum = parseInt(input.loadId.replace(/\D/g, '')) || 0;
 
       // Get previous status
-      const [prev] = await db.select({ status: loads.status, loadNumber: loads.loadNumber, driverId: loads.driverId }).from(loads).where(eq(loads.id, loadIdNum)).limit(1);
+      const [prev] = await db.select({ status: loads.status, loadNumber: loads.loadNumber, driverId: loads.driverId, rate: loads.rate, shipperId: loads.shipperId, catalystId: loads.catalystId }).from(loads).where(eq(loads.id, loadIdNum)).limit(1);
       const previousStatus = prev?.status || 'unknown';
 
       // Build updates for the load row
@@ -847,6 +847,45 @@ export const dispatchRouter = router({
         timestamp: new Date().toISOString(),
         updatedBy: String(ctx.user?.id),
       });
+
+      // ── Auto-generate settlement on delivery ──
+      if (input.status === "delivered" || input.status === "complete") {
+        try {
+          const loadRate = Number(prev?.rate) || 0;
+          if (loadRate > 0 && prev) {
+            // Check if settlement already exists (loadLifecycle may have created one)
+            const [existing] = await db.select({ id: settlements.id }).from(settlements).where(eq(settlements.loadId, loadIdNum)).limit(1);
+            if (!existing) {
+              const platformFeePercent = 3.5;
+              const platformFee = loadRate * (platformFeePercent / 100);
+              const carrierPayment = loadRate - platformFee;
+              const carrierId = prev.catalystId || prev.driverId || 0;
+
+              await db.insert(settlements).values({
+                loadId: loadIdNum,
+                carrierId: carrierId || prev.shipperId,
+                shipperId: prev.shipperId,
+                driverId: prev.driverId || null,
+                loadRate: loadRate.toFixed(2),
+                platformFeePercent: platformFeePercent.toString(),
+                platformFeeAmount: platformFee.toFixed(2),
+                carrierPayment: carrierPayment.toFixed(2),
+                accessorialCharges: "0.00",
+                hazmatSurcharge: "0.00",
+                totalShipperCharge: loadRate.toFixed(2),
+                status: "pending",
+              });
+
+              logger.info(`[Dispatch] Auto-settlement created for load ${loadIdNum}: $${loadRate} (carrier: $${carrierPayment.toFixed(2)}, fee: $${platformFee.toFixed(2)})`);
+            } else {
+              logger.info(`[Dispatch] Settlement already exists for load ${loadIdNum} — skipping auto-generation`);
+            }
+          }
+        } catch (e) {
+          logger.warn(`[Dispatch] Auto-settlement failed for load ${loadIdNum}:`, e);
+          // Don't fail the status update — settlement can be created manually
+        }
+      }
 
       return {
         success: true,
