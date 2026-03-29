@@ -8,7 +8,9 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   DollarSign,
@@ -19,6 +21,7 @@ import {
   Calculator,
   AlertTriangle,
   CheckCircle,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -32,6 +35,130 @@ const STATUS_BADGE: Record<string, string> = {
   accruing: "bg-blue-500/20 text-blue-400",
   billed: "bg-purple-500/20 text-purple-400",
 };
+
+function TariffRateLookup({ isLight, cardBg, text, muted }: { isLight: boolean; cardBg: string; text: string; muted: string }) {
+  const [origin, setOrigin] = useState("");
+  const [dest, setDest] = useState("");
+  const [carType, setCarType] = useState("boxcar");
+  const [commodity, setCommodity] = useState("");
+  const [enabled, setEnabled] = useState(false);
+
+  const rateQuery = (trpc as any).railShipments.getTariffRate.useQuery(
+    { originStation: origin, destStation: dest, carType, commodity },
+    { enabled: enabled && !!origin && !!dest && !!commodity }
+  );
+
+  const handleLookup = () => {
+    if (origin && dest && commodity) setEnabled(true);
+  };
+
+  const rate = rateQuery.data;
+  const inputCls = cn(
+    "h-9 text-sm",
+    isLight ? "bg-white border-slate-300" : "bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
+  );
+
+  return (
+    <Card className={cn("border", cardBg)}>
+      <CardHeader>
+        <CardTitle className={cn("flex items-center gap-2", text)}>
+          <Calculator className="w-5 h-5" /> Tariff Rate Lookup
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div>
+            <label className={cn("text-xs font-medium mb-1 block", muted)}>Origin Station</label>
+            <Input placeholder="e.g. CHI" value={origin} onChange={e => { setOrigin(e.target.value); setEnabled(false); }} className={inputCls} />
+          </div>
+          <div>
+            <label className={cn("text-xs font-medium mb-1 block", muted)}>Destination Station</label>
+            <Input placeholder="e.g. LAX" value={dest} onChange={e => { setDest(e.target.value); setEnabled(false); }} className={inputCls} />
+          </div>
+          <div>
+            <label className={cn("text-xs font-medium mb-1 block", muted)}>Car Type</label>
+            <select
+              value={carType}
+              onChange={e => { setCarType(e.target.value); setEnabled(false); }}
+              className={cn("w-full rounded-md border px-3 h-9 text-sm", inputCls)}
+            >
+              <option value="boxcar">Boxcar</option>
+              <option value="hopper">Hopper</option>
+              <option value="tanker">Tank Car</option>
+              <option value="flatcar">Flatcar</option>
+              <option value="gondola">Gondola</option>
+              <option value="refrigerated">Refrigerated</option>
+              <option value="intermodal">Intermodal</option>
+            </select>
+          </div>
+          <div>
+            <label className={cn("text-xs font-medium mb-1 block", muted)}>Commodity</label>
+            <Input placeholder="e.g. grain" value={commodity} onChange={e => { setCommodity(e.target.value); setEnabled(false); }} className={inputCls} />
+          </div>
+        </div>
+        <Button
+          size="sm"
+          onClick={handleLookup}
+          disabled={!origin || !dest || !commodity}
+          className={cn("gap-1.5 mb-4", isLight ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-blue-600/90 hover:bg-blue-600 text-white")}
+        >
+          <Search className="w-3.5 h-3.5" /> Get Rate Quote
+        </Button>
+
+        {rateQuery.isLoading && enabled && (
+          <div className="space-y-3">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-3/4" />
+          </div>
+        )}
+
+        {rate && !rateQuery.isLoading && (
+          <div className={cn("rounded-lg border p-4", isLight ? "border-slate-200 bg-slate-50" : "border-slate-700/50 bg-slate-800/40")}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <div className={cn("text-xs", muted)}>Base Rate</div>
+                <div className={cn("text-lg font-bold", text)}>${Number(rate.baseRate ?? rate.rate ?? 0).toLocaleString()}</div>
+              </div>
+              <div>
+                <div className={cn("text-xs", muted)}>Fuel Surcharge</div>
+                <div className={cn("text-lg font-bold", text)}>${Number(rate.fuelSurcharge ?? rate.fsc ?? 0).toLocaleString()}</div>
+              </div>
+              <div>
+                <div className={cn("text-xs", muted)}>Total Rate</div>
+                <div className={cn("text-lg font-bold text-emerald-500")}>${Number(rate.totalRate ?? rate.total ?? (Number(rate.baseRate ?? rate.rate ?? 0) + Number(rate.fuelSurcharge ?? rate.fsc ?? 0))).toLocaleString()}</div>
+              </div>
+              <div>
+                <div className={cn("text-xs", muted)}>Transit Days</div>
+                <div className={cn("text-lg font-bold", text)}>{rate.transitDays ?? rate.estimatedDays ?? "—"}</div>
+              </div>
+            </div>
+            {(rate.railroad || rate.carrier) && (
+              <div className={cn("mt-3 pt-3 border-t text-sm", isLight ? "border-slate-200" : "border-slate-700/50", muted)}>
+                Railroad: <span className={text}>{rate.railroad || rate.carrier}</span>
+                {rate.tariffNumber && <> &bull; Tariff: <span className={text}>{rate.tariffNumber}</span></>}
+                {rate.effectiveDate && <> &bull; Effective: <span className={text}>{rate.effectiveDate}</span></>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {enabled && !rateQuery.isLoading && !rate && (
+          <div className={cn("text-center py-8", muted)}>
+            <Calculator className="w-10 h-10 mx-auto mb-2 opacity-40" />
+            <p className="text-sm">No rate found for this route. Try different stations or commodity.</p>
+          </div>
+        )}
+
+        {!enabled && (
+          <div className={cn("text-center py-8", muted)}>
+            <Calculator className="w-10 h-10 mx-auto mb-2 opacity-40" />
+            <p className="text-sm">Enter origin, destination, and commodity to look up tariff rates.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function RailFinancial() {
   const { theme } = useTheme();
@@ -85,16 +212,7 @@ export default function RailFinancial() {
         </TabsList>
 
         <TabsContent value="rates">
-          <Card className={cn("border", cardBg)}>
-            <CardHeader><CardTitle className={text}>Rate Quotes</CardTitle></CardHeader>
-            <CardContent>
-              <div className={cn("text-center py-12", muted)}>
-                <Calculator className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p className="text-lg font-medium">No rate quotes yet</p>
-                <p className="text-sm mt-1">Rate quotes will appear here once rail shipments are created.</p>
-              </div>
-            </CardContent>
-          </Card>
+          <TariffRateLookup isLight={isLight} cardBg={cardBg} text={text} muted={muted} />
         </TabsContent>
 
         <TabsContent value="settlements">

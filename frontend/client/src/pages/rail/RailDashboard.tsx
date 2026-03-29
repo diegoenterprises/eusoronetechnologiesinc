@@ -13,7 +13,7 @@ import { trpc } from "@/lib/trpc";
 import {
   TrainFront, Package, MapPin, DollarSign, TrendingUp,
   ArrowUpRight, Clock, CheckCircle, AlertTriangle, Plus,
-  Eye, Users, Gauge, Bell, Zap,
+  Eye, Users, Gauge, Bell, Zap, Shield, Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -54,6 +54,112 @@ const STATUS_COLORS: Record<string, string> = {
   arrived: "bg-teal-500/20 text-teal-400",
   delivered: "bg-green-600/20 text-green-300",
 };
+
+/** Live tracking for in-transit shipments using Class I railroad APIs */
+function LiveTrackingList({ shipments, isLight }: { shipments: any[]; isLight: boolean }) {
+  const active = shipments.filter((s: any) => ["in_transit", "departed"].includes(s.status));
+  if (active.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Radio className={cn("w-10 h-10 mx-auto mb-2", isLight ? "text-slate-300" : "text-slate-600")} />
+        <p className={cn("text-sm", isLight ? "text-slate-400" : "text-slate-500")}>No shipments currently in transit</p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {active.slice(0, 5).map((s: any) => (
+        <LiveTrackRow key={s.id} shipment={s} isLight={isLight} />
+      ))}
+      {active.length > 5 && (
+        <p className={cn("text-xs text-center pt-2", isLight ? "text-slate-400" : "text-slate-500")}>
+          + {active.length - 5} more in transit
+        </p>
+      )}
+    </div>
+  );
+}
+
+function LiveTrackRow({ shipment, isLight }: { shipment: any; isLight: boolean }) {
+  const railroad = shipment.railroad || shipment.carrier || "BNSF";
+  const tracking = trpc.railShipments.liveTrackShipment.useQuery(
+    { railroad, shipmentId: String(shipment.id) },
+    { enabled: !!shipment.id, refetchInterval: 60_000 }
+  );
+  return (
+    <div className={cn(
+      "flex items-center justify-between p-3 rounded-lg border",
+      isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700/50 hover:bg-slate-700/30"
+    )}>
+      <div className="flex items-center gap-3">
+        <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
+        <div>
+          <div className={cn("font-medium text-sm", isLight ? "text-slate-900" : "text-white")}>
+            {shipment.shipmentNumber} — {railroad}
+          </div>
+          <div className={cn("text-xs", isLight ? "text-slate-500" : "text-slate-400")}>
+            {tracking.data?.currentLocation || tracking.data?.lastKnownCity || "Fetching location..."}
+            {tracking.data?.eta ? ` • ETA: ${tracking.data.eta}` : ""}
+          </div>
+        </div>
+      </div>
+      <Badge className={STATUS_COLORS[shipment.status] || "bg-cyan-500/20 text-cyan-400"}>
+        {shipment.status?.replace(/_/g, " ")}
+      </Badge>
+    </div>
+  );
+}
+
+/** FRA Safety Compliance panel */
+function FRASafetySection({ isLight, cardBg }: { isLight: boolean; cardBg: string }) {
+  const fra = trpc.railShipments.getFRASafetyCompliance.useQuery(
+    { railroadCode: "ALL" },
+    { staleTime: 300_000 }
+  );
+  return (
+    <Card className={cn("border", cardBg)}>
+      <CardHeader className="pb-3">
+        <CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-900" : "text-white")}>
+          <Shield className="w-4 h-4 text-emerald-400" /> FRA Safety Compliance
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {fra.isLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-20" />)}
+          </div>
+        ) : fra.data ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <FRAStat label="Safety Score" value={fra.data.safetyScore ?? fra.data.overallScore ?? "N/A"} color="emerald" isLight={isLight} />
+            <FRAStat label="Open Defects" value={fra.data.openDefects ?? fra.data.defectCount ?? 0} color="red" isLight={isLight} />
+            <FRAStat label="Inspections YTD" value={fra.data.inspectionsYTD ?? fra.data.inspectionCount ?? 0} color="blue" isLight={isLight} />
+            <FRAStat label="Compliance Rate" value={`${fra.data.complianceRate ?? fra.data.compliancePct ?? 0}%`} color="amber" isLight={isLight} />
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Shield className={cn("w-10 h-10 mx-auto mb-2", isLight ? "text-slate-300" : "text-slate-600")} />
+            <p className={cn("text-sm", isLight ? "text-slate-400" : "text-slate-500")}>FRA safety data unavailable</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function FRAStat({ label, value, color, isLight }: { label: string; value: string | number; color: string; isLight: boolean }) {
+  const colorMap: Record<string, string> = {
+    emerald: isLight ? "text-emerald-600" : "text-emerald-400",
+    red: isLight ? "text-red-600" : "text-red-400",
+    blue: isLight ? "text-blue-600" : "text-blue-400",
+    amber: isLight ? "text-amber-600" : "text-amber-400",
+  };
+  return (
+    <div className={cn("rounded-lg border p-3", isLight ? "border-slate-200" : "border-slate-700/50")}>
+      <div className={cn("text-xl font-bold", colorMap[color] || (isLight ? "text-slate-900" : "text-white"))}>{value}</div>
+      <div className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>{label}</div>
+    </div>
+  );
+}
 
 export default function RailDashboard() {
   const { t } = useLocale();
@@ -197,6 +303,32 @@ export default function RailDashboard() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Live Tracking — active shipments */}
+      <div className="mt-6">
+        <Card className={cn("border", cardBg)}>
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-900" : "text-white")}>
+              <Radio className="w-4 h-4 text-cyan-400" /> Live Tracking
+            </CardTitle>
+            <Link href="/rail/tracking">
+              <Badge variant="outline" className="cursor-pointer hover:bg-cyan-500/10">Full Map <ArrowUpRight className="w-3 h-3 ml-1" /></Badge>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {shipments.isLoading ? (
+              <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-16" />)}</div>
+            ) : (
+              <LiveTrackingList shipments={shipments.data?.shipments || []} isLight={isLight} />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* FRA Safety Compliance */}
+      <div className="mt-6">
+        <FRASafetySection isLight={isLight} cardBg={cardBg} />
       </div>
     </div>
   );

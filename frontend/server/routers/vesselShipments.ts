@@ -41,6 +41,7 @@ import {
   wallets,
   settlements,
   notifications,
+  certifications,
 } from "../../drizzle/schema";
 
 function generateBookingNumber(): string {
@@ -711,6 +712,46 @@ export const vesselShipmentsRouter = router({
         containersInTransit: containerResult?.count || 0,
         revenue: parseFloat(revenueResult?.total || "0"),
       };
+    }),
+
+  // 18b. getVesselCrew — crew manifest from users with vessel roles in same company
+  getVesselCrew: vesselProcedure
+    .input(z.object({ companyId: z.number().optional(), search: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { crew: [], certifications: [] };
+
+      const vesselRoles = ["VESSEL_SHIPPER","VESSEL_OPERATOR","PORT_MASTER","SHIP_CAPTAIN","VESSEL_BROKER","CUSTOMS_BROKER"] as const;
+      const companyFilter = input.companyId || (ctx as any).user?.companyId;
+
+      let conditions: any[] = [inArray(users.role, vesselRoles as any)];
+      if (companyFilter) conditions.push(eq(users.companyId, companyFilter));
+      if (input.search) conditions.push(sql`(${users.name} LIKE ${'%' + input.search + '%'} OR ${users.email} LIKE ${'%' + input.search + '%'})`);
+
+      const crew = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        phone: users.phone,
+        role: users.role,
+        profilePicture: users.profilePicture,
+        isActive: users.isActive,
+      }).from(users).where(and(...conditions)).limit(100);
+
+      // Get certifications for all crew members
+      const crewIds = crew.map(c => c.id);
+      let certs: any[] = [];
+      if (crewIds.length > 0) {
+        certs = await db.select().from(certifications).where(inArray(certifications.userId, crewIds));
+      }
+
+      const expiringCerts = certs.filter((c: any) => {
+        if (!c.expiryDate) return false;
+        const daysUntil = (new Date(c.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+        return daysUntil > 0 && daysUntil <= 90;
+      });
+
+      return { crew, certifications: certs, expiringCount: expiringCerts.length };
     }),
 
   // 19. getVesselCompliance
