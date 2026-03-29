@@ -151,7 +151,7 @@ export default function AutonomousFleetPage() {
 
       {/* Register Modal */}
       {showRegister && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
           <div className="bg-slate-900 border border-white/[0.08] rounded-xl shadow-2xl w-full max-w-md p-5 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-white flex items-center gap-2"><Bot className="w-4 h-4 text-amber-400" />Register AV</h2>

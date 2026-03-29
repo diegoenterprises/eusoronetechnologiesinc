@@ -532,7 +532,7 @@ export default function DockManagement() {
       {/* ═══ CONFIGURE MODAL ═══ */}
       {showConfig && (
         <Portal>
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowConfig(false)}>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md" onClick={() => setShowConfig(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div role="dialog" aria-modal="true" aria-label="Configure dock" className={cn("w-full max-w-xl rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
@@ -577,7 +577,7 @@ export default function DockManagement() {
       {/* ═══ GENERATE BOL MODAL ═══ */}
       {showBOL && (
         <Portal>
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowBOL(false)}>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md" onClick={() => setShowBOL(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div role="dialog" aria-modal="true" aria-label="Generate bill of lading" className={cn("w-full max-w-2xl rounded-2xl border p-6 space-y-5", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
@@ -708,7 +708,7 @@ export default function DockManagement() {
       {/* ═══ EUSOTICKET RUN TICKET MODAL — Real-World Crude Oil Fields ═══ */}
       {showRunTicket && (
         <Portal>
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowRunTicket(false)}>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md" onClick={() => setShowRunTicket(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div role="dialog" aria-modal="true" aria-label="Run ticket" className={cn("w-full max-w-4xl rounded-2xl border p-6 space-y-4", cell, "bg-white dark:bg-[#0B1120] border-slate-200 dark:border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">

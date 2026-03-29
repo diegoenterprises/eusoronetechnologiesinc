@@ -183,7 +183,7 @@ export default function EmergencyFAB() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9998]"
+            className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9998]"
             onClick={() => setExpanded(false)}
           />
         )}

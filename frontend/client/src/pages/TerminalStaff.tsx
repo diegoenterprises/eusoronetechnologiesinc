@@ -279,7 +279,7 @@ export default function TerminalStaff() {
       {/* Add Staff Modal */}
       {showAdd && (
         <Portal>
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setShowAdd(false)}>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md" onClick={() => setShowAdd(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div role="dialog" aria-modal="true" aria-label="Add staff member" className="border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
             <div className="px-6 pt-6 pb-4">
@@ -412,7 +412,7 @@ export default function TerminalStaff() {
       {/* Edit Staff Modal */}
       {editingStaff && editForm && (
         <Portal>
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => { setEditingStaff(null); setEditForm(null); }}>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md" onClick={() => { setEditingStaff(null); setEditForm(null); }}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div role="dialog" aria-modal="true" aria-label="Edit staff member" className="border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
             <div className="px-6 pt-6 pb-4">

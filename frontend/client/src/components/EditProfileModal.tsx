@@ -127,7 +127,7 @@ export default function EditProfileModal({
 
   return (
     <Portal>
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm overflow-y-auto z-[9999]" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-md overflow-y-auto z-[9999]" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center p-4">
       <Card role="dialog" aria-modal="true" aria-label="Edit profile" className="bg-slate-800 border-slate-700 w-full max-w-2xl" onClick={(e: any) => e.stopPropagation()}>
         {/* Header */}

@@ -1050,7 +1050,7 @@ export default function FacilityPage() {
         const fields = INT_FIELDS[keyModal] || [{ key: "apiKey", label: "API Key", placeholder: "Enter API key", secret: true }];
         return (
           <Portal>
-          <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => setKeyModal(null)}>
+          <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md" onClick={() => setKeyModal(null)}>
             <div className="flex min-h-full items-center justify-center p-4">
             <div role="dialog" aria-modal="true" aria-label="Integration configuration" className="border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl" style={{ background: 'linear-gradient(180deg, #161d35 0%, #0d1224 100%)' }} onClick={(e: any) => e.stopPropagation()}>
               {intg && <div className="h-1 w-full rounded-t-2xl" style={{ background: `linear-gradient(90deg, ${intg.brandFrom}, ${intg.brandTo})` }} />}

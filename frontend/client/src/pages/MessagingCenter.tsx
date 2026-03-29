@@ -546,7 +546,7 @@ export default function MessagingCenter() {
 
       {/* ═══════════ New Conversation Modal (portaled to body) ═══════════ */}
       {showNewConversation && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 99990 }} className="bg-black/60 backdrop-blur-sm flex items-center justify-center" onClick={() => setShowNewConversation(false)}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99990 }} className="bg-black/70 backdrop-blur-md flex items-center justify-center" onClick={() => setShowNewConversation(false)}>
           <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
               <h2 className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">New Conversation</h2>

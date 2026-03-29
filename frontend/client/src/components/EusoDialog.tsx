@@ -71,7 +71,7 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/70 backdrop-blur-md"
         onClick={() => onClose(false)}
       />
 

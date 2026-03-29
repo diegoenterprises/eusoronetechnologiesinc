@@ -395,7 +395,7 @@ export default function TerminalAppointments() {
       {/* Create Modal — 2-Step TAS-Integrated */}
       {showCreate && (
         <Portal>
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={() => { setShowCreate(false); resetForm(); }}>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md" onClick={() => { setShowCreate(false); resetForm(); }}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div role="dialog" aria-modal="true" aria-label="Schedule appointment" className={cn("w-full max-w-2xl p-6 space-y-4", cell, isLight ? "bg-white border-slate-200" : "bg-[#0B1120] border-white/[0.08]")} onClick={e => e.stopPropagation()}>
             {/* Modal Header */}

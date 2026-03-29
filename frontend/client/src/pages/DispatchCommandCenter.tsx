@@ -681,7 +681,7 @@ export default function DispatchCommandCenter() {
 
       {/* ═══ SMART ASSIGN PANEL (GAP-075) ═══ */}
       {showSmartAssign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
           <div className="bg-slate-900 border border-white/[0.08] rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06]">

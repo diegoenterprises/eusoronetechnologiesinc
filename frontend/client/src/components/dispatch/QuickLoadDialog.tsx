@@ -185,7 +185,7 @@ export default function QuickLoadDialog({ open, onClose, onSubmit, isSubmitting 
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md"
         onClick={onClose}
         role="dialog"
         aria-modal="true"

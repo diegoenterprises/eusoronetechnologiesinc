@@ -261,7 +261,7 @@ function UploadModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center p-4">
       <div
         role="dialog" aria-modal="true" aria-label="Upload documents"

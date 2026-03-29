@@ -237,7 +237,7 @@ function HazmatAuthCheckOverlay({ dotNumber, hazmatClass, isLight, onConfirm, on
 
   return (
     <Portal>
-    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md">
       <div className="flex min-h-full items-center justify-center p-4">
       <div role="dialog" aria-modal="true" aria-label="Hazmat authorization check" className={cn(
         "w-full max-w-xl rounded-2xl border p-6",

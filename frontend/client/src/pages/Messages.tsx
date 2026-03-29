@@ -695,7 +695,7 @@ export default function Messages() {
 
       {/* ═══ Payment Modal (Apple Pay / Cash App style) ═══ */}
       {showPaymentModal && selectedConversation && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowPaymentModal(false)}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md overflow-y-auto z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowPaymentModal(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className="p-[1.5px] rounded-2xl w-full max-w-md" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", animation: "eusoDialogScaleIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
           <div role="dialog" aria-modal="true" aria-label="Send payment" className="bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-[0_8px_32px_rgba(20,115,255,0.15)]">
@@ -799,7 +799,7 @@ export default function Messages() {
 
       {/* ═══ New Conversation Modal ═══ */}
       {showNewConversation && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowNewConversation(false)}>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md overflow-y-auto z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowNewConversation(false)}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div className="p-[1.5px] rounded-2xl w-full max-w-lg" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", animation: "eusoDialogScaleIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
           <div role="dialog" aria-modal="true" aria-label="New conversation" className="bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-[0_8px_32px_rgba(20,115,255,0.15)]">

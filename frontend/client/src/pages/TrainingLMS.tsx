@@ -394,7 +394,7 @@ export default function TrainingLMS() {
 
       {/* Share Course Modal */}
       {shareModalOpen && shareCourse && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShareModalOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md" onClick={() => setShareModalOpen(false)}>
           <div className={cn("w-full max-w-md rounded-2xl border p-6 space-y-4 shadow-xl", isDark ? "bg-[#111827] border-white/10" : "bg-white border-gray-200")} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className={cn("text-lg font-semibold", textPrimary)}>Share Course</h3>

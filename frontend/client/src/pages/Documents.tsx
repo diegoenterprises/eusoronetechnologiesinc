@@ -190,7 +190,7 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
 
   return (
     <Portal>
-    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md" onClick={onClose}>
       <div className="flex min-h-full items-center justify-center p-4">
       <div role="dialog" aria-modal="true" aria-label="Upload documents" className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Modal header */}

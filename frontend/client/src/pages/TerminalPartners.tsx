@@ -436,7 +436,7 @@ export default function TerminalPartners() {
       {/* Add Partner Modal */}
       {showAddModal && (
         <Portal>
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}>
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-black/70 backdrop-blur-md" onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}>
           <div className="flex min-h-full items-center justify-center p-4">
           <div role="dialog" aria-modal="true" aria-label="Add supply chain partner" className={cn("w-full max-w-2xl rounded-2xl border shadow-2xl overflow-hidden", isLight ? "bg-white border-slate-200" : "bg-[#12121a] border-white/[0.08]")}>
             {/* Modal Header */}

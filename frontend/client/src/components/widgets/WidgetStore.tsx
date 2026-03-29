@@ -109,7 +109,7 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
   return (
     <div className="fixed inset-0 z-[100] flex">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
 
       {/* Store Panel */}
       <div className="relative ml-auto w-full max-w-2xl h-full bg-slate-900 border-l border-slate-700/50 shadow-2xl flex flex-col overflow-hidden">
