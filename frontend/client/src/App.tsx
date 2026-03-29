@@ -454,6 +454,8 @@ const RailCompliance = lazy(() => import("./pages/rail/RailCompliance"));
 const RailFinancial = lazy(() => import("./pages/rail/RailFinancial"));
 const RailCrew = lazy(() => import("./pages/rail/RailCrew"));
 const RailSafety = lazy(() => import("./pages/rail/RailSafety"));
+const RailConductorDashboard = lazy(() => import("./pages/rail/RailConductorDashboard"));
+const RailBrokerDashboard = lazy(() => import("./pages/rail/RailBrokerDashboard"));
 // ═══ V5 Multi-Modal: Vessel Pages ═══
 const VesselDashboard = lazy(() => import("./pages/vessel/VesselDashboard"));
 const VesselBookingCreate = lazy(() => import("./pages/vessel/VesselBookingCreate"));
@@ -468,6 +470,8 @@ const VesselCompliance = lazy(() => import("./pages/vessel/VesselCompliance"));
 const VesselFinancial = lazy(() => import("./pages/vessel/VesselFinancial"));
 const VesselCrew = lazy(() => import("./pages/vessel/VesselCrew"));
 const VesselSafety = lazy(() => import("./pages/vessel/VesselSafety"));
+const ShipCaptainDashboard = lazy(() => import("./pages/vessel/ShipCaptainDashboard"));
+const PortMasterDashboard = lazy(() => import("./pages/vessel/PortMasterDashboard"));
 // ═══ V5 Multi-Modal: Intermodal Pages ═══
 const IntermodalDashboard = lazy(() => import("./pages/intermodal/IntermodalDashboard"));
 const IntermodalShipmentCreate = lazy(() => import("./pages/intermodal/IntermodalShipmentCreate"));
@@ -1068,6 +1072,8 @@ function Router() {
       {/* ============================================ */}
       <Route path={"/rail/dashboard"} component={guard(RAIL, <RailDashboard />)} />
       <Route path={"/rail/engineer/dashboard"} component={guard(["RAIL_ENGINEER", "ADMIN", "SUPER_ADMIN"] as UserRole[], <RailEngineerDashboard />)} />
+      <Route path={"/rail/conductor/dashboard"} component={guard(["RAIL_CONDUCTOR", "ADMIN", "SUPER_ADMIN"] as UserRole[], <RailConductorDashboard />)} />
+      <Route path={"/rail/broker/dashboard"} component={guard(["RAIL_BROKER", "ADMIN", "SUPER_ADMIN"] as UserRole[], <RailBrokerDashboard />)} />
       <Route path={"/rail/shipments/create"} component={guard(RAIL_SHIP, <RailShipmentCreate />)} />
       <Route path={"/rail/shipments/completed"} component={guard(RAIL, <RailShipments />)} />
       <Route path={"/rail/shipments/history"} component={guard(RAIL, <RailShipments />)} />
@@ -1147,6 +1153,8 @@ function Router() {
       {/* V5 VESSEL ROUTES */}
       {/* ============================================ */}
       <Route path={"/vessel/dashboard"} component={guard(VESL, <VesselDashboard />)} />
+      <Route path={"/vessel/captain/dashboard"} component={guard(["SHIP_CAPTAIN", "ADMIN", "SUPER_ADMIN"] as UserRole[], <ShipCaptainDashboard />)} />
+      <Route path={"/port/dashboard"} component={guard(["PORT_MASTER", "ADMIN", "SUPER_ADMIN"] as UserRole[], <PortMasterDashboard />)} />
       <Route path={"/vessel/bookings/create"} component={guard(VESL_BOOK, <VesselBookingCreate />)} />
       <Route path={"/vessel/bookings/:id"} component={guard(VESL, <VesselBookingDetail />)} />
       <Route path={"/vessel/bookings"} component={guard(VESL, <VesselBookings />)} />

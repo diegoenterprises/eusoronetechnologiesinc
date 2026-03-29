@@ -30,7 +30,14 @@ export default function Dashboard() {
     if (loading || !user) return;
     // Only redirect if onboarding is already done
     if (!showOnboarding) {
+      // Rail roles → role-specific dashboards
+      if (userRole === 'RAIL_ENGINEER') { navigate('/rail/engineer/dashboard'); return; }
+      if (userRole === 'RAIL_CONDUCTOR') { navigate('/rail/conductor/dashboard'); return; }
+      if (userRole === 'RAIL_BROKER') { navigate('/rail/broker/dashboard'); return; }
       if (RAIL_ROLES.includes(userRole)) { navigate('/rail/dashboard'); return; }
+      // Vessel roles → role-specific dashboards
+      if (userRole === 'SHIP_CAPTAIN') { navigate('/vessel/captain/dashboard'); return; }
+      if (userRole === 'PORT_MASTER') { navigate('/port/dashboard'); return; }
       if (VESSEL_ROLES.includes(userRole)) { navigate('/vessel/dashboard'); return; }
     }
   }, [userRole, loading, showOnboarding]);
