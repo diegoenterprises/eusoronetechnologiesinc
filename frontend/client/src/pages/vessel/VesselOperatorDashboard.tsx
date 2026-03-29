@@ -72,67 +72,13 @@ const AUDIT_STATUS: Record<string, { bg: string; lightBg: string }> = {
   no_deficiency: { bg: "bg-green-500/20 text-green-400", lightBg: "bg-green-100 text-green-700" },
 };
 
-/* ─── Mock Data ─── */
-const MOCK_VESSELS = [
-  { id: "V-001", name: "MSC AURORA", imo: "9839174", type: "Container", flag: "PA", dwt: 199000, teu: 14800, status: "at_sea", voyage: "FA402E", route: "Los Angeles → Shanghai", nextPort: "Shanghai, CN", eta: "2026-04-18", speed: 18.2, heading: 275, cargoUtil: 92, lat: 32.5, lng: -155.2 },
-  { id: "V-002", name: "MAERSK SENTOSA", imo: "9778210", type: "Container", flag: "DK", dwt: 172000, teu: 13200, status: "in_port", voyage: "AE426W", route: "Long Beach → Rotterdam", nextPort: "Long Beach, CA", eta: "—", speed: 0, heading: 0, cargoUtil: 45, lat: 33.76, lng: -118.19 },
-  { id: "V-003", name: "CMA CGM MARCO POLO", imo: "9454412", type: "Container", flag: "FR", dwt: 187000, teu: 16020, status: "at_sea", voyage: "FE418N", route: "Savannah → Hamburg", nextPort: "Hamburg, DE", eta: "2026-04-12", speed: 21.4, heading: 55, cargoUtil: 88, lat: 41.2, lng: -32.8 },
-  { id: "V-004", name: "HAPAG BERLIN", imo: "9870315", type: "Container", flag: "DE", dwt: 150000, teu: 10500, status: "loading", voyage: "SA403S", route: "Houston → Santos", nextPort: "Houston, TX", eta: "—", speed: 0, heading: 0, cargoUtil: 62, lat: 29.73, lng: -95.02 },
-  { id: "V-005", name: "EVERGREEN TRITON", imo: "9811002", type: "Container", flag: "TW", dwt: 221000, teu: 20124, status: "discharging", voyage: "TA421E", route: "Newark → Felixstowe", nextPort: "Felixstowe, UK", eta: "—", speed: 0, heading: 0, cargoUtil: 78, lat: 51.96, lng: 1.35 },
-  { id: "V-006", name: "ONE COMMITMENT", imo: "9756344", type: "Container", flag: "JP", dwt: 145000, teu: 12000, status: "anchored", voyage: "PA405W", route: "Seattle → Busan", nextPort: "Seattle, WA", eta: "2026-04-10", speed: 0, heading: 0, cargoUtil: 0, lat: 47.56, lng: -122.38 },
-  { id: "V-007", name: "ZIM SAMSON", imo: "9867220", type: "Container", flag: "IL", dwt: 118000, teu: 8500, status: "at_sea", voyage: "AT419N", route: "Charleston → Antwerp", nextPort: "Antwerp, BE", eta: "2026-04-03", speed: 19.6, heading: 45, cargoUtil: 85, lat: 44.8, lng: -22.1 },
-  { id: "V-008", name: "COSCO HARMONY", imo: "9783560", type: "Bulk Carrier", flag: "HK", dwt: 208000, teu: 0, status: "dry_dock", voyage: "—", route: "—", nextPort: "Singapore Shipyard", eta: "2026-05-15", speed: 0, heading: 0, cargoUtil: 0, lat: 1.26, lng: 103.80 },
-];
-
-const MOCK_VOYAGES_SCHEDULE = [
-  { vessel: "MSC AURORA", voyage: "FA402E", event: "Arrival", port: "Shanghai, CN", date: "2026-04-18 08:00", berth: "YSG-T4" },
-  { vessel: "ZIM SAMSON", voyage: "AT419N", event: "Arrival", port: "Antwerp, BE", date: "2026-04-03 14:00", berth: "MPET-02" },
-  { vessel: "CMA CGM MARCO POLO", voyage: "FE418N", event: "Arrival", port: "Hamburg, DE", date: "2026-04-12 06:00", berth: "CTH-B3" },
-  { vessel: "MAERSK SENTOSA", voyage: "AE426W", event: "Departure", port: "Long Beach, CA", date: "2026-04-05 16:00", berth: "PierJ" },
-  { vessel: "HAPAG BERLIN", voyage: "SA403S", event: "Departure", port: "Houston, TX", date: "2026-04-08 20:00", berth: "BBT-5" },
-  { vessel: "ONE COMMITMENT", voyage: "PA405W", event: "Departure", port: "Seattle, WA", date: "2026-04-10 12:00", berth: "T46" },
-  { vessel: "EVERGREEN TRITON", voyage: "TA421E", event: "Departure", port: "Felixstowe, UK", date: "2026-04-07 22:00", berth: "T-North" },
-];
-
-const MOCK_BUNKER = [
-  { vessel: "MSC AURORA", fuelType: "VLSFO", capacity: 8500, onboard: 5200, consumptionDay: 180, daysRemaining: 28.9, lastBunker: "Los Angeles", pricePerMT: 580 },
-  { vessel: "CMA CGM MARCO POLO", fuelType: "VLSFO", capacity: 9200, onboard: 4800, consumptionDay: 210, daysRemaining: 22.9, lastBunker: "Savannah", pricePerMT: 595 },
-  { vessel: "ZIM SAMSON", fuelType: "LSMGO", capacity: 5400, onboard: 2100, consumptionDay: 140, daysRemaining: 15.0, lastBunker: "Charleston", pricePerMT: 710 },
-  { vessel: "EVERGREEN TRITON", fuelType: "VLSFO", capacity: 12000, onboard: 7400, consumptionDay: 240, daysRemaining: 30.8, lastBunker: "Newark", pricePerMT: 565 },
-  { vessel: "HAPAG BERLIN", fuelType: "VLSFO", capacity: 6800, onboard: 6100, consumptionDay: 160, daysRemaining: 38.1, lastBunker: "Houston", pricePerMT: 572 },
-  { vessel: "ONE COMMITMENT", fuelType: "LSMGO", capacity: 6200, onboard: 5800, consumptionDay: 155, daysRemaining: 37.4, lastBunker: "Seattle", pricePerMT: 698 },
-];
-
-const MOCK_CREW = [
-  { vessel: "MSC AURORA", totalCrew: 26, officers: 8, ratings: 18, certExpiring30: 2, stcwCompliant: true, medicalExpiring: 1, nationality: "PH/IN/GR", masterName: "Capt. K. Dimitriou" },
-  { vessel: "MAERSK SENTOSA", totalCrew: 24, officers: 7, ratings: 17, certExpiring30: 0, stcwCompliant: true, medicalExpiring: 0, nationality: "DK/PH/PL", masterName: "Capt. J. Andersen" },
-  { vessel: "CMA CGM MARCO POLO", totalCrew: 28, officers: 9, ratings: 19, certExpiring30: 3, stcwCompliant: true, medicalExpiring: 1, nationality: "FR/PH/RO", masterName: "Capt. P. Moreau" },
-  { vessel: "HAPAG BERLIN", totalCrew: 22, officers: 7, ratings: 15, certExpiring30: 1, stcwCompliant: true, medicalExpiring: 0, nationality: "DE/PH/UA", masterName: "Capt. M. Weber" },
-  { vessel: "EVERGREEN TRITON", totalCrew: 30, officers: 10, ratings: 20, certExpiring30: 0, stcwCompliant: true, medicalExpiring: 2, nationality: "TW/PH/MM", masterName: "Capt. C. Lin" },
-  { vessel: "ONE COMMITMENT", totalCrew: 24, officers: 8, ratings: 16, certExpiring30: 1, stcwCompliant: false, medicalExpiring: 0, nationality: "JP/PH/IN", masterName: "Capt. T. Yamamoto" },
-  { vessel: "ZIM SAMSON", totalCrew: 21, officers: 6, ratings: 15, certExpiring30: 0, stcwCompliant: true, medicalExpiring: 0, nationality: "IL/PH/UA", masterName: "Capt. A. Levi" },
-  { vessel: "COSCO HARMONY", totalCrew: 0, officers: 0, ratings: 0, certExpiring30: 0, stcwCompliant: true, medicalExpiring: 0, nationality: "—", masterName: "—" },
-];
-
-const MOCK_REVENUE = [
-  { vessel: "MSC AURORA", mtdRevenue: 2140000, ytdRevenue: 18500000, freightPerTeu: 1450, topLane: "USWC → East Asia" },
-  { vessel: "MAERSK SENTOSA", mtdRevenue: 980000, ytdRevenue: 14200000, freightPerTeu: 1380, topLane: "USWC → North Europe" },
-  { vessel: "CMA CGM MARCO POLO", mtdRevenue: 2680000, ytdRevenue: 22100000, freightPerTeu: 1520, topLane: "USEC → North Europe" },
-  { vessel: "HAPAG BERLIN", mtdRevenue: 1450000, ytdRevenue: 11800000, freightPerTeu: 1260, topLane: "USGC → South America" },
-  { vessel: "EVERGREEN TRITON", mtdRevenue: 3100000, ytdRevenue: 26400000, freightPerTeu: 1580, topLane: "USEC → UK/Ireland" },
-  { vessel: "ZIM SAMSON", mtdRevenue: 1820000, ytdRevenue: 15600000, freightPerTeu: 1410, topLane: "USEC → Mediterranean" },
-];
-
-const MOCK_COMPLIANCE = [
-  { vessel: "MSC AURORA", ismAudit: "passed", ismDate: "2025-11-14", ispsAudit: "passed", ispsDate: "2025-09-22", lastPSC: "no_deficiency", pscDate: "2026-01-18", pscPort: "Yokohama", detentions: 0 },
-  { vessel: "MAERSK SENTOSA", ismAudit: "passed", ismDate: "2025-08-03", ispsAudit: "passed", ispsDate: "2025-10-11", lastPSC: "deficiency", pscDate: "2026-02-04", pscPort: "Singapore", detentions: 0 },
-  { vessel: "CMA CGM MARCO POLO", ismAudit: "passed", ismDate: "2026-01-20", ispsAudit: "passed", ispsDate: "2025-12-05", lastPSC: "no_deficiency", pscDate: "2026-03-10", pscPort: "Rotterdam", detentions: 0 },
-  { vessel: "HAPAG BERLIN", ismAudit: "pending", ismDate: "2026-04-15", ispsAudit: "passed", ispsDate: "2025-07-28", lastPSC: "no_deficiency", pscDate: "2025-11-22", pscPort: "Houston", detentions: 0 },
-  { vessel: "EVERGREEN TRITON", ismAudit: "passed", ismDate: "2025-06-18", ispsAudit: "passed", ispsDate: "2025-11-30", lastPSC: "deficiency", pscDate: "2026-03-25", pscPort: "Felixstowe", detentions: 0 },
-  { vessel: "ONE COMMITMENT", ismAudit: "passed", ismDate: "2025-09-10", ispsAudit: "overdue", ispsDate: "2025-03-15", lastPSC: "no_deficiency", pscDate: "2025-12-08", pscPort: "Busan", detentions: 0 },
-  { vessel: "ZIM SAMSON", ismAudit: "passed", ismDate: "2025-10-05", ispsAudit: "passed", ispsDate: "2026-02-14", lastPSC: "no_deficiency", pscDate: "2026-01-30", pscPort: "Haifa", detentions: 0 },
-  { vessel: "COSCO HARMONY", ismAudit: "in_progress", ismDate: "2026-04-01", ispsAudit: "passed", ispsDate: "2025-05-20", lastPSC: "no_deficiency", pscDate: "2025-08-14", pscPort: "Shanghai", detentions: 0 },
-];
+/* ─── Empty Defaults ─── */
+const EMPTY_VESSELS: any[] = [];
+const EMPTY_VOYAGES_SCHEDULE: any[] = [];
+const EMPTY_BUNKER: any[] = [];
+const EMPTY_CREW: any[] = [];
+const EMPTY_REVENUE: any[] = [];
+const EMPTY_COMPLIANCE: any[] = [];
 
 /* ─── Helpers ─── */
 function fmtCurrency(v: number) {
@@ -156,8 +102,17 @@ export default function VesselOperatorDashboard() {
 
   /* tRPC queries with graceful fallback */
   const fleetQuery = (trpc as any).vesselShipments?.getVesselFleet?.useQuery?.({ limit: 50 }) ?? { data: null, isLoading: false };
+  const crewQuery = (trpc as any).vesselShipments?.getVesselCrew?.useQuery?.() ?? { data: null, isLoading: false };
+  const complianceQuery = (trpc as any).vesselShipments?.getVesselCompliance?.useQuery?.() ?? { data: null, isLoading: false };
+  const financialQuery = (trpc as any).vesselShipments?.getVesselFinancialSummary?.useQuery?.() ?? { data: null, isLoading: false };
+  const berthQuery = (trpc as any).vesselShipments?.getBerthSchedule?.useQuery?.() ?? { data: null, isLoading: false };
 
-  const vessels = fleetQuery.data?.vessels?.length ? fleetQuery.data.vessels : MOCK_VESSELS;
+  const vessels = fleetQuery.data?.vessels?.length ? fleetQuery.data.vessels : EMPTY_VESSELS;
+  const crewData = crewQuery.data?.crew ?? EMPTY_CREW;
+  const revenueData = financialQuery.data?.revenue ?? EMPTY_REVENUE;
+  const complianceData = complianceQuery.data?.compliance ?? EMPTY_COMPLIANCE;
+  const voyageScheduleData = berthQuery.data?.schedule ?? EMPTY_VOYAGES_SCHEDULE;
+  const bunkerData = fleetQuery.data?.bunker ?? EMPTY_BUNKER;
 
   /* KPIs */
   const totalVessels = vessels.length;
@@ -188,12 +143,12 @@ export default function VesselOperatorDashboard() {
     : "bg-slate-800 border-slate-700 text-white placeholder:text-slate-500";
 
   /* Crew totals */
-  const totalCrew = MOCK_CREW.reduce((s, c) => s + c.totalCrew, 0);
-  const certsExpiring = MOCK_CREW.reduce((s, c) => s + c.certExpiring30, 0);
-  const stcwNonCompliant = MOCK_CREW.filter(c => !c.stcwCompliant).length;
+  const totalCrew = crewData.reduce((s, c) => s + c.totalCrew, 0);
+  const certsExpiring = crewData.reduce((s, c) => s + c.certExpiring30, 0);
+  const stcwNonCompliant = crewData.filter(c => !c.stcwCompliant).length;
 
   /* Revenue totals */
-  const totalMtdRevenue = MOCK_REVENUE.reduce((s, r) => s + r.mtdRevenue, 0);
+  const totalMtdRevenue = revenueData.reduce((s, r) => s + r.mtdRevenue, 0);
 
   return (
     <div className={cn("min-h-screen p-6 space-y-6", bg)}>
@@ -318,7 +273,7 @@ export default function VesselOperatorDashboard() {
               </tr>
             </thead>
             <tbody>
-              {MOCK_VOYAGES_SCHEDULE.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((s, i) => (
+              {voyageScheduleData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((s, i) => (
                 <tr key={i} className={cn("border-b", tableBorder, tableHover)}>
                   <td className={cn("px-4 py-3 font-medium", text)}>{s.vessel}</td>
                   <td className={cn("px-4 py-3 font-mono text-xs", isLight ? "text-cyan-700" : "text-cyan-400")}>{s.voyage}</td>
@@ -352,7 +307,7 @@ export default function VesselOperatorDashboard() {
             <h2 className={cn("text-base font-semibold", text)}>Bunker Fuel</h2>
           </div>
           <div className="p-4 space-y-3">
-            {MOCK_BUNKER.map(b => {
+            {bunkerData.map(b => {
               const fillPct = Math.round((b.onboard / b.capacity) * 100);
               const isLow = b.daysRemaining < 20;
               return (
@@ -418,7 +373,7 @@ export default function VesselOperatorDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {MOCK_CREW.filter(c => c.totalCrew > 0).map(c => (
+                {crewData.filter(c => c.totalCrew > 0).map(c => (
                   <tr key={c.vessel} className={cn("border-b", tableBorder, tableHover)}>
                     <td className={cn("px-3 py-2.5 text-xs font-medium", text)}>{c.vessel}</td>
                     <td className={cn("px-3 py-2.5 text-xs font-bold", text)}>{c.totalCrew}</td>
@@ -479,7 +434,7 @@ export default function VesselOperatorDashboard() {
             </span>
           </div>
           <div className="p-4 space-y-3">
-            {MOCK_REVENUE.map(r => (
+            {revenueData.map(r => (
               <div key={r.vessel} className={cn(
                 "p-3 rounded-lg border flex items-center justify-between",
                 isLight ? "bg-white border-slate-100" : "bg-slate-800/40 border-slate-700/40"
@@ -514,7 +469,7 @@ export default function VesselOperatorDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {MOCK_COMPLIANCE.map(c => {
+                {complianceData.map(c => {
                   const ismSt = AUDIT_STATUS[c.ismAudit] || AUDIT_STATUS.pending;
                   const ispsSt = AUDIT_STATUS[c.ispsAudit] || AUDIT_STATUS.pending;
                   const pscSt = AUDIT_STATUS[c.lastPSC] || AUDIT_STATUS.pending;
@@ -545,13 +500,13 @@ export default function VesselOperatorDashboard() {
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className={cn("w-3.5 h-3.5", isLight ? "text-green-600" : "text-green-400")} />
               <span className={cn("text-xs", muted)}>
-                {MOCK_COMPLIANCE.filter(c => c.ismAudit === "passed" && c.ispsAudit === "passed").length}/{MOCK_COMPLIANCE.length} fully compliant
+                {complianceData.filter(c => c.ismAudit === "passed" && c.ispsAudit === "passed").length}/{complianceData.length} fully compliant
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <AlertTriangle className={cn("w-3.5 h-3.5", isLight ? "text-amber-600" : "text-amber-400")} />
               <span className={cn("text-xs", muted)}>
-                {MOCK_COMPLIANCE.filter(c => c.ismAudit === "overdue" || c.ispsAudit === "overdue").length} overdue audits
+                {complianceData.filter(c => c.ismAudit === "overdue" || c.ispsAudit === "overdue").length} overdue audits
               </span>
             </div>
           </div>

@@ -123,7 +123,7 @@ export default function BillOfLading() {
                 </div>
                 {b.status === "issued" && (
                   <div className="mt-3 flex gap-2">
-                    <Button size="sm" variant="outline" className="text-xs" onClick={() => toast.success(`BOL ${b.bolNumber} surrendered`)}>
+                    <Button size="sm" variant="outline" className="text-xs opacity-60 cursor-not-allowed" disabled title="Surrender workflow coming soon">
                       <CheckCircle className="w-3 h-3 mr-1" /> Surrender
                     </Button>
                   </div>

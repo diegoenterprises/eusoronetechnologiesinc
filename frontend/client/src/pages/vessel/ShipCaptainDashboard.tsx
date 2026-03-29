@@ -59,135 +59,100 @@ import {
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 
-/* ──────────────────────── MOCK DATA ──────────────────────── */
-// The dashboard gracefully falls back to rich mock data when the API
-// hasn't returned yet or doesn't have a captain-specific endpoint.
+/* ──────────────────────── EMPTY DEFAULTS ──────────────────────── */
+// Used as fallback when tRPC queries return no data yet.
 
-const MOCK_VESSEL = {
-  name: "M/V EUSORONE VOYAGER",
-  imo: "IMO 9876543",
-  position: { lat: 36.8508, lng: -5.6174, label: "Strait of Gibraltar" },
+const EMPTY_VESSEL = {
+  name: "—",
+  imo: "—",
+  position: { lat: 0, lng: 0, label: "—" },
   status: "At Sea" as const,
-  flag: "Panama",
-  mmsi: "354123456",
+  flag: "—",
+  mmsi: "—",
 };
 
-const MOCK_VOYAGE = {
-  origin: "Rotterdam, Netherlands",
-  originCode: "NLRTM",
-  destination: "Singapore",
-  destinationCode: "SGSIN",
-  etd: "2026-03-25T08:00:00Z",
-  eta: "2026-04-12T14:00:00Z",
-  departedAt: "2026-03-25T09:12:00Z",
-  speedKnots: 18.4,
-  headingDeg: 142,
-  distanceTotal: 8440,
-  distanceRemaining: 6780,
-  weatherSummary: "Moderate seas, SW wind 15kt, partly cloudy",
+const EMPTY_VOYAGE = {
+  origin: "—",
+  originCode: "—",
+  destination: "—",
+  destinationCode: "—",
+  etd: "",
+  eta: "",
+  departedAt: "",
+  speedKnots: 0,
+  headingDeg: 0,
+  distanceTotal: 0,
+  distanceRemaining: 0,
+  weatherSummary: "No weather data available",
 };
 
-const MOCK_NAVIGATION = {
-  nextWaypoint: "Suez Canal Approach — 31.2586N, 32.3152E",
-  waypointEta: "2026-03-31T06:00:00Z",
-  draftFore: 11.2,
-  draftAft: 12.8,
-  tidalWindow: "HW 06:42 / LW 13:18 (Suez Roads)",
-  weatherRouting: "Route via Suez optimal. Avoid Mediterranean low-pressure system near Crete. ETA gain: +4hrs.",
+const EMPTY_NAVIGATION = {
+  nextWaypoint: "—",
+  waypointEta: "",
+  draftFore: 0,
+  draftAft: 0,
+  tidalWindow: "—",
+  weatherRouting: "No routing data available.",
 };
 
-const MOCK_CARGO = {
-  totalContainers: 4218,
-  loaded: 3894,
-  empty: 282,
-  reefer: 42,
-  hazmat: [
-    { imdg: "3", label: "Flammable Liquids", count: 18 },
-    { imdg: "8", label: "Corrosives", count: 7 },
-    { imdg: "2.1", label: "Flammable Gas", count: 3 },
-  ],
-  totalWeight: 52480,
+const EMPTY_CARGO = {
+  totalContainers: 0,
+  loaded: 0,
+  empty: 0,
+  reefer: 0,
+  hazmat: [] as { imdg: string; label: string; count: number }[],
+  totalWeight: 0,
   stowageCompliance: "compliant",
-  reeferAlerts: [
-    { container: "MSCU7284561", temp: -17.2, setpoint: -18.0, status: "warning" },
-  ],
+  reeferAlerts: [] as { container: string; temp: number; setpoint: number; status: string }[],
 };
 
-const MOCK_CREW = {
-  totalOnBoard: 24,
+const EMPTY_CREW = {
+  totalOnBoard: 0,
   watches: {
-    bridge: { current: ["Capt. J. Vasquez", "2/O M. Chen"], next: "04:00 — 08:00" },
-    engine: { current: ["C/E R. Petrov", "3/E L. Santos"], next: "04:00 — 08:00" },
-    deck: { current: ["Bosun K. Andersen", "AB T. Williams"], next: "04:00 — 08:00" },
+    bridge: { current: [] as string[], next: "—" },
+    engine: { current: [] as string[], next: "—" },
+    deck: { current: [] as string[], next: "—" },
   },
-  restHourCompliance: 96,
-  nonCompliantCrew: 1,
-  nextDrill: { type: "Fire Drill", date: "2026-03-30T10:00:00Z" },
-  officers: [
-    { rank: "Master", name: "Capt. J. Vasquez" },
-    { rank: "Chief Officer", name: "C/O S. Nakamura" },
-    { rank: "Chief Engineer", name: "C/E R. Petrov" },
-    { rank: "2nd Officer", name: "2/O M. Chen" },
-  ],
+  restHourCompliance: 0,
+  nonCompliantCrew: 0,
+  nextDrill: { type: "—", date: "" },
+  officers: [] as { rank: string; name: string }[],
 };
 
-const MOCK_SAFETY = {
+const EMPTY_SAFETY = {
   ismStatus: "compliant",
   ispsLevel: 1,
-  lastPscResult: "No deficiencies",
-  lastPscDate: "2026-02-14",
-  lastPscPort: "Rotterdam",
+  lastPscResult: "—",
+  lastPscDate: "",
+  lastPscPort: "—",
   drills: {
-    fire: { completed: 3, required: 3, lastDate: "2026-03-15" },
-    abandonShip: { completed: 2, required: 3, lastDate: "2026-03-01" },
-    manOverboard: { completed: 3, required: 3, lastDate: "2026-03-20" },
+    fire: { completed: 0, required: 0, lastDate: "" },
+    abandonShip: { completed: 0, required: 0, lastDate: "" },
+    manOverboard: { completed: 0, required: 0, lastDate: "" },
   },
-  marpol: [
-    { annex: "I", title: "Oil Pollution", status: "compliant" },
-    { annex: "II", title: "Noxious Liquid Substances", status: "compliant" },
-    { annex: "III", title: "Harmful Substances (Packaged)", status: "compliant" },
-    { annex: "IV", title: "Sewage Pollution", status: "compliant" },
-    { annex: "V", title: "Garbage Pollution", status: "warning" },
-    { annex: "VI", title: "Air Pollution (SOx/NOx/GHG)", status: "compliant" },
-  ],
+  marpol: [] as { annex: string; title: string; status: string }[],
 };
 
-const MOCK_WEATHER = {
-  wind: { speed: 15, direction: "SW", beaufort: 4 },
-  waves: { height: 1.8, period: 7 },
-  visibility: "Good (>10 nm)",
-  temp: 19,
-  pressure: 1013,
-  forecast24h: "Wind shifting W 12-18kt, seas 1.5-2.0m, scattered showers expected after 18:00 UTC.",
+const EMPTY_WEATHER = {
+  wind: { speed: 0, direction: "—", beaufort: 0 },
+  waves: { height: 0, period: 0 },
+  visibility: "—",
+  temp: 0,
+  pressure: 0,
+  forecast24h: "No forecast data available.",
   stormWarnings: null as string | null,
 };
 
-const MOCK_LOGS = [
-  { id: 1, time: "2026-03-29T02:00:00Z", entry: "Altered course to 142° to clear fishing fleet.", author: "2/O Chen" },
-  { id: 2, time: "2026-03-28T18:30:00Z", entry: "Completed fire drill. All hands mustered in 4 min 12 sec.", author: "C/O Nakamura" },
-  { id: 3, time: "2026-03-28T14:00:00Z", entry: "Bunkered 850 MT VLSFO at Gibraltar anchorage.", author: "C/E Petrov" },
-  { id: 4, time: "2026-03-28T08:15:00Z", entry: "Visibility reduced to 2nm — fog. Radar watch doubled.", author: "Master" },
-  { id: 5, time: "2026-03-27T22:00:00Z", entry: "Reefer MSCU7284561 temp deviation noted. Monitoring.", author: "C/O Nakamura" },
-];
-
-const MOCK_COMMS = {
-  messages: [
-    { id: 1, from: "Operator — Eusorone Shipping", time: "2026-03-29T01:00:00Z", subject: "Voyage instructions update: ETA Singapore berth window confirmed 12-Apr 14:00-18:00 LT." },
-    { id: 2, from: "Charterer — MSC", time: "2026-03-28T16:00:00Z", subject: "Reefer pre-trip inspection reports requested for units loaded Rotterdam." },
-    { id: 3, from: "Agent — Singapore", time: "2026-03-28T09:00:00Z", subject: "Pilot boarding at Eastern Boarding Ground. ETA confirmation required 48hrs prior." },
-  ],
+const EMPTY_COMMS = {
+  messages: [] as { id: number; from: string; time: string; subject: string }[],
   gmdss: {
-    vhf: "Operational",
-    mfHf: "Operational",
-    satC: "Operational",
-    epirb: "Tested — OK",
-    sart: "Tested — OK",
+    vhf: "—",
+    mfHf: "—",
+    satC: "—",
+    epirb: "—",
+    sart: "—",
   },
-  emergencyContacts: [
-    { role: "DPA (Designated Person Ashore)", name: "A. Rodriguez", phone: "+1 832-555-0199" },
-    { role: "P&I Club — Gard", name: "24hr Emergency", phone: "+47 22 45 34 56" },
-    { role: "MRCC Singapore", name: "Maritime Rescue", phone: "+65 6325 2488" },
-  ],
+  emergencyContacts: [] as { role: string; name: string; phone: string }[],
 };
 
 /* ──────────────────────── HELPERS ──────────────────────── */
@@ -289,15 +254,15 @@ export default function ShipCaptainDashboard() {
   const [logEntry, setLogEntry] = useState("");
 
   // Merge API data with mocks
-  const vessel = dashboardQ.data?.vessel ?? MOCK_VESSEL;
-  const voyage = dashboardQ.data?.voyage ?? MOCK_VOYAGE;
-  const nav = dashboardQ.data?.navigation ?? MOCK_NAVIGATION;
-  const cargo = dashboardQ.data?.cargo ?? MOCK_CARGO;
-  const crew = crewQ.data?.summary ?? MOCK_CREW;
-  const safety = complianceQ.data?.safety ?? MOCK_SAFETY;
-  const weather = dashboardQ.data?.weather ?? MOCK_WEATHER;
-  const logs = dashboardQ.data?.logs ?? MOCK_LOGS;
-  const comms = dashboardQ.data?.communications ?? MOCK_COMMS;
+  const vessel = dashboardQ.data?.vessel ?? EMPTY_VESSEL;
+  const voyage = dashboardQ.data?.voyage ?? EMPTY_VOYAGE;
+  const nav = dashboardQ.data?.navigation ?? EMPTY_NAVIGATION;
+  const cargo = dashboardQ.data?.cargo ?? EMPTY_CARGO;
+  const crew = crewQ.data?.summary ?? EMPTY_CREW;
+  const safety = complianceQ.data?.safety ?? EMPTY_SAFETY;
+  const weather = dashboardQ.data?.weather ?? EMPTY_WEATHER;
+  const logs = dashboardQ.data?.logs ?? ([] as any[]);
+  const comms = dashboardQ.data?.communications ?? EMPTY_COMMS;
 
   const progress = voyageProgress(voyage.distanceTotal, voyage.distanceRemaining);
   const vesselStatus = VESSEL_STATUS_STYLES[vessel.status] ?? VESSEL_STATUS_STYLES["At Sea"];

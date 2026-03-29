@@ -140,82 +140,36 @@ interface RevenueLane {
   avgMargin: number;
 }
 
-/* ──────────────────────── MOCK DATA ──────────────────────── */
+/* ──────────────────────── EMPTY DEFAULTS ──────────────────────── */
+// No mock data — pages show empty states until real data arrives from tRPC.
 
-const BROKER_INFO = {
-  name: "Marcus Delgado",
-  company: "Eusorone Maritime Brokerage",
-  brokerId: "EMB-2024-0847",
-  licenseNo: "FMC-027843",
-  since: "2019",
+const EMPTY_BROKER_INFO = {
+  name: "—",
+  company: "—",
+  brokerId: "—",
+  licenseNo: "—",
+  since: "—",
 };
 
-const PIPELINE_DATA: PipelineItem[] = [
-  { stage: "quote_requested", label: "Quote Requested", count: 23, value: 892400, color: "from-amber-500 to-orange-500", iconColor: "text-amber-400" },
-  { stage: "quoted", label: "Quoted", count: 18, value: 1245000, color: "from-blue-500 to-indigo-500", iconColor: "text-blue-400" },
-  { stage: "booked", label: "Booked", count: 31, value: 2180000, color: "from-emerald-500 to-teal-500", iconColor: "text-emerald-400" },
-  { stage: "in_transit", label: "In Transit", count: 47, value: 4530000, color: "from-purple-500 to-violet-500", iconColor: "text-purple-400" },
-  { stage: "delivered", label: "Delivered", count: 156, value: 12740000, color: "from-green-500 to-lime-500", iconColor: "text-green-400" },
+const EMPTY_PIPELINE: PipelineItem[] = [
+  { stage: "quote_requested", label: "Quote Requested", count: 0, value: 0, color: "from-amber-500 to-orange-500", iconColor: "text-amber-400" },
+  { stage: "quoted", label: "Quoted", count: 0, value: 0, color: "from-blue-500 to-indigo-500", iconColor: "text-blue-400" },
+  { stage: "booked", label: "Booked", count: 0, value: 0, color: "from-emerald-500 to-teal-500", iconColor: "text-emerald-400" },
+  { stage: "in_transit", label: "In Transit", count: 0, value: 0, color: "from-purple-500 to-violet-500", iconColor: "text-purple-400" },
+  { stage: "delivered", label: "Delivered", count: 0, value: 0, color: "from-green-500 to-lime-500", iconColor: "text-green-400" },
 ];
 
-const SHIPPING_RATES: ShippingRate[] = [
-  { carrier: "Maersk", logo: "MK", rate20ft: 1850, rate40ft: 2950, rate40hc: 3150, transitDays: 28, validUntil: "2026-04-15", freeTime: 14, reliability: 94 },
-  { carrier: "MSC", logo: "MS", rate20ft: 1720, rate40ft: 2780, rate40hc: 2980, transitDays: 30, validUntil: "2026-04-12", freeTime: 10, reliability: 89, isBestRate: true },
-  { carrier: "CMA CGM", logo: "CM", rate20ft: 1900, rate40ft: 3020, rate40hc: 3220, transitDays: 26, validUntil: "2026-04-18", freeTime: 14, reliability: 92 },
-  { carrier: "COSCO", logo: "CO", rate20ft: 1680, rate40ft: 2700, rate40hc: 2900, transitDays: 32, validUntil: "2026-04-10", freeTime: 7, reliability: 86 },
-  { carrier: "Hapag-Lloyd", logo: "HL", rate20ft: 1950, rate40ft: 3100, rate40hc: 3300, transitDays: 27, validUntil: "2026-04-20", freeTime: 14, reliability: 96 },
-  { carrier: "ONE", logo: "ON", rate20ft: 1790, rate40ft: 2880, rate40hc: 3080, transitDays: 29, validUntil: "2026-04-14", freeTime: 12, reliability: 91 },
-  { carrier: "Evergreen", logo: "EV", rate20ft: 1760, rate40ft: 2820, rate40hc: 3020, transitDays: 31, validUntil: "2026-04-11", freeTime: 10, reliability: 88 },
-  { carrier: "ZIM", logo: "ZM", rate20ft: 1640, rate40ft: 2650, rate40hc: 2850, transitDays: 34, validUntil: "2026-04-08", freeTime: 7, reliability: 82 },
-];
+const EMPTY_SHIPPING_RATES: ShippingRate[] = [];
+const EMPTY_CARRIER_SAILINGS: CarrierSailing[] = [];
+const EMPTY_BOOKINGS: Booking[] = [];
+const EMPTY_CUSTOMERS: Customer[] = [];
+const EMPTY_REVENUE_LANES: RevenueLane[] = [];
 
-const CARRIER_SAILINGS: CarrierSailing[] = [
-  { id: "S001", carrier: "Maersk", vesselName: "M/V Maersk Emerald", voyage: "MA-426E", pol: "Shanghai (CNSHA)", pod: "Rotterdam (NLRTM)", etd: "2026-04-02", eta: "2026-04-30", transitDays: 28, spaceAvailable: 420, totalCapacity: 2200, cutoffDate: "2026-03-31" },
-  { id: "S002", carrier: "MSC", vesselName: "MSC Splendida", voyage: "MS-891W", pol: "Shanghai (CNSHA)", pod: "Rotterdam (NLRTM)", etd: "2026-04-04", eta: "2026-05-04", transitDays: 30, spaceAvailable: 180, totalCapacity: 2800, cutoffDate: "2026-04-02" },
-  { id: "S003", carrier: "CMA CGM", vesselName: "CMA CGM Antoine", voyage: "CG-334E", pol: "Shanghai (CNSHA)", pod: "Rotterdam (NLRTM)", etd: "2026-04-06", eta: "2026-05-02", transitDays: 26, spaceAvailable: 550, totalCapacity: 2400, cutoffDate: "2026-04-04" },
-  { id: "S004", carrier: "COSCO", vesselName: "COSCO Galaxy", voyage: "CS-112E", pol: "Shanghai (CNSHA)", pod: "Rotterdam (NLRTM)", etd: "2026-04-08", eta: "2026-05-10", transitDays: 32, spaceAvailable: 90, totalCapacity: 1800, cutoffDate: "2026-04-06" },
-  { id: "S005", carrier: "Hapag-Lloyd", vesselName: "Hamburg Express", voyage: "HL-207E", pol: "Shanghai (CNSHA)", pod: "Rotterdam (NLRTM)", etd: "2026-04-10", eta: "2026-05-07", transitDays: 27, spaceAvailable: 320, totalCapacity: 2100, cutoffDate: "2026-04-08" },
-  { id: "S006", carrier: "ONE", vesselName: "ONE Magnificence", voyage: "ON-508E", pol: "Ningbo (CNNGB)", pod: "Long Beach (USLGB)", etd: "2026-04-03", eta: "2026-04-18", transitDays: 15, spaceAvailable: 250, totalCapacity: 2000, cutoffDate: "2026-04-01" },
-  { id: "S007", carrier: "Evergreen", vesselName: "Ever Golden", voyage: "EG-224W", pol: "Busan (KRPUS)", pod: "Los Angeles (USLAX)", etd: "2026-04-05", eta: "2026-04-19", transitDays: 14, spaceAvailable: 380, totalCapacity: 2500, cutoffDate: "2026-04-03" },
-  { id: "S008", carrier: "ZIM", vesselName: "ZIM Toscana", voyage: "ZM-019E", pol: "Haifa (ILHFA)", pod: "Savannah (USSAV)", etd: "2026-04-07", eta: "2026-04-25", transitDays: 18, spaceAvailable: 610, totalCapacity: 1600, cutoffDate: "2026-04-05" },
-];
-
-const MY_BOOKINGS: Booking[] = [
-  { id: "B001", bookingRef: "EMB-2026-4201", shipper: "GlobalTex Industries", carrier: "Maersk", pol: "Shanghai", pod: "Rotterdam", status: "shipped", containerCount: 8, containerSize: "40HC", commodity: "Textiles", value: 184000, etd: "2026-03-15", eta: "2026-04-12", commission: 5520 },
-  { id: "B002", bookingRef: "EMB-2026-4198", shipper: "Pacific Harvest Co", carrier: "CMA CGM", pol: "Ho Chi Minh", pod: "Hamburg", status: "confirmed", containerCount: 12, containerSize: "40RF", commodity: "Frozen Seafood", value: 312000, etd: "2026-04-02", eta: "2026-05-01", commission: 9360 },
-  { id: "B003", bookingRef: "EMB-2026-4195", shipper: "Andean Metals Corp", carrier: "MSC", pol: "Callao", pod: "Antwerp", status: "shipped", containerCount: 20, containerSize: "20GP", commodity: "Copper Cathode", value: 980000, etd: "2026-03-10", eta: "2026-04-08", commission: 29400 },
-  { id: "B004", bookingRef: "EMB-2026-4190", shipper: "EastWind Electronics", carrier: "Hapag-Lloyd", pol: "Shenzhen", pod: "Long Beach", status: "pending", containerCount: 6, containerSize: "40HC", commodity: "Consumer Electronics", value: 456000, etd: "2026-04-10", eta: "2026-04-28", commission: 13680 },
-  { id: "B005", bookingRef: "EMB-2026-4188", shipper: "SugarCane Exports", carrier: "ONE", pol: "Santos", pod: "Jeddah", status: "delivered", containerCount: 30, containerSize: "20GP", commodity: "Raw Sugar", value: 420000, etd: "2026-02-20", eta: "2026-03-18", commission: 12600 },
-  { id: "B006", bookingRef: "EMB-2026-4185", shipper: "Nordic Timber AB", carrier: "Evergreen", pol: "Gothenburg", pod: "Yokohama", status: "shipped", containerCount: 15, containerSize: "40OT", commodity: "Lumber", value: 225000, etd: "2026-03-12", eta: "2026-04-15", commission: 6750 },
-  { id: "B007", bookingRef: "EMB-2026-4180", shipper: "Rhine Chemical GmbH", carrier: "ZIM", pol: "Rotterdam", pod: "Mumbai", status: "confirmed", containerCount: 4, containerSize: "20TK", commodity: "Industrial Chemicals", value: 168000, etd: "2026-04-05", eta: "2026-04-28", commission: 5040 },
-  { id: "B008", bookingRef: "EMB-2026-4176", shipper: "AutoParts Direct", carrier: "COSCO", pol: "Busan", pod: "Savannah", status: "pending", containerCount: 10, containerSize: "40HC", commodity: "Auto Parts", value: 290000, etd: "2026-04-08", eta: "2026-04-26", commission: 8700 },
-];
-
-const CUSTOMERS: Customer[] = [
-  { id: "C001", name: "James Wong", company: "GlobalTex Industries", totalRevenue: 2840000, bookingCount: 47, avgBookingValue: 60425, satisfactionScore: 4.8, lastBooking: "2026-03-28", status: "active", topLane: "CNSHA → NLRTM" },
-  { id: "C002", name: "Maria Santos", company: "Pacific Harvest Co", totalRevenue: 1920000, bookingCount: 28, avgBookingValue: 68571, satisfactionScore: 4.6, lastBooking: "2026-03-25", status: "active", topLane: "VNSGN → DEHAM" },
-  { id: "C003", name: "Roberto Alvarez", company: "Andean Metals Corp", totalRevenue: 4100000, bookingCount: 52, avgBookingValue: 78846, satisfactionScore: 4.9, lastBooking: "2026-03-27", status: "active", topLane: "PECLL → BEANR" },
-  { id: "C004", name: "Li Wei Chen", company: "EastWind Electronics", totalRevenue: 3200000, bookingCount: 38, avgBookingValue: 84210, satisfactionScore: 4.5, lastBooking: "2026-03-22", status: "active", topLane: "CNSZX → USLGB" },
-  { id: "C005", name: "Fatima Al-Rashid", company: "SugarCane Exports", totalRevenue: 1450000, bookingCount: 22, avgBookingValue: 65909, satisfactionScore: 4.7, lastBooking: "2026-03-20", status: "active", topLane: "BRSSZ → SAJED" },
-  { id: "C006", name: "Erik Lindqvist", company: "Nordic Timber AB", totalRevenue: 890000, bookingCount: 15, avgBookingValue: 59333, satisfactionScore: 4.3, lastBooking: "2026-03-12", status: "active", topLane: "SEGOT → JPYOK" },
-  { id: "C007", name: "Hans Mueller", company: "Rhine Chemical GmbH", totalRevenue: 670000, bookingCount: 11, avgBookingValue: 60909, satisfactionScore: 4.4, lastBooking: "2026-03-05", status: "inactive", topLane: "NLRTM → INMUN" },
-  { id: "C008", name: "David Park", company: "AutoParts Direct", totalRevenue: 1100000, bookingCount: 19, avgBookingValue: 57894, satisfactionScore: 4.2, lastBooking: "2026-03-18", status: "active", topLane: "KRPUS → USSAV" },
-];
-
-const REVENUE_LANES: RevenueLane[] = [
-  { lane: "CNSHA → NLRTM", revenue: 4280000, bookings: 89, avgMargin: 3.2 },
-  { lane: "CNSZX → USLGB", revenue: 3650000, bookings: 64, avgMargin: 2.8 },
-  { lane: "PECLL → BEANR", revenue: 2900000, bookings: 42, avgMargin: 3.5 },
-  { lane: "VNSGN → DEHAM", revenue: 2100000, bookings: 38, avgMargin: 3.0 },
-  { lane: "BRSSZ → SAJED", revenue: 1580000, bookings: 25, avgMargin: 2.6 },
-  { lane: "KRPUS → USSAV", revenue: 1200000, bookings: 21, avgMargin: 3.1 },
-];
-
-const FINANCIAL = {
-  commission: { week: 42800, month: 187500, quarter: 524000, year: 2140000 },
-  receivables: { current: 128500, overdue30: 34200, overdue60: 12800, overdue90: 4500 },
-  margins: { avg: 3.1, best: 4.2, worst: 1.8, trend: "up" as const },
-  targets: { monthlyTarget: 250000, monthlyActual: 187500, yearlyTarget: 2500000, yearlyActual: 2140000 },
+const EMPTY_FINANCIAL = {
+  commission: { week: 0, month: 0, quarter: 0, year: 0 },
+  receivables: { current: 0, overdue30: 0, overdue60: 0, overdue90: 0 },
+  margins: { avg: 0, best: 0, worst: 0, trend: "up" as const },
+  targets: { monthlyTarget: 0, monthlyActual: 0, yearlyTarget: 0, yearlyActual: 0 },
 };
 
 /* ──────────────────────── HELPERS ──────────────────────── */
@@ -295,13 +249,22 @@ export default function VesselBrokerDashboard() {
   const [financialTab, setFinancialTab] = useState<"commission" | "receivables" | "lanes" | "margins">("commission");
   const [isLoading, setIsLoading] = useState(false);
 
-  /* ── tRPC queries (graceful fallback to mock) ── */
-  const bookingsQuery = (trpc as any).vesselShipments?.searchVesselBookings?.useQuery?.({}, { enabled: true }) ?? { data: null, isLoading: false };
-  const financialQuery = (trpc as any).vesselShipments?.getVesselFinancialSummary?.useQuery?.({}, { enabled: true }) ?? { data: null, isLoading: false };
+  /* ── tRPC queries ── */
+  const bookingsQuery = (trpc as any).vesselShipments?.getVesselShipments?.useQuery?.({ limit: 50 }) ?? { data: null, isLoading: false };
+  const financialQuery = (trpc as any).vesselShipments?.getVesselFinancialSummary?.useQuery?.({}) ?? { data: null, isLoading: false };
+
+  const brokerInfo = EMPTY_BROKER_INFO;
+  const pipelineData = EMPTY_PIPELINE;
+  const shippingRates = EMPTY_SHIPPING_RATES;
+  const carrierSailings = EMPTY_CARRIER_SAILINGS;
+  const myBookings = bookingsQuery.data?.shipments ?? EMPTY_BOOKINGS;
+  const customers = EMPTY_CUSTOMERS;
+  const revenueLanes = financialQuery.data?.lanes ?? EMPTY_REVENUE_LANES;
+  const financial = financialQuery.data?.financial ?? EMPTY_FINANCIAL;
 
   /* ── Derived data ── */
   const sortedRates = useMemo(() => {
-    const rates = [...SHIPPING_RATES];
+    const rates = [...shippingRates];
     if (rateSortBy === "rate") {
       rates.sort((a, b) => a.rate40hc - b.rate40hc);
     } else if (rateSortBy === "transit") {
@@ -315,7 +278,7 @@ export default function VesselBrokerDashboard() {
   }, [rateSortBy]);
 
   const filteredBookings = useMemo(() => {
-    let bookings = [...MY_BOOKINGS];
+    let bookings = [...myBookings];
     if (bookingFilter !== "all") {
       bookings = bookings.filter((b) => b.status === bookingFilter);
     }
@@ -344,7 +307,7 @@ export default function VesselBrokerDashboard() {
   }, [bookingFilter, activePipelineStage, bookingSearch]);
 
   const sortedCustomers = useMemo(() => {
-    const customers = [...CUSTOMERS];
+    const customers = [...customers];
     if (customerSort === "revenue") customers.sort((a, b) => b.totalRevenue - a.totalRevenue);
     else if (customerSort === "bookings") customers.sort((a, b) => b.bookingCount - a.bookingCount);
     else customers.sort((a, b) => b.satisfactionScore - a.satisfactionScore);
@@ -372,11 +335,11 @@ export default function VesselBrokerDashboard() {
 
   /* ──────────────────────── Quick Stats ──────────────────────── */
   const quickStats = [
-    { label: "Active Bookings", value: "78", icon: <Package className="w-5 h-5" />, color: "text-blue-400", bg: isLight ? "bg-blue-50" : "bg-blue-500/10" },
-    { label: "Pending Quotes", value: "23", icon: <FileText className="w-5 h-5" />, color: "text-amber-400", bg: isLight ? "bg-amber-50" : "bg-amber-500/10" },
-    { label: "Monthly Revenue", value: "$187.5K", icon: <DollarSign className="w-5 h-5" />, color: "text-emerald-400", bg: isLight ? "bg-emerald-50" : "bg-emerald-500/10" },
-    { label: "Commission MTD", value: "$42.8K", icon: <Wallet className="w-5 h-5" />, color: "text-purple-400", bg: isLight ? "bg-purple-50" : "bg-purple-500/10" },
-    { label: "Active Clients", value: "34", icon: <Users className="w-5 h-5" />, color: "text-cyan-400", bg: isLight ? "bg-cyan-50" : "bg-cyan-500/10" },
+    { label: "Active Bookings", value: String(myBookings.filter((b: any) => b.status === "confirmed" || b.status === "shipped").length), icon: <Package className="w-5 h-5" />, color: "text-blue-400", bg: isLight ? "bg-blue-50" : "bg-blue-500/10" },
+    { label: "Pending Quotes", value: String(pipelineData.find(p => p.stage === "quote_requested")?.count ?? 0), icon: <FileText className="w-5 h-5" />, color: "text-amber-400", bg: isLight ? "bg-amber-50" : "bg-amber-500/10" },
+    { label: "Monthly Revenue", value: fmtCurrency(financial.commission.month), icon: <DollarSign className="w-5 h-5" />, color: "text-emerald-400", bg: isLight ? "bg-emerald-50" : "bg-emerald-500/10" },
+    { label: "Commission MTD", value: fmtCurrency(financial.commission.week), icon: <Wallet className="w-5 h-5" />, color: "text-purple-400", bg: isLight ? "bg-purple-50" : "bg-purple-500/10" },
+    { label: "Active Clients", value: String(customers.filter((c: any) => c.status === "active").length), icon: <Users className="w-5 h-5" />, color: "text-cyan-400", bg: isLight ? "bg-cyan-50" : "bg-cyan-500/10" },
   ];
 
   return (
@@ -392,9 +355,9 @@ export default function VesselBrokerDashboard() {
             <div>
               <h1 className={cn("text-2xl font-bold", text)}>Ocean Freight Brokerage</h1>
               <div className="flex items-center gap-3 mt-1">
-                <span className={muted}>{BROKER_INFO.name}</span>
+                <span className={muted}>{brokerInfo.name}</span>
                 <span className={dimmed}>|</span>
-                <span className={muted}>{BROKER_INFO.company}</span>
+                <span className={muted}>{brokerInfo.company}</span>
                 <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-500">
                   FMC Licensed
                 </Badge>
@@ -452,7 +415,7 @@ export default function VesselBrokerDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {PIPELINE_DATA.map((stage, idx) => {
+              {pipelineData.map((stage, idx) => {
                 const isActive = activePipelineStage === stage.stage;
                 return (
                   <button
@@ -468,7 +431,7 @@ export default function VesselBrokerDashboard() {
                     )}
                   >
                     {/* stage connector arrow */}
-                    {idx < PIPELINE_DATA.length - 1 && (
+                    {idx < pipelineData.length - 1 && (
                       <div className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 z-10">
                         <ChevronRight className={cn("w-5 h-5", dimmed)} />
                       </div>
@@ -494,13 +457,13 @@ export default function VesselBrokerDashboard() {
                 <div>
                   <span className={cn("text-xs", muted)}>Total Pipeline Value</span>
                   <p className={cn("text-lg font-bold", text)}>
-                    {fmtCurrency(PIPELINE_DATA.reduce((s, p) => s + p.value, 0))}
+                    {fmtCurrency(pipelineData.reduce((s, p) => s + p.value, 0))}
                   </p>
                 </div>
                 <div>
                   <span className={cn("text-xs", muted)}>Total Bookings</span>
                   <p className={cn("text-lg font-bold", text)}>
-                    {PIPELINE_DATA.reduce((s, p) => s + p.count, 0)}
+                    {pipelineData.reduce((s, p) => s + p.count, 0)}
                   </p>
                 </div>
                 <div>
@@ -691,12 +654,12 @@ export default function VesselBrokerDashboard() {
                   <Calendar className="w-5 h-5 text-blue-500" />
                   <CardTitle className={cn("text-lg", text)}>Carrier Schedules</CardTitle>
                 </div>
-                <span className={cn("text-xs", muted)}>{CARRIER_SAILINGS.length} upcoming sailings</span>
+                <span className={cn("text-xs", muted)}>{carrierSailings.length} upcoming sailings</span>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 max-h-[560px] overflow-y-auto pr-1">
-                {CARRIER_SAILINGS.map((sailing) => {
+                {carrierSailings.map((sailing) => {
                   const spacePercent = (sailing.spaceAvailable / sailing.totalCapacity) * 100;
                   const spaceLow = spacePercent < 15;
                   const spaceMedium = spacePercent < 30;
@@ -916,7 +879,7 @@ export default function VesselBrokerDashboard() {
           </CardContent>
         </Card>
 
-        {/* ═══════════════════ CUSTOMER PORTFOLIO + FINANCIAL ═══════════════════ */}
+        {/* ═══════════════════ CUSTOMER PORTFOLIO + financial ═══════════════════ */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
           {/* ── Customer Portfolio ── */}
@@ -1070,10 +1033,10 @@ export default function VesselBrokerDashboard() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     {([
-                      { label: "This Week", value: FINANCIAL.commission.week, icon: <Clock className="w-4 h-4" />, color: "text-blue-400", trend: "+8.2%" },
-                      { label: "This Month", value: FINANCIAL.commission.month, icon: <Calendar className="w-4 h-4" />, color: "text-emerald-400", trend: "+15.4%" },
-                      { label: "This Quarter", value: FINANCIAL.commission.quarter, icon: <BarChart3 className="w-4 h-4" />, color: "text-purple-400", trend: "+22.1%" },
-                      { label: "Year to Date", value: FINANCIAL.commission.year, icon: <TrendingUp className="w-4 h-4" />, color: "text-amber-400", trend: "+31.7%" },
+                      { label: "This Week", value: financial.commission.week, icon: <Clock className="w-4 h-4" />, color: "text-blue-400", trend: "+8.2%" },
+                      { label: "This Month", value: financial.commission.month, icon: <Calendar className="w-4 h-4" />, color: "text-emerald-400", trend: "+15.4%" },
+                      { label: "This Quarter", value: financial.commission.quarter, icon: <BarChart3 className="w-4 h-4" />, color: "text-purple-400", trend: "+22.1%" },
+                      { label: "Year to Date", value: financial.commission.year, icon: <TrendingUp className="w-4 h-4" />, color: "text-amber-400", trend: "+31.7%" },
                     ]).map((item) => (
                       <div
                         key={item.label}
@@ -1100,19 +1063,19 @@ export default function VesselBrokerDashboard() {
                     <div className="flex items-center justify-between mb-2">
                       <span className={cn("text-sm font-medium", text)}>Monthly Target</span>
                       <span className={cn("text-sm font-bold", text)}>
-                        {fmtCurrencyFull(FINANCIAL.targets.monthlyActual)} / {fmtCurrencyFull(FINANCIAL.targets.monthlyTarget)}
+                        {fmtCurrencyFull(financial.targets.monthlyActual)} / {fmtCurrencyFull(financial.targets.monthlyTarget)}
                       </span>
                     </div>
                     <Progress
-                      value={(FINANCIAL.targets.monthlyActual / FINANCIAL.targets.monthlyTarget) * 100}
+                      value={(financial.targets.monthlyActual / financial.targets.monthlyTarget) * 100}
                       className={cn("h-3", isLight ? "bg-slate-100" : "bg-slate-700/50")}
                     />
                     <div className="flex items-center justify-between mt-2">
                       <span className={cn("text-xs", muted)}>
-                        {Math.round((FINANCIAL.targets.monthlyActual / FINANCIAL.targets.monthlyTarget) * 100)}% achieved
+                        {Math.round((financial.targets.monthlyActual / financial.targets.monthlyTarget) * 100)}% achieved
                       </span>
                       <span className={cn("text-xs", muted)}>
-                        {fmtCurrencyFull(FINANCIAL.targets.monthlyTarget - FINANCIAL.targets.monthlyActual)} remaining
+                        {fmtCurrencyFull(financial.targets.monthlyTarget - financial.targets.monthlyActual)} remaining
                       </span>
                     </div>
                   </div>
@@ -1122,16 +1085,16 @@ export default function VesselBrokerDashboard() {
                     <div className="flex items-center justify-between mb-2">
                       <span className={cn("text-sm font-medium", text)}>Yearly Target</span>
                       <span className={cn("text-sm font-bold", text)}>
-                        {fmtCurrency(FINANCIAL.targets.yearlyActual)} / {fmtCurrency(FINANCIAL.targets.yearlyTarget)}
+                        {fmtCurrency(financial.targets.yearlyActual)} / {fmtCurrency(financial.targets.yearlyTarget)}
                       </span>
                     </div>
                     <Progress
-                      value={(FINANCIAL.targets.yearlyActual / FINANCIAL.targets.yearlyTarget) * 100}
+                      value={(financial.targets.yearlyActual / financial.targets.yearlyTarget) * 100}
                       className={cn("h-3", isLight ? "bg-slate-100" : "bg-slate-700/50")}
                     />
                     <div className="flex items-center justify-between mt-2">
                       <span className={cn("text-xs", muted)}>
-                        {Math.round((FINANCIAL.targets.yearlyActual / FINANCIAL.targets.yearlyTarget) * 100)}% achieved
+                        {Math.round((financial.targets.yearlyActual / financial.targets.yearlyTarget) * 100)}% achieved
                       </span>
                       <span className="text-xs text-emerald-500">On track</span>
                     </div>
@@ -1144,10 +1107,10 @@ export default function VesselBrokerDashboard() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     {([
-                      { label: "Current", value: FINANCIAL.receivables.current, color: "text-emerald-400", bgColor: isLight ? "bg-emerald-50" : "bg-emerald-500/10", status: "On time" },
-                      { label: "30+ Days Overdue", value: FINANCIAL.receivables.overdue30, color: "text-amber-400", bgColor: isLight ? "bg-amber-50" : "bg-amber-500/10", status: "Follow up" },
-                      { label: "60+ Days Overdue", value: FINANCIAL.receivables.overdue60, color: "text-orange-400", bgColor: isLight ? "bg-orange-50" : "bg-orange-500/10", status: "Escalated" },
-                      { label: "90+ Days Overdue", value: FINANCIAL.receivables.overdue90, color: "text-red-400", bgColor: isLight ? "bg-red-50" : "bg-red-500/10", status: "Collections" },
+                      { label: "Current", value: financial.receivables.current, color: "text-emerald-400", bgColor: isLight ? "bg-emerald-50" : "bg-emerald-500/10", status: "On time" },
+                      { label: "30+ Days Overdue", value: financial.receivables.overdue30, color: "text-amber-400", bgColor: isLight ? "bg-amber-50" : "bg-amber-500/10", status: "Follow up" },
+                      { label: "60+ Days Overdue", value: financial.receivables.overdue60, color: "text-orange-400", bgColor: isLight ? "bg-orange-50" : "bg-orange-500/10", status: "Escalated" },
+                      { label: "90+ Days Overdue", value: financial.receivables.overdue90, color: "text-red-400", bgColor: isLight ? "bg-red-50" : "bg-red-500/10", status: "Collections" },
                     ]).map((item) => (
                       <div
                         key={item.label}
@@ -1169,26 +1132,26 @@ export default function VesselBrokerDashboard() {
                       <span className={cn("text-sm font-medium", text)}>Total Outstanding</span>
                       <span className={cn("text-xl font-bold", text)}>
                         {fmtCurrencyFull(
-                          FINANCIAL.receivables.current +
-                          FINANCIAL.receivables.overdue30 +
-                          FINANCIAL.receivables.overdue60 +
-                          FINANCIAL.receivables.overdue90
+                          financial.receivables.current +
+                          financial.receivables.overdue30 +
+                          financial.receivables.overdue60 +
+                          financial.receivables.overdue90
                         )}
                       </span>
                     </div>
                     {/* Aging bar */}
                     <div className="flex h-4 rounded-full overflow-hidden">
                       {([
-                        { value: FINANCIAL.receivables.current, color: "bg-emerald-500" },
-                        { value: FINANCIAL.receivables.overdue30, color: "bg-amber-500" },
-                        { value: FINANCIAL.receivables.overdue60, color: "bg-orange-500" },
-                        { value: FINANCIAL.receivables.overdue90, color: "bg-red-500" },
+                        { value: financial.receivables.current, color: "bg-emerald-500" },
+                        { value: financial.receivables.overdue30, color: "bg-amber-500" },
+                        { value: financial.receivables.overdue60, color: "bg-orange-500" },
+                        { value: financial.receivables.overdue90, color: "bg-red-500" },
                       ]).map((seg, i) => {
                         const total =
-                          FINANCIAL.receivables.current +
-                          FINANCIAL.receivables.overdue30 +
-                          FINANCIAL.receivables.overdue60 +
-                          FINANCIAL.receivables.overdue90;
+                          financial.receivables.current +
+                          financial.receivables.overdue30 +
+                          financial.receivables.overdue60 +
+                          financial.receivables.overdue90;
                         return (
                           <div
                             key={i}
@@ -1216,8 +1179,8 @@ export default function VesselBrokerDashboard() {
               {/* Top Revenue Lanes Tab */}
               {financialTab === "lanes" && (
                 <div className="space-y-2">
-                  {REVENUE_LANES.map((lane, idx) => {
-                    const maxRevenue = REVENUE_LANES[0].revenue;
+                  {revenueLanes.map((lane, idx) => {
+                    const maxRevenue = revenueLanes[0].revenue;
                     return (
                       <div
                         key={lane.lane}
@@ -1274,19 +1237,19 @@ export default function VesselBrokerDashboard() {
                       <div>
                         <span className={cn("text-xs", muted)}>Total Lane Revenue</span>
                         <p className={cn("text-lg font-bold", text)}>
-                          {fmtCurrency(REVENUE_LANES.reduce((s, l) => s + l.revenue, 0))}
+                          {fmtCurrency(revenueLanes.reduce((s, l) => s + l.revenue, 0))}
                         </p>
                       </div>
                       <div>
                         <span className={cn("text-xs", muted)}>Total Bookings</span>
                         <p className={cn("text-lg font-bold", text)}>
-                          {REVENUE_LANES.reduce((s, l) => s + l.bookings, 0)}
+                          {revenueLanes.reduce((s, l) => s + l.bookings, 0)}
                         </p>
                       </div>
                       <div>
                         <span className={cn("text-xs", muted)}>Avg Margin</span>
                         <p className="text-lg font-bold text-emerald-500">
-                          {(REVENUE_LANES.reduce((s, l) => s + l.avgMargin, 0) / REVENUE_LANES.length).toFixed(1)}%
+                          {(revenueLanes.reduce((s, l) => s + l.avgMargin, 0) / revenueLanes.length).toFixed(1)}%
                         </p>
                       </div>
                     </div>
@@ -1300,19 +1263,19 @@ export default function VesselBrokerDashboard() {
                   <div className="grid grid-cols-3 gap-3">
                     <div className={cn("rounded-lg p-4 border text-center", isLight ? "border-slate-200" : "border-slate-700/50")}>
                       <span className={cn("text-xs", muted)}>Average Margin</span>
-                      <p className={cn("text-2xl font-bold mt-1", text)}>{FINANCIAL.margins.avg}%</p>
+                      <p className={cn("text-2xl font-bold mt-1", text)}>{financial.margins.avg}%</p>
                       <div className="flex items-center justify-center gap-1 mt-1 text-emerald-500 text-xs">
                         <TrendingUp className="w-3 h-3" /> Trending up
                       </div>
                     </div>
                     <div className={cn("rounded-lg p-4 border text-center", isLight ? "border-slate-200" : "border-slate-700/50")}>
                       <span className={cn("text-xs", muted)}>Best Margin</span>
-                      <p className="text-2xl font-bold mt-1 text-emerald-500">{FINANCIAL.margins.best}%</p>
+                      <p className="text-2xl font-bold mt-1 text-emerald-500">{financial.margins.best}%</p>
                       <span className={cn("text-[10px]", dimmed)}>PECLL - BEANR</span>
                     </div>
                     <div className={cn("rounded-lg p-4 border text-center", isLight ? "border-slate-200" : "border-slate-700/50")}>
                       <span className={cn("text-xs", muted)}>Worst Margin</span>
-                      <p className="text-2xl font-bold mt-1 text-amber-500">{FINANCIAL.margins.worst}%</p>
+                      <p className="text-2xl font-bold mt-1 text-amber-500">{financial.margins.worst}%</p>
                       <span className={cn("text-[10px]", dimmed)}>BRSSZ - SAJED</span>
                     </div>
                   </div>

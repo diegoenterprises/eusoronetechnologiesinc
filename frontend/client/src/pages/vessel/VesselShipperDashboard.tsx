@@ -72,66 +72,13 @@ const CUSTOMS_STATUS: Record<string, { bg: string; lightBg: string }> = {
   released: { bg: "bg-green-500/20 text-green-400", lightBg: "bg-green-100 text-green-700" },
 };
 
-/* ─── Mock Data ─── */
-const MOCK_BOOKINGS = [
-  { id: "BK-240901", bookingRef: "MSKU-2024-09012", pol: "Los Angeles, CA (USLAX)", pod: "Shanghai, CN (CNSHA)", containers: 4, containerType: "40HC", commodity: "Electronics", vessel: "MSC AURORA", voyage: "FA402E", etd: "2026-04-02", eta: "2026-04-18", status: "in_transit", totalCost: 14200 },
-  { id: "BK-240902", bookingRef: "HLCU-2024-09025", pol: "Long Beach, CA (USLGB)", pod: "Rotterdam, NL (NLRTM)", containers: 2, containerType: "20ST", commodity: "Auto Parts", vessel: "MAERSK SENTOSA", voyage: "AE426W", etd: "2026-04-05", eta: "2026-04-25", status: "booking_confirmed", totalCost: 6800 },
-  { id: "BK-240903", bookingRef: "CMAU-2024-08843", pol: "Savannah, GA (USSAV)", pod: "Hamburg, DE (DEHAM)", containers: 6, containerType: "40HC", commodity: "Machinery", vessel: "CMA CGM MARCO POLO", voyage: "FE418N", etd: "2026-03-28", eta: "2026-04-12", status: "departed", totalCost: 22500 },
-  { id: "BK-240904", bookingRef: "EISU-2024-09108", pol: "Houston, TX (USHOU)", pod: "Santos, BR (BRSSZ)", containers: 3, containerType: "40RF", commodity: "Perishables", vessel: "HAPAG BERLIN", voyage: "SA403S", etd: "2026-04-08", eta: "2026-04-22", status: "booking_requested", totalCost: 12600 },
-  { id: "BK-240905", bookingRef: "OOLU-2024-08927", pol: "Newark, NJ (USNYC)", pod: "Felixstowe, UK (GBFXT)", containers: 8, containerType: "40HC", commodity: "Consumer Goods", vessel: "EVERGREEN TRITON", voyage: "TA421E", etd: "2026-03-25", eta: "2026-04-05", status: "arrived", totalCost: 28400 },
-  { id: "BK-240906", bookingRef: "NYKU-2024-09201", pol: "Seattle, WA (USSEA)", pod: "Busan, KR (KRPUS)", containers: 2, containerType: "20ST", commodity: "Chemicals", vessel: "ONE COMMITMENT", voyage: "PA405W", etd: "2026-04-10", eta: "2026-04-28", status: "pending", totalCost: 5200 },
-  { id: "BK-240907", bookingRef: "ZIMU-2024-09045", pol: "Charleston, SC (USCHS)", pod: "Antwerp, BE (BEANR)", containers: 5, containerType: "40HC", commodity: "Textiles", vessel: "ZIM SAMSON", voyage: "AT419N", etd: "2026-03-22", eta: "2026-04-03", status: "customs_hold", totalCost: 18750 },
-];
-
-const MOCK_CONTAINERS = [
-  { number: "MSKU4821093", booking: "BK-240901", size: "40HC", status: "in_transit", vessel: "MSC AURORA", lastEvent: "Loaded on vessel", lastPort: "Los Angeles", eventTime: "2026-04-02 14:30", eta: "2026-04-18" },
-  { number: "MSKU4821094", booking: "BK-240901", size: "40HC", status: "in_transit", vessel: "MSC AURORA", lastEvent: "Departed port", lastPort: "Los Angeles", eventTime: "2026-04-02 18:00", eta: "2026-04-18" },
-  { number: "MSKU4821095", booking: "BK-240901", size: "40HC", status: "in_transit", vessel: "MSC AURORA", lastEvent: "Departed port", lastPort: "Los Angeles", eventTime: "2026-04-02 18:00", eta: "2026-04-18" },
-  { number: "MSKU4821096", booking: "BK-240901", size: "40HC", status: "in_transit", vessel: "MSC AURORA", lastEvent: "Departed port", lastPort: "Los Angeles", eventTime: "2026-04-02 18:00", eta: "2026-04-18" },
-  { number: "CMAU7283641", booking: "BK-240903", size: "40HC", status: "departed", vessel: "CMA CGM MARCO POLO", lastEvent: "Vessel at sea — mid-Atlantic", lastPort: "Savannah", eventTime: "2026-03-29 06:00", eta: "2026-04-12" },
-  { number: "CMAU7283642", booking: "BK-240903", size: "40HC", status: "departed", vessel: "CMA CGM MARCO POLO", lastEvent: "Vessel at sea — mid-Atlantic", lastPort: "Savannah", eventTime: "2026-03-29 06:00", eta: "2026-04-12" },
-  { number: "OOLU9381205", booking: "BK-240905", size: "40HC", status: "arrived", vessel: "EVERGREEN TRITON", lastEvent: "Discharged at port", lastPort: "Felixstowe", eventTime: "2026-04-05 08:00", eta: "—" },
-  { number: "OOLU9381206", booking: "BK-240905", size: "40HC", status: "arrived", vessel: "EVERGREEN TRITON", lastEvent: "Awaiting customs clearance", lastPort: "Felixstowe", eventTime: "2026-04-05 10:30", eta: "—" },
-  { number: "ZIMU6420173", booking: "BK-240907", size: "40HC", status: "customs_hold", vessel: "ZIM SAMSON", lastEvent: "Customs hold — exam required", lastPort: "Antwerp", eventTime: "2026-04-03 14:00", eta: "—" },
-];
-
-const MOCK_RATE_TRENDS = [
-  { lane: "USWC → East Asia", current: 3550, prev: 3800, unit: "per FEU", trend: "down" },
-  { lane: "USEC → North Europe", current: 4200, prev: 3900, unit: "per FEU", trend: "up" },
-  { lane: "USGC → South America", current: 4100, prev: 4300, unit: "per FEU", trend: "down" },
-  { lane: "USEC → Mediterranean", current: 3800, prev: 3600, unit: "per FEU", trend: "up" },
-  { lane: "USWC → SE Asia", current: 2950, prev: 3100, unit: "per FEU", trend: "down" },
-  { lane: "USEC → UK / Ireland", current: 3200, prev: 3050, unit: "per FEU", trend: "up" },
-];
-
-const MOCK_CUSTOMS = [
-  { entry: "ISF-2026-04120", booking: "BK-240901", type: "ISF 10+2", status: "filed", filedDate: "2026-03-30", dueDate: "2026-04-01", filer: "ABC Customs Broker" },
-  { entry: "CE-2026-04121", booking: "BK-240905", type: "Customs Entry", status: "cleared", filedDate: "2026-04-05", dueDate: "2026-04-07", filer: "Pacific Customs" },
-  { entry: "ISF-2026-04122", booking: "BK-240903", type: "ISF 10+2", status: "filed", filedDate: "2026-03-26", dueDate: "2026-03-28", filer: "ABC Customs Broker" },
-  { entry: "CE-2026-04123", booking: "BK-240907", type: "Customs Entry", status: "hold", filedDate: "2026-04-03", dueDate: "2026-04-05", filer: "Atlantic Customs LLC" },
-  { entry: "ISF-2026-04124", booking: "BK-240904", type: "ISF 10+2", status: "pending", filedDate: "", dueDate: "2026-04-06", filer: "Pending assignment" },
-  { entry: "CE-2026-04125", booking: "BK-240905", type: "Exam Notice", status: "exam", filedDate: "2026-04-05", dueDate: "2026-04-08", filer: "Pacific Customs" },
-];
-
-const MOCK_DEMURRAGE = [
-  { container: "OOLU9381205", booking: "BK-240905", port: "Felixstowe", freeTimeExpiry: "2026-04-09", daysUsed: 4, freeDays: 7, dailyRate: 150, accrued: 0, status: "within_free" },
-  { container: "OOLU9381206", booking: "BK-240905", port: "Felixstowe", freeTimeExpiry: "2026-04-09", daysUsed: 4, freeDays: 7, dailyRate: 150, accrued: 0, status: "within_free" },
-  { container: "ZIMU6420173", booking: "BK-240907", port: "Antwerp", freeTimeExpiry: "2026-04-06", daysUsed: 7, freeDays: 5, dailyRate: 175, accrued: 350, status: "accruing" },
-  { container: "OOLU9381207", booking: "BK-240905", port: "Felixstowe", freeTimeExpiry: "2026-04-07", daysUsed: 6, freeDays: 5, dailyRate: 150, accrued: 150, status: "accruing" },
-  { container: "CMAU7283643", booking: "BK-240903", port: "Hamburg", freeTimeExpiry: "2026-04-15", daysUsed: 0, freeDays: 7, dailyRate: 160, accrued: 0, status: "not_started" },
-];
-
-const MOCK_DOCUMENTS = [
-  { id: "DOC-001", name: "Bill of Lading — BK-240901", type: "BOL", booking: "BK-240901", status: "draft", dueDate: "2026-04-03" },
-  { id: "DOC-002", name: "ISF Filing — BK-240901", type: "ISF", booking: "BK-240901", status: "submitted", dueDate: "2026-04-01" },
-  { id: "DOC-003", name: "Commercial Invoice — BK-240903", type: "Invoice", booking: "BK-240903", status: "approved", dueDate: "2026-03-27" },
-  { id: "DOC-004", name: "Packing List — BK-240903", type: "PackingList", booking: "BK-240903", status: "approved", dueDate: "2026-03-27" },
-  { id: "DOC-005", name: "Bill of Lading — BK-240905", type: "BOL", booking: "BK-240905", status: "final", dueDate: "2026-04-02" },
-  { id: "DOC-006", name: "Customs Entry — BK-240907", type: "CustomsEntry", booking: "BK-240907", status: "pending", dueDate: "2026-04-05" },
-  { id: "DOC-007", name: "ISF Filing — BK-240904", type: "ISF", booking: "BK-240904", status: "not_filed", dueDate: "2026-04-06" },
-  { id: "DOC-008", name: "Certificate of Origin — BK-240901", type: "CertOrigin", booking: "BK-240901", status: "submitted", dueDate: "2026-04-03" },
-  { id: "DOC-009", name: "Dangerous Goods Declaration — BK-240906", type: "DGD", booking: "BK-240906", status: "draft", dueDate: "2026-04-08" },
-];
+/* ─── Empty Defaults ─── */
+const EMPTY_BOOKINGS: any[] = [];
+const EMPTY_CONTAINERS: any[] = [];
+const EMPTY_RATE_TRENDS: any[] = [];
+const EMPTY_CUSTOMS: any[] = [];
+const EMPTY_DEMURRAGE: any[] = [];
+const EMPTY_DOCUMENTS: any[] = [];
 
 const DOC_STATUS: Record<string, { bg: string; lightBg: string }> = {
   draft: { bg: "bg-slate-500/20 text-slate-400", lightBg: "bg-slate-100 text-slate-600" },
@@ -165,20 +112,28 @@ export default function VesselShipperDashboard() {
   const [docTab, setDocTab] = useState("all");
   const [bookingFilter, setBookingFilter] = useState("all");
 
-  /* ── tRPC queries (graceful fallback to mock) ── */
+  /* ── tRPC queries ── */
   const dashQuery = (trpc as any).vesselShipments?.getVesselDashboard?.useQuery?.() ?? { data: null, isLoading: false };
   const bookingsQuery = (trpc as any).vesselShipments?.getVesselShipments?.useQuery?.({ limit: 20 }) ?? { data: null, isLoading: false };
+  const containerQuery = (trpc as any).vesselShipments?.getContainerTracking?.useQuery?.() ?? { data: null, isLoading: false };
+  const customsQuery = (trpc as any).vesselShipments?.getCustomsEntries?.useQuery?.() ?? { data: null, isLoading: false };
+  const demurrageQuery = (trpc as any).vesselShipments?.getVesselDemurrage?.useQuery?.() ?? { data: null, isLoading: false };
+  const bolQuery = (trpc as any).vesselShipments?.listBOLs?.useQuery?.({ limit: 50 }) ?? { data: null, isLoading: false };
 
-  /* Merge real + mock data */
+  /* Real data with empty fallbacks */
   const bookings = bookingsQuery.data?.shipments?.length
     ? bookingsQuery.data.shipments
-    : MOCK_BOOKINGS;
+    : EMPTY_BOOKINGS;
+  const containerData = containerQuery.data?.containers ?? EMPTY_CONTAINERS;
+  const customsData = customsQuery.data?.entries ?? EMPTY_CUSTOMS;
+  const demurrageData = demurrageQuery.data?.demurrage ?? EMPTY_DEMURRAGE;
+  const documentsData = bolQuery.data?.documents ?? EMPTY_DOCUMENTS;
 
   /* KPIs */
   const activeBookings = bookings.filter((b: any) =>
     ["booking_requested", "booking_confirmed", "in_transit", "departed"].includes(b.status)
   ).length;
-  const containersInTransit = MOCK_CONTAINERS.filter(c => ["in_transit", "departed"].includes(c.status)).length;
+  const containersInTransit = containerData.filter(c => ["in_transit", "departed"].includes(c.status)).length;
   const monthlySpend = bookings.reduce((s: number, b: any) => s + (b.totalCost || 0), 0);
   const onTimeCount = bookings.filter((b: any) => b.status !== "customs_hold" && b.status !== "cancelled").length;
   const onTimeRate = bookings.length > 0 ? Math.round((onTimeCount / bookings.length) * 100) : 0;
@@ -202,16 +157,16 @@ export default function VesselShipperDashboard() {
 
   /* Filtered documents */
   const filteredDocs = useMemo(() => {
-    if (docTab === "all") return MOCK_DOCUMENTS;
-    if (docTab === "pending") return MOCK_DOCUMENTS.filter(d => ["draft", "pending", "not_filed"].includes(d.status));
-    if (docTab === "submitted") return MOCK_DOCUMENTS.filter(d => d.status === "submitted");
-    if (docTab === "approved") return MOCK_DOCUMENTS.filter(d => ["approved", "final"].includes(d.status));
-    return MOCK_DOCUMENTS;
+    if (docTab === "all") return documentsData;
+    if (docTab === "pending") return documentsData.filter(d => ["draft", "pending", "not_filed"].includes(d.status));
+    if (docTab === "submitted") return documentsData.filter(d => d.status === "submitted");
+    if (docTab === "approved") return documentsData.filter(d => ["approved", "final"].includes(d.status));
+    return documentsData;
   }, [docTab]);
 
   /* Demurrage alerts — sorted by urgency */
   const demurrageAlerts = useMemo(() => {
-    return [...MOCK_DEMURRAGE].sort((a, b) => daysUntil(a.freeTimeExpiry) - daysUntil(b.freeTimeExpiry));
+    return [...demurrageData].sort((a, b) => daysUntil(a.freeTimeExpiry) - daysUntil(b.freeTimeExpiry));
   }, []);
 
   /* ── Theme vars ── */
@@ -276,7 +231,7 @@ export default function VesselShipperDashboard() {
           icon={<Container className="w-5 h-5" />}
           label="Containers in Transit"
           value={containersInTransit}
-          sub={`${MOCK_CONTAINERS.length} total tracked`}
+          sub={`${containerData.length} total tracked`}
           isLight={isLight}
           accent="blue"
         />
@@ -379,7 +334,7 @@ export default function VesselShipperDashboard() {
             <span className={cn("text-xs ml-auto", muted)}>Last 30 days</span>
           </div>
           <div className="p-4 space-y-3">
-            {MOCK_RATE_TRENDS.map(r => {
+            {EMPTY_RATE_TRENDS.map(r => {
               const diff = r.current - r.prev;
               const pct = ((diff / r.prev) * 100).toFixed(1);
               const TrendIcon = diff > 0 ? ArrowUp : diff < 0 ? ArrowDown : Minus;
@@ -415,10 +370,10 @@ export default function VesselShipperDashboard() {
           <div className={cn("px-5 py-4 border-b flex items-center gap-2", tableBorder)}>
             <Container className={cn("w-4 h-4", isLight ? "text-blue-600" : "text-blue-400")} />
             <h2 className={cn("text-base font-semibold", text)}>Container Tracking</h2>
-            <Badge variant="secondary" className="text-xs ml-auto">{MOCK_CONTAINERS.length} tracked</Badge>
+            <Badge variant="secondary" className="text-xs ml-auto">{containerData.length} tracked</Badge>
           </div>
           <div className="p-4 space-y-2 max-h-[420px] overflow-y-auto">
-            {MOCK_CONTAINERS.map(c => {
+            {containerData.map(c => {
               const st = BOOKING_STATUS[c.status] || BOOKING_STATUS.pending;
               return (
                 <div key={c.number} className={cn(
@@ -466,7 +421,7 @@ export default function VesselShipperDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {MOCK_CUSTOMS.map(c => {
+                {customsData.map(c => {
                   const st = CUSTOMS_STATUS[c.status] || CUSTOMS_STATUS.pending;
                   return (
                     <tr key={c.entry} className={cn("border-b", tableBorder, tableHover)}>
@@ -489,13 +444,13 @@ export default function VesselShipperDashboard() {
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className={cn("w-3.5 h-3.5", isLight ? "text-green-600" : "text-green-400")} />
                 <span className={cn("text-xs", muted)}>
-                  {MOCK_CUSTOMS.filter(c => c.status === "cleared" || c.status === "released").length} Cleared
+                  {customsData.filter(c => c.status === "cleared" || c.status === "released").length} Cleared
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <AlertTriangle className={cn("w-3.5 h-3.5", isLight ? "text-red-600" : "text-red-400")} />
                 <span className={cn("text-xs", muted)}>
-                  {MOCK_CUSTOMS.filter(c => c.status === "hold" || c.status === "exam").length} Holds/Exams
+                  {customsData.filter(c => c.status === "hold" || c.status === "exam").length} Holds/Exams
                 </span>
               </div>
             </div>
@@ -507,9 +462,9 @@ export default function VesselShipperDashboard() {
           <div className={cn("px-5 py-4 border-b flex items-center gap-2", tableBorder)}>
             <AlertTriangle className={cn("w-4 h-4", isLight ? "text-amber-600" : "text-amber-400")} />
             <h2 className={cn("text-base font-semibold", text)}>Demurrage Alerts</h2>
-            {MOCK_DEMURRAGE.filter(d => d.status === "accruing").length > 0 && (
+            {demurrageData.filter(d => d.status === "accruing").length > 0 && (
               <Badge className={cn("text-[10px] ml-auto", isLight ? "bg-red-100 text-red-700" : "bg-red-500/20 text-red-400")}>
-                {MOCK_DEMURRAGE.filter(d => d.status === "accruing").length} Accruing
+                {demurrageData.filter(d => d.status === "accruing").length} Accruing
               </Badge>
             )}
           </div>
@@ -638,13 +593,13 @@ export default function VesselShipperDashboard() {
           <div className="flex items-center gap-1.5">
             <AlertTriangle className={cn("w-3.5 h-3.5", isLight ? "text-amber-600" : "text-amber-400")} />
             <span className={cn("text-xs", muted)}>
-              {MOCK_DOCUMENTS.filter(d => ["draft", "pending", "not_filed"].includes(d.status)).length} require action
+              {documentsData.filter(d => ["draft", "pending", "not_filed"].includes(d.status)).length} require action
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className={cn("w-3.5 h-3.5", isLight ? "text-green-600" : "text-green-400")} />
             <span className={cn("text-xs", muted)}>
-              {MOCK_DOCUMENTS.filter(d => ["approved", "final"].includes(d.status)).length} complete
+              {documentsData.filter(d => ["approved", "final"].includes(d.status)).length} complete
             </span>
           </div>
         </div>

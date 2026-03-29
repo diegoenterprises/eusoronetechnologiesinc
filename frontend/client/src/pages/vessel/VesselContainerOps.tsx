@@ -52,42 +52,10 @@ const DEMURRAGE_STATUS: Record<string, { bg: string; lightBg: string }> = {
   disputed: { bg: "bg-amber-500/20 text-amber-400", lightBg: "bg-amber-100 text-amber-700" },
 };
 
-/* ─── Mock Data ─── */
-const MOCK_TRACKING = [
-  { number: "MSKU4821093", size: "40HC", type: "Dry", status: "in_transit", mode: "vessel", vessel: "MSC AURORA", voyage: "FA402E", booking: "BK-240901", origin: "Los Angeles, CA", destination: "Shanghai, CN", lastEvent: "Loaded on vessel — departed LA", lastPort: "Los Angeles", eventTime: "2026-04-02 14:30", eta: "2026-04-18", shipper: "TechCo Inc.", commodity: "Electronics" },
-  { number: "MSKU4821094", size: "40HC", type: "Dry", status: "in_transit", mode: "vessel", vessel: "MSC AURORA", voyage: "FA402E", booking: "BK-240901", origin: "Los Angeles, CA", destination: "Shanghai, CN", lastEvent: "At sea — Pacific crossing", lastPort: "Los Angeles", eventTime: "2026-04-03 08:00", eta: "2026-04-18", shipper: "TechCo Inc.", commodity: "Electronics" },
-  { number: "CMAU7283641", size: "40HC", type: "Dry", status: "in_transit", mode: "vessel", vessel: "CMA CGM MARCO POLO", voyage: "FE418N", booking: "BK-240903", origin: "Savannah, GA", destination: "Hamburg, DE", lastEvent: "Mid-Atlantic transit", lastPort: "Savannah", eventTime: "2026-03-29 06:00", eta: "2026-04-12", shipper: "AmeriMach Corp", commodity: "Machinery" },
-  { number: "OOLU9381205", size: "40HC", type: "Dry", status: "at_port", mode: "truck", vessel: "EVERGREEN TRITON", voyage: "TA421E", booking: "BK-240905", origin: "Newark, NJ", destination: "Felixstowe, UK", lastEvent: "Discharged — awaiting pickup", lastPort: "Felixstowe", eventTime: "2026-04-05 08:00", eta: "—", shipper: "MegaRetail Inc", commodity: "Consumer Goods" },
-  { number: "OOLU9381206", size: "40HC", type: "Dry", status: "customs_hold", mode: "vessel", vessel: "EVERGREEN TRITON", voyage: "TA421E", booking: "BK-240905", origin: "Newark, NJ", destination: "Felixstowe, UK", lastEvent: "Customs exam — document review", lastPort: "Felixstowe", eventTime: "2026-04-05 10:30", eta: "—", shipper: "MegaRetail Inc", commodity: "Consumer Goods" },
-  { number: "ZIMU6420173", size: "40HC", type: "Dry", status: "customs_hold", mode: "vessel", vessel: "ZIM SAMSON", voyage: "AT419N", booking: "BK-240907", origin: "Charleston, SC", destination: "Antwerp, BE", lastEvent: "Customs hold — physical exam required", lastPort: "Antwerp", eventTime: "2026-04-03 14:00", eta: "—", shipper: "SouthernTex", commodity: "Textiles" },
-  { number: "HLCU3928571", size: "20ST", type: "Dry", status: "on_rail", mode: "rail", vessel: "—", voyage: "—", booking: "BK-240910", origin: "Los Angeles, CA", destination: "Chicago, IL", lastEvent: "Rail transit — BNSF intermodal", lastPort: "Barstow", eventTime: "2026-04-04 12:00", eta: "2026-04-07", shipper: "MidwestDist LLC", commodity: "General Cargo" },
-  { number: "EISU5820194", size: "40RF", type: "Reefer", status: "on_vessel", mode: "vessel", vessel: "HAPAG BERLIN", voyage: "SA403S", booking: "BK-240904", origin: "Houston, TX", destination: "Santos, BR", lastEvent: "Loaded — reefer set to -18C", lastPort: "Houston", eventTime: "2026-04-07 16:00", eta: "2026-04-22", shipper: "FreshCargo Int'l", commodity: "Perishables" },
-  { number: "TCLU8401735", size: "20TK", type: "Tank", status: "at_yard", mode: "truck", vessel: "—", voyage: "—", booking: "BK-240912", origin: "Houston, TX", destination: "Houston, TX", lastEvent: "At terminal yard — cleaning scheduled", lastPort: "Houston", eventTime: "2026-04-02 09:00", eta: "—", shipper: "GulfChem Corp", commodity: "Industrial Chemicals" },
-  { number: "NYKU7293815", size: "40HC", type: "Dry", status: "on_truck", mode: "truck", vessel: "—", voyage: "—", booking: "BK-240915", origin: "Newark, NJ", destination: "Edison, NJ", lastEvent: "On truck — last mile delivery", lastPort: "Newark", eventTime: "2026-04-05 07:00", eta: "2026-04-05", shipper: "EastCoast Retail", commodity: "Consumer Electronics" },
-];
-
-const MOCK_INVENTORY = [
-  { type: "20ST", ownership: "owned", total: 12500, available: 3200, inUse: 8400, maintenance: 400, offHire: 500, avgAge: 6.2 },
-  { type: "40HC", ownership: "owned", total: 18200, available: 4800, inUse: 12200, maintenance: 600, offHire: 600, avgAge: 4.8 },
-  { type: "40RF", ownership: "owned", total: 3400, available: 800, inUse: 2400, maintenance: 120, offHire: 80, avgAge: 3.5 },
-  { type: "20ST", ownership: "leased", total: 5000, available: 1200, inUse: 3500, maintenance: 150, offHire: 150, avgAge: 8.1 },
-  { type: "40HC", ownership: "leased", total: 8600, available: 2100, inUse: 6000, maintenance: 250, offHire: 250, avgAge: 7.2 },
-  { type: "40RF", ownership: "leased", total: 1800, available: 400, inUse: 1300, maintenance: 60, offHire: 40, avgAge: 5.4 },
-  { type: "20TK", ownership: "pool", total: 800, available: 200, inUse: 540, maintenance: 30, offHire: 30, avgAge: 4.0 },
-  { type: "40OT", ownership: "pool", total: 600, available: 150, inUse: 400, maintenance: 20, offHire: 30, avgAge: 5.8 },
-  { type: "20FL", ownership: "pool", total: 400, available: 100, inUse: 270, maintenance: 15, offHire: 15, avgAge: 6.5 },
-];
-
-const MOCK_RETURNS = [
-  { number: "MSKU3871024", size: "40HC", returnTo: "Los Angeles — APM Terminal", status: "scheduled", scheduledDate: "2026-04-06", lastCargo: "Electronics", condition: "good", notes: "" },
-  { number: "CMAU5192837", size: "40HC", returnTo: "Savannah — GPA Garden City", status: "in_transit", scheduledDate: "2026-04-05", lastCargo: "Textiles", condition: "good", notes: "Drayage by JB Hunt" },
-  { number: "OOLU2847193", size: "20ST", returnTo: "Newark — APM Maher Terminal", status: "returned", scheduledDate: "2026-04-03", lastCargo: "General Cargo", condition: "good", notes: "" },
-  { number: "ZIMU4019283", size: "40HC", returnTo: "Charleston — Wando Welch Terminal", status: "scheduled", scheduledDate: "2026-04-08", lastCargo: "Furniture", condition: "minor_damage", notes: "Dent on left panel — repair needed" },
-  { number: "HLCU9281374", size: "20ST", returnTo: "Houston — Barbours Cut Terminal", status: "overdue", scheduledDate: "2026-04-01", lastCargo: "Chemicals", condition: "needs_cleaning", notes: "Tank wash required before return" },
-  { number: "EISU7382041", size: "40RF", returnTo: "Long Beach — ITS Terminal", status: "in_transit", scheduledDate: "2026-04-06", lastCargo: "Perishables", condition: "good", notes: "Reefer unit to be inspected on return" },
-  { number: "TCLU2938174", size: "20TK", returnTo: "Houston — Enterprise Terminal", status: "returned", scheduledDate: "2026-04-02", lastCargo: "Industrial Solvents", condition: "needs_cleaning", notes: "Cleaned and steam-washed" },
-  { number: "NYKU8291034", size: "40HC", returnTo: "Newark — PNCT Terminal", status: "scheduled", scheduledDate: "2026-04-09", lastCargo: "Consumer Electronics", condition: "good", notes: "" },
-];
+/* ─── Empty Defaults ─── */
+const EMPTY_TRACKING: any[] = [];
+const EMPTY_INVENTORY: any[] = [];
+const EMPTY_RETURNS: any[] = [];
 
 const RETURN_STATUS: Record<string, { bg: string; lightBg: string }> = {
   scheduled: { bg: "bg-blue-500/20 text-blue-400", lightBg: "bg-blue-100 text-blue-700" },
@@ -103,16 +71,7 @@ const CONDITION_STATUS: Record<string, { bg: string; lightBg: string }> = {
   major_damage: { bg: "bg-red-500/20 text-red-400", lightBg: "bg-red-100 text-red-700" },
 };
 
-const MOCK_DEMURRAGE = [
-  { container: "OOLU9381205", booking: "BK-240905", port: "Felixstowe, UK", type: "demurrage", freeTimeStart: "2026-04-05", freeTimeEnd: "2026-04-12", daysUsed: 4, freeDays: 7, dailyRate: 150, accrued: 0, status: "within_free", customer: "MegaRetail Inc" },
-  { container: "OOLU9381206", booking: "BK-240905", port: "Felixstowe, UK", type: "demurrage", freeTimeStart: "2026-04-05", freeTimeEnd: "2026-04-12", daysUsed: 4, freeDays: 7, dailyRate: 150, accrued: 0, status: "within_free", customer: "MegaRetail Inc" },
-  { container: "ZIMU6420173", booking: "BK-240907", port: "Antwerp, BE", type: "demurrage", freeTimeStart: "2026-03-30", freeTimeEnd: "2026-04-04", daysUsed: 9, freeDays: 5, dailyRate: 175, accrued: 700, status: "accruing", customer: "SouthernTex" },
-  { container: "HLCU9281374", booking: "BK-240910", port: "Houston, TX", type: "detention", freeTimeStart: "2026-03-28", freeTimeEnd: "2026-04-01", daysUsed: 10, freeDays: 4, dailyRate: 125, accrued: 750, status: "accruing", customer: "MidwestDist LLC" },
-  { container: "MSKU3871024", booking: "BK-240901", port: "Los Angeles, CA", type: "detention", freeTimeStart: "2026-04-02", freeTimeEnd: "2026-04-08", daysUsed: 3, freeDays: 6, dailyRate: 140, accrued: 0, status: "within_free", customer: "TechCo Inc." },
-  { container: "CMAU5192837", booking: "BK-240903", port: "Savannah, GA", type: "detention", freeTimeStart: "2026-03-25", freeTimeEnd: "2026-03-30", daysUsed: 11, freeDays: 5, dailyRate: 130, accrued: 780, status: "invoiced", customer: "AmeriMach Corp" },
-  { container: "NYKU8291034", booking: "BK-240915", port: "Newark, NJ", type: "demurrage", freeTimeStart: "2026-04-03", freeTimeEnd: "2026-04-10", daysUsed: 2, freeDays: 7, dailyRate: 160, accrued: 0, status: "within_free", customer: "EastCoast Retail" },
-  { container: "EISU5820194", booking: "BK-240904", port: "Houston, TX", type: "detention", freeTimeStart: "2026-04-07", freeTimeEnd: "2026-04-13", daysUsed: 1, freeDays: 6, dailyRate: 175, accrued: 0, status: "within_free", customer: "FreshCargo Int'l" },
-];
+const EMPTY_DEMURRAGE: any[] = [];
 
 /* ─── Helpers ─── */
 function fmtCurrency(v: number) {
@@ -146,6 +105,15 @@ export default function VesselContainerOps() {
   const [returnFilter, setReturnFilter] = useState("all");
   const [demurrageFilter, setDemurrageFilter] = useState("all");
 
+  /* tRPC queries */
+  const containerQ = (trpc as any).vesselShipments?.getContainerTracking?.useQuery?.() ?? { data: null, isLoading: false };
+  const demurrageQ = (trpc as any).vesselShipments?.getVesselDemurrage?.useQuery?.() ?? { data: null, isLoading: false };
+
+  const trackingData = containerQ.data?.containers ?? EMPTY_TRACKING;
+  const inventoryData = containerQ.data?.inventory ?? EMPTY_INVENTORY;
+  const returnsData = containerQ.data?.returns ?? EMPTY_RETURNS;
+  const demurrageData = demurrageQ.data?.demurrage ?? EMPTY_DEMURRAGE;
+
   /* Theme vars */
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = cn("border rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
@@ -159,7 +127,7 @@ export default function VesselContainerOps() {
 
   /* Filtered data */
   const filteredTracking = useMemo(() => {
-    let list = MOCK_TRACKING;
+    let list = trackingData;
     if (trackingFilter !== "all") list = list.filter(c => c.status === trackingFilter);
     if (search && tab === "tracking") {
       const q = search.toLowerCase();
@@ -175,12 +143,12 @@ export default function VesselContainerOps() {
   }, [trackingFilter, search, tab]);
 
   const filteredInventory = useMemo(() => {
-    if (inventoryFilter === "all") return MOCK_INVENTORY;
-    return MOCK_INVENTORY.filter(i => i.ownership === inventoryFilter);
+    if (inventoryFilter === "all") return inventoryData;
+    return inventoryData.filter(i => i.ownership === inventoryFilter);
   }, [inventoryFilter]);
 
   const filteredReturns = useMemo(() => {
-    let list = MOCK_RETURNS;
+    let list = returnsData;
     if (returnFilter !== "all") list = list.filter(r => r.status === returnFilter);
     if (search && tab === "returns") {
       const q = search.toLowerCase();
@@ -190,7 +158,7 @@ export default function VesselContainerOps() {
   }, [returnFilter, search, tab]);
 
   const filteredDemurrage = useMemo(() => {
-    let list = MOCK_DEMURRAGE;
+    let list = demurrageData;
     if (demurrageFilter !== "all") {
       if (demurrageFilter === "demurrage") list = list.filter(d => d.type === "demurrage");
       else if (demurrageFilter === "detention") list = list.filter(d => d.type === "detention");
@@ -200,10 +168,10 @@ export default function VesselContainerOps() {
   }, [demurrageFilter]);
 
   /* Summary KPIs */
-  const totalTracked = MOCK_TRACKING.length;
-  const totalInventory = MOCK_INVENTORY.reduce((s, i) => s + i.total, 0);
-  const pendingReturns = MOCK_RETURNS.filter(r => r.status !== "returned").length;
-  const totalDemurrage = MOCK_DEMURRAGE.reduce((s, d) => s + d.accrued, 0);
+  const totalTracked = trackingData.length;
+  const totalInventory = inventoryData.reduce((s, i) => s + i.total, 0);
+  const pendingReturns = returnsData.filter(r => r.status !== "returned").length;
+  const totalDemurrage = demurrageData.reduce((s, d) => s + d.accrued, 0);
 
   return (
     <div className={cn("min-h-screen p-6 space-y-6", bg)}>
@@ -406,10 +374,10 @@ export default function VesselContainerOps() {
               Total: {totalInventory.toLocaleString()} units
             </span>
             <span className={cn("text-xs", isLight ? "text-green-600" : "text-green-400")}>
-              Available: {MOCK_INVENTORY.reduce((s, i) => s + i.available, 0).toLocaleString()}
+              Available: {inventoryData.reduce((s, i) => s + i.available, 0).toLocaleString()}
             </span>
             <span className={cn("text-xs", isLight ? "text-amber-600" : "text-amber-400")}>
-              Maintenance: {MOCK_INVENTORY.reduce((s, i) => s + i.maintenance, 0).toLocaleString()}
+              Maintenance: {inventoryData.reduce((s, i) => s + i.maintenance, 0).toLocaleString()}
             </span>
           </div>
         </div>
@@ -486,19 +454,19 @@ export default function VesselContainerOps() {
             <div className="flex items-center gap-1.5">
               <AlertTriangle className={cn("w-3.5 h-3.5", isLight ? "text-red-600" : "text-red-400")} />
               <span className={cn("text-xs", muted)}>
-                {MOCK_RETURNS.filter(r => r.status === "overdue").length} overdue
+                {returnsData.filter(r => r.status === "overdue").length} overdue
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className={cn("w-3.5 h-3.5", isLight ? "text-green-600" : "text-green-400")} />
               <span className={cn("text-xs", muted)}>
-                {MOCK_RETURNS.filter(r => r.status === "returned").length} returned
+                {returnsData.filter(r => r.status === "returned").length} returned
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <AlertTriangle className={cn("w-3.5 h-3.5", isLight ? "text-amber-600" : "text-amber-400")} />
               <span className={cn("text-xs", muted)}>
-                {MOCK_RETURNS.filter(r => r.condition !== "good").length} need attention
+                {returnsData.filter(r => r.condition !== "good").length} need attention
               </span>
             </div>
           </div>
@@ -597,15 +565,15 @@ export default function VesselContainerOps() {
                 Total Accrued: {fmtCurrency(totalDemurrage)}
               </div>
               <div className={cn("text-xs", muted)}>
-                Demurrage: {fmtCurrency(MOCK_DEMURRAGE.filter(d => d.type === "demurrage").reduce((s, d) => s + d.accrued, 0))}
+                Demurrage: {fmtCurrency(demurrageData.filter(d => d.type === "demurrage").reduce((s, d) => s + d.accrued, 0))}
               </div>
               <div className={cn("text-xs", muted)}>
-                Detention: {fmtCurrency(MOCK_DEMURRAGE.filter(d => d.type === "detention").reduce((s, d) => s + d.accrued, 0))}
+                Detention: {fmtCurrency(demurrageData.filter(d => d.type === "detention").reduce((s, d) => s + d.accrued, 0))}
               </div>
             </div>
             <div className="flex items-center gap-2">
               <span className={cn("text-xs", muted)}>
-                {MOCK_DEMURRAGE.filter(d => d.status === "accruing").length} actively accruing
+                {demurrageData.filter(d => d.status === "accruing").length} actively accruing
               </span>
             </div>
           </div>

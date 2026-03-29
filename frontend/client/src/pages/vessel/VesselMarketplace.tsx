@@ -178,63 +178,20 @@ interface CarrierInfo {
   rating: number;
 }
 
-/* ──────────────────────── MOCK DATA ──────────────────────── */
+/* ──────────────────────── EMPTY DEFAULTS ──────────────────────── */
+// No mock data — pages show empty states until real data arrives from tRPC.
 
-const MOCK_RATES: TradeRate[] = [
-  { id: "r1", carrier: "Maersk Line", carrierCode: "MAEU", pol: "Shanghai", polCode: "CNSHA", pod: "Los Angeles", podCode: "USLAX", containerSize: "40", equipmentType: "dry", rate: 2450, currency: "USD", transitDays: 14, freeTimeDays: 7, validFrom: "2026-03-25", validTo: "2026-04-10", spaceAvailable: 120, reliability: 94, surcharges: 380, allInRate: 2830 },
-  { id: "r2", carrier: "MSC", carrierCode: "MSCU", pol: "Shanghai", polCode: "CNSHA", pod: "Los Angeles", podCode: "USLAX", containerSize: "40", equipmentType: "dry", rate: 2320, currency: "USD", transitDays: 16, freeTimeDays: 5, validFrom: "2026-03-25", validTo: "2026-04-15", spaceAvailable: 85, reliability: 89, surcharges: 410, allInRate: 2730 },
-  { id: "r3", carrier: "CMA CGM", carrierCode: "CMDU", pol: "Ningbo", polCode: "CNNGB", pod: "Rotterdam", podCode: "NLRTM", containerSize: "40HC", equipmentType: "dry", rate: 1980, currency: "USD", transitDays: 28, freeTimeDays: 10, validFrom: "2026-03-20", validTo: "2026-04-20", spaceAvailable: 200, reliability: 91, surcharges: 320, allInRate: 2300 },
-  { id: "r4", carrier: "Hapag-Lloyd", carrierCode: "HLCU", pol: "Busan", polCode: "KRPUS", pod: "Hamburg", podCode: "DEHAM", containerSize: "40", equipmentType: "reefer", rate: 4200, currency: "USD", transitDays: 32, freeTimeDays: 7, validFrom: "2026-03-28", validTo: "2026-04-12", spaceAvailable: 40, reliability: 96, surcharges: 550, allInRate: 4750 },
-  { id: "r5", carrier: "COSCO", carrierCode: "COSU", pol: "Shenzhen", polCode: "CNSZX", pod: "Long Beach", podCode: "USLGB", containerSize: "20", equipmentType: "dry", rate: 1450, currency: "USD", transitDays: 15, freeTimeDays: 7, validFrom: "2026-03-22", validTo: "2026-04-05", spaceAvailable: 300, reliability: 87, surcharges: 280, allInRate: 1730 },
-  { id: "r6", carrier: "ONE", carrierCode: "ONEY", pol: "Tokyo", polCode: "JPTYO", pod: "Seattle", podCode: "USSEA", containerSize: "40HC", equipmentType: "dry", rate: 2100, currency: "USD", transitDays: 12, freeTimeDays: 5, validFrom: "2026-03-26", validTo: "2026-04-10", spaceAvailable: 65, reliability: 92, surcharges: 350, allInRate: 2450 },
-  { id: "r7", carrier: "Evergreen", carrierCode: "EGLV", pol: "Kaohsiung", polCode: "TWKHH", pod: "Savannah", podCode: "USSAV", containerSize: "45", equipmentType: "dry", rate: 2680, currency: "USD", transitDays: 22, freeTimeDays: 7, validFrom: "2026-03-24", validTo: "2026-04-08", spaceAvailable: 50, reliability: 90, surcharges: 420, allInRate: 3100 },
-  { id: "r8", carrier: "Yang Ming", carrierCode: "YMLU", pol: "Ho Chi Minh", polCode: "VNSGN", pod: "New York", podCode: "USNYC", containerSize: "40", equipmentType: "flat", rate: 3100, currency: "USD", transitDays: 30, freeTimeDays: 5, validFrom: "2026-03-27", validTo: "2026-04-11", spaceAvailable: 25, reliability: 85, surcharges: 480, allInRate: 3580 },
-];
+const EMPTY_RATES: TradeRate[] = [];
 
-const MOCK_SAILINGS: Sailing[] = [
-  { id: "s1", vesselName: "Maersk Enshi", imo: "9632058", carrier: "Maersk", service: "AE7", pol: "Shanghai", pod: "Los Angeles", etd: "2026-04-02", eta: "2026-04-16", transitDays: 14, cutOffDate: "2026-03-31", cutOffTime: "16:00", siCutOff: "2026-03-30", availableTeu: 120, totalTeu: 14000, containerSizes: ["20", "40", "40HC"], equipmentTypes: ["dry", "reefer"], rate: 2450, status: "open" },
-  { id: "s2", vesselName: "MSC Isabella", imo: "9839284", carrier: "MSC", service: "Jade", pol: "Ningbo", pod: "Rotterdam", etd: "2026-04-05", eta: "2026-05-03", transitDays: 28, cutOffDate: "2026-04-03", cutOffTime: "12:00", siCutOff: "2026-04-02", availableTeu: 85, totalTeu: 23756, containerSizes: ["20", "40", "40HC", "45"], equipmentTypes: ["dry", "reefer", "flat"], rate: 1980, status: "open" },
-  { id: "s3", vesselName: "CMA CGM Antoine", imo: "9454412", carrier: "CMA CGM", service: "FAL1", pol: "Busan", pod: "Hamburg", etd: "2026-04-08", eta: "2026-05-10", transitDays: 32, cutOffDate: "2026-04-06", cutOffTime: "18:00", siCutOff: "2026-04-05", availableTeu: 40, totalTeu: 16020, containerSizes: ["20", "40", "40HC"], equipmentTypes: ["dry", "reefer", "open_top"], rate: 4200, status: "limited" },
-  { id: "s4", vesselName: "COSCO Universe", imo: "9795645", carrier: "COSCO", service: "CEN", pol: "Shenzhen", pod: "Long Beach", etd: "2026-04-01", eta: "2026-04-16", transitDays: 15, cutOffDate: "2026-03-30", cutOffTime: "14:00", siCutOff: "2026-03-29", availableTeu: 300, totalTeu: 19100, containerSizes: ["20", "40", "40HC"], equipmentTypes: ["dry"], rate: 1450, status: "open" },
-  { id: "s5", vesselName: "ONE Apus", imo: "9806079", carrier: "ONE", service: "PS3", pol: "Tokyo", pod: "Seattle", etd: "2026-04-03", eta: "2026-04-15", transitDays: 12, cutOffDate: "2026-04-01", cutOffTime: "16:00", siCutOff: "2026-03-31", availableTeu: 65, totalTeu: 14052, containerSizes: ["20", "40", "40HC"], equipmentTypes: ["dry", "reefer"], rate: 2100, status: "open" },
-  { id: "s6", vesselName: "Evergreen Ace", imo: "9811000", carrier: "Evergreen", service: "CIX", pol: "Kaohsiung", pod: "Savannah", etd: "2026-04-10", eta: "2026-05-02", transitDays: 22, cutOffDate: "2026-04-08", cutOffTime: "10:00", siCutOff: "2026-04-07", availableTeu: 50, totalTeu: 12000, containerSizes: ["20", "40", "40HC", "45"], equipmentTypes: ["dry", "flat"], rate: 2680, status: "limited" },
-];
+const EMPTY_SAILINGS: Sailing[] = [];
 
-const MOCK_SPOT_DEALS: SpotDeal[] = [
-  { id: "d1", carrier: "MSC", pol: "Shanghai", pod: "Los Angeles", containerSize: "40", equipmentType: "dry", originalRate: 2320, spotRate: 1850, discount: 20, expiresAt: "2026-03-30T23:59:59Z", remainingSlots: 15, sailDate: "2026-04-02", vesselName: "MSC Gulsun", tag: "flash_sale" },
-  { id: "d2", carrier: "CMA CGM", pol: "Rotterdam", pod: "Shanghai", containerSize: "40HC", equipmentType: "dry", originalRate: 1200, spotRate: 680, discount: 43, expiresAt: "2026-03-31T12:00:00Z", remainingSlots: 40, sailDate: "2026-04-05", vesselName: "CMA CGM Thalassa", tag: "backhaul" },
-  { id: "d3", carrier: "Hapag-Lloyd", pol: "Hamburg", pod: "New York", containerSize: "20", equipmentType: "dry", originalRate: 1800, spotRate: 1440, discount: 20, expiresAt: "2026-04-01T06:00:00Z", remainingSlots: 8, sailDate: "2026-04-01", vesselName: "Berlin Express", tag: "last_minute" },
-  { id: "d4", carrier: "COSCO", pol: "Shenzhen", pod: "Long Beach", containerSize: "40", equipmentType: "dry", originalRate: 2200, spotRate: 1760, discount: 20, expiresAt: "2026-04-03T18:00:00Z", remainingSlots: 50, sailDate: "2026-04-08", vesselName: "COSCO Faith", tag: "bulk_discount" },
-  { id: "d5", carrier: "ONE", pol: "Tokyo", pod: "Vancouver", containerSize: "40HC", equipmentType: "reefer", originalRate: 4800, spotRate: 3600, discount: 25, expiresAt: "2026-03-30T18:00:00Z", remainingSlots: 5, sailDate: "2026-04-01", vesselName: "ONE Owl", tag: "last_minute" },
-  { id: "d6", carrier: "Evergreen", pol: "Kaohsiung", pod: "Felixstowe", containerSize: "40", equipmentType: "dry", originalRate: 2100, spotRate: 1680, discount: 20, expiresAt: "2026-04-02T23:59:59Z", remainingSlots: 30, sailDate: "2026-04-10", vesselName: "Ever Ace", tag: "flash_sale" },
-];
+const EMPTY_SPOT_DEALS: SpotDeal[] = [];
 
-const MOCK_QUOTES: Quote[] = [
-  { id: "q1", refNumber: "QTE-2026-0341", pol: "Shanghai", pod: "Los Angeles", containerSize: "40HC", equipmentType: "dry", quantity: 10, requestedDate: "2026-04-05", status: "received", responses: [{ carrier: "Maersk", rate: 2380, transitDays: 14, freeTime: 7, validUntil: "2026-04-02", notes: "Priority loading" }, { carrier: "MSC", rate: 2250, transitDays: 16, freeTime: 5, validUntil: "2026-04-03", notes: "Subject to space" }, { carrier: "COSCO", rate: 2180, transitDays: 15, freeTime: 7, validUntil: "2026-04-01", notes: "" }], createdAt: "2026-03-25" },
-  { id: "q2", refNumber: "QTE-2026-0342", pol: "Busan", pod: "Hamburg", containerSize: "40", equipmentType: "reefer", quantity: 5, requestedDate: "2026-04-12", status: "pending", responses: [], createdAt: "2026-03-28" },
-  { id: "q3", refNumber: "QTE-2026-0340", pol: "Ho Chi Minh", pod: "Savannah", containerSize: "20", equipmentType: "dry", quantity: 20, requestedDate: "2026-03-20", status: "accepted", responses: [{ carrier: "Yang Ming", rate: 1580, transitDays: 28, freeTime: 5, validUntil: "2026-03-22", notes: "Accepted — booking BK-91203" }], createdAt: "2026-03-18" },
-  { id: "q4", refNumber: "QTE-2026-0338", pol: "Ningbo", pod: "Rotterdam", containerSize: "40HC", equipmentType: "dry", quantity: 15, requestedDate: "2026-03-15", status: "expired", responses: [{ carrier: "CMA CGM", rate: 2050, transitDays: 28, freeTime: 10, validUntil: "2026-03-20", notes: "Expired" }], createdAt: "2026-03-12" },
-];
+const EMPTY_QUOTES: Quote[] = [];
 
-const MOCK_TRADE_LANES: TradeLane[] = [
-  { lane: "Asia — US West Coast", code: "ASWC", avgRate20: 1480, avgRate40: 2380, change7d: -3.2, change30d: -8.5, volume: 42500, trend: [2600, 2550, 2500, 2480, 2430, 2400, 2380] },
-  { lane: "Asia — US East Coast", code: "ASEC", avgRate20: 2100, avgRate40: 3250, change7d: 1.8, change30d: -2.1, volume: 28300, trend: [3300, 3280, 3200, 3220, 3240, 3260, 3250] },
-  { lane: "Asia — Europe", code: "ASEU", avgRate20: 1320, avgRate40: 2050, change7d: -5.1, change30d: -12.4, volume: 56200, trend: [2350, 2280, 2200, 2150, 2100, 2080, 2050] },
-  { lane: "Transatlantic", code: "TRAT", avgRate20: 1150, avgRate40: 1800, change7d: 0.5, change30d: 2.3, volume: 18400, trend: [1760, 1770, 1780, 1790, 1785, 1795, 1800] },
-  { lane: "Asia — Mediterranean", code: "ASMD", avgRate20: 1280, avgRate40: 1950, change7d: -2.0, change30d: -6.8, volume: 22100, trend: [2100, 2080, 2040, 2000, 1980, 1960, 1950] },
-  { lane: "Asia — Middle East", code: "ASME", avgRate20: 980, avgRate40: 1520, change7d: 3.1, change30d: 5.4, volume: 15800, trend: [1440, 1460, 1470, 1490, 1500, 1510, 1520] },
-];
+const EMPTY_TRADE_LANES: TradeLane[] = [];
 
-const MOCK_CARRIERS: CarrierInfo[] = [
-  { name: "Maersk Line", code: "MAEU", country: "Denmark", fleetSize: 708, services: ["AE7", "AE2", "TP6", "TP12"], reliability: 94, avgTransit: 14, rateIndex: 102, coverage: ["Asia", "Europe", "N. America", "Africa", "Oceania"], rating: 4.7 },
-  { name: "MSC", code: "MSCU", country: "Switzerland", fleetSize: 760, services: ["Jade", "Griffin", "Swan", "Lion"], reliability: 89, avgTransit: 16, rateIndex: 96, coverage: ["Asia", "Europe", "N. America", "S. America", "Africa"], rating: 4.3 },
-  { name: "CMA CGM", code: "CMDU", country: "France", fleetSize: 590, services: ["FAL1", "FAL3", "NWX", "ASIA-MED"], reliability: 91, avgTransit: 18, rateIndex: 98, coverage: ["Asia", "Europe", "N. America", "S. America", "Mediterranean"], rating: 4.5 },
-  { name: "COSCO Shipping", code: "COSU", country: "China", fleetSize: 510, services: ["CEN", "CPNW", "AAC"], reliability: 87, avgTransit: 15, rateIndex: 89, coverage: ["Asia", "Europe", "N. America"], rating: 4.1 },
-  { name: "Hapag-Lloyd", code: "HLCU", country: "Germany", fleetSize: 260, services: ["AL3", "AL5", "EC5"], reliability: 96, avgTransit: 20, rateIndex: 108, coverage: ["Asia", "Europe", "N. America", "S. America"], rating: 4.8 },
-  { name: "ONE", code: "ONEY", country: "Japan", fleetSize: 210, services: ["PS3", "PS7", "FP2"], reliability: 92, avgTransit: 13, rateIndex: 100, coverage: ["Asia", "N. America", "Europe"], rating: 4.4 },
-  { name: "Evergreen", code: "EGLV", country: "Taiwan", fleetSize: 200, services: ["CIX", "CEM", "NUE"], reliability: 90, avgTransit: 17, rateIndex: 94, coverage: ["Asia", "Europe", "N. America", "S. America"], rating: 4.2 },
-  { name: "Yang Ming", code: "YMLU", country: "Taiwan", fleetSize: 90, services: ["CPS", "CPI", "TA2"], reliability: 85, avgTransit: 22, rateIndex: 88, coverage: ["Asia", "Europe", "N. America"], rating: 3.9 },
-];
+const EMPTY_CARRIERS: CarrierInfo[] = [];
 
 const CONTAINER_SIZES: { value: ContainerSize; label: string }[] = [
   { value: "20", label: "20' Standard" },
@@ -357,7 +314,7 @@ export default function VesselMarketplace() {
 
   /* ── Filtered Data ── */
   const filteredRates = useMemo(() => {
-    let data = [...MOCK_RATES];
+    let data = [...EMPTY_RATES];
     if (searchPol) data = data.filter((r) => r.pol.toLowerCase().includes(searchPol.toLowerCase()) || r.polCode.toLowerCase().includes(searchPol.toLowerCase()));
     if (searchPod) data = data.filter((r) => r.pod.toLowerCase().includes(searchPod.toLowerCase()) || r.podCode.toLowerCase().includes(searchPod.toLowerCase()));
     if (selectedContainer) data = data.filter((r) => r.containerSize === selectedContainer);
@@ -369,7 +326,7 @@ export default function VesselMarketplace() {
   }, [searchPol, searchPod, selectedContainer, selectedEquipment, sortRateBy]);
 
   const filteredSailings = useMemo(() => {
-    let data = [...MOCK_SAILINGS];
+    let data = [...EMPTY_SAILINGS];
     if (searchPol) data = data.filter((s) => s.pol.toLowerCase().includes(searchPol.toLowerCase()));
     if (searchPod) data = data.filter((s) => s.pod.toLowerCase().includes(searchPod.toLowerCase()));
     if (selectedContainer) data = data.filter((s) => s.containerSizes.includes(selectedContainer));
@@ -378,7 +335,7 @@ export default function VesselMarketplace() {
   }, [searchPol, searchPod, selectedContainer, selectedEquipment]);
 
   const filteredSpotDeals = useMemo(() => {
-    let data = [...MOCK_SPOT_DEALS];
+    let data = [...EMPTY_SPOT_DEALS];
     if (searchPol) data = data.filter((d) => d.pol.toLowerCase().includes(searchPol.toLowerCase()));
     if (searchPod) data = data.filter((d) => d.pod.toLowerCase().includes(searchPod.toLowerCase()));
     if (selectedContainer) data = data.filter((d) => d.containerSize === selectedContainer);
@@ -386,7 +343,7 @@ export default function VesselMarketplace() {
     return data;
   }, [searchPol, searchPod, selectedContainer, selectedEquipment]);
 
-  const totalListings = MOCK_RATES.length + MOCK_SAILINGS.length + MOCK_SPOT_DEALS.length;
+  const totalListings = EMPTY_RATES.length + EMPTY_SAILINGS.length + EMPTY_SPOT_DEALS.length;
 
   /* ──────────────────────── SECTION: Header ──────────────────────── */
   const renderHeader = () => (
@@ -399,7 +356,7 @@ export default function VesselMarketplace() {
           <h1 className={cn("text-2xl font-bold", textPrimary)}>Ocean Freight Marketplace</h1>
           <p className={textSecondary}>
             <span className="font-medium text-cyan-500">{totalListings}</span> live listings across{" "}
-            <span className="font-medium">{MOCK_CARRIERS.length}</span> carriers
+            <span className="font-medium">{EMPTY_CARRIERS.length}</span> carriers
           </p>
         </div>
       </div>
@@ -528,9 +485,9 @@ export default function VesselMarketplace() {
       { key: "rates", label: "Rate Board", icon: <DollarSign className="w-4 h-4" />, count: filteredRates.length },
       { key: "sailings", label: "Sailings", icon: <Ship className="w-4 h-4" />, count: filteredSailings.length },
       { key: "spot", label: "Spot Market", icon: <Zap className="w-4 h-4" />, count: filteredSpotDeals.length },
-      { key: "quotes", label: "My Quotes", icon: <FileText className="w-4 h-4" />, count: MOCK_QUOTES.length },
+      { key: "quotes", label: "My Quotes", icon: <FileText className="w-4 h-4" />, count: EMPTY_QUOTES.length },
       { key: "analytics", label: "Trade Lanes", icon: <BarChart3 className="w-4 h-4" /> },
-      { key: "carriers", label: "Carriers", icon: <Building2 className="w-4 h-4" />, count: MOCK_CARRIERS.length },
+      { key: "carriers", label: "Carriers", icon: <Building2 className="w-4 h-4" />, count: EMPTY_CARRIERS.length },
     ];
     return (
       <div className="flex flex-wrap gap-2 mb-6">
@@ -873,7 +830,7 @@ export default function VesselMarketplace() {
       {/* Quote summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {(["pending", "received", "accepted", "expired"] as const).map((status) => {
-          const count = MOCK_QUOTES.filter((q) => q.status === status).length;
+          const count = EMPTY_QUOTES.filter((q) => q.status === status).length;
           const icons: Record<string, React.ReactNode> = {
             pending: <Clock className="w-5 h-5 text-yellow-500" />,
             received: <MessageSquare className="w-5 h-5 text-blue-500" />,
@@ -896,7 +853,7 @@ export default function VesselMarketplace() {
 
       {/* Quote list */}
       <div className="space-y-3">
-        {MOCK_QUOTES.map((q) => (
+        {EMPTY_QUOTES.map((q) => (
           <Card key={q.id} className={cn(cardBg)}>
             <CardContent className="pt-4 pb-3">
               {/* Quote header */}
@@ -1021,10 +978,10 @@ export default function VesselMarketplace() {
       {/* Summary stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Avg 40' Rate", value: fmtUsd(Math.round(MOCK_TRADE_LANES.reduce((s, l) => s + l.avgRate40, 0) / MOCK_TRADE_LANES.length)), change: -4.2, icon: <DollarSign className="w-5 h-5 text-cyan-500" /> },
-          { label: "Total Volume", value: `${(MOCK_TRADE_LANES.reduce((s, l) => s + l.volume, 0) / 1000).toFixed(0)}K TEU`, change: 2.1, icon: <Package className="w-5 h-5 text-blue-500" /> },
-          { label: "Lanes Tracked", value: MOCK_TRADE_LANES.length.toString(), change: 0, icon: <Globe className="w-5 h-5 text-emerald-500" /> },
-          { label: "Lowest Rate", value: fmtUsd(Math.min(...MOCK_TRADE_LANES.map((l) => l.avgRate40))), change: -6.8, icon: <TrendingDown className="w-5 h-5 text-green-500" /> },
+          { label: "Avg 40' Rate", value: fmtUsd(Math.round(EMPTY_TRADE_LANES.reduce((s, l) => s + l.avgRate40, 0) / EMPTY_TRADE_LANES.length)), change: -4.2, icon: <DollarSign className="w-5 h-5 text-cyan-500" /> },
+          { label: "Total Volume", value: `${(EMPTY_TRADE_LANES.reduce((s, l) => s + l.volume, 0) / 1000).toFixed(0)}K TEU`, change: 2.1, icon: <Package className="w-5 h-5 text-blue-500" /> },
+          { label: "Lanes Tracked", value: EMPTY_TRADE_LANES.length.toString(), change: 0, icon: <Globe className="w-5 h-5 text-emerald-500" /> },
+          { label: "Lowest Rate", value: fmtUsd(Math.min(...EMPTY_TRADE_LANES.map((l) => l.avgRate40))), change: -6.8, icon: <TrendingDown className="w-5 h-5 text-green-500" /> },
         ].map((stat, i) => (
           <Card key={i} className={cardBg}>
             <CardContent className="pt-4 pb-3">
@@ -1059,7 +1016,7 @@ export default function VesselMarketplace() {
             </tr>
           </thead>
           <tbody>
-            {MOCK_TRADE_LANES.map((lane) => (
+            {EMPTY_TRADE_LANES.map((lane) => (
               <tr key={lane.code} className={cn("border-t transition-colors", tableBorder, hoverBg)}>
                 <td className="px-4 py-3">
                   <div className={cn("font-medium", textPrimary)}>{lane.lane}</div>
@@ -1106,7 +1063,7 @@ export default function VesselMarketplace() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {MOCK_CARRIERS.filter((c) => !searchGeneral || c.name.toLowerCase().includes(searchGeneral.toLowerCase()) || c.code.toLowerCase().includes(searchGeneral.toLowerCase()))
+        {EMPTY_CARRIERS.filter((c) => !searchGeneral || c.name.toLowerCase().includes(searchGeneral.toLowerCase()) || c.code.toLowerCase().includes(searchGeneral.toLowerCase()))
           .map((carrier) => (
             <Card key={carrier.code} className={cn(cardBg)}>
               <CardContent className="pt-5">
@@ -1185,9 +1142,9 @@ export default function VesselMarketplace() {
                 {expandedCarrier === carrier.code && (
                   <div className={cn("mt-3 rounded-lg border p-3", tableBorder)}>
                     <div className={cn("text-xs font-medium mb-2", textMuted)}>Available Rates from this Carrier</div>
-                    {MOCK_RATES.filter((r) => r.carrier === carrier.name || r.carrierCode === carrier.code).length > 0 ? (
+                    {EMPTY_RATES.filter((r) => r.carrier === carrier.name || r.carrierCode === carrier.code).length > 0 ? (
                       <div className="space-y-2">
-                        {MOCK_RATES.filter((r) => r.carrier === carrier.name || r.carrierCode === carrier.code).map((r) => (
+                        {EMPTY_RATES.filter((r) => r.carrier === carrier.name || r.carrierCode === carrier.code).map((r) => (
                           <div key={r.id} className={cn("flex items-center justify-between text-sm py-1.5 border-b last:border-0", tableBorder)}>
                             <div>
                               <span className={cn("font-medium", textPrimary)}>{r.polCode} → {r.podCode}</span>

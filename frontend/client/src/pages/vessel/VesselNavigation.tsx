@@ -104,134 +104,64 @@ interface NoticeToMariners {
   description: string;
 }
 
-/* ──────────────────────── MOCK DATA ──────────────────────── */
+/* ──────────────────────── EMPTY DEFAULTS ──────────────────────── */
+// Used as fallback when tRPC queries return no data.
 
-const MOCK_POSITION = {
-  lat: 36.8508,
-  lng: -5.6174,
-  label: "Strait of Gibraltar",
-  speedKts: 18.4,
-  headingDeg: 142,
-  cogDeg: 144,
-  sogKts: 18.2,
-  lastUpdate: "2026-03-29T14:32:00Z",
-  vesselName: "M/V EUSORONE VOYAGER",
-  imo: "IMO 9876543",
-  mmsi: "354123456",
+const EMPTY_POSITION = {
+  lat: 0,
+  lng: 0,
+  label: "—",
+  speedKts: 0,
+  headingDeg: 0,
+  cogDeg: 0,
+  sogKts: 0,
+  lastUpdate: "",
+  vesselName: "—",
+  imo: "—",
+  mmsi: "—",
 };
 
-const MOCK_WAYPOINTS: Waypoint[] = [
-  { id: "wp-1", name: "Gibraltar Strait Exit", lat: 35.9, lng: -5.35, eta: "2026-03-29T16:00:00Z", distanceNm: 0, bearingDeg: 0, speedKts: 18.4, notes: "Traffic separation zone" },
-  { id: "wp-2", name: "Cape Bon Approach", lat: 37.08, lng: 11.05, eta: "2026-03-31T02:00:00Z", distanceNm: 892, bearingDeg: 88, speedKts: 18.0, notes: "Adjust course for Sicily Strait" },
-  { id: "wp-3", name: "Malta Channel", lat: 35.82, lng: 14.52, eta: "2026-03-31T14:00:00Z", distanceNm: 1102, bearingDeg: 110, speedKts: 17.5, notes: "Narrow passage — increased lookout" },
-  { id: "wp-4", name: "Crete South Pass", lat: 34.72, lng: 24.48, eta: "2026-04-01T22:00:00Z", distanceNm: 1680, bearingDeg: 105, speedKts: 18.2, notes: "Open water" },
-  { id: "wp-5", name: "Suez Canal Approach", lat: 31.26, lng: 32.32, eta: "2026-04-03T06:00:00Z", distanceNm: 2240, bearingDeg: 145, speedKts: 16.0, notes: "Pilot boarding — speed reduction" },
-  { id: "wp-6", name: "Suez Canal S. Entry", lat: 29.93, lng: 32.56, eta: "2026-04-03T18:00:00Z", distanceNm: 2332, bearingDeg: 178, speedKts: 8.0, notes: "Convoy transit — follow VTS instructions" },
-  { id: "wp-7", name: "Bab el-Mandeb", lat: 12.58, lng: 43.33, eta: "2026-04-06T08:00:00Z", distanceNm: 3460, bearingDeg: 165, speedKts: 18.4, notes: "High-risk area — ISPS Level 2" },
-  { id: "wp-8", name: "Singapore Strait", lat: 1.27, lng: 103.85, eta: "2026-04-12T14:00:00Z", distanceNm: 8440, bearingDeg: 110, speedKts: 18.4, notes: "Destination pilot station" },
-];
+const EMPTY_WAYPOINTS: Waypoint[] = [];
 
-const MOCK_WEATHER_CURRENT = {
-  wind: { speed: 15, direction: "SW", beaufort: 4 },
-  waves: { height: 1.8, period: 7 },
-  visibility: "Good (>10 nm)",
-  temp: 19,
-  pressure: 1018,
+const EMPTY_WEATHER_CURRENT = {
+  wind: { speed: 0, direction: "—", beaufort: 0 },
+  waves: { height: 0, period: 0 },
+  visibility: "—",
+  temp: 0,
+  pressure: 0,
   condition: "partly_cloudy" as const,
-  seaState: "Moderate",
-  currentSpeed: 1.2,
-  currentDir: "ENE",
+  seaState: "—",
+  currentSpeed: 0,
+  currentDir: "—",
 };
 
-const MOCK_FORECAST: WeatherForecastEntry[] = [
-  { time: "2026-03-29T18:00:00Z", windSpeed: 18, windDir: "SW", waveHeight: 2.1, wavePeriod: 7, visibility: "Good", condition: "cloudy", temp: 18 },
-  { time: "2026-03-30T00:00:00Z", windSpeed: 22, windDir: "W", waveHeight: 2.6, wavePeriod: 8, visibility: "Moderate", condition: "rain", temp: 16 },
-  { time: "2026-03-30T06:00:00Z", windSpeed: 25, windDir: "W", waveHeight: 3.0, wavePeriod: 8, visibility: "Moderate", condition: "rain", temp: 15 },
-  { time: "2026-03-30T12:00:00Z", windSpeed: 20, windDir: "WSW", waveHeight: 2.4, wavePeriod: 7, visibility: "Good", condition: "cloudy", temp: 17 },
-  { time: "2026-03-30T18:00:00Z", windSpeed: 14, windDir: "SW", waveHeight: 1.8, wavePeriod: 6, visibility: "Good", condition: "clear", temp: 18 },
-  { time: "2026-03-31T00:00:00Z", windSpeed: 12, windDir: "S", waveHeight: 1.4, wavePeriod: 6, visibility: "Good", condition: "clear", temp: 17 },
-  { time: "2026-03-31T06:00:00Z", windSpeed: 10, windDir: "SE", waveHeight: 1.2, wavePeriod: 5, visibility: "Excellent", condition: "clear", temp: 19 },
-  { time: "2026-03-31T12:00:00Z", windSpeed: 8, windDir: "E", waveHeight: 0.8, wavePeriod: 5, visibility: "Excellent", condition: "clear", temp: 22 },
-];
+const EMPTY_FORECAST: WeatherForecastEntry[] = [];
 
-const MOCK_STORM_WARNINGS: StormWarning[] = [
-  {
-    id: "sw-1",
-    title: "Mediterranean Low-Pressure System",
-    severity: "warning",
-    area: "Central Mediterranean — Crete to Malta",
-    validFrom: "2026-03-30T00:00:00Z",
-    validTo: "2026-03-31T06:00:00Z",
-    description: "Developing low-pressure system. Winds W 25-35kt, seas 3-4m. Recommend course deviation south of Crete to avoid worst conditions.",
-  },
-  {
-    id: "sw-2",
-    title: "Strong Current Advisory — Sicily Strait",
-    severity: "advisory",
-    area: "Sicily Strait — Cape Bon to Malta",
-    validFrom: "2026-03-31T06:00:00Z",
-    validTo: "2026-03-31T18:00:00Z",
-    description: "East-setting current 2.5-3kt expected through Sicily Strait. Adjust waypoint calculations accordingly.",
-  },
-];
+const EMPTY_STORM_WARNINGS: StormWarning[] = [];
 
-const MOCK_DRAFT = {
-  forwardM: 11.2,
-  aftM: 12.8,
-  trimM: 1.6,
+const EMPTY_DRAFT = {
+  forwardM: 0,
+  aftM: 0,
+  trimM: 0,
   trimType: "stern" as const,
-  maxDraftM: 14.5,
-  airDraftM: 52.3,
-  displacementT: 68420,
+  maxDraftM: 0,
+  airDraftM: 0,
+  displacementT: 0,
 };
 
-const MOCK_TIDAL_WINDOWS: TidalWindow[] = [
-  { time: "2026-04-03T03:18:00Z", type: "LW", heightM: 0.3 },
-  { time: "2026-04-03T09:42:00Z", type: "HW", heightM: 1.8 },
-  { time: "2026-04-03T15:54:00Z", type: "LW", heightM: 0.4 },
-  { time: "2026-04-03T22:06:00Z", type: "HW", heightM: 1.7 },
-];
+const EMPTY_TIDAL_WINDOWS: TidalWindow[] = [];
 
-const MOCK_UKC = {
-  portDepthM: 16.5,
-  vesselDraftM: 12.8,
-  tidalAllowanceM: 1.8,
-  squat: 0.3,
-  ukcM: 3.2,
-  requiredUkcM: 1.5,
+const EMPTY_UKC = {
+  portDepthM: 0,
+  vesselDraftM: 0,
+  tidalAllowanceM: 0,
+  squat: 0,
+  ukcM: 0,
+  requiredUkcM: 0,
   status: "safe" as const,
 };
 
-const MOCK_NTM: NoticeToMariners[] = [
-  {
-    id: "ntm-1", number: "NM 2026/1247", title: "Dredging Operations — Port Said Approach",
-    area: "Suez Canal — Port Said", issuedDate: "2026-03-25", expiryDate: "2026-04-15",
-    category: "temporary",
-    description: "Dredging vessel operating in Port Said approach channel. Vessels to maintain safe passing distance. VHF Ch 16/12 for coordination.",
-  },
-  {
-    id: "ntm-2", number: "NM 2026/1198", title: "Light Buoy Repositioned — Malta Channel",
-    area: "Malta Channel", issuedDate: "2026-03-20", category: "permanent",
-    description: "Light buoy FL.G.4s relocated from 35°49.2N 014°31.8E to 35°49.4N 014°31.6E. Charts to be updated.",
-  },
-  {
-    id: "ntm-3", number: "NM 2026/1210", title: "Naval Exercise — Eastern Mediterranean",
-    area: "Eastern Mediterranean — South of Crete", issuedDate: "2026-03-22", expiryDate: "2026-04-02",
-    category: "temporary",
-    description: "Naval exercise in area bounded by 34°00N-35°00N, 025°00E-027°00E. Vessels advised to transit with caution. Monitor VHF Ch 16.",
-  },
-  {
-    id: "ntm-4", number: "NM 2026/1185", title: "Uncharted Obstruction — Strait of Messina",
-    area: "Strait of Messina", issuedDate: "2026-03-18", category: "preliminary",
-    description: "Uncharted obstruction reported at approx. 38°12.4N 015°38.2E, depth uncertain. Survey pending. Mariners to exercise caution.",
-  },
-  {
-    id: "ntm-5", number: "NM 2026/1255", title: "Suez Canal Convoy Schedule Change",
-    area: "Suez Canal", issuedDate: "2026-03-27", expiryDate: "2026-04-10",
-    category: "navigation",
-    description: "Southbound convoy departure from Port Said delayed by 2 hours effective 01 April. New departure: 0800L. Contact Suez VTS for updated schedule.",
-  },
-];
+const EMPTY_NTM: NoticeToMariners[] = [];
 
 /* ──────────────────────── HELPERS ──────────────────────── */
 
@@ -295,7 +225,7 @@ export default function VesselNavigation() {
   const [newWpName, setNewWpName] = useState("");
   const [newWpLat, setNewWpLat] = useState("");
   const [newWpLng, setNewWpLng] = useState("");
-  const [waypoints, setWaypoints] = useState<Waypoint[]>(MOCK_WAYPOINTS);
+  const [waypoints, setWaypoints] = useState<Waypoint[]>(EMPTY_WAYPOINTS);
   const [expandedWarning, setExpandedWarning] = useState<string | null>(null);
   const [expandedNtm, setExpandedNtm] = useState<string | null>(null);
   const [showForecast, setShowForecast] = useState(true);
@@ -313,14 +243,18 @@ export default function VesselNavigation() {
   const isLoading = dashQuery?.isLoading || fleetQuery?.isLoading;
 
   /* ── derived data ── */
-  const position = MOCK_POSITION;
-  const weather = MOCK_WEATHER_CURRENT;
-  const forecast = MOCK_FORECAST;
-  const stormWarnings = MOCK_STORM_WARNINGS;
-  const draft = MOCK_DRAFT;
-  const tidalWindows = MOCK_TIDAL_WINDOWS;
-  const ukc = MOCK_UKC;
-  const ntmList = MOCK_NTM;
+  /* tRPC queries — fall back to empty defaults */
+  const dashboardQ = (trpc as any).vesselShipments?.getVesselDashboard?.useQuery?.() ?? { data: null, isLoading: false };
+  const fleetQ = (trpc as any).vesselShipments?.getVesselFleet?.useQuery?.({ limit: 1 }) ?? { data: null, isLoading: false };
+
+  const position = dashboardQ.data?.position ?? EMPTY_POSITION;
+  const weather = dashboardQ.data?.weather ?? EMPTY_WEATHER_CURRENT;
+  const forecast = dashboardQ.data?.forecast ?? EMPTY_FORECAST;
+  const stormWarnings = dashboardQ.data?.stormWarnings ?? EMPTY_STORM_WARNINGS;
+  const draft = dashboardQ.data?.draft ?? EMPTY_DRAFT;
+  const tidalWindows = dashboardQ.data?.tidalWindows ?? EMPTY_TIDAL_WINDOWS;
+  const ukc = dashboardQ.data?.ukc ?? EMPTY_UKC;
+  const ntmList = dashboardQ.data?.notices ?? EMPTY_NTM;
 
   const totalDistance = useMemo(() => {
     return waypoints.length > 0 ? waypoints[waypoints.length - 1].distanceNm : 0;

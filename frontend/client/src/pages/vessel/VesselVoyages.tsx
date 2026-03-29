@@ -38,136 +38,8 @@ const PORT_CALL_STATUS: Record<string, { bg: string; lightBg: string }> = {
   skipped: { bg: "bg-red-500/20 text-red-400", lightBg: "bg-red-100 text-red-700" },
 };
 
-/* ─── Mock Data ─── */
-const MOCK_VOYAGES = [
-  {
-    id: "VOY-001", voyage: "FA402E", vessel: "MSC AURORA", vesselImo: "9839174",
-    route: "Los Angeles → Shanghai → Busan → Los Angeles",
-    routeShort: "USWC → East Asia",
-    etd: "2026-04-02", eta: "2026-05-10",
-    status: "active", cargoUtil: 92, teuLoaded: 13616, teuCapacity: 14800,
-    revenue: 4280000, expenses: 3100000,
-    portCalls: [
-      { port: "Los Angeles, CA", code: "USLAX", arrival: "2026-03-30", departure: "2026-04-02", status: "completed", cargoOps: "Loaded 8,200 TEU", stayDays: 3 },
-      { port: "Shanghai, CN", code: "CNSHA", arrival: "2026-04-18", departure: "2026-04-21", status: "upcoming", cargoOps: "Discharge 6,100 TEU / Load 3,400 TEU", stayDays: 3 },
-      { port: "Busan, KR", code: "KRPUS", arrival: "2026-04-24", departure: "2026-04-26", status: "upcoming", cargoOps: "Discharge 4,200 TEU / Load 2,800 TEU", stayDays: 2 },
-      { port: "Los Angeles, CA", code: "USLAX", arrival: "2026-05-10", departure: "—", status: "upcoming", cargoOps: "Discharge remaining", stayDays: 0 },
-    ],
-    manifest: [
-      { commodity: "Electronics", teu: 3200, weight: 28400, shipper: "TechCo Inc." },
-      { commodity: "Auto Parts", teu: 2800, weight: 31200, shipper: "Pacific Auto" },
-      { commodity: "Machinery", teu: 1800, weight: 25600, shipper: "HeavyInd Corp" },
-      { commodity: "Consumer Goods", teu: 4200, weight: 22100, shipper: "RetailMax" },
-      { commodity: "Chemicals (Non-DG)", teu: 1616, weight: 18900, shipper: "ChemShip LLC" },
-    ],
-    bunker: { startFuel: 8200, consumed: 3000, remaining: 5200, avgConsumption: 180, fuelType: "VLSFO" },
-  },
-  {
-    id: "VOY-002", voyage: "FE418N", vessel: "CMA CGM MARCO POLO", vesselImo: "9454412",
-    route: "Savannah → Hamburg → Rotterdam → Savannah",
-    routeShort: "USEC → North Europe",
-    etd: "2026-03-28", eta: "2026-04-28",
-    status: "active", cargoUtil: 88, teuLoaded: 14098, teuCapacity: 16020,
-    revenue: 5360000, expenses: 3800000,
-    portCalls: [
-      { port: "Savannah, GA", code: "USSAV", arrival: "2026-03-25", departure: "2026-03-28", status: "completed", cargoOps: "Loaded 10,200 TEU", stayDays: 3 },
-      { port: "Hamburg, DE", code: "DEHAM", arrival: "2026-04-12", departure: "2026-04-15", status: "upcoming", cargoOps: "Discharge 7,400 TEU / Load 4,100 TEU", stayDays: 3 },
-      { port: "Rotterdam, NL", code: "NLRTM", arrival: "2026-04-17", departure: "2026-04-19", status: "upcoming", cargoOps: "Discharge 3,800 TEU / Load 2,600 TEU", stayDays: 2 },
-      { port: "Savannah, GA", code: "USSAV", arrival: "2026-04-28", departure: "—", status: "upcoming", cargoOps: "Discharge remaining", stayDays: 0 },
-    ],
-    manifest: [
-      { commodity: "Machinery", teu: 4100, weight: 52000, shipper: "AmeriMach Corp" },
-      { commodity: "Agricultural Products", teu: 3600, weight: 41200, shipper: "AgroExport LLC" },
-      { commodity: "Automobiles", teu: 2800, weight: 18400, shipper: "AutoShip Int'l" },
-      { commodity: "Textiles", teu: 2200, weight: 12100, shipper: "FashionFreight" },
-      { commodity: "Chemicals (DG)", teu: 1398, weight: 16800, shipper: "GlobalChem" },
-    ],
-    bunker: { startFuel: 9000, consumed: 4200, remaining: 4800, avgConsumption: 210, fuelType: "VLSFO" },
-  },
-  {
-    id: "VOY-003", voyage: "AT419N", vessel: "ZIM SAMSON", vesselImo: "9867220",
-    route: "Charleston → Antwerp → Haifa → Charleston",
-    routeShort: "USEC → Mediterranean",
-    etd: "2026-03-22", eta: "2026-04-20",
-    status: "active", cargoUtil: 85, teuLoaded: 7225, teuCapacity: 8500,
-    revenue: 2540000, expenses: 1820000,
-    portCalls: [
-      { port: "Charleston, SC", code: "USCHS", arrival: "2026-03-19", departure: "2026-03-22", status: "completed", cargoOps: "Loaded 5,800 TEU", stayDays: 3 },
-      { port: "Antwerp, BE", code: "BEANR", arrival: "2026-04-03", departure: "2026-04-05", status: "upcoming", cargoOps: "Discharge 3,200 TEU / Load 1,800 TEU", stayDays: 2 },
-      { port: "Haifa, IL", code: "ILHFA", arrival: "2026-04-10", departure: "2026-04-12", status: "upcoming", cargoOps: "Discharge 2,400 TEU / Load 1,600 TEU", stayDays: 2 },
-      { port: "Charleston, SC", code: "USCHS", arrival: "2026-04-20", departure: "—", status: "upcoming", cargoOps: "Discharge remaining", stayDays: 0 },
-    ],
-    manifest: [
-      { commodity: "Textiles", teu: 2800, weight: 14200, shipper: "SouthernTex" },
-      { commodity: "Furniture", teu: 1900, weight: 11400, shipper: "HomeFurnish Co" },
-      { commodity: "Consumer Electronics", teu: 1500, weight: 9800, shipper: "ElecTrade LLC" },
-      { commodity: "Food Products", teu: 1025, weight: 12600, shipper: "FreshExport" },
-    ],
-    bunker: { startFuel: 5200, consumed: 3100, remaining: 2100, avgConsumption: 140, fuelType: "LSMGO" },
-  },
-  {
-    id: "VOY-004", voyage: "AE426W", vessel: "MAERSK SENTOSA", vesselImo: "9778210",
-    route: "Long Beach → Rotterdam → Bremerhaven → Long Beach",
-    routeShort: "USWC → North Europe",
-    etd: "2026-04-05", eta: "2026-05-08",
-    status: "scheduled", cargoUtil: 45, teuLoaded: 5940, teuCapacity: 13200,
-    revenue: 0, expenses: 0,
-    portCalls: [
-      { port: "Long Beach, CA", code: "USLGB", arrival: "2026-04-02", departure: "2026-04-05", status: "current", cargoOps: "Loading in progress — 5,940 / 13,200 TEU", stayDays: 3 },
-      { port: "Rotterdam, NL", code: "NLRTM", arrival: "2026-04-25", departure: "2026-04-28", status: "upcoming", cargoOps: "Discharge 5,800 TEU / Load 4,200 TEU", stayDays: 3 },
-      { port: "Bremerhaven, DE", code: "DEBRV", arrival: "2026-04-30", departure: "2026-05-01", status: "upcoming", cargoOps: "Discharge 3,400 TEU / Load 2,000 TEU", stayDays: 1 },
-      { port: "Long Beach, CA", code: "USLGB", arrival: "2026-05-08", departure: "—", status: "upcoming", cargoOps: "Discharge remaining", stayDays: 0 },
-    ],
-    manifest: [
-      { commodity: "Machinery", teu: 2400, weight: 28800, shipper: "WestCoast Mach" },
-      { commodity: "Wine & Spirits", teu: 1200, weight: 14400, shipper: "CalWine Exports" },
-      { commodity: "Lumber", teu: 2340, weight: 32700, shipper: "PNW Timber LLC" },
-    ],
-    bunker: { startFuel: 7400, consumed: 0, remaining: 7400, avgConsumption: 185, fuelType: "VLSFO" },
-  },
-  {
-    id: "VOY-005", voyage: "TA415E", vessel: "EVERGREEN TRITON", vesselImo: "9811002",
-    route: "Newark → Felixstowe → Le Havre → Newark",
-    routeShort: "USEC → UK / France",
-    etd: "2026-03-15", eta: "2026-04-08",
-    status: "completed", cargoUtil: 78, teuLoaded: 15697, teuCapacity: 20124,
-    revenue: 6120000, expenses: 4200000,
-    portCalls: [
-      { port: "Newark, NJ", code: "USNYC", arrival: "2026-03-12", departure: "2026-03-15", status: "completed", cargoOps: "Loaded 12,200 TEU", stayDays: 3 },
-      { port: "Felixstowe, UK", code: "GBFXT", arrival: "2026-03-25", departure: "2026-03-28", status: "completed", cargoOps: "Discharged 8,100 TEU / Loaded 5,200 TEU", stayDays: 3 },
-      { port: "Le Havre, FR", code: "FRLEH", arrival: "2026-03-30", departure: "2026-04-01", status: "completed", cargoOps: "Discharged 4,600 TEU / Loaded 3,100 TEU", stayDays: 2 },
-      { port: "Newark, NJ", code: "USNYC", arrival: "2026-04-08", departure: "—", status: "completed", cargoOps: "Discharged all remaining", stayDays: 0 },
-    ],
-    manifest: [
-      { commodity: "Consumer Goods", teu: 6200, weight: 42100, shipper: "MegaRetail Inc" },
-      { commodity: "Pharmaceuticals", teu: 2100, weight: 8400, shipper: "PharmaShip" },
-      { commodity: "Electronics", teu: 3800, weight: 22800, shipper: "EuroTech GmbH" },
-      { commodity: "Auto Parts", teu: 2200, weight: 26400, shipper: "MotorParts EU" },
-      { commodity: "Chemicals", teu: 1397, weight: 18600, shipper: "ChemCo International" },
-    ],
-    bunker: { startFuel: 11500, consumed: 8200, remaining: 3300, avgConsumption: 240, fuelType: "VLSFO" },
-  },
-  {
-    id: "VOY-006", voyage: "SA403S", vessel: "HAPAG BERLIN", vesselImo: "9870315",
-    route: "Houston → Santos → Buenos Aires → Houston",
-    routeShort: "USGC → South America",
-    etd: "2026-04-08", eta: "2026-05-02",
-    status: "scheduled", cargoUtil: 62, teuLoaded: 6510, teuCapacity: 10500,
-    revenue: 0, expenses: 0,
-    portCalls: [
-      { port: "Houston, TX", code: "USHOU", arrival: "2026-04-05", departure: "2026-04-08", status: "current", cargoOps: "Loading in progress — 6,510 / 10,500 TEU", stayDays: 3 },
-      { port: "Santos, BR", code: "BRSSZ", arrival: "2026-04-22", departure: "2026-04-24", status: "upcoming", cargoOps: "Discharge 4,200 TEU / Load 3,100 TEU", stayDays: 2 },
-      { port: "Buenos Aires, AR", code: "ARBUE", arrival: "2026-04-27", departure: "2026-04-28", status: "upcoming", cargoOps: "Discharge 2,000 TEU / Load 1,400 TEU", stayDays: 1 },
-      { port: "Houston, TX", code: "USHOU", arrival: "2026-05-02", departure: "—", status: "upcoming", cargoOps: "Discharge remaining", stayDays: 0 },
-    ],
-    manifest: [
-      { commodity: "Agricultural Equipment", teu: 2800, weight: 36400, shipper: "AgriMach USA" },
-      { commodity: "Perishables (Reefer)", teu: 1800, weight: 21600, shipper: "FreshCargo Int'l" },
-      { commodity: "Industrial Chemicals", teu: 1910, weight: 24800, shipper: "GulfChem Corp" },
-    ],
-    bunker: { startFuel: 6500, consumed: 0, remaining: 6500, avgConsumption: 160, fuelType: "VLSFO" },
-  },
-];
+/* ─── Empty Default ─── */
+const EMPTY_VOYAGES: any[] = [];
 
 /* ─── Helpers ─── */
 function fmtCurrency(v: number) {
@@ -190,6 +62,11 @@ export default function VesselVoyages() {
   const [search, setSearch] = useState("");
   const [expandedVoyage, setExpandedVoyage] = useState<string | null>(null);
 
+  /* tRPC queries */
+  const shipmentsQ = (trpc as any).vesselShipments?.getVesselShipments?.useQuery?.({ limit: 50 }) ?? { data: null, isLoading: false };
+  const fleetQ = (trpc as any).vesselShipments?.getVesselFleet?.useQuery?.({ limit: 50 }) ?? { data: null, isLoading: false };
+  const voyagesData = shipmentsQ.data?.voyages ?? fleetQ.data?.voyages ?? EMPTY_VOYAGES;
+
   /* Theme vars */
   const bg = isLight ? "bg-slate-50" : "bg-[#0a0a0a]";
   const cardBg = cn("border rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
@@ -203,7 +80,7 @@ export default function VesselVoyages() {
 
   /* Filter voyages */
   const filteredVoyages = useMemo(() => {
-    let list = MOCK_VOYAGES;
+    let list = voyagesData;
     if (tab === "active") list = list.filter(v => v.status === "active" || v.status === "delayed");
     else if (tab === "scheduled") list = list.filter(v => v.status === "scheduled");
     else if (tab === "completed") list = list.filter(v => v.status === "completed");
@@ -219,10 +96,10 @@ export default function VesselVoyages() {
   }, [tab, search]);
 
   /* Summary KPIs */
-  const activeCount = MOCK_VOYAGES.filter(v => v.status === "active").length;
-  const scheduledCount = MOCK_VOYAGES.filter(v => v.status === "scheduled").length;
-  const completedCount = MOCK_VOYAGES.filter(v => v.status === "completed").length;
-  const totalRevenue = MOCK_VOYAGES.reduce((s, v) => s + v.revenue, 0);
+  const activeCount = voyagesData.filter(v => v.status === "active").length;
+  const scheduledCount = voyagesData.filter(v => v.status === "scheduled").length;
+  const completedCount = voyagesData.filter(v => v.status === "completed").length;
+  const totalRevenue = voyagesData.reduce((s, v) => s + v.revenue, 0);
 
   return (
     <div className={cn("min-h-screen p-6 space-y-6", bg)}>
@@ -238,7 +115,7 @@ export default function VesselVoyages() {
           <div>
             <h1 className={cn("text-2xl font-bold", text)}>Voyage Management</h1>
             <p className={cn("text-sm", muted)}>
-              Plan, track and analyze voyages &bull; {MOCK_VOYAGES.length} total voyages
+              Plan, track and analyze voyages &bull; {voyagesData.length} total voyages
             </p>
           </div>
         </div>
@@ -583,7 +460,7 @@ export default function VesselVoyages() {
               </tr>
             </thead>
             <tbody>
-              {MOCK_VOYAGES
+              {voyagesData
                 .flatMap(v => v.portCalls
                   .filter(pc => pc.status === "upcoming" || pc.status === "current")
                   .map(pc => ({ vessel: v.vessel, voyage: v.voyage, ...pc }))
